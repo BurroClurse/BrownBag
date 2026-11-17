@@ -218,6 +218,10 @@ Staying signed in needs refresh tokens (`offline_access`). The build checks
 whether the SMART sandbox offers them and records the answer. Not built this
 fall.
 
+Checked 2026-11-17: the SMART sandbox's `.well-known/smart-configuration`
+lists `offline_access` in `scopes_supported` and `permission-offline` in
+`capabilities`, so staying signed in can be built against it later.
+
 ## Security
 
 Tyler asked for encryption, fingerprint unlock and two-factor sign-in
