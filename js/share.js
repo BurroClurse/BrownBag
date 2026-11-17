@@ -1,0 +1,163 @@
+// Builds the list a patient shares, as a small FHIR Bundle, and packs it
+// into an encrypted link for the QR code. The link holds a random secret;
+// the 6-digit code the patient reads out is the other half of the key.
+
+import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
+
+export var QR_MAX_BYTES = 2331;
+
+var SECRET_BYTES = 16;
+var IV_BYTES = 12;
+var TAG_BYTES = 16;
+var PREFIX = "v1.";
+var SELF = { reference: "Patient/self" };
+
+export class ShareError extends Error {
+  constructor(code, message) {
+    super(message || code);
+    this.name = "ShareError";
+    this.code = code;
+  }
+}
+
+export function buildShareBundle(list, now) {
+  var entries = [{
+    resource: {
+      resourceType: "Patient",
+      id: "self",
+      name: [{ text: list.patient.name }],
+      birthDate: list.patient.birthDate
+    }
+  }];
+  list.current.forEach(function (item) {
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), "active");
+    statement.note = [{ text: "From records: " + item.source }];
+    if (item.prescriber) {
+      statement.note.push({ text: "Prescribed by " + item.prescriber });
+    }
+    entries.push({ resource: statement });
+  });
+  list.additions.forEach(function (addition) {
+    var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active");
+    statement.informationSource = SELF;
+    entries.push({ resource: statement });
+  });
+  list.stopped.forEach(function (item) {
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped");
+    statement.informationSource = SELF;
+    statement.effectivePeriod = { end: item.stoppedAt };
+    entries.push({ resource: statement });
+  });
+  return { resourceType: "Bundle", type: "collection", timestamp: now.toISOString(), entry: entries };
+}
+
+export function groupShareBundle(bundle) {
+  var groups = { patient: null, madeAt: bundle.timestamp, fromRecords: [], addedByPatient: [], patientSaysStopped: [] };
+  (bundle.entry || []).forEach(function (entry) {
+    var resource = entry.resource || {};
+    if (resource.resourceType === "Patient") {
+      groups.patient = { name: (resource.name && resource.name[0] && resource.name[0].text) || "", birthDate: resource.birthDate || "" };
+      return;
+    }
+    if (resource.resourceType !== "MedicationStatement") {
+      return;
+    }
+    var name = (resource.medicationCodeableConcept && resource.medicationCodeableConcept.text) || "Unnamed medicine";
+    var dosage = resource.dosage && resource.dosage[0] && resource.dosage[0].text;
+    var fromPatient = resource.informationSource && resource.informationSource.reference === SELF.reference;
+    if (resource.status === "stopped") {
+      var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
+      groups.patientSaysStopped.push({ name: name, detail: joinDetail([dosage, stoppedOn ? "stopped " + stoppedOn : null]) });
+    } else if (fromPatient) {
+      groups.addedByPatient.push({ name: name, detail: joinDetail([dosage]) });
+    } else {
+      var notes = (resource.note || []).map(function (note) { return note.text; });
+      groups.fromRecords.push({ name: name, detail: joinDetail([dosage].concat(notes)) });
+    }
+  });
+  return groups;
+}
+
+export async function packShare(bundle, baseUrl) {
+  var code = sixDigitCode();
+  var secret = globalThis.crypto.getRandomValues(new Uint8Array(SECRET_BYTES));
+  var iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  var key = await deriveKeyFromPin(code, secret);
+  var compressed = await transform(new TextEncoder().encode(JSON.stringify(bundle)), new CompressionStream("deflate-raw"));
+  var sealed = new Uint8Array(await globalThis.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, compressed));
+  return { url: baseUrl + "share.html#" + PREFIX + toBase64Url(concatBytes(secret, iv, sealed)), code: code };
+}
+
+export async function unpackShare(fragment, code) {
+  if (typeof fragment !== "string" || fragment.indexOf(PREFIX) !== 0) {
+    throw new ShareError("bad-link");
+  }
+  var bytes;
+  try {
+    bytes = fromBase64Url(fragment.slice(PREFIX.length));
+  } catch (error) {
+    throw new ShareError("bad-link");
+  }
+  if (bytes.length <= SECRET_BYTES + IV_BYTES + TAG_BYTES) {
+    throw new ShareError("bad-link");
+  }
+  var secret = bytes.slice(0, SECRET_BYTES);
+  var iv = bytes.slice(SECRET_BYTES, SECRET_BYTES + IV_BYTES);
+  var key = await deriveKeyFromPin(String(code), secret);
+  var compressed;
+  try {
+    compressed = await globalThis.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, bytes.slice(SECRET_BYTES + IV_BYTES));
+  } catch (error) {
+    throw new ShareError("wrong-code");
+  }
+  try {
+    var plain = await transform(new Uint8Array(compressed), new DecompressionStream("deflate-raw"));
+    return JSON.parse(new TextDecoder().decode(plain));
+  } catch (error) {
+    throw new ShareError("bad-link");
+  }
+}
+
+export function fitsInQr(url) {
+  return new TextEncoder().encode(url).length <= QR_MAX_BYTES;
+}
+
+function statementFor(name, rxcui, dosage, status) {
+  var concept = { text: name };
+  if (rxcui) {
+    concept.coding = [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: rxcui }];
+  }
+  var statement = {
+    resourceType: "MedicationStatement",
+    status: status,
+    subject: SELF,
+    medicationCodeableConcept: concept
+  };
+  if (dosage) {
+    statement.dosage = [{ text: dosage }];
+  }
+  return statement;
+}
+
+function dosageText(item) {
+  return joinDetail([item.dose, item.route, item.frequency]) || null;
+}
+
+function joinDetail(parts) {
+  return parts.filter(Boolean).join(" · ");
+}
+
+// Rejection sampling keeps every code equally likely.
+function sixDigitCode() {
+  var buffer = new Uint32Array(1);
+  var limit = Math.floor(4294967296 / 1000000) * 1000000;
+  do {
+    globalThis.crypto.getRandomValues(buffer);
+  } while (buffer[0] >= limit);
+  return String(buffer[0] % 1000000).padStart(6, "0");
+}
+
+async function transform(bytes, stream) {
+  var output = new Blob([bytes]).stream().pipeThrough(stream);
+  return new Uint8Array(await new Response(output).arrayBuffer());
+}
