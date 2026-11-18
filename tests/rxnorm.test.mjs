@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { searchDrugs, ingredientsFor, RxNormError } from "../js/rxnorm.js";
+import { searchDrugs, ingredientsFor, rxcuisForNdcs, RxNormError } from "../js/rxnorm.js";
 
 // Fake fetch: answers by URL prefix with RxNav-shaped JSON, and records calls.
 function fakeFetch(routes) {
@@ -98,4 +98,54 @@ test("ingredientsFor leaves out an rxcui whose request fails", async () => {
   var map = await ingredientsFor(["314076", "1"], fetchFn);
   assert.equal(map.size, 1);
   assert.ok(map.has("314076"));
+});
+
+var NDC_STATUS = "https://rxnav.nlm.nih.gov/REST/ndcstatus.json?ndc=";
+
+// Shapes copied from real ndcstatus.json answers (2026-11-18).
+function ndcStatus(fields) {
+  return { body: { ndcStatus: Object.assign({ ndc11: "", status: "UNKNOWN", rxcui: "", conceptName: "" }, fields) } };
+}
+
+test("rxcuisForNdcs maps an active NDC to its RxNorm product", async () => {
+  var fetchFn = fakeFetch({
+    [NDC_STATUS + "0071-0156-23"]: ndcStatus({ ndc11: "00071015623", status: "ACTIVE", rxcui: "617318", conceptName: "atorvastatin 20 MG Oral Tablet [Lipitor]" })
+  });
+  var map = await rxcuisForNdcs(["0071-0156-23"], fetchFn);
+  assert.deepEqual(map.get("0071-0156-23"), { rxcui: "617318", name: "atorvastatin 20 MG Oral Tablet [Lipitor]" });
+});
+
+test("rxcuisForNdcs maps an obsolete NDC that rxcui.json would miss", async () => {
+  var fetchFn = fakeFetch({
+    [NDC_STATUS + "00071015630"]: ndcStatus({ ndc11: "00071015630", status: "OBSOLETE", rxcui: "617318", conceptName: "atorvastatin 20 MG Oral Tablet [Lipitor]" })
+  });
+  var map = await rxcuisForNdcs(["00071015630"], fetchFn);
+  assert.equal(map.get("00071015630").rxcui, "617318");
+});
+
+test("rxcuisForNdcs falls back to the newest history entry when rxcui is blank", async () => {
+  var fetchFn = fakeFetch({
+    [NDC_STATUS + "11111-2222-33"]: ndcStatus({ ndc11: "11111222233", status: "OBSOLETE", ndcHistory: [
+      { activeRxcui: "100", originalRxcui: "100", startDate: "200701", endDate: "201001" },
+      { activeRxcui: "200", originalRxcui: "150", startDate: "201002", endDate: "201512" }
+    ] })
+  });
+  var map = await rxcuisForNdcs(["11111-2222-33"], fetchFn);
+  assert.deepEqual(map.get("11111-2222-33"), { rxcui: "200", name: null });
+});
+
+test("rxcuisForNdcs leaves out unknown NDCs and failed requests", async () => {
+  var fetchFn = fakeFetch({
+    [NDC_STATUS + "0071-0156-23"]: ndcStatus({ status: "ACTIVE", rxcui: "617318", conceptName: "atorvastatin 20 MG Oral Tablet [Lipitor]" }),
+    [NDC_STATUS + "0071015623"]: ndcStatus({}),
+    [NDC_STATUS + "99999-9999-99"]: new TypeError("Failed to fetch")
+  });
+  var map = await rxcuisForNdcs(["0071-0156-23", "0071015623", "99999-9999-99"], fetchFn);
+  assert.deepEqual(Array.from(map.keys()), ["0071-0156-23"]);
+});
+
+test("rxcuisForNdcs asks once per NDC and encodes it", async () => {
+  var fetchFn = fakeFetch({ [NDC_STATUS]: ndcStatus({}) });
+  await rxcuisForNdcs(["1 2", "1 2", ""], fetchFn);
+  assert.deepEqual(fetchFn.calls, [NDC_STATUS + "1%202"]);
 });

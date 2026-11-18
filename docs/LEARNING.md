@@ -245,6 +245,19 @@ your additions use the same codes as your records.
 If RxNav can't be reached, you can still type the name freely. Your list never
 depends on it.
 
+**Records that only have an NDC.** Some records skip RxNorm and carry an
+**NDC** instead: the number on the pharmacy box, one per package. The same Lipitor
+20 mg pill in two bottle sizes has two NDCs but one RxNorm code. RxNav's `ndcstatus` lookup turns an NDC into its RxNorm code,
+even for boxes no longer sold. (The more obvious `rxcui.json?idtype=NDC`
+lookup finds nothing for those, which we only learned by trying real NDCs.)
+Once a record has its RxNorm code, it merges with the rest.
+
+**Can a web page call RxNav at all?** Browsers block a page from reading
+another site's answers unless that site says it's allowed, with a header
+called `Access-Control-Allow-Origin` (this rule is **CORS**). RxNav sends
+`Access-Control-Allow-Origin: *`, meaning any site may. We checked in a real
+browser, not just by reading the header.
+
 The tests use a **fake fetch**: a stand-in that answers like RxNav without
 using the internet. That keeps tests fast and lets us test "RxNav is down" on
 purpose.
@@ -333,7 +346,11 @@ finding the cause.
 - **Fork**: your own copy of someone else's repo.
 - **GitHub Pages**: GitHub's free hosting for web pages. It publishes `main`.
 - **https**: the secure version of web pages. The padlock in the address bar.
+- **CORS**: the browser rule that decides whether a page may read answers
+  from another site.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
+- **NDC**: National Drug Code, the number on a US pharmacy package. Many NDCs
+  share one RxNorm code.
 - **Passkey**: a sign-in that uses Face ID, fingerprint or the phone's PIN.
 - **PBKDF2**: slows down guessing by repeating a calculation many times.
 - **Push**: copy commits from your Mac to GitHub.

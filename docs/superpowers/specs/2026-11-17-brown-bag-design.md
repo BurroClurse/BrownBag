@@ -102,6 +102,10 @@ QR approaches:
 
 - Read the patient's MedicationRequest and MedicationStatement records (and
   Medication when a request points to one).
+- Records coded only with an NDC (the package number pharmacies and claims
+  use) are matched to their RxNorm code through RxNav first, so they group
+  with the rest. Old NDCs no longer sold still match. If there's no match,
+  the record is grouped by name and still shown.
 - Remove duplicates: group by RxNorm code; keep the newest record in each
   group; show "prescribed 6 times since 2019" instead of six rows.
 - Group strengths of the same medicine by active ingredient (RxNav), so
@@ -311,7 +315,12 @@ If it becomes a business:
 - Page layout and styling, within "super simple".
 - Packing and compressing the QR data, and the QR library (from an allowed
   CDN).
-- Whether RxNav allows calls straight from the browser; if not, a fallback.
+- ~~Whether RxNav allows calls straight from the browser; if not, a
+  fallback.~~ Settled 2026-11-18: RxNav answers every endpoint the app uses
+  with `Access-Control-Allow-Origin: *`, and a page on another origin in
+  Chromium called `drugs.json`, `approximateTerm.json`, `related.json` and
+  `ndcstatus.json` without errors. No fallback needed beyond the existing
+  "RxNav is down" handling.
 
 ## Calls made by Claude, for Tyler to check
 
@@ -320,6 +329,8 @@ If it becomes a business:
 - Duplicates grouped by RxNorm code, newest record kept.
 - Patient additions stored on the device only.
 - Drug lookup through the National Library of Medicine's RxNav service.
+- NDC-only records mapped to RxNorm with RxNav's `ndcstatus` lookup
+  (2026-11-18).
 - Security: passkey (fingerprint or Face ID) lock with a 6-digit PIN
   fallback, device storage encrypted, QR list encrypted with a spoken 6-digit
   code, local https testing with mkcert.
