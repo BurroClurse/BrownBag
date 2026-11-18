@@ -7,7 +7,8 @@ import {
   dedupe,
   splitByStatus,
   groupByIngredient,
-  doseChangeText
+  doseChangeText,
+  applyNdcMap
 } from "../js/meds.js";
 
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
@@ -187,4 +188,72 @@ test("groupByIngredient with an empty map changes nothing", () => {
   const result = groupByIngredient(items, new Map());
   assert.equal(result.length, 2);
   assert.equal(doseChangeText(result[0]), null);
+});
+
+const NDC = "http://hl7.org/fhir/sid/ndc";
+
+function ndcRequest(ndc, display, authoredOn, system = NDC) {
+  return {
+    resourceType: "MedicationRequest",
+    status: "active",
+    authoredOn: authoredOn,
+    medicationCodeableConcept: { coding: [{ system: system, code: ndc, display: display }], text: display }
+  };
+}
+
+test("an NDC-only record keeps its NDC and is keyed by name", () => {
+  const item = fromMedicationRequest(ndcRequest("0071-0156-23", "Lipitor 20mg tab", "2022-01-05"), SOURCE);
+  assert.equal(item.ndc, "0071-0156-23");
+  assert.equal(item.rxcui, null);
+  assert.equal(item.key, "text:lipitor 20mg tab");
+});
+
+test("the NDC OID system is read too", () => {
+  const item = fromMedicationRequest(ndcRequest("0071-0156-23", "Lipitor", "2022-01-05", "urn:oid:2.16.840.1.113883.6.69"), SOURCE);
+  assert.equal(item.ndc, "0071-0156-23");
+});
+
+test("a record with RxNorm and NDC keeps both", () => {
+  const resource = request("617318", "atorvastatin 20 MG Oral Tablet [Lipitor]", "2023-01-05");
+  resource.medicationCodeableConcept.coding.push({ system: NDC, code: "0071-0156-23" });
+  const item = fromMedicationRequest(resource, SOURCE);
+  assert.equal(item.rxcui, "617318");
+  assert.equal(item.ndc, "0071-0156-23");
+});
+
+test("records without an NDC have ndc null", () => {
+  assert.equal(fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2023-03-02"), SOURCE).ndc, null);
+});
+
+test("applyNdcMap gives NDC-only records an RxNorm key so dedupe merges them", () => {
+  const items = [
+    fromMedicationRequest(request("617318", "atorvastatin 20 MG Oral Tablet [Lipitor]", "2023-01-05"), SOURCE),
+    fromMedicationRequest(ndcRequest("0071-0156-23", "Lipitor 20mg tab", "2021-06-01"), SOURCE)
+  ];
+  const map = new Map([["0071-0156-23", { rxcui: "617318", name: "atorvastatin 20 MG Oral Tablet [Lipitor]" }]]);
+  const mapped = applyNdcMap(items, map);
+  assert.equal(mapped[1].key, "rx:617318");
+  assert.equal(mapped[1].rxcui, "617318");
+  assert.equal(mapped[1].name, "Lipitor 20mg tab");
+  const merged = dedupe(mapped);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].count, 2);
+});
+
+test("applyNdcMap names an unnamed record from RxNorm", () => {
+  const resource = ndcRequest("0071-0156-23", undefined, "2021-06-01");
+  delete resource.medicationCodeableConcept.text;
+  const item = fromMedicationRequest(resource, SOURCE);
+  assert.equal(item.name, "Unnamed medicine");
+  const [mapped] = applyNdcMap([item], new Map([["0071-0156-23", { rxcui: "617318", name: "atorvastatin 20 MG Oral Tablet [Lipitor]" }]]));
+  assert.equal(mapped.name, "atorvastatin 20 MG Oral Tablet [Lipitor]");
+});
+
+test("applyNdcMap leaves records with an rxcui or no match alone", () => {
+  const coded = fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2023-03-02"), SOURCE);
+  coded.ndc = "0071-0156-23";
+  const unmatched = fromMedicationRequest(ndcRequest("12345-678-90", "Mystery", "2020-01-01"), SOURCE);
+  const map = new Map([["0071-0156-23", { rxcui: "617318", name: "atorvastatin" }]]);
+  const out = applyNdcMap([coded, unmatched], map);
+  assert.deepEqual(out, [coded, unmatched]);
 });

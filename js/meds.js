@@ -3,6 +3,8 @@
 // No DOM here, so Node's test runner can check it.
 
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+// NDC is written two ways in the wild: the FHIR URI and the HL7 OID.
+var NDC_SYSTEMS = ["http://hl7.org/fhir/sid/ndc", "urn:oid:2.16.840.1.113883.6.69"];
 
 var CURRENT_REQUEST = ["active", "on-hold"];
 var CURRENT_STATEMENT = ["active", "intended"];
@@ -69,6 +71,24 @@ export function dedupe(items) {
     groups.set(item.key, newest);
   });
   return Array.from(groups.values());
+}
+
+// Gives records that only carry an NDC the RxNorm code RxNav found for it
+// (see rxcuisForNdcs), so dedupe can merge them with RxNorm-coded records.
+// Run it before dedupe. Records with an rxcui or no match are returned as is.
+export function applyNdcMap(items, rxcuiOfNdc) {
+  return items.map(function (item) {
+    var found = !item.rxcui && item.ndc ? rxcuiOfNdc.get(item.ndc) : null;
+    if (!found) {
+      return item;
+    }
+    var named = item.name !== "Unnamed medicine";
+    return Object.assign({}, item, {
+      key: "rx:" + found.rxcui,
+      rxcui: found.rxcui,
+      name: named || !found.name ? item.name : found.name
+    });
+  });
 }
 
 export function splitByStatus(items) {
@@ -150,6 +170,7 @@ function makeItem(parts) {
   return {
     key: rxcui ? "rx:" + rxcui : "text:" + (name ? name.toLowerCase() : "unnamed medicine"),
     rxcui: rxcui,
+    ndc: parts.drug.ndc,
     name: name || "Unnamed medicine",
     dose: parts.dosage.dose,
     route: parts.dosage.route,
@@ -172,13 +193,15 @@ function readDrug(resource, medications) {
     concept = medication && medication.code;
   }
   if (!concept) {
-    return { name: null, rxcui: null };
+    return { name: null, rxcui: null, ndc: null };
   }
   var codings = Array.isArray(concept.coding) ? concept.coding : [];
   var rxnorm = codings.filter(function (coding) { return coding.system === RXNORM && coding.code; })[0];
+  var ndc = codings.filter(function (coding) { return NDC_SYSTEMS.indexOf(coding.system) !== -1 && coding.code; })[0];
   return {
     name: concept.text || (rxnorm && rxnorm.display) || (codings[0] && codings[0].display) || null,
-    rxcui: rxnorm ? String(rxnorm.code) : null
+    rxcui: rxnorm ? String(rxnorm.code) : null,
+    ndc: ndc ? String(ndc.code).trim() : null
   };
 }
 

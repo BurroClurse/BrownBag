@@ -35,23 +35,52 @@ export async function searchDrugs(term, fetchFn = globalThis.fetch) {
 }
 
 export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch) {
+  return lookupEach(rxcuis, async function (rxcui) {
+    var related = await getJSON(BASE + "rxcui/" + encodeURIComponent(rxcui) + "/related.json?tty=IN", fetchFn);
+    var groups = (related.relatedGroup && related.relatedGroup.conceptGroup) || [];
+    var ingredient = groups
+      .filter(function (group) { return group.tty === "IN"; })
+      .map(function (group) { return (group.conceptProperties || [])[0]; })
+      .filter(Boolean)[0];
+    return ingredient ? { rxcui: ingredient.rxcui, name: ingredient.name } : null;
+  });
+}
+
+// Maps NDC codes (the package numbers pharmacies and claims use) to RxNorm
+// products. ndcstatus.json is used rather than rxcui.json?idtype=NDC because
+// it still answers for NDCs that are no longer sold, which old records carry.
+// NDCs RxNav doesn't know, including unhyphenated 10-digit ones, are left out.
+export async function rxcuisForNdcs(ndcs, fetchFn = globalThis.fetch) {
+  return lookupEach(ndcs, async function (ndc) {
+    var answer = await getJSON(BASE + "ndcstatus.json?ndc=" + encodeURIComponent(ndc), fetchFn);
+    var status = answer.ndcStatus || {};
+    var rxcui = status.rxcui || newestHistoryRxcui(status.ndcHistory);
+    return rxcui ? { rxcui: String(rxcui), name: status.conceptName || null } : null;
+  });
+}
+
+function newestHistoryRxcui(history) {
+  var withRxcui = (history || []).filter(function (entry) { return entry.activeRxcui; });
+  withRxcui.sort(function (a, b) { return (a.endDate || "").localeCompare(b.endDate || ""); });
+  return withRxcui.length ? withRxcui[withRxcui.length - 1].activeRxcui : null;
+}
+
+// Runs lookup once per distinct, non-blank id, at most MAX_PARALLEL at a
+// time. Ids whose lookup fails or finds nothing are left out of the map, so
+// callers fall back to what the record already says.
+async function lookupEach(ids, lookup) {
   var map = new Map();
-  var queue = Array.from(new Set(rxcuis));
+  var queue = Array.from(new Set(ids)).filter(Boolean);
   async function worker() {
     while (queue.length) {
-      var rxcui = queue.shift();
+      var id = queue.shift();
       try {
-        var related = await getJSON(BASE + "rxcui/" + encodeURIComponent(rxcui) + "/related.json?tty=IN", fetchFn);
-        var groups = (related.relatedGroup && related.relatedGroup.conceptGroup) || [];
-        var ingredient = groups
-          .filter(function (group) { return group.tty === "IN"; })
-          .map(function (group) { return (group.conceptProperties || [])[0]; })
-          .filter(Boolean)[0];
-        if (ingredient) {
-          map.set(rxcui, { rxcui: ingredient.rxcui, name: ingredient.name });
+        var found = await lookup(id);
+        if (found) {
+          map.set(id, found);
         }
       } catch (error) {
-        // Leave it out. Grouping falls back to the exact product.
+        // Leave it out.
       }
     }
   }
