@@ -510,6 +510,40 @@ Now any change to that part reloads the page.
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes"
 for the kind of plain-language error messages this page uses.
 
+### Step 9. Home Screen and backups (`manifest.webmanifest`, `js/install.js`)
+
+**The problem.** iPhone Safari erases a website's saved data after 7 days of
+using Safari without visiting that site. Your additions and "stopped" marks
+live in that saved data. Two guards:
+
+**1. Add to Home Screen.** Sites added to the Home Screen are exempt. A
+**web app manifest** (`manifest.webmanifest`) gives Brown Bag a name, a
+paper-bag icon and a full-screen look when opened from the Home Screen. In
+Safari, a notice at the top says "Add Brown Bag to your Home Screen so your
+list isn't erased: tap Share, then Add to Home Screen." On Android it points
+to the browser menu. "Not now" hides it for 30 days. It never shows when
+Brown Bag is already opened from the Home Screen.
+
+**2. Backups.** "Save a backup" makes a file (for example
+`brown-bag-backup-2026-11-20.json`) and opens the share sheet so you can put
+it in Files or iCloud. The file is still encrypted, so a lost backup shows
+nothing to whoever finds it.
+
+**A gap we found and closed.** A backup is locked with your lock's key. But
+the lock's own settings (the random salt and which passkey to ask) were kept
+in the same saved data Safari erases. After a wipe, the key could never be
+rebuilt, and the backup could never be opened. Now the backup also carries
+the lock settings. They aren't secret: they're only directions for rebuilding
+the key, which still needs your Face ID or PIN. The lock set-up screen has a
+new "Restore from a backup" button for exactly this case.
+
+**Tested by robot:** set a PIN, sign in, add "Backup test tea", save a
+backup, erase all saved data the way Safari would, restore from the file
+with the PIN, sign in again. The addition was back.
+
+**Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens) explains why sign-in itself
+doesn't survive closing the app, which is separate from the saved list.
+
 ---
 
 ## Glossary
@@ -528,6 +562,7 @@ for the kind of plain-language error messages this page uses.
 - **_include**: a FHIR search option that also returns the records the results point to.
 - **GitHub Pages**: GitHub's free hosting for web pages. It publishes `main`.
 - **https**: the secure version of web pages. The padlock in the address bar.
+- **Manifest**: a small file that tells a phone how to install a website like an app.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
 - **Passkey**: a sign-in that uses Face ID, fingerprint or the phone's PIN.
 - **PRF**: a passkey add-on that returns the same secret each time, after Face ID.

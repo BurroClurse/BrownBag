@@ -3,7 +3,9 @@
 // patient typed goes into the page with textContent, never innerHTML.
 
 import { showLockScreen } from "./lock-screen.js";
-import { loadPatientData, savePatientData } from "./vault.js";
+import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
+import { LOCK_KEY } from "./lock.js";
+import { shouldShowInstallHint, dismissInstallHint, installHint, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
@@ -99,6 +101,7 @@ function render() {
 
   add(root, "h1", "Brown Bag");
   add(root, "p", state.patient.name + (state.patient.birthDate ? " · born " + state.patient.birthDate : ""), "who");
+  drawInstallHint();
   add(root, "p", DISCLAIMER, "disclaimer");
   var live = add(root, "p", state.announce, "visually-plain");
   live.setAttribute("role", "status");
@@ -108,6 +111,7 @@ function render() {
   drawAdditions();
   drawStopped(arranged);
   drawShare();
+  drawBackup();
 
   var signOut = add(root, "p", "");
   var link = add(signOut, "a", "Sign out");
@@ -352,6 +356,76 @@ function qrCanvas(prefix, digits) {
     }
   }
   return canvas;
+}
+
+function isStandalone() {
+  return navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+}
+
+function drawInstallHint() {
+  if (!shouldShowInstallHint({ userAgent: navigator.userAgent, standalone: isStandalone(), storage: localStorage, now: new Date() })) {
+    return;
+  }
+  var box = add(root, "div", null, "notice");
+  add(box, "p", installHint(navigator.userAgent));
+  button(box, "Not now", "secondary", function () {
+    dismissInstallHint(localStorage, new Date());
+    state.focusId = "records-heading";
+    render();
+  });
+}
+
+// The backup stays encrypted. It also carries the lock settings (never the
+// key), so it can be opened after the phone's storage is erased.
+function drawBackup() {
+  var section = add(root, "section");
+  heading(section, "Backup", "backup-heading");
+  add(section, "p", "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.", "med-line");
+  button(section, "Save a backup", null, saveBackup);
+  var picker = add(section, "input");
+  picker.type = "file";
+  picker.accept = ".json,application/json";
+  picker.hidden = true;
+  picker.id = "restore-file";
+  button(section, "Restore a backup", "secondary", function () { picker.click(); });
+  picker.addEventListener("change", async function () {
+    var file = picker.files && picker.files[0];
+    if (!file) return;
+    try {
+      var count = await importBackup(localStorage, state.key, await file.text());
+      state.data = await loadPatientData(localStorage, state.key, state.patientId);
+      state.announce = restoreMessage(count);
+    } catch (error) {
+      state.announce = error && error.code === "locked"
+        ? "That backup was made with a different lock, so it can't be opened here."
+        : "That file isn't a Brown Bag backup.";
+    }
+    state.focusId = "backup-heading";
+    render();
+  });
+}
+
+async function saveBackup() {
+  try {
+    var text = withLockRecord(await exportBackup(localStorage, state.key), localStorage.getItem(LOCK_KEY));
+    var file = new File([text], backupFileName(new Date()), { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Brown Bag backup" });
+    } else {
+      var link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+    }
+    state.announce = "Backup saved as " + file.name + ".";
+  } catch (error) {
+    state.announce = error && error.name === "AbortError" ? "Backup cancelled." : "Couldn't save the backup.";
+  }
+  state.focusId = "backup-heading";
+  render();
 }
 
 function medRow(list, entry) {

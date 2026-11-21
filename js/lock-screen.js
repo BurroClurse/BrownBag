@@ -3,7 +3,9 @@
 // so closing or reloading the page locks Brown Bag again.
 // All text goes in with textContent.
 
-import { hasLock, lockMethod, setupLock, unlock, LockError } from "./lock.js";
+import { hasLock, lockMethod, setupLock, unlock, LockError, LOCK_KEY } from "./lock.js";
+import { importBackup } from "./vault.js";
+import { lockRecordFrom } from "./install.js";
 
 export function showLockScreen(root) {
   return new Promise(function (resolve) {
@@ -47,7 +49,45 @@ function drawSetup(root, done) {
   pinLink.addEventListener("click", function () {
     drawPinSetup(root, done);
   });
+  drawRestoreOption(root, box, done, message);
   button.focus();
+}
+
+// After the phone erased Brown Bag's storage: the backup file brings back
+// the lock settings, the patient unlocks the usual way, then the list is
+// restored with that key.
+function drawRestoreOption(root, box, done, message) {
+  var picker = document.createElement("input");
+  picker.type = "file";
+  picker.accept = ".json,application/json";
+  picker.hidden = true;
+  box.appendChild(picker);
+  var restore = action(box, "Restore from a backup", "secondary");
+  restore.addEventListener("click", function () { picker.click(); });
+  picker.addEventListener("change", async function () {
+    var file = picker.files && picker.files[0];
+    if (!file) return;
+    var text = await file.text();
+    var lock = lockRecordFrom(text);
+    if (!lock) {
+      say(message, "That file isn't a Brown Bag backup.");
+      return;
+    }
+    localStorage.setItem(LOCK_KEY, lock);
+    var restoreThenDone = async function (key) {
+      await importBackup(localStorage, key, text);
+      done(key);
+    };
+    var onBack = function () {
+      localStorage.removeItem(LOCK_KEY);
+      drawSetup(root, done);
+    };
+    if (lockMethod() === "pin") {
+      drawPinUnlock(root, restoreThenDone, onBack);
+    } else {
+      drawPasskeyUnlock(root, restoreThenDone, onBack);
+    }
+  });
 }
 
 function drawPinSetup(root, done) {
@@ -78,9 +118,9 @@ function drawPinSetup(root, done) {
   first.focus();
 }
 
-function drawPinUnlock(root, done) {
+function drawPinUnlock(root, done, onBack) {
   clear(root);
-  var box = panel(root, "Unlock Brown Bag");
+  var box = panel(root, onBack ? "Unlock your backup" : "Unlock Brown Bag");
   var form = document.createElement("form");
   box.appendChild(form);
   var field = pinField(form, "pin", "Your 6-digit PIN", "current-password");
@@ -90,26 +130,27 @@ function drawPinUnlock(root, done) {
     event.preventDefault();
     say(message, "Checking…");
     try {
-      done(await unlock({ pin: field.value }));
+      await done(await unlock({ pin: field.value }));
     } catch (error) {
       say(message, "That PIN didn't work.");
       field.value = "";
       field.focus();
     }
   });
+  if (onBack) action(box, "Back", "secondary").addEventListener("click", onBack);
   field.focus();
 }
 
-function drawPasskeyUnlock(root, done) {
+function drawPasskeyUnlock(root, done, onBack) {
   clear(root);
-  var box = panel(root, "Unlock Brown Bag");
+  var box = panel(root, onBack ? "Unlock your backup" : "Unlock Brown Bag");
   var message = status(box);
   var button = action(box, "Unlock with Face ID or fingerprint");
   async function attempt() {
     button.disabled = true;
     say(message, "");
     try {
-      done(await unlock());
+      await done(await unlock());
     } catch (error) {
       button.disabled = false;
       button.textContent = "Try again";
@@ -124,6 +165,7 @@ function drawPasskeyUnlock(root, done) {
     }
   }
   button.addEventListener("click", attempt);
+  if (onBack) action(box, "Back", "secondary").addEventListener("click", onBack);
   button.focus();
 }
 
