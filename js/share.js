@@ -1,6 +1,9 @@
 // Builds the list a patient shares, as a small FHIR Bundle, and packs it
 // into an encrypted link for the QR code. The link holds a random secret;
 // the 6-digit code the patient reads out is the other half of the key.
+// Two ideas come from SMART Health Cards (HL7 SMART Health Cards and Links
+// IG): the Bundle is trimmed (no ids, short "resource:N" references), and
+// the packed list is written as digits, which a QR code holds more of.
 
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -9,8 +12,9 @@ export var QR_MAX_BYTES = 2331;
 var SECRET_BYTES = 16;
 var IV_BYTES = 12;
 var TAG_BYTES = 16;
-var PREFIX = "v1.";
-var SELF = { reference: "Patient/self" };
+var PREFIX = "v2.";
+var SELF = { reference: "resource:0" };
+var QR_MAX_BITS = 18648; // QR_MAX_BYTES x 8: version 40, level M
 
 export class ShareError extends Error {
   constructor(code, message) {
@@ -24,7 +28,6 @@ export function buildShareBundle(list, now) {
   var entries = [{
     resource: {
       resourceType: "Patient",
-      id: "self",
       name: [{ text: list.patient.name }],
       birthDate: list.patient.birthDate
     }
@@ -47,6 +50,9 @@ export function buildShareBundle(list, now) {
     statement.informationSource = SELF;
     statement.effectivePeriod = { end: item.stoppedAt };
     entries.push({ resource: statement });
+  });
+  entries.forEach(function (entry, index) {
+    entry.fullUrl = "resource:" + index;
   });
   return { resourceType: "Bundle", type: "collection", timestamp: now.toISOString(), entry: entries };
 }
@@ -85,7 +91,9 @@ export async function packShare(bundle, baseUrl) {
   var key = await deriveKeyFromPin(code, secret);
   var compressed = await transform(new TextEncoder().encode(JSON.stringify(bundle)), new CompressionStream("deflate-raw"));
   var sealed = new Uint8Array(await globalThis.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, compressed));
-  return { url: baseUrl + "share.html#" + PREFIX + toBase64Url(concatBytes(secret, iv, sealed)), code: code };
+  var prefix = baseUrl + "share.html#" + PREFIX;
+  var digits = toDigits(toBase64Url(concatBytes(secret, iv, sealed)));
+  return { url: prefix + digits, prefix: prefix, digits: digits, code: code };
 }
 
 export async function unpackShare(fragment, code) {
@@ -94,7 +102,7 @@ export async function unpackShare(fragment, code) {
   }
   var bytes;
   try {
-    bytes = fromBase64Url(fragment.slice(PREFIX.length));
+    bytes = fromBase64Url(fromDigits(fragment.slice(PREFIX.length)));
   } catch (error) {
     throw new ShareError("bad-link");
   }
@@ -118,8 +126,38 @@ export async function unpackShare(fragment, code) {
   }
 }
 
-export function fitsInQr(url) {
-  return new TextEncoder().encode(url).length <= QR_MAX_BYTES;
+// Counts the bits of a QR code made of two parts: the web address as text
+// (byte mode) and the packed list as digits (numeric mode).
+export function fitsInQr(prefix, digits) {
+  var textBits = 4 + 16 + 8 * new TextEncoder().encode(prefix).length;
+  var rest = digits.length % 3;
+  var digitBits = 4 + 14 + 10 * Math.floor(digits.length / 3) + (rest === 1 ? 4 : rest === 2 ? 7 : 0);
+  return textBits + digitBits <= QR_MAX_BITS;
+}
+
+// Each base64url character becomes two digits: its character code minus 45,
+// the same trick SMART Health Cards use.
+function toDigits(text) {
+  var out = "";
+  for (var i = 0; i < text.length; i += 1) {
+    out += String(text.charCodeAt(i) - 45).padStart(2, "0");
+  }
+  return out;
+}
+
+function fromDigits(digits) {
+  if (!/^\d*$/.test(digits) || digits.length % 2 !== 0) {
+    throw new ShareError("bad-link");
+  }
+  var out = "";
+  for (var i = 0; i < digits.length; i += 2) {
+    var value = Number(digits.slice(i, i + 2));
+    if (value > 77) {
+      throw new ShareError("bad-link");
+    }
+    out += String.fromCharCode(value + 45);
+  }
+  return out;
 }
 
 function statementFor(name, rxcui, dosage, status) {

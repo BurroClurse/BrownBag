@@ -61,7 +61,9 @@ function names(count) {
 test("pack then unpack with the right code gives the same bundle", async () => {
   var bundle = oneOfEach();
   var packed = await packShare(bundle, BASE);
-  assert.ok(packed.url.startsWith(BASE + "share.html#v1."));
+  assert.equal(packed.prefix, BASE + "share.html#v2.");
+  assert.match(packed.digits, /^\d+$/);
+  assert.equal(packed.url, packed.prefix + packed.digits);
   var fragment = packed.url.split("#")[1];
   assert.deepEqual(await unpackShare(fragment, packed.code), bundle);
 });
@@ -122,10 +124,59 @@ test("HTML in a name stays as literal text", () => {
   assert.equal(groupShareBundle(bundle).fromRecords[0].name, "<b>Aspirin</b>");
 });
 
+function listOf(count) {
+  return buildShareBundle({ patient: PATIENT, current: names(count).map((name, i) => recordItem(name, String(1000 + i))), additions: [], stopped: [] }, NOW);
+}
+
 test("fitsInQr is false for a 60 medicine list and true for 5", async () => {
-  var big = buildShareBundle({ patient: PATIENT, current: names(60).map((name, i) => recordItem(name, String(1000 + i))), additions: [], stopped: [] }, NOW);
-  var small = buildShareBundle({ patient: PATIENT, current: names(5).map((name, i) => recordItem(name, String(1000 + i))), additions: [], stopped: [] }, NOW);
+  var big = await packShare(listOf(60), BASE);
+  var small = await packShare(listOf(5), BASE);
   assert.equal(QR_MAX_BYTES, 2331);
-  assert.equal(fitsInQr((await packShare(big, BASE)).url), false);
-  assert.equal(fitsInQr((await packShare(small, BASE)).url), true);
+  assert.equal(fitsInQr(big.prefix, big.digits), false);
+  assert.equal(fitsInQr(small.prefix, small.digits), true);
+});
+
+test("fitsInQr takes more medicines than the old byte count", async () => {
+  // The old way sent the payload as letters: one byte per base64url character.
+  function fitsAsBytes(packed) {
+    return new TextEncoder().encode(packed.prefix).length + packed.digits.length / 2 <= QR_MAX_BYTES;
+  }
+  var mostAsBytes = 0;
+  var mostAsDigits = 0;
+  for (var count = 1; count <= 60; count += 1) {
+    var packed = await packShare(listOf(count), BASE);
+    if (fitsAsBytes(packed)) mostAsBytes = count;
+    if (fitsInQr(packed.prefix, packed.digits)) mostAsDigits = count;
+  }
+  assert.ok(mostAsBytes > 0);
+  assert.ok(mostAsDigits > mostAsBytes, mostAsDigits + " should be more than " + mostAsBytes);
+});
+
+test("the bundle has no ids and uses resource references", () => {
+  var bundle = oneOfEach();
+  bundle.entry.forEach(function (entry, index) {
+    assert.equal(entry.fullUrl, "resource:" + index);
+    assert.equal(entry.resource.id, undefined);
+    assert.equal(entry.resource.meta, undefined);
+    assert.equal(entry.resource.text, undefined);
+  });
+  assert.equal(bundle.entry[0].resource.resourceType, "Patient");
+  bundle.entry.slice(1).forEach(function (entry) {
+    assert.deepEqual(entry.resource.subject, { reference: "resource:0" });
+  });
+  assert.deepEqual(bundle.entry[2].resource.informationSource, { reference: "resource:0" });
+});
+
+test("an odd number of digits throws bad-link", async () => {
+  var packed = await packShare(oneOfEach(), BASE);
+  await assert.rejects(unpackShare("v2." + packed.digits.slice(1), packed.code), (error) => error instanceof ShareError && error.code === "bad-link");
+});
+
+test("a digit pair above 77 throws bad-link", async () => {
+  var packed = await packShare(oneOfEach(), BASE);
+  await assert.rejects(unpackShare("v2.99" + packed.digits.slice(2), packed.code), (error) => error instanceof ShareError && error.code === "bad-link");
+});
+
+test("the old v1 link form is refused", async () => {
+  await assert.rejects(unpackShare("v1.AAAA", "123456"), (error) => error instanceof ShareError && error.code === "bad-link");
 });

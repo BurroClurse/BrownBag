@@ -79,7 +79,7 @@ That gap is Brown Bag.
 A **repository** (repo) is a project folder that remembers every change ever
 made to it. Ours lives in two places:
 
-- On your Mac: `~/Developer/HL7-Build-the-Code/BrownBag`
+- On your Mac: `~/Developer 2/HL7-Build-the-Code/BrownBag`
 - On GitHub: `github.com/BurroClurse/BrownBag`
 
 Your repo is a **fork** of the course starter (`samoanGuy7/Smart-App`). A fork
@@ -98,7 +98,7 @@ copies the commits from your Mac to GitHub, which is our backup.
 Try it. This shows every commit on the branch, newest first:
 
 ```bash
-cd /Users/tylerbeattie/Developer/HL7-Build-the-Code/BrownBag && git log --oneline
+cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && git log --oneline
 ```
 
 ### 2.3 The design and the plan
@@ -132,7 +132,7 @@ Tests live in `tests/`. Node.js (a program that runs JavaScript outside the
 browser) runs them. Try it:
 
 ```bash
-cd /Users/tylerbeattie/Developer/HL7-Build-the-Code/BrownBag && node --test "tests/*.test.mjs"
+cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && node --test "tests/*.test.mjs"
 ```
 
 At the bottom you'll see `pass` and `fail` counts. Right now it's 42 passing.
@@ -248,6 +248,43 @@ depends on it.
 The tests use a **fake fetch**: a stand-in that answers like RxNav without
 using the internet. That keeps tests fast and lets us test "RxNav is down" on
 purpose.
+
+### Step 3b. Packing the QR code the Health Card way (`js/share.js`)
+
+Added Nov 20, after you read about **SMART Health Cards**: QR codes that
+carry signed health records, defined in HL7's SMART Health Cards and Links
+guide. Brown Bag can't sign cards (there's no server to keep a signing key),
+but it borrowed two of their packing tricks.
+
+**1. Trimming the Bundle.** The guide has rules for shrinking a FHIR Bundle
+before it goes in a QR code. Records lose their `id`, and instead of
+`"Patient/self"` they point to each other with short names: the Patient is
+`resource:0`, and every medicine says its `subject` is `resource:0`. We kept
+one thing the rules would drop, the medicine's name in text, because the page
+staff see works without internet and can't look names up.
+
+**2. Writing the list as digits.** A QR code can store data in several
+modes. Letters cost 8 bits each. Digits are packed three at a time into 10
+bits, about 3.3 bits each. So each character of the packed list becomes two
+digits: its character code minus 45 (`A` is 65, so it becomes `20`). Two
+digits cost about 6.7 bits instead of 8. The web address stays as normal
+text, and the QR code holds both parts.
+
+**The result:** with long, made-up medicine names, one QR code now holds **60
+medicines instead of 47**. Nothing changes on screen. The link now starts
+`share.html#v2.` followed by digits.
+
+**How the "will it fit" check works.** `fitsInQr` adds up the bits: 20 for
+the text part's label plus 8 per character, then 18 for the digit part's
+label plus 10 for every three digits. The biggest QR code at the error
+correction level we use holds 18,648 bits.
+
+**Tests first, again.** Six new or changed tests failed before the change:
+the new link form, no ids in the Bundle, broken digit links refused, and the
+"60 beats 47" comparison. Then all 55 passed.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core" shows
+the kind of FHIR records that end up inside a Bundle like this one.
 
 ### Step 5. Running it on your Mac with https
 
