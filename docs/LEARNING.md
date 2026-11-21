@@ -544,6 +544,42 @@ with the PIN, sign in again. The addition was back.
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens) explains why sign-in itself
 doesn't survive closing the app, which is separate from the saved list.
 
+### Step 9b. Working with no signal (`sw.js`, `js/offline.js`)
+
+**Why.** An ER or a basement clinic may have weak Wi-Fi and no cell signal.
+Sign-in ends when the app closes, so without this you couldn't load your
+list there, or make the QR code.
+
+**Two pieces:**
+
+1. **A saved copy of your list.** Each time your records load, Brown Bag
+   saves a copy on the phone, encrypted with your lock's key, with the date.
+   Even the patient id is hidden, so nothing about you is readable in the
+   phone's storage.
+2. **A service worker** (`sw.js`): a small script the browser runs in the
+   background to keep a website's files on the phone. It keeps Brown Bag's
+   own pages, code and icons, plus the two pinned libraries. It never keeps
+   health data: anything going to the records server, the sign-in server or
+   RxNav passes straight through and is never stored.
+
+**What you see with no signal:** open Brown Bag from the Home Screen, unlock
+as usual (Face ID and PINs work offline), and see "No connection. Showing
+your list saved on Nov 20, 2026. It may be out of date." The QR code works
+the same.
+
+**Weak Wi-Fi.** A phone on bad Wi-Fi can believe it's online while sign-in
+still fails. So whenever sign-in isn't available and a saved list exists,
+Brown Bag shows it. If the phone thinks it's online, the notice says "Sign in
+to update it" with a button.
+
+**Tested by robot:** sign in once, close the session, switch the browser to
+offline, reopen. The saved list and the QR code appeared, and the offline
+store held 22 app files and no health data.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools":
+DevTools ▸ Application ▸ Service workers is where you can see `sw.js`, and
+the Network tab has an Offline switch to try this yourself.
+
 ---
 
 ## Glossary
@@ -571,5 +607,6 @@ doesn't survive closing the app, which is separate from the saved list.
 - **Repository (repo)**: a project folder with full history.
 - **RxNav / RxNorm**: the US government's drug list and its lookup service.
 - **Scope**: a permission the app asks for at sign-in.
+- **Service worker**: a background script that keeps a site's files on the phone for offline use.
 - **SMART**: the standard for how apps sign in to health records.
 - **Test**: a small program that checks the real code does what it should.

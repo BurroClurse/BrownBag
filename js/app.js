@@ -10,6 +10,7 @@ import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredie
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate } from "./view.js";
+import { saveRecords, loadLastRecords, savedNotice } from "./offline.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -28,8 +29,14 @@ var state = {
   adding: false,
   qr: null,
   announce: "",
-  focusId: null
+  focusId: null,
+  savedAt: null
 };
+
+// Keeps the app's own files on the phone so it opens with no signal (sw.js).
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(function () {});
+}
 
 start();
 
@@ -40,7 +47,7 @@ async function start() {
   try {
     client = await FHIR.oauth2.ready();
   } catch (error) {
-    drawSignedOut(cameBackFromAuth ? error : null);
+    await signInUnavailable(cameBackFromAuth ? error : null);
     return;
   }
   drawLoading();
@@ -49,17 +56,61 @@ async function start() {
     state.patientId = client.patient.id;
     state.patient = { name: formatName(patient), birthDate: patient.birthDate || "" };
   } catch (error) {
-    drawSignedOut(error);
+    await signInUnavailable(error);
     return;
   }
+  await loadAdditions();
+  state.split = await loadMedicines(client, state.patientId);
+  if (state.split.failed) {
+    var saved = await loadLastRecords(localStorage, state.key);
+    if (saved && saved.patientId === state.patientId) {
+      useSaved(saved);
+    }
+  } else {
+    try {
+      await saveRecords(localStorage, state.key, {
+        patientId: state.patientId,
+        patient: state.patient,
+        current: state.split.current,
+        older: state.split.older,
+        savedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      // Not saved for offline use this time. The list still shows.
+    }
+  }
+  render();
+}
+
+// No sign-in (closed app, no signal, weak Wi-Fi): show the last saved list
+// if there is one, otherwise say what to do.
+async function signInUnavailable(error) {
+  var saved = await loadLastRecords(localStorage, state.key);
+  if (saved) {
+    useSaved(saved);
+    await loadAdditions();
+    render();
+  } else if (!navigator.onLine) {
+    drawNoConnection();
+  } else {
+    drawSignedOut(error);
+  }
+}
+
+function useSaved(saved) {
+  state.patientId = saved.patientId;
+  state.patient = saved.patient;
+  state.split = { current: saved.current, older: saved.older, failed: false };
+  state.savedAt = saved.savedAt;
+}
+
+async function loadAdditions() {
   try {
     state.data = await loadPatientData(localStorage, state.key, state.patientId);
   } catch (error) {
     state.data = { additions: [], stopped: {} };
     state.announce = "Your saved additions couldn't be opened on this phone.";
   }
-  state.split = await loadMedicines(client, state.patientId);
-  render();
 }
 
 // Prescriptions and "what the patient says" records, each with the
@@ -101,6 +152,14 @@ function render() {
 
   add(root, "h1", "Brown Bag");
   add(root, "p", state.patient.name + (state.patient.birthDate ? " · born " + state.patient.birthDate : ""), "who");
+  if (state.savedAt) {
+    var notice = add(root, "div", null, "notice");
+    add(notice, "p", savedNotice(state.savedAt, navigator.onLine));
+    if (navigator.onLine) {
+      var update = add(notice, "a", "Sign in to update", "button");
+      update.href = "./launch.html";
+    }
+  }
   drawInstallHint();
   add(root, "p", DISCLAIMER, "disclaimer");
   var live = add(root, "p", state.announce, "visually-plain");
@@ -461,6 +520,12 @@ function drawSignedOut(error) {
   }
   var link = add(root, "a", "Sign in", "button");
   link.href = "./launch.html";
+}
+
+function drawNoConnection() {
+  clear(root);
+  add(root, "h1", "Brown Bag");
+  add(root, "p", "No connection, and no saved list on this phone yet. Connect once to save your list.", "notice");
 }
 
 function drawLoading() {
