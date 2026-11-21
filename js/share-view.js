@@ -72,6 +72,12 @@ function drawList(groups) {
     add(root, "p", "Born " + groups.patient.birthDate, "who");
   }
   add(root, "p", "Made on " + madeOn(groups.madeAt), "who");
+  if (groups.recordsSavedAt) {
+    add(root, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
+  }
+  if (groups.incomplete) {
+    add(root, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
+  }
   add(root, "p", DISCLAIMER, "disclaimer");
   group("From records", groups.fromRecords, "No medicines from records.");
   group("Added by patient", groups.addedByPatient, "Nothing added by the patient.");

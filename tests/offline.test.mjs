@@ -51,9 +51,9 @@ test("offlineNotice formats the date", () => {
 
 // sw.js is a classic service worker script. Run it in a sandbox to reach
 // its routing rule.
-function loadWorker() {
+function loadWorker(overrides = {}) {
   const listeners = {};
-  const context = { self: { addEventListener: (type, fn) => { listeners[type] = fn; }, location: { origin: "https://burroclurse.github.io" } }, URL, Request: class {}, caches: {}, fetch: () => {} };
+  const context = Object.assign({ self: { addEventListener: (type, fn) => { listeners[type] = fn; }, location: { origin: "https://burroclurse.github.io" } }, URL, Request: class {}, caches: {}, fetch: () => {}, setTimeout, clearTimeout, Promise, Error }, overrides);
   vm.runInNewContext(readFileSync(new URL("../sw.js", import.meta.url), "utf8"), context);
   return context.self;
 }
@@ -73,4 +73,11 @@ test("savedNotice says 'No connection' only when the phone is offline", () => {
   const at = new Date(2026, 10, 20, 20, 30).toISOString();
   assert.equal(savedNotice(at, false), "No connection. Showing your list saved on Nov 20, 2026. It may be out of date.");
   assert.equal(savedNotice(at, true), "Showing your list saved on Nov 20, 2026. Sign in to update it.");
+});
+
+test("the service worker stops waiting for a stalled network and uses its copy", { timeout: 3000 }, async () => {
+  const worker = loadWorker({ fetch: () => new Promise(() => {}) });
+  const started = Date.now();
+  await assert.rejects(worker.fetchWithin("https://burroclurse.github.io/BrownBag/index.html", 50));
+  assert.ok(Date.now() - started < 2000);
 });

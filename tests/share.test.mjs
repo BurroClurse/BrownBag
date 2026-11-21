@@ -180,3 +180,21 @@ test("a digit pair above 77 throws bad-link", async () => {
 test("the old v1 link form is refused", async () => {
   await assert.rejects(unpackShare("v1.AAAA", "123456"), (error) => error instanceof ShareError && error.code === "bad-link");
 });
+
+test("a list from a saved copy or a partial load says so to staff", () => {
+  var bundle = buildShareBundle(
+    { patient: PATIENT, current: [recordItem("lisinopril 10 MG Oral Tablet", "314076")], additions: [], stopped: [] },
+    NOW,
+    { recordsSavedAt: "2026-11-01T14:00:00.000Z", incomplete: true }
+  );
+  var groups = groupShareBundle(bundle);
+  assert.equal(groups.recordsSavedAt, "2026-11-01T14:00:00.000Z");
+  assert.equal(groups.incomplete, true);
+});
+
+test("a fresh, complete list carries no warnings", () => {
+  var groups = groupShareBundle(oneOfEach());
+  assert.equal(groups.recordsSavedAt, null);
+  assert.equal(groups.incomplete, false);
+  assert.equal(oneOfEach().meta, undefined);
+});

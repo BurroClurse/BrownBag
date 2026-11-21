@@ -99,3 +99,31 @@ test("ingredientsFor leaves out an rxcui whose request fails", async () => {
   assert.equal(map.size, 1);
   assert.ok(map.has("314076"));
 });
+
+test("ingredientsFor keeps every ingredient of a combination product", async () => {
+  var fetchFn = fakeFetch({
+    "https://rxnav.nlm.nih.gov/REST/rxcui/1049221/related.json?tty=IN": { body: { relatedGroup: { conceptGroup: [{ tty: "IN", conceptProperties: [concept("161", "acetaminophen", "IN"), concept("7804", "oxycodone", "IN")] }] } } },
+    "https://rxnav.nlm.nih.gov/REST/rxcui/313782/related.json?tty=IN": related("161", "acetaminophen")
+  });
+  var map = await ingredientsFor(["1049221", "313782"], fetchFn);
+  assert.deepEqual(map.get("1049221"), { rxcui: "161+7804", name: "acetaminophen / oxycodone" });
+  assert.deepEqual(map.get("313782"), { rxcui: "161", name: "acetaminophen" });
+});
+
+// A connection that never answers, the way weak Wi-Fi behaves.
+function stalledFetch(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    if (options.signal) options.signal.addEventListener("abort", () => reject(new DOMException("timed out", "TimeoutError")));
+  });
+}
+
+test("a stalled RxNav lookup gives up instead of hanging the list", { timeout: 3000 }, async () => {
+  var started = Date.now();
+  var map = await ingredientsFor(["314076"], stalledFetch, { timeoutMs: 50 });
+  assert.equal(map.size, 0);
+  assert.ok(Date.now() - started < 2000);
+});
+
+test("a stalled name search throws RxNormError", { timeout: 3000 }, async () => {
+  await assert.rejects(searchDrugs("ibuprofen", stalledFetch, { timeoutMs: 50 }), RxNormError);
+});

@@ -9,6 +9,8 @@ var CURRENT_STATEMENT = ["active", "intended"];
 
 var UNIT_WORDS = { h: "hour", d: "day", wk: "week", mo: "month", a: "year" };
 
+var unnamedCount = 0;
+
 export function fromMedicationRequest(resource, sourceName, medications = new Map()) {
   var drug = readDrug(resource, medications);
   var dosage = formatDosage(resource.dosageInstruction);
@@ -86,6 +88,9 @@ export function splitByStatus(items) {
 
 // Merges different strengths of one medicine (lisinopril 10 mg and 20 mg)
 // using the ingredient map from RxNav. Anything not in the map stays as is.
+// Only products with exactly the same ingredients merge (the map's key holds
+// all of them), and two current prescriptions never merge: both being
+// active at once is something staff need to see.
 export function groupByIngredient(items, ingredientOf) {
   var groups = new Map();
   var result = [];
@@ -103,9 +108,9 @@ export function groupByIngredient(items, ingredientOf) {
     }
     members.push(item);
   });
-  return result.map(function (entry) {
-    return Array.isArray(entry) ? mergeIngredientGroup(entry) : entry;
-  });
+  return result.reduce(function (out, entry) {
+    return out.concat(Array.isArray(entry) ? mergeIngredientGroup(entry) : [entry]);
+  }, []);
 }
 
 export function doseChangeText(item) {
@@ -124,19 +129,27 @@ export function doseChangeText(item) {
 }
 
 function mergeIngredientGroup(members) {
-  if (members.length === 1) {
-    return members[0];
+  var current = members.filter(function (item) { return item.status === "current"; });
+  if (members.length === 1 || current.length > 1) {
+    return members;
   }
   var ordered = members.slice().sort(function (a, b) {
     return (a.lastDate || "").localeCompare(b.lastDate || "");
   });
-  var newest = Object.assign({}, ordered[ordered.length - 1]);
-  newest.count = members.reduce(function (sum, item) { return sum + item.count; }, 0);
-  newest.status = members.some(function (item) { return item.status === "current"; }) ? "current" : "older";
-  newest.doseHistory = ordered.map(function (item) {
-    return { name: item.name, date: item.lastDate };
-  });
-  return newest;
+  var newest = ordered[ordered.length - 1];
+  // Show the current prescription when there is one, even if a stopped
+  // one is newer.
+  var shownFrom = current.length ? current[0] : newest;
+  var shown = Object.assign({}, shownFrom);
+  shown.count = members.reduce(function (sum, item) { return sum + item.count; }, 0);
+  shown.status = current.length ? "current" : "older";
+  // A dose history only makes sense when it ends with the one shown.
+  if (shownFrom === newest) {
+    shown.doseHistory = ordered.map(function (item) {
+      return { name: item.name, date: item.lastDate };
+    });
+  }
+  return [shown];
 }
 
 // Strength as written in RxNorm names, such as "10 MG" or "0.5 MG/ML".
@@ -153,7 +166,9 @@ function makeItem(parts) {
   var name = parts.drug.name ? parts.drug.name.trim() : "";
   var rxcui = parts.drug.rxcui;
   return {
-    key: rxcui ? "rx:" + rxcui : "text:" + (name ? name.toLowerCase() : "unnamed medicine"),
+    // Medicines with no name and no code can't be told apart, so each keeps
+    // its own line instead of merging into one "Unnamed medicine".
+    key: rxcui ? "rx:" + rxcui : (name ? "text:" + name.toLowerCase() : "unnamed:" + (unnamedCount += 1)),
     rxcui: rxcui,
     name: name || "Unnamed medicine",
     dose: parts.dosage.dose,
@@ -172,12 +187,14 @@ function makeItem(parts) {
 
 function readDrug(resource, medications) {
   var concept = resource.medicationCodeableConcept;
-  if (!concept && resource.medicationReference && resource.medicationReference.reference) {
-    var medication = medications.get(resource.medicationReference.reference);
+  var reference = resource.medicationReference;
+  if (!concept && reference && reference.reference) {
+    var medication = medications.get(reference.reference);
     concept = medication && medication.code;
   }
   if (!concept) {
-    return { name: null, rxcui: null };
+    // Servers often put the name on the reference itself.
+    return { name: (reference && reference.display) || null, rxcui: null };
   }
   var codings = Array.isArray(concept.coding) ? concept.coding : [];
   var rxnorm = codings.filter(function (coding) { return coding.system === RXNORM && coding.code; })[0];

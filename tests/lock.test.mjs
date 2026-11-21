@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { hasLock, setupLock, unlock, LockError, LOCK_KEY } from "../js/lock.js";
+import { hasLock, setupLock, unlock, LockError, LOCK_KEY, eraseBrownBag } from "../js/lock.js";
 import { encryptJSON, decryptJSON } from "../js/vault.js";
 
 function memoryStorage() {
@@ -8,7 +8,9 @@ function memoryStorage() {
   return {
     getItem: (key) => (map.has(key) ? map.get(key) : null),
     setItem: (key, value) => map.set(key, String(value)),
-    removeItem: (key) => map.delete(key)
+    removeItem: (key) => map.delete(key),
+    get length() { return map.size; },
+    key: (i) => [...map.keys()][i] ?? null
   };
 }
 
@@ -131,4 +133,35 @@ test("cancelling Face ID throws cancelled", async () => {
 
 test("unlock with no lock set up throws no-lock", async () => {
   await assert.rejects(unlock({ pin: "246810", storage: memoryStorage() }), (error) => error instanceof LockError && error.code === "no-lock");
+});
+
+test("tapping Save PIN twice sets up one lock, not two", async () => {
+  var storage = memoryStorage();
+  var [first, second] = await Promise.all([setupLock({ pin: "246810", storage }), setupLock({ pin: "246810", storage })]);
+  var opened = await unlock({ pin: "246810", storage });
+  assert.ok(await sameKey(first, opened));
+  assert.ok(await sameKey(second, opened));
+});
+
+test("unlock can use lock settings from a backup without saving them first", async () => {
+  var source = memoryStorage();
+  var made = await setupLock({ pin: "246810", storage: source });
+  var record = source.getItem(LOCK_KEY);
+  var empty = memoryStorage();
+  var opened = await unlock({ pin: "246810", storage: empty, record });
+  assert.ok(await sameKey(made, opened));
+  assert.equal(hasLock(empty), false);
+});
+
+test("start over erases Brown Bag's saved data and nothing else", () => {
+  var storage = memoryStorage();
+  storage.setItem(LOCK_KEY, "x");
+  storage.setItem("brownbag:data:p1", "y");
+  storage.setItem("brownbag:records:last", "z");
+  storage.setItem("other-app", "keep");
+  eraseBrownBag(storage);
+  assert.equal(hasLock(storage), false);
+  assert.equal(storage.getItem("brownbag:data:p1"), null);
+  assert.equal(storage.getItem("brownbag:records:last"), null);
+  assert.equal(storage.getItem("other-app"), "keep");
 });

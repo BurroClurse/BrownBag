@@ -65,7 +65,13 @@ export async function loadPatientData(storage, key, patientId) {
   return { additions: data.additions || [], stopped: data.stopped || {} };
 }
 
+// Refuses to replace saved data this key can't open, so a mix-up with the
+// lock never quietly erases a patient's additions.
 export async function savePatientData(storage, key, patientId, data) {
+  var existing = storage.getItem(DATA_PREFIX + patientId);
+  if (existing) {
+    await decryptJSON(key, existing);
+  }
   storage.setItem(DATA_PREFIX + patientId, await encryptJSON(key, data));
 }
 
@@ -95,13 +101,22 @@ export async function importBackup(storage, key, text) {
     throw new VaultError("bad-backup", "That file isn't a Brown Bag backup.");
   }
   var entries = Object.entries(backup.data);
+  var restored = [];
   for (var entry of entries) {
-    await decryptJSON(key, entry[1]);
+    restored.push([entry[0], await decryptJSON(key, entry[1])]);
   }
-  entries.forEach(function (entry) {
-    storage.setItem(DATA_PREFIX + entry[0], entry[1]);
-  });
-  return entries.length;
+  // Merge, never replace: anything added on this phone since the backup was
+  // made stays. Additions match by id; a stopped mark on the phone wins.
+  for (var pair of restored) {
+    var patientId = pair[0];
+    var fromBackup = pair[1] || {};
+    var onPhone = await loadPatientData(storage, key, patientId);
+    var ids = new Set(onPhone.additions.map(function (a) { return a.id; }));
+    var additions = onPhone.additions.concat((fromBackup.additions || []).filter(function (a) { return !ids.has(a.id); }));
+    var stopped = Object.assign({}, fromBackup.stopped || {}, onPhone.stopped);
+    await savePatientData(storage, key, patientId, { additions: additions, stopped: stopped });
+  }
+  return restored.length;
 }
 
 export function toBase64Url(bytes) {

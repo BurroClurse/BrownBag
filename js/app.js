@@ -109,7 +109,7 @@ async function loadAdditions() {
     state.data = await loadPatientData(localStorage, state.key, state.patientId);
   } catch (error) {
     state.data = { additions: [], stopped: {} };
-    state.announce = "Your saved additions couldn't be opened on this phone.";
+    state.announce = "Your saved additions couldn't be opened on this phone, so new changes can't be saved over them.";
   }
 }
 
@@ -380,7 +380,10 @@ function drawShare() {
 
 async function showQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
-  var packed = await packShare(buildShareBundle(list, new Date()), new URL("./", location.href).href);
+  // Staff are told when the records part is an older saved copy, or when a
+  // source failed to load, so a partial list never looks complete.
+  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed };
+  var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   state.qr = fitsInQr(packed.prefix, packed.digits) ? packed : { tooLong: true };
   state.focusId = "share-heading";
   render();
@@ -453,10 +456,10 @@ function drawBackup() {
     try {
       var count = await importBackup(localStorage, state.key, await file.text());
       state.data = await loadPatientData(localStorage, state.key, state.patientId);
-      state.announce = restoreMessage(count);
+      state.announce = restoreMessage(count) + " Nothing on this phone was replaced.";
     } catch (error) {
       state.announce = error && error.code === "locked"
-        ? "That backup was made with a different lock, so it can't be opened here."
+        ? "That backup was made with a different lock. To use it, close and reopen Brown Bag, choose Start over on the lock screen, then Restore from a backup."
         : "That file isn't a Brown Bag backup.";
     }
     state.focusId = "backup-heading";

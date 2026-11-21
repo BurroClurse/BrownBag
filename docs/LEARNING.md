@@ -610,6 +610,45 @@ this session's notes).
 Chrome DevTools also has a Lighthouse tab that runs an accessibility check
 like axe.
 
+### The final review (Nov 20)
+
+A second reviewer, with fresh eyes and no part in writing the code, read the
+whole branch against the design. It found problems the tests had missed,
+because the tests only checked the cases we had thought of. Each fix below
+got a test that failed first.
+
+- **Different medicines merged.** Grouping "strengths of one medicine" kept
+  only the *first* ingredient RxNav listed. So Percocet (acetaminophen +
+  oxycodone) merged into plain Tylenol, and the oxycodone disappeared from
+  the list and the QR code. A real test patient's two *active* metoprolol
+  prescriptions became one line saying "dose changed". Now only products with
+  exactly the same ingredients merge, and two current prescriptions never do.
+  Two active versions of one drug is exactly what a brown bag review should
+  catch.
+- **Locked out for good.** A forgotten PIN had no way out. The unlock screen
+  now has "Forgot your PIN? Start over", which explains what's erased and
+  asks again. Restoring a backup now saves nothing until it fully works.
+- **Double tap on Save PIN** could make two locks with different keys and
+  leave saved data unreadable. Now a second tap gets the same lock, and
+  Brown Bag refuses to save over data it can't open.
+- **Restore replaced newer entries.** Now it merges: what's on the phone
+  stays, and the backup adds what's missing.
+- **Partial or old lists looked complete to staff.** The shared list now
+  carries two warnings that `share.html` shows: "The From records part is a
+  copy saved on …" and "Some of the patient's records couldn't be loaded."
+- **Unnamed medicines merged into one line.** Each now keeps its own line.
+  The name on a reference (`medicationReference.display`) is used when the
+  separate Medication record isn't sent.
+- **Weak Wi-Fi could freeze the app.** Drug lookups give up after 8 seconds,
+  and the service worker uses the phone's copy of a file after 3.
+- **iPhone Home Screen apps start empty.** An iPhone Home Screen app keeps
+  its saved data separately from Safari. The install hint now says to save a
+  backup first and restore it in the Home Screen app.
+
+**Lesson:** have someone who didn't write the code review it against the
+design's goals. The first anti-goal ("a list that looks complete but silently
+drops medicines") was broken in a way no test covered.
+
 ---
 
 ## Glossary

@@ -25,9 +25,22 @@ export function hasLock(storage = globalThis.localStorage) {
   return Boolean(storage && storage.getItem(LOCK_KEY));
 }
 
+var setupInFlight = null;
+
 // With a pin: PIN lock. Without: try a passkey; throws "needs-pin" when the
 // phone or browser can't make one, so the page can ask for a PIN instead.
-export async function setupLock({ pin, storage = globalThis.localStorage, credentials = defaultCredentials(), hostname = defaultHostname() } = {}) {
+// A second call while one is still running (a double tap) gets the same
+// lock, never a second one with a different key.
+export function setupLock(options) {
+  if (!setupInFlight) {
+    setupInFlight = makeLock(options).finally(function () {
+      setupInFlight = null;
+    });
+  }
+  return setupInFlight;
+}
+
+async function makeLock({ pin, storage = globalThis.localStorage, credentials = defaultCredentials(), hostname = defaultHostname() } = {}) {
   if (pin !== undefined) {
     if (!PIN_PATTERN.test(String(pin))) {
       throw new LockError("bad-pin");
@@ -70,8 +83,10 @@ export async function setupLock({ pin, storage = globalThis.localStorage, creden
   return key;
 }
 
-export async function unlock({ pin, storage = globalThis.localStorage, credentials = defaultCredentials(), hostname = defaultHostname() } = {}) {
-  var saved = readLock(storage);
+// "record" lets the restore flow try a backup's lock settings before they
+// are saved, so a failed restore leaves nothing behind.
+export async function unlock({ pin, storage = globalThis.localStorage, credentials = defaultCredentials(), hostname = defaultHostname(), record } = {}) {
+  var saved = record ? parseLock(record) : readLock(storage);
   if (!saved) {
     throw new LockError("no-lock");
   }
@@ -137,8 +152,22 @@ async function saveLock(storage, key, record) {
   storage.setItem(LOCK_KEY, JSON.stringify(record));
 }
 
+// "Start over" for a forgotten PIN or a lost passkey. Records come back at
+// the next sign-in; additions and stopped marks come back from a backup.
+export function eraseBrownBag(storage = globalThis.localStorage) {
+  var names = [];
+  for (var i = 0; i < storage.length; i += 1) {
+    var name = storage.key(i);
+    if (name && name.indexOf("brownbag:") === 0) names.push(name);
+  }
+  names.forEach(function (name) { storage.removeItem(name); });
+}
+
 function readLock(storage) {
-  var text = storage && storage.getItem(LOCK_KEY);
+  return parseLock(storage && storage.getItem(LOCK_KEY));
+}
+
+function parseLock(text) {
   if (!text) {
     return null;
   }

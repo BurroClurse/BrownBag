@@ -4,6 +4,8 @@
 // always go straight to the network and are never cached.
 
 var CACHE = "brownbag-v1";
+// On weak Wi-Fi, stop waiting after this long and use the phone's copy.
+var NETWORK_WAIT_MS = 3000;
 
 var APP_FILES = [
   "./",
@@ -47,6 +49,19 @@ self.routeFor = function (url) {
   return "network";
 };
 
+self.fetchWithin = function (request, ms) {
+  return new Promise(function (resolve, reject) {
+    var timer = setTimeout(function () { reject(new Error("network too slow")); }, ms);
+    fetch(request).then(function (response) {
+      clearTimeout(timer);
+      resolve(response);
+    }, function (error) {
+      clearTimeout(timer);
+      reject(error);
+    });
+  });
+};
+
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE).then(function (cache) {
     return cache.addAll(APP_FILES).then(function () {
@@ -86,7 +101,7 @@ self.addEventListener("fetch", function (event) {
     // never ends up in the cache.
     var parsed = new URL(request.url);
     var plain = parsed.origin + parsed.pathname;
-    event.respondWith(fetch(request).then(function (response) {
+    event.respondWith(self.fetchWithin(request, NETWORK_WAIT_MS).then(function (response) {
       if (response.ok) {
         var copy = response.clone();
         caches.open(CACHE).then(function (cache) { cache.put(plain, copy); });

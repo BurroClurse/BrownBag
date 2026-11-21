@@ -270,3 +270,62 @@ test("doseChangeText says nothing when only the form changed, not the amount", (
   ] };
   assert.equal(doseChangeText(item), null);
 });
+
+test("a combination pill is not merged into one of its ingredients", () => {
+  const items = dedupe([
+    fromMedicationRequest(request("313782", "acetaminophen 325 MG Oral Tablet", "2023-01-01"), SOURCE),
+    fromMedicationRequest(request("1049221", "acetaminophen 325 MG / oxycodone 5 MG Oral Tablet", "2023-02-01"), SOURCE)
+  ]);
+  const ingredientOf = new Map([
+    ["313782", { rxcui: "161", name: "acetaminophen" }],
+    ["1049221", { rxcui: "161+7804", name: "acetaminophen / oxycodone" }]
+  ]);
+  assert.equal(groupByIngredient(items, ingredientOf).length, 2);
+});
+
+test("two current prescriptions of the same ingredient stay as two lines", () => {
+  const items = dedupe([
+    fromMedicationRequest(request("866514", "metoprolol tartrate 25 MG Oral Tablet", "2022-12-03"), SOURCE),
+    fromMedicationRequest(request("866412", "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet", "2023-11-21"), SOURCE)
+  ]);
+  const ingredientOf = new Map([
+    ["866514", { rxcui: "6918", name: "metoprolol" }],
+    ["866412", { rxcui: "6918", name: "metoprolol" }]
+  ]);
+  const result = groupByIngredient(items, ingredientOf);
+  assert.equal(result.length, 2);
+  assert.ok(result.every((item) => !item.doseHistory));
+});
+
+test("a merged group shows the current prescription, not a newer stopped one", () => {
+  const items = dedupe([
+    fromMedicationRequest(request("314077", "lisinopril 20 MG Oral Tablet", "2023-01-01"), SOURCE),
+    fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2024-05-01", "stopped"), SOURCE)
+  ]);
+  const ingredientOf = new Map([
+    ["314076", { rxcui: "29046", name: "lisinopril" }],
+    ["314077", { rxcui: "29046", name: "lisinopril" }]
+  ]);
+  const result = groupByIngredient(items, ingredientOf);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].name, "lisinopril 20 MG Oral Tablet");
+  assert.equal(result[0].status, "current");
+});
+
+test("two records with no name and no code stay as two lines", () => {
+  const items = [
+    fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", authoredOn: "2023-01-01", medicationReference: { reference: "Medication/a" } }, SOURCE),
+    fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", authoredOn: "2023-02-01", medicationReference: { reference: "Medication/b" } }, SOURCE)
+  ];
+  const merged = dedupe(items);
+  assert.equal(merged.length, 2);
+  assert.ok(merged.every((item) => item.name === "Unnamed medicine"));
+});
+
+test("a reference's display name is used when the Medication isn't sent", () => {
+  const item = fromMedicationRequest(
+    { resourceType: "MedicationRequest", status: "active", medicationReference: { reference: "Medication/x", display: "Warfarin 5 MG Oral Tablet" } },
+    SOURCE
+  );
+  assert.equal(item.name, "Warfarin 5 MG Oral Tablet");
+});

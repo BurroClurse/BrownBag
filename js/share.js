@@ -24,7 +24,12 @@ export class ShareError extends Error {
   }
 }
 
-export function buildShareBundle(list, now) {
+// Warnings for staff ride along as Bundle tags: records that came from a
+// saved copy (with the date they were saved), or a load where a source
+// failed. This is the one place the trimmed Bundle keeps a meta field.
+var TAGS = "https://burroclurse.github.io/BrownBag/tags";
+
+export function buildShareBundle(list, now, warnings = {}) {
   var entries = [{
     resource: {
       resourceType: "Patient",
@@ -54,11 +59,32 @@ export function buildShareBundle(list, now) {
   entries.forEach(function (entry, index) {
     entry.fullUrl = "resource:" + index;
   });
-  return { resourceType: "Bundle", type: "collection", timestamp: now.toISOString(), entry: entries };
+  var bundle = { resourceType: "Bundle", type: "collection", timestamp: now.toISOString(), entry: entries };
+  var tags = [];
+  if (warnings.recordsSavedAt) {
+    tags.push({ system: TAGS, code: "records-saved-on", display: warnings.recordsSavedAt });
+  }
+  if (warnings.incomplete) {
+    tags.push({ system: TAGS, code: "records-incomplete" });
+  }
+  if (tags.length) {
+    bundle.meta = { tag: tags };
+  }
+  return bundle;
 }
 
 export function groupShareBundle(bundle) {
-  var groups = { patient: null, madeAt: bundle.timestamp, fromRecords: [], addedByPatient: [], patientSaysStopped: [] };
+  var tags = (bundle.meta && bundle.meta.tag) || [];
+  var saved = tags.filter(function (tag) { return tag.system === TAGS && tag.code === "records-saved-on"; })[0];
+  var groups = {
+    patient: null,
+    madeAt: bundle.timestamp,
+    recordsSavedAt: saved ? saved.display : null,
+    incomplete: tags.some(function (tag) { return tag.system === TAGS && tag.code === "records-incomplete"; }),
+    fromRecords: [],
+    addedByPatient: [],
+    patientSaysStopped: []
+  };
   (bundle.entry || []).forEach(function (entry) {
     var resource = entry.resource || {};
     if (resource.resourceType === "Patient") {

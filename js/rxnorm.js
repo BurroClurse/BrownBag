@@ -6,6 +6,8 @@ var BASE = "https://rxnav.nlm.nih.gov/REST/";
 var PRODUCT_TYPES = ["SCD", "SBD"];
 var MAX_RESULTS = 10;
 var MAX_PARALLEL = 4;
+// Weak Wi-Fi can leave a request hanging. Give up and carry on without it.
+var TIMEOUT_MS = 8000;
 
 export class RxNormError extends Error {
   constructor(message) {
@@ -14,12 +16,12 @@ export class RxNormError extends Error {
   }
 }
 
-export async function searchDrugs(term, fetchFn = globalThis.fetch) {
+export async function searchDrugs(term, fetchFn = globalThis.fetch, { timeoutMs = TIMEOUT_MS } = {}) {
   var trimmed = (term || "").trim();
   if (!trimmed) {
     return [];
   }
-  var drugs = await getJSON(BASE + "drugs.json?name=" + encodeURIComponent(trimmed), fetchFn);
+  var drugs = await getJSON(BASE + "drugs.json?name=" + encodeURIComponent(trimmed), fetchFn, timeoutMs);
   var groups = (drugs.drugGroup && drugs.drugGroup.conceptGroup) || [];
   var found = [];
   groups.forEach(function (group) {
@@ -28,27 +30,33 @@ export async function searchDrugs(term, fetchFn = globalThis.fetch) {
     }
   });
   if (!found.length) {
-    var approximate = await getJSON(BASE + "approximateTerm.json?term=" + encodeURIComponent(trimmed) + "&maxEntries=8", fetchFn);
+    var approximate = await getJSON(BASE + "approximateTerm.json?term=" + encodeURIComponent(trimmed) + "&maxEntries=8", fetchFn, timeoutMs);
     found = (approximate.approximateGroup && approximate.approximateGroup.candidate) || [];
   }
   return uniqueByRxcui(found.filter(function (item) { return item.rxcui && item.name; })).slice(0, MAX_RESULTS);
 }
 
-export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch) {
+export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch, { timeoutMs = TIMEOUT_MS } = {}) {
   var map = new Map();
   var queue = Array.from(new Set(rxcuis));
   async function worker() {
     while (queue.length) {
       var rxcui = queue.shift();
       try {
-        var related = await getJSON(BASE + "rxcui/" + encodeURIComponent(rxcui) + "/related.json?tty=IN", fetchFn);
+        var related = await getJSON(BASE + "rxcui/" + encodeURIComponent(rxcui) + "/related.json?tty=IN", fetchFn, timeoutMs);
         var groups = (related.relatedGroup && related.relatedGroup.conceptGroup) || [];
-        var ingredient = groups
+        // Every ingredient, so a combination pill (acetaminophen with
+        // oxycodone) never matches a plain one (acetaminophen alone).
+        var ingredients = groups
           .filter(function (group) { return group.tty === "IN"; })
-          .map(function (group) { return (group.conceptProperties || [])[0]; })
-          .filter(Boolean)[0];
-        if (ingredient) {
-          map.set(rxcui, { rxcui: ingredient.rxcui, name: ingredient.name });
+          .reduce(function (all, group) { return all.concat(group.conceptProperties || []); }, [])
+          .filter(function (concept) { return concept && concept.rxcui; })
+          .sort(function (a, b) { return Number(a.rxcui) - Number(b.rxcui); });
+        if (ingredients.length) {
+          map.set(rxcui, {
+            rxcui: ingredients.map(function (concept) { return concept.rxcui; }).join("+"),
+            name: ingredients.map(function (concept) { return concept.name; }).join(" / ")
+          });
         }
       } catch (error) {
         // Leave it out. Grouping falls back to the exact product.
@@ -59,10 +67,10 @@ export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch) {
   return map;
 }
 
-async function getJSON(url, fetchFn) {
+async function getJSON(url, fetchFn, timeoutMs) {
   var response;
   try {
-    response = await fetchFn(url);
+    response = await fetchFn(url, { signal: AbortSignal.timeout(timeoutMs) });
   } catch (error) {
     throw new RxNormError();
   }

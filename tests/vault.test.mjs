@@ -99,3 +99,24 @@ test("the backup text does not contain a medicine name", async () => {
   await savePatientData(storage, await keyA, "p1", { additions: [VITAMIN], stopped: {} });
   assert.ok(!(await exportBackup(storage, await keyA)).includes("Vitamin"));
 });
+
+test("savePatientData won't overwrite saved data it can't open", async () => {
+  const storage = memoryStorage();
+  const right = await deriveKeyFromPin("123456", new Uint8Array(16));
+  const wrong = await deriveKeyFromPin("654321", new Uint8Array(16));
+  await savePatientData(storage, right, "p-1", { additions: [{ id: "a" }], stopped: {} });
+  await assert.rejects(savePatientData(storage, wrong, "p-1", { additions: [], stopped: {} }), (error) => error instanceof VaultError && error.code === "locked");
+  assert.deepEqual((await loadPatientData(storage, right, "p-1")).additions, [{ id: "a" }]);
+});
+
+test("restoring a backup keeps what was added since, and adds what the backup had", async () => {
+  const storage = memoryStorage();
+  const key = await deriveKeyFromPin("123456", new Uint8Array(16));
+  await savePatientData(storage, key, "p-1", { additions: [{ id: "old", name: "Fish oil" }], stopped: { "rx:1": "2026-10-01" } });
+  const backup = await exportBackup(storage, key);
+  await savePatientData(storage, key, "p-1", { additions: [{ id: "new", name: "Vitamin D" }], stopped: { "rx:2": "2026-11-20" } });
+  assert.equal(await importBackup(storage, key, backup), 1);
+  const data = await loadPatientData(storage, key, "p-1");
+  assert.deepEqual(data.additions.map((a) => a.id).sort(), ["new", "old"]);
+  assert.deepEqual(Object.keys(data.stopped).sort(), ["rx:1", "rx:2"]);
+});

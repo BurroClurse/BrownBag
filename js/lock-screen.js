@@ -3,7 +3,7 @@
 // so closing or reloading the page locks Brown Bag again.
 // All text goes in with textContent.
 
-import { hasLock, lockMethod, setupLock, unlock, LockError, LOCK_KEY } from "./lock.js";
+import { hasLock, lockMethod, setupLock, unlock, LockError, LOCK_KEY, eraseBrownBag } from "./lock.js";
 import { importBackup } from "./vault.js";
 import { lockRecordFrom } from "./install.js";
 
@@ -13,14 +13,18 @@ export function showLockScreen(root) {
       clear(root);
       resolve(key);
     }
-    if (!hasLock()) {
-      drawSetup(root, done);
-    } else if (lockMethod() === "pin") {
-      drawPinUnlock(root, done);
-    } else {
-      drawPasskeyUnlock(root, done);
-    }
+    drawLockStart(root, done);
   });
+}
+
+function drawLockStart(root, done) {
+  if (!hasLock()) {
+    drawSetup(root, done);
+  } else if (lockMethod() === "pin") {
+    drawPinUnlock(root, done, {});
+  } else {
+    drawPasskeyUnlock(root, done, {});
+  }
 }
 
 function drawSetup(root, done) {
@@ -53,9 +57,10 @@ function drawSetup(root, done) {
   button.focus();
 }
 
-// After the phone erased Brown Bag's storage: the backup file brings back
-// the lock settings, the patient unlocks the usual way, then the list is
-// restored with that key.
+// After the phone erased Brown Bag's storage: the backup file holds the lock
+// settings. The patient unlocks the usual way with them, the list is
+// restored, and only then are the lock settings saved. A failed or
+// abandoned restore leaves nothing behind.
 function drawRestoreOption(root, box, done, message) {
   var picker = document.createElement("input");
   picker.type = "file";
@@ -69,23 +74,26 @@ function drawRestoreOption(root, box, done, message) {
     if (!file) return;
     var text = await file.text();
     var lock = lockRecordFrom(text);
-    if (!lock) {
+    var method = null;
+    try { method = JSON.parse(lock).method; } catch (error) { method = null; }
+    if (!lock || !method) {
       say(message, "That file isn't a Brown Bag backup.");
       return;
     }
-    localStorage.setItem(LOCK_KEY, lock);
     var restoreThenDone = async function (key) {
-      await importBackup(localStorage, key, text);
+      try {
+        await importBackup(localStorage, key, text);
+      } catch (error) {
+        throw new LockError("restore-failed");
+      }
+      localStorage.setItem(LOCK_KEY, lock);
       done(key);
     };
-    var onBack = function () {
-      localStorage.removeItem(LOCK_KEY);
-      drawSetup(root, done);
-    };
-    if (lockMethod() === "pin") {
-      drawPinUnlock(root, restoreThenDone, onBack);
+    var options = { record: lock, onBack: function () { drawSetup(root, done); } };
+    if (method === "pin") {
+      drawPinUnlock(root, restoreThenDone, options);
     } else {
-      drawPasskeyUnlock(root, restoreThenDone, onBack);
+      drawPasskeyUnlock(root, restoreThenDone, options);
     }
   });
 }
@@ -93,15 +101,17 @@ function drawRestoreOption(root, box, done, message) {
 function drawPinSetup(root, done) {
   clear(root);
   var box = panel(root, "Choose a 6-digit PIN");
-  para(box, "You'll type this PIN each time you open Brown Bag. Write it down somewhere safe: if you forget it, your saved list can't be opened.");
+  para(box, "You'll type this PIN each time you open Brown Bag. Write it down somewhere safe. If you forget it, you can start over, and a backup brings your additions back.");
   var form = document.createElement("form");
   box.appendChild(form);
   var first = pinField(form, "pin-new", "New PIN", "new-password");
   var second = pinField(form, "pin-again", "Type the PIN again", "new-password");
   var message = status(form);
-  action(form, "Save PIN").type = "submit";
+  var save = action(form, "Save PIN");
+  save.type = "submit";
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
+    if (save.disabled) return;
     if (!/^\d{6}$/.test(first.value)) {
       say(message, "Use exactly 6 digits.");
       first.focus();
@@ -112,52 +122,64 @@ function drawPinSetup(root, done) {
       second.focus();
       return;
     }
+    save.disabled = true;
     say(message, "Saving…");
-    done(await setupLock({ pin: first.value }));
+    try {
+      done(await setupLock({ pin: first.value }));
+    } catch (error) {
+      save.disabled = false;
+      say(message, "Couldn't save the PIN. Try again.");
+    }
   });
   first.focus();
 }
 
-function drawPinUnlock(root, done, onBack) {
+function drawPinUnlock(root, done, options) {
   clear(root);
-  var box = panel(root, onBack ? "Unlock your backup" : "Unlock Brown Bag");
+  var restoring = Boolean(options.record);
+  var box = panel(root, restoring ? "Unlock your backup" : "Unlock Brown Bag");
   var form = document.createElement("form");
   box.appendChild(form);
-  var field = pinField(form, "pin", "Your 6-digit PIN", "current-password");
+  var field = pinField(form, "pin", restoring ? "The PIN you used for this backup" : "Your 6-digit PIN", "current-password");
   var message = status(form);
   action(form, "Unlock").type = "submit";
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
     say(message, "Checking…");
     try {
-      await done(await unlock({ pin: field.value }));
+      await done(await unlock({ pin: field.value, record: options.record }));
     } catch (error) {
-      say(message, "That PIN didn't work.");
+      say(message, error instanceof LockError && error.code === "restore-failed"
+        ? "The PIN worked, but the backup couldn't be restored."
+        : "That PIN didn't work.");
       field.value = "";
       field.focus();
     }
   });
-  if (onBack) action(box, "Back", "secondary").addEventListener("click", onBack);
+  exitOption(root, box, done, options, "Forgot your PIN? Start over");
   field.focus();
 }
 
-function drawPasskeyUnlock(root, done, onBack) {
+function drawPasskeyUnlock(root, done, options) {
   clear(root);
-  var box = panel(root, onBack ? "Unlock your backup" : "Unlock Brown Bag");
+  var restoring = Boolean(options.record);
+  var box = panel(root, restoring ? "Unlock your backup" : "Unlock Brown Bag");
   var message = status(box);
   var button = action(box, "Unlock with Face ID or fingerprint");
   async function attempt() {
     button.disabled = true;
     say(message, "");
     try {
-      await done(await unlock());
+      await done(await unlock({ record: options.record }));
     } catch (error) {
       button.disabled = false;
       button.textContent = "Try again";
       if (error instanceof LockError && error.code === "cancelled") {
         say(message, "Unlock was cancelled.");
+      } else if (error instanceof LockError && error.code === "restore-failed") {
+        say(message, "Unlocked, but the backup couldn't be restored.");
       } else if (error instanceof LockError && error.code === "needs-pin") {
-        say(message, "Face ID can't be used at this address. Open Brown Bag from your Home Screen.");
+        say(message, "Face ID can't be used at this address. Open Brown Bag from its usual address or your Home Screen.");
       } else {
         say(message, "That didn't unlock Brown Bag. Try again.");
       }
@@ -165,8 +187,37 @@ function drawPasskeyUnlock(root, done, onBack) {
     }
   }
   button.addEventListener("click", attempt);
-  if (onBack) action(box, "Back", "secondary").addEventListener("click", onBack);
+  exitOption(root, box, done, options, "Can't unlock? Start over");
   button.focus();
+}
+
+// Restoring: "Back" to set-up. Otherwise: "Start over", which explains what
+// is lost and asks again before erasing anything.
+function exitOption(root, box, done, options, label) {
+  if (options.onBack) {
+    action(box, "Back", "secondary").addEventListener("click", options.onBack);
+    return;
+  }
+  action(box, label, "secondary").addEventListener("click", function () {
+    drawStartOver(root, done);
+  });
+}
+
+function drawStartOver(root, done) {
+  clear(root);
+  var box = panel(root, "Start over?");
+  para(box, "This erases what Brown Bag saved on this phone: your lock, your additions, your stopped marks and your saved list.");
+  para(box, "Your medicines from your records come back when you sign in. A backup file brings your additions and stopped marks back.");
+  var erase = action(box, "Erase and start over");
+  erase.addEventListener("click", function () {
+    eraseBrownBag();
+    drawSetup(root, done);
+  });
+  var keep = action(box, "Keep my lock", "secondary");
+  keep.addEventListener("click", function () {
+    drawLockStart(root, done);
+  });
+  keep.focus();
 }
 
 function panel(root, heading) {
