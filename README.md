@@ -10,9 +10,9 @@ The records come from the patient's own health system, the hospital or
 clinic whose patient portal (such as MyChart) they already use. They sign in
 with that portal account, and Brown Bag reads their prescriptions and listed
 medicines through SMART on FHIR, which US certified health record systems
-must offer to patient apps. Pharmacy fills appear only when the health
-system's record includes them. Today it connects to the SMART Health IT
-sandbox (test patients only).
+must offer to patient apps. It adds pharmacy fills from insurance claims,
+showing what was actually picked up. Today it connects to the SMART Health
+IT sandbox (test patients only), whose claims stand in for an insurer's.
 
 It is a patient-facing SMART on FHIR app, first built for the HL7 Break the
 Code course. It runs as static pages (no server of its own), signs in with
@@ -33,6 +33,11 @@ only, no real patients).
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
   (checked against RxNorm), and ones they marked stopped.
+- **What was actually filled.** Each medicine shows its insurance fills
+  ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
+  in your claims". Fills the record doesn't list get their own section,
+  and a prescription marked completed but filled recently moves back to
+  the current list.
 - **The QR code** comes up out of the bag and fills the screen, for the
   person checking their medicines. A 6-digit code, blurred until tapped, is
   told to that person after they scan; they type it on `share.html` to see
@@ -56,6 +61,7 @@ only, no real patients).
 launch/patient openid fhirUser offline_access patient/Patient.read
 patient/MedicationRequest.read patient/MedicationStatement.read
 patient/Medication.read patient/Practitioner.read
+patient/ExplanationOfBenefit.read
 ```
 
 Every resource scope is read-only. `offline_access` asks for a refresh token
@@ -67,7 +73,11 @@ Every resource scope is read-only. `offline_access` asks for a refresh token
 2. `GET Patient/{id}`.
 3. `GET MedicationRequest?patient={id}&_include=MedicationRequest:medication`, all pages.
 4. `GET MedicationStatement?patient={id}&_include=MedicationStatement:medication`, all pages.
-5. RxNav ingredient lookups, to group strengths of the same drug.
+5. `GET ExplanationOfBenefit?patient={id}`, all pages, keeping pharmacy
+   claims: the drug (RxNorm), the fill date and the insurer. It has its own
+   6-second limit, so a slow insurer never holds up the medicines.
+6. RxNav ingredient lookups, to group strengths of the same drug and match
+   fills to medicines.
 
 Nothing is written to the health record. Nothing runs on a schedule.
 
@@ -107,6 +117,12 @@ The list never passes through a server.
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
 | `tools/` | Local https server and the logo source. |
 | `docs/` | Designs, build plans and the learning log. |
+
+## Test patients
+
+- **Avery Brownbag** (`brownbag-demo-patient`), made-up, shows every fill
+  case. `node tools/demo-patient.mjs` puts her on the public sandbox (it
+  replaces, never duplicates).
 
 ## Run the tests
 

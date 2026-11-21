@@ -874,6 +874,46 @@ what to do. A fresh update clears the log.
 explains access tokens. Look at what a sign-in returns, and compare it
 with what Brown Bag keeps (`passFromState` in `js/pass.js`).
 
+
+### Step 14. What was actually filled (`js/claims.js`, `tools/demo-patient.mjs`)
+
+A prescription says what a doctor ordered. It doesn't say whether the
+patient picked it up. Insurance claims do: when a pharmacy fills a
+prescription, it bills the insurer, and the insurer keeps a record. In
+FHIR that record is an **ExplanationOfBenefit** (EOB), and a pharmacy one
+has the drug's RxNorm code, the fill date and the insurer.
+
+**Combining sources.** This is the interoperability idea: two kinds of
+records, from two kinds of organizations, about the same medicines.
+`js/claims.js` matches each fill to a medicine on the list: the same
+RxNorm code, or else the same ingredients (asked from RxNav, the rule the
+list already uses). Then each card can say "Filled 2 times · last Sep 22,
+2026 · Aetna claims", or "No fill found in your claims". Fills that match
+nothing are prescriptions from outside this health system, so they get
+their own section. A prescription the record calls "completed" but that
+was filled this year moves back to the current list, because the pills are
+probably still at home.
+
+**Careful wording.** "No fill found in your claims", never "not filled":
+people pay cash, get samples or use another insurer.
+
+**Where real claims come from.** US rules require Medicare Advantage,
+Medicaid, CHIP and HealthCare.gov plans to offer a FHIR "Patient Access
+API" with claims back to 2016. The course sandbox stands in for an insurer
+here; Medicare's Blue Button 2.0 is next.
+
+**The demo patient.** In the sandbox, every prescription had exactly one
+claim, so the interesting cases never appeared. `tools/demo-patient.mjs`
+writes a made-up patient, Avery Brownbag, to the public sandbox with
+prescriptions and claims arranged to show every case. It writes with PUT
+and fixed ids, so running it again replaces her records instead of adding
+copies, and it checks every drug code with RxNav first. That check caught
+two wrong codes in the plan before anything was written.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+Look at a resource type the lab doesn't use, then read Avery's claims in a
+browser: `https://r4.smarthealthit.org/ExplanationOfBenefit?patient=brownbag-demo-patient`.
+
 ---
 
 ## Glossary
@@ -888,6 +928,7 @@ with what Brown Bag keeps (`passFromState` in `js/pass.js`).
 - **Certificate**: a website's digital ID, used for https.
 - **Commit**: a saved snapshot of changes, with a message.
 - **Compression**: shrinking data, like zipping a file.
+- **ExplanationOfBenefit (EOB)**: the FHIR record of an insurance claim; a pharmacy one shows a fill.
 - **FHIR**: the standard format for health records data.
 - **Fork**: your own copy of someone else's repo.
 - **_include**: a FHIR search option that also returns the records the results point to.
