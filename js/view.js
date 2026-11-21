@@ -149,3 +149,39 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, in
   if (installTip) out.push({ kind: "install", text: installTip });
   return out;
 }
+
+// Changes the patient made while the records part was a saved copy (no
+// fresh update since). A change that's undone cancels out.
+var OPPOSITE = { stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added" };
+export function logChange(changes, kind, name, extra) {
+  var list = (changes || []).slice();
+  for (var i = list.length - 1; i >= 0; i -= 1) {
+    if (list[i].name === name && list[i].kind === OPPOSITE[kind]) {
+      list.splice(i, 1);
+      return list;
+    }
+  }
+  list.push(Object.assign({ kind: kind, name: name }, extra || {}));
+  return list;
+}
+
+// The alert on the QR screen when the list was changed while it was a saved
+// copy: what changed, and that the records part needs a connection.
+export function changeAlert(changes, savedAt, now) {
+  if (!changes || !changes.length || !savedAt) {
+    return null;
+  }
+  var when = listDate(savedAt, now);
+  var lines = changes.map(function (change) {
+    if (change.kind === "stopped") return "Marked " + change.name + " stopped";
+    if (change.kind === "unstopped") return "Put " + change.name + " back on your list";
+    if (change.kind === "removed") return "Removed " + change.name;
+    return "Added " + change.name + (change.checked === false ? " (name not checked)" : "");
+  });
+  return {
+    title: "This code isn't fully up to date",
+    intro: "It includes the changes you made since your records were last updated on " + when + ":",
+    lines: lines,
+    advice: "Your medicines from your records are from " + when + ". Get a connection and open Brown Bag again to update them, then show a new code."
+  };
+}

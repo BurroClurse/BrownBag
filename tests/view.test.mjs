@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -159,4 +159,48 @@ test("noticesFor puts updating first and hides the date line while updating", ()
   const tip = "Add Brown Bag to your Home Screen.";
   assert.deepEqual(noticesFor({ updating: true, savedAt: at, offline: true, needsSignIn: true, failed: true, installTip: tip, now }).map((n) => n.kind), ["updating", "failed", "install"]);
   assert.deepEqual(noticesFor({ savedAt: at, offline: true, needsSignIn: true, failed: true, installTip: tip, now }).map((n) => n.kind), ["offline", "failed", "install"]);
+});
+
+test("logChange keeps what changed and cancels a change that's undone", () => {
+  const names = (c) => c.map((x) => x.kind + ":" + x.name);
+  let c = [];
+  c = logChange(c, "stopped", "Lasix 40mg");
+  c = logChange(c, "added", "Vitamin D", { checked: false });
+  assert.deepEqual(names(c), ["stopped:Lasix 40mg", "added:Vitamin D"]);
+  c = logChange(c, "unstopped", "Lasix 40mg");
+  assert.deepEqual(names(c), ["added:Vitamin D"]);
+  c = logChange(c, "removed", "Vitamin D");
+  assert.deepEqual(c, []);
+  c = logChange(c, "removed", "Fish oil");
+  assert.deepEqual(names(c), ["removed:Fish oil"]);
+  c = logChange(undefined, "stopped", "Simvastatin");
+  assert.deepEqual(names(c), ["stopped:Simvastatin"]);
+});
+
+test("changeAlert says exactly what changed and to get a connection", () => {
+  const now = new Date(2026, 10, 21, 12, 0);
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  const alert = changeAlert([
+    { kind: "stopped", name: "Lasix 40mg" },
+    { kind: "added", name: "Vitamin D", checked: false },
+    { kind: "removed", name: "Fish oil" },
+    { kind: "unstopped", name: "Simvastatin" }
+  ], at, now);
+  assert.equal(alert.title, "This code isn't fully up to date");
+  assert.equal(alert.intro, "It includes the changes you made since your records were last updated on Nov 21:");
+  assert.deepEqual(alert.lines, [
+    "Marked Lasix 40mg stopped",
+    "Added Vitamin D (name not checked)",
+    "Removed Fish oil",
+    "Put Simvastatin back on your list"
+  ]);
+  assert.equal(alert.advice, "Your medicines from your records are from Nov 21. Get a connection and open Brown Bag again to update them, then show a new code.");
+});
+
+test("changeAlert says nothing with no changes or a fresh list", () => {
+  const now = new Date(2026, 10, 21, 12, 0);
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  assert.equal(changeAlert([], at, now), null);
+  assert.equal(changeAlert(undefined, at, now), null);
+  assert.equal(changeAlert([{ kind: "removed", name: "Fish oil" }], null, now), null);
 });

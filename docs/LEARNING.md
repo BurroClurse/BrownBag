@@ -862,6 +862,14 @@ VoiceOver can't read them while hidden either (`aria-hidden`). The line
 above them now says "After they scan it, tell them this code:", so nobody
 reads the code out before the staff page asks for it.
 
+**Changes made offline.** The QR code is made on the phone each time it
+opens, so it always includes the patient's own changes, even offline. What
+a connection adds is a fresh copy of the records. When the list is a saved
+copy, Brown Bag now keeps a short log of what the patient changed
+(`logChange` in `js/view.js`; a change that's undone cancels out), and the
+QR screen shows "This code isn't fully up to date" with each change and
+what to do. A fresh update clears the log.
+
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens)
 explains access tokens. Look at what a sign-in returns, and compare it
 with what Brown Bag keeps (`passFromState` in `js/pass.js`).

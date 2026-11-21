@@ -9,7 +9,7 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
@@ -192,6 +192,7 @@ async function updateWithPass(pass) {
         await loadAdditions();
       }
       await keepFreshCopy();
+      await clearChanges();
     }
   } catch (error) {
     state.offline = true;
@@ -269,6 +270,26 @@ async function loadFromClient(client) {
     }
   } else {
     await keepFreshCopy();
+    await clearChanges();
+  }
+}
+
+// Changes made while the records part is a saved copy are kept, so the QR
+// screen can say what changed since the records were last updated.
+function recordChange(kind, name, extra) {
+  if (state.savedAt) {
+    state.data.changes = logChange(state.data.changes, kind, name, extra);
+  }
+}
+
+async function clearChanges() {
+  if (state.data.changes && state.data.changes.length) {
+    state.data.changes = [];
+    try {
+      await savePatientData(localStorage, state.key, state.patientId, state.data);
+    } catch (error) {
+      // Kept for next time; the alert only shows with a saved copy anyway.
+    }
   }
 }
 
@@ -475,6 +496,7 @@ function drawRecords(arranged) {
     var row = medRow(list, entry);
     button(row, "I stopped this", "stop card-action", function () {
       state.data.stopped[entry.key] = today();
+      recordChange("stopped", entry.name);
       state.announce = entry.name + " moved to Stopped by me.";
       state.focusId = "stopped-heading";
       save();
@@ -501,6 +523,7 @@ function drawAdditions() {
     add(row, "p", "Added " + addition.addedAt, "med-line");
     button(row, "Remove", "stop card-action", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
+      recordChange("removed", addition.name);
       state.lastRemoved = addition;
       state.announce = addition.name + " removed.";
       state.focusId = "undo-remove";
@@ -512,6 +535,7 @@ function drawAdditions() {
     var undoRow = add(section, "p", "Removed " + removed.name + ".", "med-line");
     var undo = button(undoRow, "Undo", "secondary", function () {
       state.data.additions.push(removed);
+      recordChange("added", removed.name, { checked: Boolean(removed.rxcui) });
       state.lastRemoved = null;
       state.announce = removed.name + " is back.";
       state.focusId = "added-heading";
@@ -618,6 +642,7 @@ function drawAddForm(section) {
       frequency: often.value
     }, new Date());
     state.data.additions.push(addition);
+    recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
     state.adding = false;
     state.announce = addition.name + " added.";
     state.focusId = "add-open";
@@ -635,6 +660,7 @@ function drawStopped(arranged) {
     add(row, "p", "You marked this stopped on " + entry.stoppedAt, "med-line");
     button(row, "Undo", "secondary card-action", function () {
       delete state.data.stopped[entry.key];
+      recordChange("unstopped", entry.name);
       state.announce = entry.name + " moved back to From your records.";
       state.focusId = "records-heading";
       save();
@@ -706,6 +732,17 @@ async function buildQr() {
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
     overlay.appendChild(whatsIn);
+    var alert = changeAlert(state.data.changes, state.savedAt, new Date());
+    if (alert) {
+      var warning = add(overlay, "div", null, "qr-alert");
+      warning.id = "qr-alert";
+      add(warning, "p", alert.title, "qr-alert-title");
+      add(warning, "p", alert.intro);
+      var changed = add(warning, "ul");
+      alert.lines.forEach(function (line) { add(changed, "li", line); });
+      add(warning, "p", alert.advice);
+      overlay.setAttribute("aria-describedby", "qr-alert");
+    }
     var box = add(overlay, "div", null, "qr");
     box.appendChild(qrCanvas(packed.prefix, packed.digits));
     var sayRow = add(overlay, "div", null, "help-row");
