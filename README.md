@@ -1,8 +1,13 @@
 # Brown Bag
 
 Brown Bag helps patients give every healthcare worker an accurate medication
-list. It gathers their medicines from their health records, adds what they
-take over the counter, and shares the whole list with one QR code.
+list. Through SMART on FHIR, it reads two kinds of records from the
+patient's health system: their prescriptions (FHIR `MedicationRequest`) and
+the medicines their records say they take (FHIR `MedicationStatement`),
+with each drug's details from the linked `Medication` records. It merges
+repeats into one list, adds what the patient takes over the counter
+(vitamins, supplements, pain relievers), and shares the whole list with one
+QR code.
 
 It is a patient-facing SMART on FHIR app, first built for the HL7 Break the
 Code course. It runs as static pages (no server of its own), signs in with
