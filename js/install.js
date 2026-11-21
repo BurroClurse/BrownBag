@@ -6,22 +6,52 @@ import { localDate } from "./view.js";
 
 var DISMISS_KEY = "brownbag:install-hint-dismissed";
 var DISMISS_DAYS = 30;
+var DONE_KEY = "brownbag:install-done";
 
-export function installHint(userAgent) {
+function phoneKind(userAgent) {
   var ua = String(userAgent || "");
-  if (/iPhone|iPad|iPod/.test(ua)) {
-    // iPhone keeps a Home Screen app's storage apart from Safari's, so the
-    // list has to travel by backup.
-    return "Add Brown Bag to your Home Screen so your list isn't erased. The Home Screen app starts empty, so first tap More options, then Save a backup. Then tap Share, then Add to Home Screen, open it, and choose Restore from a backup.";
-  }
-  if (/Android/.test(ua)) {
-    return "Install Brown Bag from the browser menu so your list isn't erased.";
-  }
+  if (/iPhone|iPad|iPod/.test(ua)) return "iphone";
+  if (/Android/.test(ua)) return "android";
   return null;
 }
 
+// The one-line tip on home. The steps are behind its How? button.
+export function installTip(userAgent) {
+  return phoneKind(userAgent) ? "Add Brown Bag to your Home Screen." : null;
+}
+
+export function installSteps(userAgent) {
+  var kind = phoneKind(userAgent);
+  if (kind === "iphone") {
+    // iPhone keeps a Home Screen app's storage apart from Safari's, so the
+    // list has to travel by backup.
+    return [
+      "Tap More options, then Save a backup.",
+      "Tap Share, then Add to Home Screen.",
+      "Open Brown Bag from your Home Screen.",
+      "Tap Restore from a backup and pick the file you saved."
+    ];
+  }
+  if (kind === "android") {
+    return [
+      "Open your browser's menu.",
+      "Tap Install app or Add to Home screen.",
+      "Open Brown Bag from your Home Screen."
+    ];
+  }
+  return [];
+}
+
+// "I've done this": the tip never comes back (Start over erases this too).
+export function markInstallDone(storage) {
+  storage.setItem(DONE_KEY, "yes");
+}
+
 export function shouldShowInstallHint({ userAgent, standalone, storage, now }) {
-  if (standalone || !installHint(userAgent)) {
+  if (standalone || !installTip(userAgent)) {
+    return false;
+  }
+  if (storage && storage.getItem(DONE_KEY)) {
     return false;
   }
   var dismissed = storage && storage.getItem(DISMISS_KEY);

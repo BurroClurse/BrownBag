@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { saveRecords, loadLastRecords, offlineNotice, savedNotice } from "../js/offline.js";
+import { saveRecords, loadLastRecords, listDate } from "../js/offline.js";
 import { deriveKeyFromPin } from "../js/vault.js";
 
 function memoryStorage() {
@@ -45,8 +45,10 @@ test("loadLastRecords is null with a different key", async () => {
   assert.equal(await loadLastRecords(storage, await key("111111")), null);
 });
 
-test("offlineNotice formats the date", () => {
-  assert.equal(offlineNotice(new Date(2026, 10, 20, 20, 30).toISOString()), "No connection. Showing your list saved on Nov 20, 2026. It may be out of date.");
+test("listDate is short this year and adds the year otherwise", () => {
+  const now = new Date(2026, 10, 21, 9, 0);
+  assert.equal(listDate(new Date(2026, 10, 20, 20, 30).toISOString(), now), "Nov 20");
+  assert.equal(listDate(new Date(2025, 0, 5, 8, 0).toISOString(), now), "Jan 5, 2025");
 });
 
 // sw.js is a classic service worker script. Run it in a sandbox to reach
@@ -67,12 +69,6 @@ test("the service worker never keeps health data", () => {
   assert.equal(route("https://burroclurse.github.io/BrownBag/js/app.js"), "app");
   assert.equal(route("https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"), "library");
   assert.equal(route("https://cdn.jsdelivr.net/npm/something-else@1.0.0/x.js"), "network");
-});
-
-test("savedNotice says 'No connection' only when the phone is offline", () => {
-  const at = new Date(2026, 10, 20, 20, 30).toISOString();
-  assert.equal(savedNotice(at, false), "No connection. Showing your list saved on Nov 20, 2026. It may be out of date.");
-  assert.equal(savedNotice(at, true), "Showing your list saved on Nov 20, 2026. Sign in to update it.");
 });
 
 test("the service worker stops waiting for a stalled network and uses its copy", { timeout: 3000 }, async () => {

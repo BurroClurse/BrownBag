@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { installHint, shouldShowInstallHint, dismissInstallHint, backupFileName, restoreMessage, withLockRecord, lockRecordFrom } from "../js/install.js";
+import { installTip, installSteps, markInstallDone, shouldShowInstallHint, dismissInstallHint, backupFileName, restoreMessage, withLockRecord, lockRecordFrom } from "../js/install.js";
 
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1";
 const ANDROID = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36";
@@ -11,16 +11,34 @@ function memoryStorage() {
   return { getItem: (k) => (map.has(k) ? map.get(k) : null), setItem: (k, v) => map.set(k, String(v)) };
 }
 
-test("installHint gives iPhone steps on an iPhone", () => {
-  assert.equal(installHint(IPHONE), "Add Brown Bag to your Home Screen so your list isn't erased. The Home Screen app starts empty, so first tap More options, then Save a backup. Then tap Share, then Add to Home Screen, open it, and choose Restore from a backup.");
+test("installTip is one short line on phones and nothing on a computer", () => {
+  assert.equal(installTip(IPHONE), "Add Brown Bag to your Home Screen.");
+  assert.equal(installTip(ANDROID), "Add Brown Bag to your Home Screen.");
+  assert.equal(installTip(MAC), null);
 });
 
-test("installHint gives the Android wording on Android", () => {
-  assert.equal(installHint(ANDROID), "Install Brown Bag from the browser menu so your list isn't erased.");
+test("installSteps gives the iPhone steps, backup first", () => {
+  assert.deepEqual(installSteps(IPHONE), [
+    "Tap More options, then Save a backup.",
+    "Tap Share, then Add to Home Screen.",
+    "Open Brown Bag from your Home Screen.",
+    "Tap Restore from a backup and pick the file you saved."
+  ]);
 });
 
-test("installHint says nothing on a computer", () => {
-  assert.equal(installHint(MAC), null);
+test("installSteps gives the Android steps", () => {
+  assert.deepEqual(installSteps(ANDROID), [
+    "Open your browser's menu.",
+    "Tap Install app or Add to Home screen.",
+    "Open Brown Bag from your Home Screen."
+  ]);
+});
+
+test("once marked done, the tip never comes back", () => {
+  const storage = memoryStorage();
+  markInstallDone(storage);
+  assert.equal(shouldShowInstallHint({ userAgent: IPHONE, standalone: false, storage, now: new Date() }), false);
+  assert.equal(shouldShowInstallHint({ userAgent: IPHONE, standalone: false, storage, now: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) }), false);
 });
 
 test("the hint hides when Brown Bag already runs from the Home Screen", () => {

@@ -141,12 +141,22 @@ test("medicinesButtonText shows the count", () => {
   assert.equal(medicinesButtonText(8), "My medicines (8)");
 });
 
-test("noticesFor lists the notices in order, and nothing when all is well", () => {
-  const at = new Date(2026, 10, 20, 20, 30).toISOString();
-  assert.deepEqual(noticesFor({ savedAt: at, online: false, failed: true, installHint: "Add Brown Bag to your Home Screen." }), [
-    "No connection. Showing your list saved on Nov 20, 2026. It may be out of date.",
-    "Some of your records couldn't be loaded.",
-    "Add Brown Bag to your Home Screen."
-  ]);
-  assert.deepEqual(noticesFor({ savedAt: null, online: true, failed: false, installHint: null }), []);
+test("noticesFor gives one short line for each note", () => {
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  const now = new Date(2026, 10, 21, 9, 0);
+  const tip = "Add Brown Bag to your Home Screen.";
+  assert.deepEqual(noticesFor({ updating: true, savedAt: at, now }), [{ kind: "updating", text: "Updating your list…" }]);
+  assert.deepEqual(noticesFor({ savedAt: at, offline: true, now }), [{ kind: "offline", text: "No connection. List from Nov 21." }]);
+  assert.deepEqual(noticesFor({ savedAt: at, needsSignIn: true, now }), [{ kind: "sign-in", text: "List from Nov 21. Sign in again to update it." }]);
+  assert.deepEqual(noticesFor({ failed: true, now }), [{ kind: "failed", text: "Some records didn't load." }]);
+  assert.deepEqual(noticesFor({ installTip: tip, now }), [{ kind: "install", text: tip }]);
+  assert.deepEqual(noticesFor({ now }), []);
+});
+
+test("noticesFor puts updating first and hides the date line while updating", () => {
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  const now = new Date(2026, 10, 21, 9, 0);
+  const tip = "Add Brown Bag to your Home Screen.";
+  assert.deepEqual(noticesFor({ updating: true, savedAt: at, offline: true, needsSignIn: true, failed: true, installTip: tip, now }).map((n) => n.kind), ["updating", "failed", "install"]);
+  assert.deepEqual(noticesFor({ savedAt: at, offline: true, needsSignIn: true, failed: true, installTip: tip, now }).map((n) => n.kind), ["offline", "failed", "install"]);
 });

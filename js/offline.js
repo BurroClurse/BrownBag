@@ -28,19 +28,10 @@ export async function loadLastRecords(storage, key) {
   }
 }
 
-export function offlineNotice(savedAt) {
-  return "No connection. Showing your list saved on " + shortDate(savedAt) + ". It may be out of date.";
-}
-
-// On weak Wi-Fi the phone can say it's online while sign-in still can't
-// work, so a saved list shows whenever sign-in isn't available.
-export function savedNotice(savedAt, online) {
-  return online
-    ? "Showing your list saved on " + shortDate(savedAt) + ". Sign in to update it."
-    : offlineNotice(savedAt);
-}
-
-function shortDate(iso) {
-  var date = new Date(iso);
-  return MONTHS[date.getMonth()] + " " + date.getDate() + ", " + date.getFullYear();
+// The saved list's date for the notes on home: "Nov 21", with the year only
+// when it isn't this year.
+export function listDate(savedAt, now) {
+  var date = new Date(savedAt);
+  var text = MONTHS[date.getMonth()] + " " + date.getDate();
+  return date.getFullYear() === now.getFullYear() ? text : text + ", " + date.getFullYear();
 }

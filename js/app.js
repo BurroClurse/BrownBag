@@ -5,7 +5,7 @@
 import { showLockScreen } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
 import { LOCK_KEY } from "./lock.js";
-import { shouldShowInstallHint, dismissInstallHint, installHint, backupFileName, restoreMessage, withLockRecord } from "./install.js";
+import { shouldShowInstallHint, dismissInstallHint, installTip, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
@@ -591,19 +591,26 @@ function isStandalone() {
 // saved list, a source that failed, or the Home Screen hint.
 function drawNotices() {
   var hint = shouldShowInstallHint({ userAgent: navigator.userAgent, standalone: isStandalone(), storage: localStorage, now: new Date() })
-    ? installHint(navigator.userAgent)
+    ? installTip(navigator.userAgent)
     : null;
-  var notes = noticesFor({ savedAt: state.savedAt, online: navigator.onLine, failed: state.split.failed, installHint: hint });
+  var notes = noticesFor({
+    savedAt: state.savedAt,
+    offline: !navigator.onLine,
+    needsSignIn: Boolean(state.savedAt) && navigator.onLine,
+    failed: state.split.failed,
+    installTip: hint,
+    now: new Date()
+  });
   if (!notes.length) return;
   var bar = add(root, "div", null, "notice-bar");
-  notes.forEach(function (text, index) {
+  notes.forEach(function (note) {
     var row = add(bar, "div", null, "notice-row");
-    add(row, "p", text);
-    if (index === 0 && state.savedAt && navigator.onLine) {
-      var update = add(row, "a", "Sign in to update", "button secondary");
+    add(row, "p", note.text);
+    if (note.kind === "sign-in") {
+      var update = add(row, "a", "Sign in", "button secondary");
       update.href = "./launch.html";
     }
-    if (hint && text === hint) {
+    if (note.kind === "install") {
       button(row, "Not now", "secondary", function () {
         dismissInstallHint(localStorage, new Date());
         state.focusId = "show-qr";

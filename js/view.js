@@ -2,7 +2,7 @@
 // tests can check them: names, the three groups, and the lines of text
 // under each medicine.
 
-import { savedNotice } from "./offline.js";
+import { listDate } from "./offline.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
@@ -134,11 +134,18 @@ export function medicinesButtonText(count) {
   return "My medicines (" + count + ")";
 }
 
-// The notices at the top of the home screen, only when needed, in order.
-export function noticesFor({ savedAt, online, failed, installHint }) {
+// The notes at the top of the home screen, one short line each, only when
+// needed, in order. While the list is updating, its date line waits.
+export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, installTip, now }) {
   var out = [];
-  if (savedAt) out.push(savedNotice(savedAt, online));
-  if (failed) out.push("Some of your records couldn't be loaded.");
-  if (installHint) out.push(installHint);
+  if (updating) {
+    out.push({ kind: "updating", text: "Updating your list…" });
+  } else if (savedAt && offline) {
+    out.push({ kind: "offline", text: "No connection. List from " + listDate(savedAt, now) + "." });
+  } else if (savedAt && needsSignIn) {
+    out.push({ kind: "sign-in", text: "List from " + listDate(savedAt, now) + ". Sign in again to update it." });
+  }
+  if (failed) out.push({ kind: "failed", text: "Some records didn't load." });
+  if (installTip) out.push({ kind: "install", text: installTip });
   return out;
 }
