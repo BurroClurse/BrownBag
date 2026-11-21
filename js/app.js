@@ -11,10 +11,13 @@ import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "./view.js";
 import { saveRecords, loadLastRecords } from "./offline.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout } from "./pass.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
 var SEARCH_DELAY_MS = 300;
+// How long an update with the pass waits for the health system.
+var UPDATE_WAIT_MS = 8000;
 
 var root = document.getElementById("app");
 var params = new URLSearchParams(location.search);
@@ -31,7 +34,12 @@ var state = {
   announce: "",
   focusId: null,
   savedAt: null,
-  screen: "home"
+  screen: "home",
+  // The notes at the top of home: updating with the pass, no connection,
+  // or the pass ended (or there is none) and the list is a saved copy.
+  updating: false,
+  offline: false,
+  needsSignIn: false
 };
 
 // Keeps the app's own files on the phone so it opens with no signal (sw.js).
@@ -46,6 +54,11 @@ async function start() {
   if (history.state && history.state.bb) history.replaceState(null, "");
   clear(root);
   state.key = await showLockScreen(root);
+  // One unlock: with a saved list and a pass, show the list now and update
+  // it in place, with no sign-in page.
+  if (!cameBackFromAuth && await openWithPass()) {
+    return;
+  }
   var client;
   try {
     client = await FHIR.oauth2.ready();
@@ -55,21 +68,88 @@ async function start() {
   }
   drawLoading();
   try {
-    var patient = await client.patient.read();
-    state.patientId = client.patient.id;
-    state.patient = { name: formatName(patient), birthDate: patient.birthDate || "" };
+    await loadFromClient(client);
   } catch (error) {
     await signInUnavailable(error);
     return;
   }
+  await keepPass(client);
+  render();
+}
+
+async function openWithPass() {
+  var saved = await loadLastRecords(localStorage, state.key);
+  var pass = saved ? await loadPass(localStorage, state.key, saved.patientId) : null;
+  if (!pass) {
+    return false;
+  }
+  useSaved(saved);
+  await loadAdditions();
+  state.updating = navigator.onLine;
+  state.offline = !navigator.onLine;
+  render();
+  if (state.updating) {
+    await updateWithPass(pass);
+  }
+  return true;
+}
+
+// Trades the pass for fresh access, then loads the records the same way a
+// sign-in does. A refused pass is deleted; no signal keeps it for next time.
+async function updateWithPass(pass) {
+  try {
+    var client = FHIR.client(clientStateFromPass(pass));
+    await withTimeout(client.refresh(), UPDATE_WAIT_MS);
+    var fresh = passFromState(client.state);
+    if (fresh && fresh.refreshToken !== pass.refreshToken) {
+      await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
+    }
+    await loadFromClient(client);
+  } catch (error) {
+    if (refreshRefused(error)) {
+      await deletePass(localStorage, pass.patientId);
+      state.needsSignIn = true;
+    } else {
+      state.offline = true;
+    }
+  }
+  state.updating = false;
+  // Other screens pick up the new list when they go back home, so nothing
+  // the patient is typing gets redrawn away.
+  if (state.screen === "home") {
+    render();
+  }
+}
+
+async function keepPass(client) {
+  try {
+    var pass = passFromState(client.state);
+    if (pass) {
+      await savePass(localStorage, state.key, pass);
+    }
+  } catch (error) {
+    // No pass this time: the next open asks to sign in, as before.
+  }
+}
+
+// The patient, the patient's additions and the medicines, then the copy
+// saved for offline use. Throws if the patient can't be read.
+async function loadFromClient(client) {
+  var patient = await client.patient.read();
+  state.patientId = client.patient.id;
+  state.patient = { name: formatName(patient), birthDate: patient.birthDate || "" };
   await loadAdditions();
   state.split = await loadMedicines(client, state.patientId);
+  state.offline = false;
+  state.needsSignIn = false;
   if (state.split.failed) {
     var saved = await loadLastRecords(localStorage, state.key);
     if (saved && saved.patientId === state.patientId) {
       useSaved(saved);
+      state.needsSignIn = true;
     }
   } else {
+    state.savedAt = null;
     try {
       await saveRecords(localStorage, state.key, {
         patientId: state.patientId,
@@ -82,7 +162,6 @@ async function start() {
       // Not saved for offline use this time. The list still shows.
     }
   }
-  render();
 }
 
 // No sign-in (closed app, no signal, weak Wi-Fi): show the last saved list
@@ -92,6 +171,8 @@ async function signInUnavailable(error) {
   if (saved) {
     useSaved(saved);
     await loadAdditions();
+    state.offline = !navigator.onLine;
+    state.needsSignIn = navigator.onLine;
     render();
   } else if (!navigator.onLine) {
     drawNoConnection();
@@ -153,6 +234,8 @@ async function loadMedicines(client, patientId) {
 // (the full list) or "more" (backup and sign out). The QR code opens over
 // whichever screen is showing (openQr).
 function render() {
+  // A redraw keeps focus where it was unless a screen change says otherwise.
+  var had = !state.focusId && document.activeElement && document.activeElement.id;
   clear(root);
   root.className = "screen-" + state.screen;
   var arranged = arrangeList(state.split, state.data);
@@ -166,6 +249,9 @@ function render() {
   var live = add(root, "p", state.announce, "status-line");
   live.setAttribute("role", "status");
   state.announce = "";
+  if (!state.focusId && had && document.getElementById(had)) {
+    document.getElementById(had).focus();
+  }
   if (state.focusId) {
     var target = document.getElementById(state.focusId);
     if (target) target.focus();
@@ -247,8 +333,11 @@ function drawMore() {
   drawBackup();
   var section = add(root, "section");
   heading(section, "Sign out", "signout-heading");
-  add(section, "p", "Signing out ends this visit to your records. Your saved list stays on this phone.", "med-line");
-  button(section, "Sign out", "secondary big", function () {
+  add(section, "p", "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time.", "med-line");
+  button(section, "Sign out", "secondary big", async function () {
+    if (state.patientId) {
+      await deletePass(localStorage, state.patientId);
+    }
     sessionStorage.clear();
     location.href = "./";
   });
@@ -594,9 +683,10 @@ function drawNotices() {
     ? installTip(navigator.userAgent)
     : null;
   var notes = noticesFor({
+    updating: state.updating,
     savedAt: state.savedAt,
-    offline: !navigator.onLine,
-    needsSignIn: Boolean(state.savedAt) && navigator.onLine,
+    offline: state.offline,
+    needsSignIn: state.needsSignIn,
     failed: state.split.failed,
     installTip: hint,
     now: new Date()
