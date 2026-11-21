@@ -56,6 +56,17 @@ export async function deletePass(storage, patientId) {
   storage.removeItem(PASS_PREFIX + await idTag(patientId));
 }
 
+// After a sign-in: keep the pass it returned, or, if it returned none (the
+// patient said no to staying signed in), remove the old one.
+export async function storePassFrom(storage, key, fhirState, patientId) {
+  var pass = passFromState(fhirState);
+  if (pass) {
+    await savePass(storage, key, pass);
+  } else if (patientId) {
+    await deletePass(storage, patientId);
+  }
+}
+
 // The token server said no (the pass ended or was withdrawn). Anything else,
 // like no signal or a slow server, keeps the pass for next time.
 export function refreshRefused(error) {

@@ -11,13 +11,15 @@ import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "./view.js";
 import { saveRecords, loadLastRecords } from "./offline.js";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout } from "./pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom } from "./pass.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
 var SEARCH_DELAY_MS = 300;
 // How long an update with the pass waits for the health system.
 var UPDATE_WAIT_MS = 8000;
+// And for the records after that (the drug lookups inside have their own 8).
+var RECORDS_WAIT_MS = 12000;
 
 var root = document.getElementById("app");
 var params = new URLSearchParams(location.search);
@@ -41,6 +43,17 @@ var state = {
   offline: false,
   needsSignIn: false
 };
+
+// A status area that stays on the page between redraws, so VoiceOver reads
+// "Updating your list…" and how the update ended.
+var liveUpdate = document.createElement("p");
+liveUpdate.id = "live-update";
+liveUpdate.className = "visually-hidden";
+liveUpdate.setAttribute("role", "status");
+document.body.appendChild(liveUpdate);
+function sayUpdate(text) {
+  liveUpdate.textContent = text;
+}
 
 // Android tells the page when Brown Bag was installed; the tip is done.
 window.addEventListener("appinstalled", function () {
@@ -100,16 +113,16 @@ async function openWithPass() {
 }
 
 // Trades the pass for fresh access, then loads the records the same way a
-// sign-in does. A refused pass is deleted; no signal keeps it for next time.
+// sign-in does. Each step has a time limit, and the new list only replaces
+// the saved one once it has fully arrived, so a late answer can't change
+// the list after "No connection" shows. Only the token server refusing the
+// pass deletes it; anything else keeps it for next time.
 async function updateWithPass(pass) {
+  sayUpdate("Updating your list…");
+  var client;
   try {
-    var client = FHIR.client(clientStateFromPass(pass));
+    client = FHIR.client(clientStateFromPass(pass));
     await withTimeout(client.refresh(), UPDATE_WAIT_MS);
-    var fresh = passFromState(client.state);
-    if (fresh && fresh.refreshToken !== pass.refreshToken) {
-      await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
-    }
-    await loadFromClient(client);
   } catch (error) {
     if (refreshRefused(error)) {
       await deletePass(localStorage, pass.patientId);
@@ -117,8 +130,35 @@ async function updateWithPass(pass) {
     } else {
       state.offline = true;
     }
+    finishUpdate();
+    return;
   }
+  try {
+    var fresh = passFromState(client.state);
+    if (fresh && fresh.refreshToken !== pass.refreshToken) {
+      await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
+    }
+    var result = await withTimeout(loadFresh(client), RECORDS_WAIT_MS);
+    if (result.split.failed) {
+      state.offline = true;
+    } else {
+      var samePatient = result.patientId === state.patientId;
+      usePatient(result);
+      if (!samePatient) {
+        await loadAdditions();
+      }
+      await keepFreshCopy();
+    }
+  } catch (error) {
+    state.offline = true;
+  }
+  finishUpdate();
+}
+
+function finishUpdate() {
   state.updating = false;
+  var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, now: new Date() })[0];
+  sayUpdate(note ? note.text : "Your list is up to date.");
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
   if (state.screen === "home") {
@@ -126,27 +166,57 @@ async function updateWithPass(pass) {
   }
 }
 
+// Saves the pass a sign-in returned, or removes the old one if this sign-in
+// didn't give one (the patient said no to staying signed in).
 async function keepPass(client) {
   try {
-    var pass = passFromState(client.state);
-    if (pass) {
-      await savePass(localStorage, state.key, pass);
-    }
+    await storePassFrom(localStorage, state.key, client.state, state.patientId);
   } catch (error) {
     // No pass this time: the next open asks to sign in, as before.
   }
 }
 
-// The patient, the patient's additions and the medicines, then the copy
-// saved for offline use. Throws if the patient can't be read.
-async function loadFromClient(client) {
+// Reads the patient and the medicines without touching what's on screen.
+// Throws if the patient can't be read.
+async function loadFresh(client) {
   var patient = await client.patient.read();
-  state.patientId = client.patient.id;
-  state.patient = { name: formatName(patient), birthDate: patient.birthDate || "" };
-  await loadAdditions();
-  state.split = await loadMedicines(client, state.patientId);
+  var patientId = client.patient.id;
+  return {
+    patientId: patientId,
+    patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
+    split: await loadMedicines(client, patientId)
+  };
+}
+
+function usePatient(result) {
+  state.patientId = result.patientId;
+  state.patient = result.patient;
+  state.split = result.split;
+  state.savedAt = null;
   state.offline = false;
   state.needsSignIn = false;
+}
+
+async function keepFreshCopy() {
+  try {
+    await saveRecords(localStorage, state.key, {
+      patientId: state.patientId,
+      patient: state.patient,
+      current: state.split.current,
+      older: state.split.older,
+      savedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    // Not saved for offline use this time. The list still shows.
+  }
+}
+
+// After a sign-in: the patient, the patient's additions and the medicines,
+// then the copy saved for offline use. Throws if the patient can't be read.
+async function loadFromClient(client) {
+  var result = await loadFresh(client);
+  usePatient(result);
+  await loadAdditions();
   if (state.split.failed) {
     var saved = await loadLastRecords(localStorage, state.key);
     if (saved && saved.patientId === state.patientId) {
@@ -154,18 +224,7 @@ async function loadFromClient(client) {
       state.needsSignIn = true;
     }
   } else {
-    state.savedAt = null;
-    try {
-      await saveRecords(localStorage, state.key, {
-        patientId: state.patientId,
-        patient: state.patient,
-        current: state.split.current,
-        older: state.split.older,
-        savedAt: new Date().toISOString()
-      });
-    } catch (error) {
-      // Not saved for offline use this time. The list still shows.
-    }
+    await keepFreshCopy();
   }
 }
 

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout } from "../js/pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom } from "../js/pass.js";
 import { deriveKeyFromPin, exportBackup, savePatientData } from "../js/vault.js";
 
 // A localStorage stand-in with the parts the app uses.
@@ -104,4 +104,17 @@ test("withTimeout gives up after the time and passes results through", async () 
 test("the pass module is kept for offline use", () => {
   const worker = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
   assert.ok(worker.includes('"./js/pass.js"'));
+});
+
+test("storePassFrom saves the pass a sign-in returns", async () => {
+  const storage = memoryStorage();
+  await storePassFrom(storage, await key(), STATE, "p1-patient-id");
+  assert.equal((await loadPass(storage, await key(), "p1-patient-id")).refreshToken, "r1-refresh-token");
+});
+
+test("a sign-in that returns no refresh token removes the old pass", async () => {
+  const storage = memoryStorage();
+  await savePass(storage, await key(), passFromState(STATE));
+  await storePassFrom(storage, await key(), { ...STATE, tokenResponse: { access_token: "a2", patient: "p1-patient-id" } }, "p1-patient-id");
+  assert.equal(await loadPass(storage, await key(), "p1-patient-id"), null);
 });
