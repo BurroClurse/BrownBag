@@ -392,6 +392,48 @@ cases you already thought of.
 **Practice in the lab:** the [Guided Lab](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#guided-lab) runs the same
 sign-in you just did on the phone, so you can watch each step happen.
 
+### Step 6. The lock (`js/lock.js`, `js/lock-screen.js`)
+
+**What it does.** The first time Brown Bag opens, it asks you to set up a
+lock. After that, every time it opens, it asks for Face ID, your fingerprint,
+or a 6-digit PIN before showing anything.
+
+**Where the key comes from.** Your additions are encrypted (Step 2), and
+encryption needs a key. The key is never saved. It's rebuilt each time you
+unlock:
+
+- **Face ID or fingerprint:** a **passkey** (a sign-in kept in your phone's
+  secure chip). Passkeys have an add-on called **PRF**: give it the same
+  random input and it always returns the same secret, but only after Face ID
+  says it's you. That secret becomes the key.
+- **PIN:** for phones or browsers without PRF. The key is made from the PIN
+  with PBKDF2 (Step 2), which repeats a calculation 600,000 times so guessing
+  PINs is slow.
+
+**Telling a right PIN from a wrong one.** A wrong PIN still makes *a* key,
+just the wrong one. So at set-up Brown Bag encrypts a small known phrase and
+saves it. Unlocking tries to decrypt that phrase. If it fails, the PIN was
+wrong, and you see "That PIN didn't work."
+
+**Why the lock is part of the main page.** The plan had a separate lock page
+that sent you back to the main page after unlocking. But a key kept only in
+memory disappears when the browser changes page. So the lock screen is drawn
+inside the main page instead, and the key never has to be saved anywhere.
+Closing or reloading the page locks Brown Bag again.
+
+**A surprise about addresses.** Passkeys refuse plain number addresses like
+`192.168.0.224`. On that address Brown Bag falls back to the PIN. To test Face
+ID on your phone, the test certificate now also covers your Mac's network
+name, `Tylers-Mac-mini-351.local`, and the server prints that address too.
+
+**Tests first.** 11 tests use a pretend passkey that behaves like a real one
+(same input, same secret). They failed first because `js/lock.js` didn't
+exist, then all passed. The screens themselves get checked by hand on your
+phone.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes"
+is the place to go when a sign-in or unlock fails during your own testing.
+
 ---
 
 ## Glossary
@@ -411,6 +453,7 @@ sign-in you just did on the phone, so you can watch each step happen.
 - **https**: the secure version of web pages. The padlock in the address bar.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
 - **Passkey**: a sign-in that uses Face ID, fingerprint or the phone's PIN.
+- **PRF**: a passkey add-on that returns the same secret each time, after Face ID.
 - **PBKDF2**: slows down guessing by repeating a calculation many times.
 - **Push**: copy commits from your Mac to GitHub.
 - **Repository (repo)**: a project folder with full history.

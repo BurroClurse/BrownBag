@@ -58,7 +58,11 @@ https.createServer(options, function (request, response) {
   console.log("  https://localhost:" + PORT + "/");
   Object.values(os.networkInterfaces()).flat().forEach(function (net) {
     if (net && net.family === "IPv4" && !net.internal) {
-      console.log("  https://" + net.address + ":" + PORT + "/   (open this on your phone)");
+      console.log("  https://" + net.address + ":" + PORT + "/   (phone, PIN lock only)");
     }
   });
+  // Passkeys (Face ID, fingerprint) refuse number addresses, so the phone
+  // uses the Mac's network name to test them. The certificate includes it.
+  var name = os.hostname().replace(/\.local$/, "") + ".local";
+  console.log("  https://" + name + ":" + PORT + "/   (phone, Face ID works here)");
 });
