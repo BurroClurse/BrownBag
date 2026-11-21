@@ -762,10 +762,72 @@ shrink while the buttons stay the same size. In the Rendering panel,
 "Emulate CSS media feature prefers-reduced-motion" switches the swoosh to
 the fade.
 
+
+### Step 13. One unlock (`js/pass.js`, `launch.html`, `js/app.js`)
+
+You asked why there were two sign-ins. They belonged to two different
+owners. **Unlocking Brown Bag** (Face ID or PIN) is Brown Bag's own lock on
+the copy saved on the phone. **Signing in** is the health system's page,
+and Brown Bag can't skip it. That sign-in only lasted while the page was
+open, so every reopen asked again.
+
+**Refresh tokens.** When an app signs in with SMART, the health system
+gives it an **access token**: a pass that works for about an hour (3600
+seconds in the sandbox). If the app also asks for the `offline_access`
+permission, the health system adds a **refresh token**: a long-lasting pass
+the app can trade for a new access token later, with no sign-in page.
+`launch.html` now asks for `offline_access`. Before building, we tested
+that the sandbox really hands one to Brown Bag and accepts it back.
+
+**Where the pass lives.** `js/pass.js` keeps only what's needed (the
+server's address, the token address, the refresh token and the patient
+id), encrypted with the same key as your saved list. So the pass is
+useless without an unlock. Backup files leave it out: a backup in iCloud
+shouldn't carry a key to your records. You chose to keep it with a PIN lock
+too, knowing a 6-digit PIN is easier to guess than Face ID if someone
+copies the phone's data.
+
+**What opening looks like now.** Unlock, and home shows your saved list at
+once with "Updating your list…" at the top. Brown Bag trades the pass for
+fresh access (`client.refresh()` in fhirclient) and loads your records the
+same way a sign-in does. Then the new list replaces the old one. Three
+things can go wrong, and each has its own answer:
+
+- **No signal, or the server is slow** (more than 8 seconds): the pass is
+  kept for next time, and the note says "No connection. List from Nov 21."
+- **The health system says no** (the pass ended or was taken back): the
+  server answers with an error code (400 or 401). The pass is deleted, and
+  the note says "List from Nov 21. Sign in again to update it." with a Sign
+  in button.
+- **You're on My medicines when the update lands:** that screen isn't
+  redrawn, so nothing you're typing is lost. Home shows the new list when
+  you tap Done.
+
+**Sign out** now deletes the pass, so the next open asks you to sign in.
+
+**The notes at the top.** Each note is now one short line in a single
+card. The Home Screen instructions moved behind a How? button, onto their
+own screen, which ends with "I've done this" to put the tip away for good.
+The same steps are under More options. On Android, the phone tells the page
+when Brown Bag is installed, and the tip goes away by itself.
+
+**How it was checked.** A headless Chrome script controlled the
+sandbox's answers to the update request (Chrome's DevTools can hold,
+refuse or break any request). It held the request to see "Updating your
+list…", refused it to see "Sign in again", and cut it off to see "No
+connection". It also checked that the refresh token never appears in plain
+text in the phone's storage, and that the bag keeps a third of an iPhone
+SE screen with two notes showing.
+
+**Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens)
+explains access tokens. Look at what a sign-in returns, and compare it
+with what Brown Bag keeps (`passFromState` in `js/pass.js`).
+
 ---
 
 ## Glossary
 
+- **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.
 - **Access token**: the pass the sign-in page gives the app, used on every
   request for records.
 - **AES-GCM**: the encryption method we use. Scrambles data and detects
