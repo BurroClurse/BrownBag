@@ -730,7 +730,7 @@ async function buildQr() {
     overlay.style.setProperty("--from-y", (from.top + from.height * 0.35 - innerHeight / 2) + "px");
   }
   var titleRow = add(overlay, "div", null, "help-row");
-  var title = add(titleRow, "h2", fits ? "Show this to the person checking you in" : "Your list is too long for one QR code");
+  var title = add(titleRow, "h2", fits ? "Show this to the person checking your medicines" : "Your list is too long for one QR code");
   title.id = "qr-heading";
   if (fits) {
     var whatsIn = helpBubble(titleRow, "What's in this code?", function (panel) {
@@ -762,7 +762,7 @@ async function buildQr() {
     var sayRow = add(overlay, "div", null, "help-row");
     add(sayRow, "p", "After they scan it, tell them this code:", "qr-say");
     var why = helpBubble(sayRow, "Why tell them the code?", function (panel) {
-      add(panel, "p", "The QR code holds your list, locked. These 6 digits are its key. After the person checking you in scans it, their screen asks for the digits, and telling them opens your list. Someone who only sees or takes a photo of the QR code can't read it.");
+      add(panel, "p", "The QR code holds your list, locked. These 6 digits are its key. After the person checking your medicines scans it, their screen asks for the digits, and telling them opens your list. Someone who only sees or takes a photo of the QR code can't read it.");
       add(panel, "p", "The digits stay hidden until you tap them, so people nearby can't see them. You get a new code each time.");
     });
     drawCodeReveal(overlay, packed.code);
