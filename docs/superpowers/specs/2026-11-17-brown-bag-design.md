@@ -325,6 +325,15 @@ TLS is already there. Two-factor sign-in belongs to each health system.
   providers (vaccine records, CARIN digital insurance card), so staff see
   those as verified next to Brown Bag's patient-reported list (Tyler,
   2026-11-20).
+- Provider Health Cards inside Brown Bag. The patient adds signed SMART
+  Health Cards they already have (vaccine record, lab result, insurance
+  card) and Brown Bag keeps them in its encrypted storage to show offline.
+  Scanners verify them; anyone who scans one can read it. Needs a second
+  source that issues cards: the SMART sandbox can't (checked 2026-11-20).
+  Course staff suggested Epic's sandbox; Oracle Health documents the issue
+  operation; the Inferno test kit only checks cards. Provider cards hold
+  vaccines, labs and insurance, not medication lists. Moved to Later by
+  Tyler, 2026-11-20.
 - Allergies with the reaction, health history, implanted devices, emergency
   contact.
 - Staff screen (Med History Helper).
@@ -381,12 +390,3 @@ If it becomes a business:
 - Course staff: does one app with patient and staff sign-ins count as one
   app, and does spring have to be provider-facing. Doesn't affect the fall
   build.
-- Provider Health Cards inside Brown Bag (Tyler, 2026-11-20). The patient
-  adds signed SMART Health Cards they already have (vaccine record, lab
-  result, insurance card) and Brown Bag keeps them in its encrypted storage
-  to show offline. Signed by the provider, so scanners verify them. Not
-  encrypted once shown: anyone who scans one reads it. Depends on course
-  staff's answer: the SMART sandbox can't issue Health Cards (checked
-  2026-11-20: no issue operation in its capability statement, no
-  `health-cards` in its SMART settings). If staff name a test server that
-  can, this moves into the fall build. If not, it moves to Later.
