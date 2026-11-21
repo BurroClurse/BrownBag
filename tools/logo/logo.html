@@ -11,7 +11,7 @@
   and saves PNGs: ?mode=logo (bag with the name) and ?mode=icon (bag with
   two pills, no text).
   Colors: kraft #C8925E, side #A97548, shade #B37E50, outline #6B3A1F,
-  name and pill outline #164F5A, pill mint #6FB09F.
+  name and pill outline #164F5A, pill mint #164F5A.
 -->
 <style>
   html, body { margin: 0; background: transparent; }
@@ -80,7 +80,7 @@
     el("rect", { x: 0, y: -r, width: length, height: width, rx: r }, clip);
     var inside = el("g", { "clip-path": "url(#" + id + ")" }, g);
     el("rect", { x: 0, y: -r, width: length / 2, height: width, fill: "#FFFFFF" }, inside);
-    el("rect", { x: length / 2, y: -r, width: length / 2, height: width, fill: "#6FB09F" }, inside);
+    el("rect", { x: length / 2, y: -r, width: length / 2, height: width, fill: "#164F5A" }, inside);
     el("path", {
       d: "M" + (length * 0.6) + " " + (-r * 0.45) + " L" + (length - r * 1.0) + " " + (-r * 0.45),
       stroke: "#FFFFFF", "stroke-width": width * 0.11, "stroke-linecap": "round", opacity: 0.7
