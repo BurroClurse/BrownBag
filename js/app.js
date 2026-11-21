@@ -42,6 +42,8 @@ if ("serviceWorker" in navigator) {
 start();
 
 async function start() {
+  // A reload keeps the last history step; start from home's.
+  if (history.state && history.state.bb) history.replaceState(null, "");
   clear(root);
   state.key = await showLockScreen(root);
   var client;
@@ -171,7 +173,27 @@ function render() {
   }
 }
 
+// The phone's Back button. Each screen past home, and the QR code, is one
+// step in the browser's history, so Back goes home or closes the code
+// instead of leaving Brown Bag. Done and Close take that same step back.
+var BACK_FOCUS = { medicines: "open-medicines", more: "open-more" };
+window.addEventListener("popstate", function () {
+  if (document.getElementById("qr-overlay")) {
+    var after = qrAfter;
+    qrAfter = null;
+    closeQr(after, true);
+  } else if (state.screen !== "home") {
+    go("home", BACK_FOCUS[state.screen]);
+  }
+});
+
 function go(screen, focusId) {
+  if (screen !== "home" && state.screen === "home") {
+    history.pushState({ bb: screen }, "");
+  } else if (screen === "home" && history.state && history.state.bb) {
+    history.back();
+    return;
+  }
   state.screen = screen;
   state.focusId = focusId;
   render();
@@ -418,8 +440,30 @@ function drawStopped(arranged) {
 // back in on Close (css/brownbag.css; a fade with Reduce Motion). It shows
 // only the code, the 6 digits and Close. Focus stays inside it, Escape
 // closes it, and focus goes back to "Show my QR code".
+// Making the code takes about a second (the list is encrypted first). A
+// second tap in that time is ignored, and the button says it's working.
+var qrBusy = false;
+var qrAfter = null;
 async function openQr() {
-  if (document.getElementById("qr-overlay")) return;
+  if (qrBusy || document.getElementById("qr-overlay")) return;
+  qrBusy = true;
+  var showButton = document.getElementById("show-qr");
+  if (showButton) {
+    showButton.textContent = "Getting your code…";
+    showButton.setAttribute("aria-busy", "true");
+  }
+  try {
+    await buildQr();
+  } finally {
+    qrBusy = false;
+    if (showButton) {
+      showButton.textContent = "Show my QR code";
+      showButton.removeAttribute("aria-busy");
+    }
+  }
+}
+
+async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   // Staff are told when the records part is an older saved copy, or when a
   // source failed to load, so a partial list never looks complete.
@@ -469,12 +513,22 @@ async function openQr() {
   document.body.appendChild(overlay);
   root.inert = true;
   root.setAttribute("aria-hidden", "true");
+  history.pushState({ bb: "qr" }, "");
   document.getElementById("qr-close").focus();
 }
 
-function closeQr(after) {
+// fromHistory is true when the Back button (or Close, through history.back)
+// is what closes it.
+function closeQr(after, fromHistory) {
   var overlay = document.getElementById("qr-overlay");
   if (!overlay || overlay.classList.contains("closing")) return;
+  if (!fromHistory && history.state && history.state.bb === "qr") {
+    if (overlay.dataset.leaving) return;
+    overlay.dataset.leaving = "yes";
+    qrAfter = after || null;
+    history.back();
+    return;
+  }
   overlay.classList.add("closing");
   root.inert = false;
   root.removeAttribute("aria-hidden");

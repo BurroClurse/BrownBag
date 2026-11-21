@@ -267,6 +267,15 @@ button.secondary.big { border-color: var(--teal); }
   text-align: center;
 }
 .qr-overlay h2 { border: none; margin: 0 0 0.75rem; font-size: 1.4rem; }
+/* Centered with auto margins rather than justify-content, so with very
+   large text the top stays reachable by scrolling instead of cut off. */
+.qr-overlay { justify-content: flex-start; }
+.qr-overlay > :first-child { margin-top: auto; }
+.qr-overlay > :last-child { margin-bottom: auto; }
+/* The code screen is white in dark mode too, so its outline buttons and
+   focus ring use the light-mode colors. */
+.qr-overlay { --focus: #1a56db; }
+.qr-overlay button.secondary { color: #1b1b1b; border-color: #164F5A; }
 .qr-overlay .qr { margin: 0; }
 .qr-overlay .qr canvas { width: min(88vw, 52dvh); height: auto; }
 .qr-overlay .qr-say { margin: 0.75rem 0 0; font-size: 1.15rem; }
