@@ -294,7 +294,7 @@ function drawAdditions() {
   if (state.adding) {
     drawAddForm(section);
   } else {
-    var open = button(section, "+ Add a medicine or supplement", null, function () {
+    var open = button(section, "+ Add a medicine or supplement", "primary big", function () {
       state.adding = true;
       state.focusId = "add-name";
       render();

@@ -694,6 +694,74 @@ You chose to fix all nine. What changed on screen:
 Two older tests had pinned the old behavior (brand names first, and a newer
 stopped record's details). They were updated to the new rules on purpose.
 
+
+### Step 12. One screen around the bag (`js/app.js`, `css/brownbag.css`)
+
+You asked for an app a 90-year-old could use: one screen, no scrolling, big
+buttons, the logo in the middle, and a QR code that swooshes out of the bag.
+
+**Three screens instead of one long page.** The app now remembers which
+screen it's on (`state.screen`): **home**, **My medicines** or **More
+options**. Drawing the page starts over each time, so changing screens is
+just "set the screen, draw again". Home has the bag, "Show my QR code", "My
+medicines (4)" and "More options". The list, with "I stopped this" and the
+add button, moved to My medicines. Backup and Sign out moved to More options.
+Each of those screens has a big Done button at the top.
+
+**How home fits one screen.** Home is a column exactly as tall as the
+phone's screen (`height: 100dvh`; `dvh` means the part you can see, not
+counting Safari's address bar). The bag is told to take whatever room is
+left (`flex: 1`), so on a short phone the bag shrinks and the buttons stay
+56 points tall. At very large text sizes the screen scrolls instead of
+cutting anything off.
+
+**The swoosh.** When you tap "Show my QR code" or the bag, the app measures
+where the bag is on the screen and hands that spot to the stylesheet. The
+code screen starts there, tiny and tilted, and grows to fill the screen in
+under half a second. Close plays it backwards into the bag. This is a **CSS
+animation**: the motion is described in the stylesheet (`@keyframes qr-in`),
+and the browser draws the in-between frames.
+
+**Reduce Motion.** Some people get dizzy from moving screens and turn on
+Settings ▸ Accessibility ▸ Motion ▸ Reduce Motion. The page can read that
+setting (`prefers-reduced-motion`). With it on, the code screen only fades
+in and out. One bug on the way: an older rule switched off *every*
+animation under Reduce Motion, so even the fade never ran. The code screen
+is now the one exception.
+
+**Focus.** When the code opens, the keyboard and VoiceOver move to its Close
+button, and the rest of the app is switched off behind it (`inert`), so
+VoiceOver can't wander onto buttons you can't see. Escape or Close puts you
+back on "Show my QR code".
+
+**The bag on every screen.** Lock, sign-in, loading and the staff page show
+the bag on the same wheat card as the app icon, so its dark letters read in
+dark mode too. Sign-in errors now say "Sign-in didn't finish. Tap Sign in to
+try again." instead of the server's raw message.
+
+**Two things the redesign broke, caught by tests.** The Home Screen tip
+still said "tap Save a backup below", but that button had moved to More
+options. And the new logo file wasn't in the service worker's offline list,
+so it would have been missing with no signal. A new test now checks that
+every picture the pages use is kept for offline.
+
+**How it was checked.** Scripts drove headless Chrome (Chrome with no
+window, controlled by code) at iPhone 15 size (390 by 844) and iPhone SE
+size (375 by 667). They checked that the page is no taller than the screen,
+even with the "No connection" bar showing, that the buttons are at least 56
+points tall, which animation runs with Reduce Motion on and off, and where
+focus lands. They also checked that a patient with no medicines still sees
+"My medicines (0)" and a working QR code, and that stopping a medicine drops
+the count. axe, an accessibility scanner, found no problems on any screen
+in light or dark mode.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+Open Brown Bag in Chrome on your Mac, open DevTools, and turn on the device
+toolbar (the phone icon). Pick iPhone SE and iPhone 15 Pro and watch the bag
+shrink while the buttons stay the same size. In the Rendering panel,
+"Emulate CSS media feature prefers-reduced-motion" switches the swoosh to
+the fade.
+
 ---
 
 ## Glossary
@@ -712,6 +780,8 @@ stopped record's details). They were updated to the new rules on purpose.
 - **_include**: a FHIR search option that also returns the records the results point to.
 - **GitHub Pages**: GitHub's free hosting for web pages. It publishes `main`.
 - **https**: the secure version of web pages. The padlock in the address bar.
+- **CSS animation**: motion described in the stylesheet; the browser draws the frames between start and end.
+- **dvh**: a CSS unit, one hundredth of the screen height you can actually see.
 - **Manifest**: a small file that tells a phone how to install a website like an app.
 - **WCAG**: the web accessibility standard. Brown Bag aims for level AA.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
