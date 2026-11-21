@@ -11,7 +11,7 @@ function memoryStorage() {
 }
 
 const SAVED = {
-  patientId: "p1",
+  patientId: "patient-7f3a9c-sandbox",
   patient: { name: "Jane Example", birthDate: "1961-04-02" },
   current: [{ key: "rx:1", name: "lisinopril 10 MG Oral Tablet", status: "current" }],
   older: [],
@@ -32,7 +32,7 @@ test("saved records are not readable as plain text", async () => {
   const storage = memoryStorage();
   await saveRecords(storage, await key(), SAVED);
   assert.ok(!storage.dump().includes("lisinopril"));
-  assert.ok(!storage.dump().includes("p1"));
+  assert.ok(!storage.dump().includes("patient-7f3a9c-sandbox"));
 });
 
 test("loadLastRecords is null when nothing is saved", async () => {
