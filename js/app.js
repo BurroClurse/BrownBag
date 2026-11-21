@@ -637,28 +637,38 @@ async function save() {
 }
 
 function drawSignedOut(error) {
-  clear(root);
-  add(root, "h1", "Brown Bag");
-  add(root, "p", DISCLAIMER, "disclaimer");
-  add(root, "p", "Sign in to your health records to load your medicines.");
+  plainScreen();
+  add(root, "p", "Sign in to your health records to load your medicines.", "screen-text");
   if (error) {
-    add(root, "p", "Sign-in didn't finish: " + (error.message || String(error)), "error");
+    // The server's own wording is for developers; it goes to the console.
+    console.error("Sign-in didn't finish", error);
+    add(root, "p", "Sign-in didn't finish. Tap Sign in to try again.", "error");
   }
-  var link = add(root, "a", "Sign in", "button");
+  var link = add(root, "a", "Sign in", "button primary big");
   link.href = "./launch.html";
+  add(root, "p", DISCLAIMER, "disclaimer");
 }
 
 function drawNoConnection() {
-  clear(root);
-  add(root, "h1", "Brown Bag");
+  plainScreen();
   add(root, "p", "No connection, and no saved list on this phone yet. Connect once to save your list.", "notice");
 }
 
 function drawLoading() {
-  clear(root);
-  add(root, "h1", "Brown Bag");
-  var p = add(root, "p", "Loading your medicines…");
+  plainScreen();
+  var p = add(root, "p", "Loading your medicines…", "screen-text");
   p.setAttribute("role", "status");
+}
+
+// The sign-in, loading and no-connection screens: the bag at the top as the
+// screen's heading, so a screen reader still reads "Brown Bag".
+function plainScreen() {
+  clear(root);
+  root.className = "screen-plain";
+  var title = add(root, "h1", null, "screen-title");
+  var picture = add(title, "img", null, "screen-logo");
+  picture.src = "icons/logo-trimmed.png";
+  picture.alt = "Brown Bag";
 }
 
 function heading(parent, text, id) {

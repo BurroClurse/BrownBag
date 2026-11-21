@@ -25,12 +25,14 @@ if (fragment) {
 // Opened without the list part of the link (for example, typed by hand).
 function drawNoList() {
   clear(root);
+  addLogo();
   add(root, "h1", "Shared medicine list");
   add(root, "p", "This link has no list in it. Ask the patient to show their QR code again.", "notice");
 }
 
 function drawCodeForm(message) {
   clear(root);
+  addLogo();
   add(root, "h1", "Shared medicine list");
   add(root, "p", DISCLAIMER, "disclaimer");
   var form = add(root, "form");
@@ -77,6 +79,7 @@ function drawCodeForm(message) {
 
 function drawList(groups) {
   clear(root);
+  addLogo();
   var title = add(root, "h1", groups.patient ? groups.patient.name : "Shared medicine list");
   title.tabIndex = -1;
   if (groups.patient && groups.patient.birthDate) {
@@ -115,6 +118,13 @@ function madeOn(timestamp) {
   var date = new Date(timestamp);
   if (isNaN(date)) return "an unknown date";
   return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+// The bag, small, at the top of the staff page. Decoration only.
+function addLogo() {
+  var picture = add(root, "img", null, "share-logo");
+  picture.src = "icons/logo-trimmed.png";
+  picture.alt = "";
 }
 
 function add(parent, tag, text, className) {

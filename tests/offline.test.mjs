@@ -86,3 +86,12 @@ test("the service worker leaves other sites on the same address alone", () => {
   const route = loadWorker().routeFor;
   assert.equal(route("https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/index.html"), "network");
 });
+
+test("every picture the app's pages use is saved for offline", () => {
+  const worker = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
+  const pages = ["index.html", "share.html", "js/app.js", "js/lock-screen.js", "js/share-view.js"]
+    .map((file) => readFileSync(new URL("../" + file, import.meta.url), "utf8")).join("\n");
+  const pictures = [...new Set(pages.match(/icons\/[\w-]+\.png/g))];
+  assert.ok(pictures.includes("icons/logo-trimmed.png"), "the logo is used on the screens");
+  for (const picture of pictures) assert.ok(worker.includes('"./' + picture + '"'), picture + " is in the offline list");
+});

@@ -139,7 +139,22 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
   font-variant-numeric: tabular-nums;
 }
 
-.lock { margin-top: 2rem; }
+.lock { margin-top: 1rem; }
+
+/* The bag on the lock, sign-in, loading and staff screens, on the same
+   wheat card as the home screen so its dark letters read in dark mode. */
+.screen-logo, .share-logo {
+  display: block;
+  height: auto;
+  margin: 0 auto 1rem;
+  box-sizing: border-box;
+  background: #F3DDBE;
+}
+.screen-logo { width: min(62vw, 260px); padding: 0.9rem; border-radius: 24px; }
+.share-logo { width: 96px; padding: 0.4rem; border-radius: 14px; margin-bottom: 0.25rem; }
+.screen-title { border: none; margin: 1rem 0 0; }
+.screen-text { font-size: 1.25rem; text-align: center; }
+a.button.big { text-align: center; line-height: 2.4rem; }
 
 @media (prefers-reduced-motion: reduce) {
   /* The QR screen is left out: it fades instead (see the swoosh below). */

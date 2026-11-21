@@ -12,7 +12,7 @@ function memoryStorage() {
 }
 
 test("installHint gives iPhone steps on an iPhone", () => {
-  assert.equal(installHint(IPHONE), "Add Brown Bag to your Home Screen so your list isn't erased. The Home Screen app starts empty, so first tap Save a backup below. Then tap Share, then Add to Home Screen, open it, and choose Restore from a backup.");
+  assert.equal(installHint(IPHONE), "Add Brown Bag to your Home Screen so your list isn't erased. The Home Screen app starts empty, so first tap More options, then Save a backup. Then tap Share, then Add to Home Screen, open it, and choose Restore from a backup.");
 });
 
 test("installHint gives the Android wording on Android", () => {

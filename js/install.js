@@ -12,7 +12,7 @@ export function installHint(userAgent) {
   if (/iPhone|iPad|iPod/.test(ua)) {
     // iPhone keeps a Home Screen app's storage apart from Safari's, so the
     // list has to travel by backup.
-    return "Add Brown Bag to your Home Screen so your list isn't erased. The Home Screen app starts empty, so first tap Save a backup below. Then tap Share, then Add to Home Screen, open it, and choose Restore from a backup.";
+    return "Add Brown Bag to your Home Screen so your list isn't erased. The Home Screen app starts empty, so first tap More options, then Save a backup. Then tap Share, then Add to Home Screen, open it, and choose Restore from a backup.";
   }
   if (/Android/.test(ua)) {
     return "Install Brown Bag from the browser menu so your list isn't erased.";

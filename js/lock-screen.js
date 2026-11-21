@@ -224,6 +224,13 @@ function panel(root, heading) {
   var box = document.createElement("section");
   box.className = "lock";
   box.setAttribute("aria-labelledby", "lock-heading");
+  // The bag above the heading, as on every screen. Decoration only: the
+  // heading says what the screen is for.
+  var picture = document.createElement("img");
+  picture.className = "screen-logo";
+  picture.src = "icons/logo-trimmed.png";
+  picture.alt = "";
+  box.appendChild(picture);
   var title = document.createElement("h1");
   title.id = "lock-heading";
   title.textContent = heading;
@@ -255,7 +262,7 @@ function say(element, text) {
 function action(parent, text, kind) {
   var button = document.createElement("button");
   button.type = "button";
-  button.className = kind === "secondary" ? "button secondary" : "button";
+  button.className = kind === "secondary" ? "button secondary big" : "button primary big";
   button.textContent = text;
   parent.appendChild(button);
   return button;
