@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -128,4 +128,25 @@ test("emptyRecordsText explains why From your records is empty", () => {
   assert.equal(emptyRecordsText({ current: [], older: [item("rx:2", "y")] }, { current: [], stopped: [] }), "No current medicines in your records.");
   assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [], stopped: [item("rx:1", "x")] }), "You've marked all your current medicines stopped.");
   assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [item("rx:1", "x")], stopped: [] }), null);
+});
+
+test("medicineCount counts current records not marked stopped, plus additions", () => {
+  const arranged = { current: [item("rx:1", "a"), item("rx:2", "b")], older: [item("rx:9", "z")], stopped: [item("rx:3", "c")] };
+  assert.equal(medicineCount(arranged, [{ id: "1" }, { id: "2" }, { id: "3" }]), 5);
+  assert.equal(medicineCount({ current: [], older: [], stopped: [] }, []), 0);
+});
+
+test("medicinesButtonText shows the count", () => {
+  assert.equal(medicinesButtonText(0), "My medicines (0)");
+  assert.equal(medicinesButtonText(8), "My medicines (8)");
+});
+
+test("noticesFor lists the notices in order, and nothing when all is well", () => {
+  const at = new Date(2026, 10, 20, 20, 30).toISOString();
+  assert.deepEqual(noticesFor({ savedAt: at, online: false, failed: true, installHint: "Add Brown Bag to your Home Screen." }), [
+    "No connection. Showing your list saved on Nov 20, 2026. It may be out of date.",
+    "Some of your records couldn't be loaded.",
+    "Add Brown Bag to your Home Screen."
+  ]);
+  assert.deepEqual(noticesFor({ savedAt: null, online: true, failed: false, installHint: null }), []);
 });

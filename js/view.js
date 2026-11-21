@@ -2,6 +2,8 @@
 // tests can check them: names, the three groups, and the lines of text
 // under each medicine.
 
+import { savedNotice } from "./offline.js";
+
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
 export function formatName(patient) {
@@ -120,4 +122,23 @@ function blankToNull(value) {
 function randomId() {
   var bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
   return Array.from(bytes, function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+}
+
+// The number on the home screen's "My medicines" button: what the patient
+// takes now, from records (not marked stopped) and their own additions.
+export function medicineCount(arranged, additions) {
+  return arranged.current.length + additions.length;
+}
+
+export function medicinesButtonText(count) {
+  return "My medicines (" + count + ")";
+}
+
+// The notices at the top of the home screen, only when needed, in order.
+export function noticesFor({ savedAt, online, failed, installHint }) {
+  var out = [];
+  if (savedAt) out.push(savedNotice(savedAt, online));
+  if (failed) out.push("Some of your records couldn't be loaded.");
+  if (installHint) out.push(installHint);
+  return out;
 }
