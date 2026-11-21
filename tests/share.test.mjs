@@ -198,3 +198,38 @@ test("a fresh, complete list carries no warnings", () => {
   assert.equal(groups.incomplete, false);
   assert.equal(oneOfEach().meta, undefined);
 });
+
+test("fills travel in the shared list and land in their own staff group", () => {
+  const fills = (count, last, insurers = ["Aetna"]) => ({ count, last, insurers, cash: false });
+  const list = {
+    patient: { name: "Avery Brownbag", birthDate: "1950-03-14" },
+    current: [
+      { name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", source: "SMART sandbox", fills: fills(3, "2025-07-23") },
+      { name: "atorvastatin 20 MG Oral Tablet", rxcui: "617310", source: "SMART sandbox", fills: fills(0, null, []) },
+      { name: "metformin hydrochloride 500 MG Oral Tablet", rxcui: "861007", source: "SMART sandbox", completedButFilled: "2026-09-22", fills: fills(1, "2026-09-22") },
+      { name: "sertraline 50 MG Oral Tablet", rxcui: "312941", origin: "claims", source: "Aetna claims", fills: fills(1, "2026-10-22") }
+    ],
+    additions: [],
+    stopped: []
+  };
+  const bundle = buildShareBundle(list, new Date("2026-11-21T12:00:00Z"));
+  const statements = bundle.entry.map((e) => e.resource).filter((r) => r.resourceType === "MedicationStatement");
+  const notes = (r) => (r.note || []).map((n) => n.text);
+  assert.ok(notes(statements[0]).includes("Last filled 2025-07-23 (Aetna claims), 3 fills"));
+  assert.ok(notes(statements[1]).includes("No fill found in claims"));
+  assert.ok(notes(statements[2]).some((t) => /marked completed/i.test(t) && t.includes("2026-09-22")));
+  assert.equal(statements[3].informationSource.display, "Aetna claims");
+  assert.equal(notes(statements[3])[0], "Filled, not in the health record");
+  assert.ok(!notes(statements[3]).some((t) => t.startsWith("From records")));
+  const groups = groupShareBundle(bundle);
+  assert.deepEqual(groups.fromClaims.map((r) => r.name), ["sertraline 50 MG Oral Tablet"]);
+  assert.equal(groups.fromRecords.length, 3);
+  assert.ok(groups.fromRecords[0].detail.includes("Last filled 2025-07-23 (Aetna claims), 3 fills"));
+});
+
+test("a list without fills shares no fill notes", () => {
+  const list = { patient: { name: "A", birthDate: "1950-01-01" }, current: [{ name: "lisinopril", rxcui: "314076", source: "SMART sandbox" }], additions: [], stopped: [] };
+  const statement = buildShareBundle(list, new Date()).entry[1].resource;
+  assert.deepEqual(statement.note.map((n) => n.text), ["From records: SMART sandbox"]);
+  assert.deepEqual(groupShareBundle(buildShareBundle(list, new Date())).fromClaims, []);
+});

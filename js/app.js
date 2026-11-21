@@ -771,6 +771,7 @@ async function buildQr() {
         "Your current medicines from your records, with the dose, how often, and who prescribed them",
         "Medicines you added",
         "Medicines you marked stopped",
+        "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
         "When the code was made, and a warning if the list is an older saved copy or some records didn't load"
       ].forEach(function (text) { add(items, "li", text); });
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");

@@ -94,6 +94,9 @@ function drawList(groups) {
   }
   note(root, DISCLAIMER);
   group("From records", groups.fromRecords, "No medicines from records.");
+  if (groups.fromClaims && groups.fromClaims.length) {
+    group("Filled, not in the health record", groups.fromClaims, "");
+  }
   group("Added by patient", groups.addedByPatient, "Nothing added by the patient.");
   group("Patient says stopped", groups.patientSaysStopped, "Nothing marked stopped.");
   title.focus();

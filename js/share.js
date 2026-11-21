@@ -5,6 +5,7 @@
 // IG): the Bundle is trimmed (no ids, short "resource:N" references), and
 // the packed list is written as digits, which a QR code holds more of.
 
+import { fillNote } from "./claims.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
 export var QR_MAX_BYTES = 2331;
@@ -39,9 +40,21 @@ export function buildShareBundle(list, now, warnings = {}) {
   }];
   list.current.forEach(function (item) {
     var statement = statementFor(item.name, item.rxcui, dosageText(item), "active");
-    statement.note = [{ text: "From records: " + item.source }];
+    if (item.origin === "claims") {
+      // Filled through insurance, but not in the health record.
+      statement.informationSource = { display: item.source };
+      statement.note = [{ text: "Filled, not in the health record" }];
+    } else {
+      statement.note = [{ text: "From records: " + item.source }];
+    }
     if (item.prescriber) {
       statement.note.push({ text: "Prescribed by " + item.prescriber });
+    }
+    if (item.completedButFilled) {
+      statement.note.push({ text: "Record marked completed, but filled " + item.completedButFilled });
+    }
+    if (item.fills) {
+      statement.note.push({ text: fillNote(item.fills) });
     }
     entries.push({ resource: statement });
   });
@@ -82,6 +95,7 @@ export function groupShareBundle(bundle) {
     recordsSavedAt: saved ? saved.display : null,
     incomplete: tags.some(function (tag) { return tag.system === TAGS && tag.code === "records-incomplete"; }),
     fromRecords: [],
+    fromClaims: [],
     addedByPatient: [],
     patientSaysStopped: []
   };
@@ -97,11 +111,15 @@ export function groupShareBundle(bundle) {
     var name = (resource.medicationCodeableConcept && resource.medicationCodeableConcept.text) || "Unnamed medicine";
     var dosage = resource.dosage && resource.dosage[0] && resource.dosage[0].text;
     var fromPatient = resource.informationSource && resource.informationSource.reference === SELF.reference;
+    var fromClaims = resource.informationSource && !resource.informationSource.reference && resource.informationSource.display;
     if (resource.status === "stopped") {
       var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
       groups.patientSaysStopped.push({ name: name, detail: joinDetail([dosage, stoppedOn ? "stopped " + stoppedOn : null]) });
     } else if (fromPatient) {
       groups.addedByPatient.push({ name: name, detail: joinDetail([dosage]) });
+    } else if (fromClaims) {
+      var fillNotes = (resource.note || []).map(function (n) { return n.text; }).filter(function (t) { return t !== "Filled, not in the health record"; });
+      groups.fromClaims.push({ name: name, detail: joinDetail([dosage].concat(fillNotes)) });
     } else {
       var notes = (resource.note || []).map(function (note) { return note.text; });
       groups.fromRecords.push({ name: name, detail: joinDetail([dosage].concat(notes)) });
