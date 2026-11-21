@@ -249,7 +249,7 @@ The tests use a **fake fetch**: a stand-in that answers like RxNav without
 using the internet. That keeps tests fast and lets us test "RxNav is down" on
 purpose.
 
-### Step 5. Running it on your Mac with https (in progress)
+### Step 5. Running it on your Mac with https
 
 **Why https matters.** Browsers only allow encryption, Face ID unlock and the
 camera on **secure pages**: ones served over https. GitHub Pages is https.
@@ -280,7 +280,7 @@ devices would trust.
 app's files over https on port 8443. Start it with:
 
 ```bash
-cd /Users/tylerbeattie/Developer/HL7-Build-the-Code/BrownBag && node tools/serve.mjs
+cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && node tools/serve.mjs
 ```
 
 It prints the addresses to open. Press Control-C to stop it. It refuses
@@ -315,6 +315,45 @@ explains access tokens and the refresh tokens that `offline_access` adds.
 When something breaks in your own testing, [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸
 "Debug with browser DevTools" and "Error scenarios and fixes" walk through
 finding the cause.
+
+**Signing in from the phone (Nov 20).** You trusted the certificate on your
+iPhone, opened `https://192.168.0.224:8443/launch.html`, and signed in. The
+sandbox's **Authorize App Launch** screen listed every scope above, and
+after Approve the phone landed on the starter's "My record" page. That proves
+the whole chain works on a real phone: https, sign-in, scopes, and coming
+back to the app.
+
+You can switch the certificate's trust off between test sessions (Settings ▸
+General ▸ About ▸ Certificate Trust Settings) and back on to test.
+
+**Looking at real data before trusting our rules.** Step 1's rules were
+written from made-up examples. So we saved the medicine records of four real
+sandbox patients into `tests/fixtures/` (the data is made up by the sandbox,
+so it's safe in a public repo):
+
+- one with 48 prescriptions for 14 different medicines
+- one whose prescriptions point to a separate **Medication** record for the
+  drug name
+- one with only "what the patient says" records (MedicationStatement)
+- one with no medicines at all
+
+New tests run Step 1's code over each one and check that **no medicine is
+dropped**: every different drug in the records appears exactly once.
+
+They passed, but the data showed one surprise. All 12 records for the third
+patient have the status `unknown` and no dates. Our rule only counted
+`active` as current, so all 12 would have gone under the collapsed "Older
+prescriptions" heading, and **off the QR code**. That's the "looks complete
+but silently drops medicines" mistake the design warns about. New rule: a
+MedicationStatement with status `unknown` and no end date stays on the main
+list, where the patient can tap "I stopped this" if it's old. The test for
+the new rule failed first, then passed after the one-line change.
+
+**Lesson:** test with real data early. Made-up examples only contain the
+cases you already thought of.
+
+**Practice in the lab:** the [Guided Lab](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#guided-lab) runs the same
+sign-in you just did on the phone, so you can watch each step happen.
 
 ---
 

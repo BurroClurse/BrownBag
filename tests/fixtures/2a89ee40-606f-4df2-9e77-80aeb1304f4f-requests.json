@@ -1,0 +1,4034 @@
+{
+ "resourceType": "Bundle",
+ "id": "6aeafd19-ad35-4773-b51c-9faedd8edba6",
+ "meta": {
+  "lastUpdated": "2026-11-20T21:28:39.768-05:00"
+ },
+ "type": "searchset",
+ "total": 48,
+ "link": [
+  {
+   "relation": "self",
+   "url": "https://r4.smarthealthit.org/MedicationRequest?_count=1000&_include=MedicationRequest%3Amedication&patient=2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+  }
+ ],
+ "entry": [
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-e706-b7cd26dcca39",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-e706-b7cd26dcca39",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:16.832-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "outpatient",
+        "display": "Outpatient"
+       }
+      ],
+      "text": "Outpatient"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/b680d112-6825-aa21-155e-b40f8ed15abc"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-f361-508194fd2c43"
+    },
+    "authoredOn": "2023-12-05T22:49:04+00:00",
+    "requester": {
+     "reference": "Practitioner/1d5c41de-04fe-3c33-b921-fbe13fca2b86",
+     "display": "Dr. Noe500 Howe413"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-3b42-3c2fcd8d0615",
+      "display": "Gingivitis (disorder)"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-f56c-d845bec0b0c4",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-f56c-d845bec0b0c4",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:15.141-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-5483-6737816e4b31"
+    },
+    "authoredOn": "2024-11-19T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-e166-332ebc254686",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-e166-332ebc254686",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:13.190-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-5483-6737816e4b31"
+    },
+    "authoredOn": "2024-11-19T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-c805-c0e3100d6244",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-c805-c0e3100d6244",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:12.058-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-5483-6737816e4b31"
+    },
+    "authoredOn": "2024-11-19T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-5b7c-11de7ab89b5b",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-5b7c-11de7ab89b5b",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:11.803-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-85ab-c7813ec3d46d"
+    },
+    "authoredOn": "2025-11-25T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-24ae-e77f0c2c2e21",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-24ae-e77f0c2c2e21",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:11.721-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-85ab-c7813ec3d46d"
+    },
+    "authoredOn": "2025-11-25T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-8395-3a81735b5440",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-8395-3a81735b5440",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:11.211-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "outpatient",
+        "display": "Outpatient"
+       }
+      ],
+      "text": "Outpatient"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/6cc46dfd-470d-c7b4-2f48-7d531f5b146e"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-3017-3d259ad379aa"
+    },
+    "authoredOn": "2024-12-03T23:34:20+00:00",
+    "requester": {
+     "reference": "Practitioner/1d5c41de-04fe-3c33-b921-fbe13fca2b86",
+     "display": "Dr. Noe500 Howe413"
+    },
+    "reasonCode": [
+     {
+      "coding": [
+       {
+        "system": "http://snomed.info/sct",
+        "code": "103697008",
+        "display": "Patient referral for dental care (procedure)"
+       }
+      ],
+      "text": "Patient referral for dental care (procedure)"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-f38d-7d5d3f620733",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-f38d-7d5d3f620733",
+    "meta": {
+     "versionId": "13",
+     "lastUpdated": "2026-11-20T06:56:06.446-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-85ab-c7813ec3d46d"
+    },
+    "authoredOn": "2025-11-25T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"13\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-261f-f7a25794cd9c",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-261f-f7a25794cd9c",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:04.664-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "705129",
+       "display": "Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray"
+      }
+     ],
+     "text": "Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-8b13-66b83348126a"
+    },
+    "authoredOn": "2023-11-21T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-ca58-5e74cd313df5",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-ca58-5e74cd313df5",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:03.972-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "309362",
+       "display": "Clopidogrel 75 MG Oral Tablet"
+      }
+     ],
+     "text": "Clopidogrel 75 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-7c36-8f9582765f2d"
+    },
+    "authoredOn": "2022-12-03T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-d255-3e04e41a95a9",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-d255-3e04e41a95a9",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:03.914-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/ca4d8fbe-1b07-690f-f0e2-94428b7f13fb"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-e45b-dced3e7a6928"
+    },
+    "authoredOn": "2023-09-29T20:46:39+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-be40-54980c171bf8",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-be40-54980c171bf8",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:03.864-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "243670",
+       "display": "aspirin 81 MG Oral Tablet"
+      }
+     ],
+     "text": "aspirin 81 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-076a-1bb858682851"
+    },
+    "authoredOn": "2023-09-29T22:39:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-23c1-daa511e7585f",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-23c1-daa511e7585f",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:03.302-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "312961",
+       "display": "Simvastatin 20 MG Oral Tablet"
+      }
+     ],
+     "text": "Simvastatin 20 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-8b13-66b83348126a"
+    },
+    "authoredOn": "2023-11-21T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-c71d-8d315cb36a63",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-c71d-8d315cb36a63",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:02.297-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1804799",
+       "display": "Alteplase 100 MG Injection"
+      }
+     ],
+     "text": "Alteplase 100 MG Injection"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-7c36-8f9582765f2d"
+    },
+    "authoredOn": "2022-12-03T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-06f6-897b48196e7b",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-06f6-897b48196e7b",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:02.006-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-8b13-66b83348126a"
+    },
+    "authoredOn": "2023-11-14T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-539b-078cb0c0a201",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-539b-078cb0c0a201",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:01.898-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "855812",
+       "display": "prasugrel 10 MG Oral Tablet"
+      }
+     ],
+     "text": "prasugrel 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-076a-1bb858682851"
+    },
+    "authoredOn": "2023-09-29T22:39:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-3f4d-85a476117cf7",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-3f4d-85a476117cf7",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:01.700-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "259255",
+       "display": "atorvastatin 80 MG Oral Tablet"
+      }
+     ],
+     "text": "atorvastatin 80 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-076a-1bb858682851"
+    },
+    "authoredOn": "2023-09-29T22:39:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "text": "Take as needed.",
+      "asNeededBoolean": true
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-b7d0-f1b8a269f135",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-b7d0-f1b8a269f135",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:01.291-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/44f964ba-4409-f724-ea3a-85d66274b22d"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-e45b-dced3e7a6928"
+    },
+    "authoredOn": "2023-09-29T20:46:39+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "h"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 4.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-3eb6-1291afcd3e03",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-3eb6-1291afcd3e03",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:00.756-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/be2a2442-09c6-8754-158b-58ea2dea0b12"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-e45b-dced3e7a6928"
+    },
+    "authoredOn": "2023-09-29T20:46:39+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-2c97-ebf171888ddb",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-2c97-ebf171888ddb",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:00.560-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-8b13-66b83348126a"
+    },
+    "authoredOn": "2023-11-14T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-ede8-f1c30dc49940",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-ede8-f1c30dc49940",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:00.488-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "inpatient",
+        "display": "Inpatient"
+       }
+      ],
+      "text": "Inpatient"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/2aca4e86-c275-4ff2-0040-61d144c62e2e"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-076a-1bb858682851"
+    },
+    "authoredOn": "2023-09-29T21:02:39+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-3e9c-56d5f5fc550a",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-3e9c-56d5f5fc550a",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:00.324-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "inpatient",
+        "display": "Inpatient"
+       }
+      ],
+      "text": "Inpatient"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/ab84a851-3643-757c-97ab-3d56529e8d27"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-076a-1bb858682851"
+    },
+    "authoredOn": "2023-09-29T22:09:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-11d4-6fb88e627e32",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-11d4-6fb88e627e32",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:58.628-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "866924",
+       "display": "metoprolol tartrate 25 MG Oral Tablet"
+      }
+     ],
+     "text": "metoprolol tartrate 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-076a-1bb858682851"
+    },
+    "authoredOn": "2023-09-29T22:39:37+00:00",
+    "requester": {
+     "reference": "Practitioner/a1e34010-3c3f-3c7f-a234-b8763c8808ae",
+     "display": "Dr. Karry11 Tillman293"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "text": "Take as needed.",
+      "asNeededBoolean": true
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-6035-e317d276f52c",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-6035-e317d276f52c",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:58.360-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-8b13-66b83348126a"
+    },
+    "authoredOn": "2023-11-14T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-e6a9-c73ee8f570a2",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-e6a9-c73ee8f570a2",
+    "meta": {
+     "versionId": "13",
+     "lastUpdated": "2026-11-20T06:55:57.805-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "866412",
+       "display": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet"
+      }
+     ],
+     "text": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-8b13-66b83348126a"
+    },
+    "authoredOn": "2023-11-21T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"13\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-5d91-00e372637032",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-5d91-00e372637032",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:55.010-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-d469-7ad05140d96e"
+    },
+    "authoredOn": "2020-10-27T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-a54d-9bfd3f81730f",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-a54d-9bfd3f81730f",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:53.886-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-be88-3652b6474223"
+    },
+    "authoredOn": "2021-11-02T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-fd3f-a2e93d5224ae",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-fd3f-a2e93d5224ae",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:52.966-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-be88-3652b6474223"
+    },
+    "authoredOn": "2021-11-02T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-c246-804e87dbdef5",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-c246-804e87dbdef5",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:52.922-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-d7c1-9b5879fce64a"
+    },
+    "authoredOn": "2022-11-08T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-7ca3-d9e30ec56eca",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-7ca3-d9e30ec56eca",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:52.319-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-87b4-5f331e570629"
+    },
+    "authoredOn": "2019-10-22T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-707a-c6f2b6e8ad97",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-707a-c6f2b6e8ad97",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:52.142-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-be88-3652b6474223"
+    },
+    "authoredOn": "2021-11-02T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-329a-564059630a6e",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-329a-564059630a6e",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:51.765-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-d7c1-9b5879fce64a"
+    },
+    "authoredOn": "2022-11-08T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-fc39-8ea530dfcfc4",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-fc39-8ea530dfcfc4",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:51.583-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-87b4-5f331e570629"
+    },
+    "authoredOn": "2019-10-22T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-b143-6b5b6d9f81d6",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-b143-6b5b6d9f81d6",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:50.241-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-d7c1-9b5879fce64a"
+    },
+    "authoredOn": "2022-11-08T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-83ba-43b7979ba2ac",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-83ba-43b7979ba2ac",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:50.175-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-d469-7ad05140d96e"
+    },
+    "authoredOn": "2020-10-27T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-1a8a-8942a7d9570a",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-1a8a-8942a7d9570a",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:50.147-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-d469-7ad05140d96e"
+    },
+    "authoredOn": "2020-10-27T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-ebbb-4e6a060fd748",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-ebbb-4e6a060fd748",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:49.613-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "outpatient",
+        "display": "Outpatient"
+       }
+      ],
+      "text": "Outpatient"
+     }
+    ],
+    "medicationReference": {
+     "reference": "Medication/c8511c9b-b5ca-3a3c-3e64-596657dfd612"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-ceb4-951a0c6e8751"
+    },
+    "authoredOn": "2021-11-16T23:24:59+00:00",
+    "requester": {
+     "reference": "Practitioner/1d5c41de-04fe-3c33-b921-fbe13fca2b86",
+     "display": "Dr. Noe500 Howe413"
+    },
+    "reasonCode": [
+     {
+      "coding": [
+       {
+        "system": "http://snomed.info/sct",
+        "code": "103697008",
+        "display": "Patient referral for dental care (procedure)"
+       }
+      ],
+      "text": "Patient referral for dental care (procedure)"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-e8bb-e9b681de1b7e",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-e8bb-e9b681de1b7e",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:49.034-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-87b4-5f331e570629"
+    },
+    "authoredOn": "2019-10-22T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-7f82-cc8fdf9b798d",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-7f82-cc8fdf9b798d",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:46.293-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-6c1b-4ee7c098df15"
+    },
+    "authoredOn": "2017-10-10T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-6398-958bda9e1c4f",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-6398-958bda9e1c4f",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:46.019-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-5be2-c212bdf6d953"
+    },
+    "authoredOn": "2018-10-16T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-4223-fc6cba8b3135",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-4223-fc6cba8b3135",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:44.195-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-40c5-305a8642ffd9"
+    },
+    "authoredOn": "2016-10-04T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-d928-c6fcef8bfad4",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-d928-c6fcef8bfad4",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:43.911-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-6c1b-4ee7c098df15"
+    },
+    "authoredOn": "2017-10-10T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-ecb7-3577cb7704bd",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-ecb7-3577cb7704bd",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:42.293-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-40c5-305a8642ffd9"
+    },
+    "authoredOn": "2016-10-04T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-09c2-086d0a5a1a3c",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-09c2-086d0a5a1a3c",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:41.018-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "308136",
+       "display": "amLODIPine 2.5 MG Oral Tablet"
+      }
+     ],
+     "text": "amLODIPine 2.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-6c1b-4ee7c098df15"
+    },
+    "authoredOn": "2017-10-10T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-faf7-ef4b2ab0258e",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-faf7-ef4b2ab0258e",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:40.873-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-40c5-305a8642ffd9"
+    },
+    "authoredOn": "2016-10-04T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-810f-ceb41eb25c37",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-810f-ceb41eb25c37",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:39.677-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "314076",
+       "display": "lisinopril 10 MG Oral Tablet"
+      }
+     ],
+     "text": "lisinopril 10 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-5be2-c212bdf6d953"
+    },
+    "authoredOn": "2018-10-16T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-f9de-bbe9c4a80233",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-f9de-bbe9c4a80233",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:39.417-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "849574",
+       "display": "Naproxen sodium 220 MG Oral Tablet"
+      }
+     ],
+     "text": "Naproxen sodium 220 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-990d-a4f97e4edcbf"
+    },
+    "authoredOn": "2016-10-11T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/1d5c41de-04fe-3c33-b921-fbe13fca2b86",
+     "display": "Dr. Noe500 Howe413"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5717-e9e71fa03e5f",
+      "display": "Osteoarthritis of hip (disorder)"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/2a89ee40-606f-4df2-9cb5-deb163b1974c",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "2a89ee40-606f-4df2-9cb5-deb163b1974c",
+    "meta": {
+     "versionId": "13",
+     "lastUpdated": "2026-11-20T06:55:39.302-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+     ]
+    },
+    "status": "completed",
+    "intent": "order",
+    "category": [
+     {
+      "coding": [
+       {
+        "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category",
+        "code": "community",
+        "display": "Community"
+       }
+      ],
+      "text": "Community"
+     }
+    ],
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310798",
+       "display": "Hydrochlorothiazide 25 MG Oral Tablet"
+      }
+     ],
+     "text": "Hydrochlorothiazide 25 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/2a89ee40-606f-4df2-9e77-80aeb1304f4f"
+    },
+    "encounter": {
+     "reference": "Encounter/2a89ee40-606f-4df2-5be2-c212bdf6d953"
+    },
+    "authoredOn": "2018-10-16T20:36:37+00:00",
+    "requester": {
+     "reference": "Practitioner/3e5d1087-cf6d-32f1-957b-68ce0589e9f4",
+     "display": "Dr. Mickey576 Johnston597"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/2a89ee40-606f-4df2-5a61-1da5851f10e9",
+      "display": "Essential hypertension (disorder)"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1.0,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1.0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"13\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/be2a2442-09c6-8754-158b-58ea2dea0b12",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "be2a2442-09c6-8754-158b-58ea2dea0b12",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:04.136-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "198039",
+       "display": "nitroglycerin 0.4 MG Sublingual Tablet"
+      }
+     ],
+     "text": "nitroglycerin 0.4 MG Sublingual Tablet"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/6cc46dfd-470d-c7b4-2f48-7d531f5b146e",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "6cc46dfd-470d-c7b4-2f48-7d531f5b146e",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:14.178-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1535362",
+       "display": "sodium fluoride 0.0272 MG/MG Oral Gel"
+      }
+     ],
+     "text": "sodium fluoride 0.0272 MG/MG Oral Gel"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/b680d112-6825-aa21-155e-b40f8ed15abc",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "b680d112-6825-aa21-155e-b40f8ed15abc",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:12.765-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1535362",
+       "display": "sodium fluoride 0.0272 MG/MG Oral Gel"
+      }
+     ],
+     "text": "sodium fluoride 0.0272 MG/MG Oral Gel"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/2aca4e86-c275-4ff2-0040-61d144c62e2e",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "2aca4e86-c275-4ff2-0040-61d144c62e2e",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:00.126-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1997015",
+       "display": "50 ML bivalirudin 5 MG/ML Injection"
+      }
+     ],
+     "text": "50 ML bivalirudin 5 MG/ML Injection"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/ca4d8fbe-1b07-690f-f0e2-94428b7f13fb",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "ca4d8fbe-1b07-690f-f0e2-94428b7f13fb",
+    "meta": {
+     "versionId": "13",
+     "lastUpdated": "2026-11-20T06:55:57.750-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1728805",
+       "display": "2 ML morphine sulfate 1 MG/ML Injection"
+      }
+     ],
+     "text": "2 ML morphine sulfate 1 MG/ML Injection"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"13\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/c8511c9b-b5ca-3a3c-3e64-596657dfd612",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "c8511c9b-b5ca-3a3c-3e64-596657dfd612",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:53.696-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1535362",
+       "display": "sodium fluoride 0.0272 MG/MG Oral Gel"
+      }
+     ],
+     "text": "sodium fluoride 0.0272 MG/MG Oral Gel"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/ab84a851-3643-757c-97ab-3d56529e8d27",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "ab84a851-3643-757c-97ab-3d56529e8d27",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:56:02.833-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1116635",
+       "display": "ticagrelor 90 MG Oral Tablet"
+      }
+     ],
+     "text": "ticagrelor 90 MG Oral Tablet"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/Medication/44f964ba-4409-f724-ea3a-85d66274b22d",
+   "resource": {
+    "resourceType": "Medication",
+    "id": "44f964ba-4409-f724-ea3a-85d66274b22d",
+    "meta": {
+     "versionId": "19",
+     "lastUpdated": "2026-11-20T06:55:58.273-05:00",
+     "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+     ]
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "212033",
+       "display": "aspirin 325 MG Oral Tablet"
+      }
+     ],
+     "text": "aspirin 325 MG Oral Tablet"
+    },
+    "status": "active"
+   },
+   "search": {
+    "mode": "include"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"19\""
+   }
+  }
+ ]
+}

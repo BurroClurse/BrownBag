@@ -1,0 +1,15 @@
+{
+ "resourceType": "Bundle",
+ "id": "3eabcfff-d4a6-4348-a2e2-836947a6740f",
+ "meta": {
+  "lastUpdated": "2026-11-20T21:28:40.673-05:00"
+ },
+ "type": "searchset",
+ "total": 0,
+ "link": [
+  {
+   "relation": "self",
+   "url": "https://r4.smarthealthit.org/MedicationStatement?_count=1000&_include=MedicationStatement%3Amedication&patient=4970751"
+  }
+ ]
+}

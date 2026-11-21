@@ -38,7 +38,10 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
     lastDate: start,
     prescriber: null,
     sourceName: sourceName,
-    current: CURRENT_STATEMENT.indexOf(resource.status) !== -1
+    // "unknown" with no end date stays on the main list: hiding it under
+    // Older would leave it off the QR code (real sandbox data has these).
+    current: CURRENT_STATEMENT.indexOf(resource.status) !== -1 ||
+      (resource.status === "unknown" && !period.end)
   });
 }
 

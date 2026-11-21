@@ -1,0 +1,663 @@
+{
+ "resourceType": "Bundle",
+ "id": "4d75d979-dd3a-4355-959e-add61185124f",
+ "meta": {
+  "lastUpdated": "2026-11-20T21:28:41.650-05:00"
+ },
+ "type": "searchset",
+ "total": 12,
+ "link": [
+  {
+   "relation": "self",
+   "url": "https://r4.smarthealthit.org/MedicationStatement?_count=1000&_include=MedicationStatement%3Amedication&patient=e5408569-9931-5afe-b62d-4175e6b44784"
+  }
+ ],
+ "entry": [
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/925c4ed7-64ef-5159-9283-6ee1b84fb0df",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "925c4ed7-64ef-5159-9283-6ee1b84fb0df",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "003009"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10135011101"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000414",
+       "display": "Laxative - Surfactant"
+      }
+     ],
+     "text": "Colace"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:10:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/77414216-ca94-5588-a817-6829583f4cac",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "77414216-ca94-5588-a817-6829583f4cac",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "022159"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "45802064287"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000575",
+       "display": "Salicylate Analgesics"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00005843",
+       "display": "Platelet Aggregation Inhibitors - Salicylates"
+      }
+     ],
+     "text": "aspirin"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:11:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/fc11aaa9-0905-5841-9df3-e40f1a831203",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "fc11aaa9-0905-5841-9df3-e40f1a831203",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "004489"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10135012301"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000577",
+       "display": "Analgesic or Antipyretic Non-Opioid"
+      }
+     ],
+     "text": "Tylenol"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:11:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/80549dc9-0f78-5396-b109-f256f34be6ce",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "80549dc9-0f78-5396-b109-f256f34be6ce",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "047780"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "49999099410"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00006094",
+       "display": "Insulin Analogs - Long Acting"
+      }
+     ],
+     "text": "Lantus"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:10:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/12988c15-6bc1-5da9-9a71-0eba8eee6706",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "12988c15-6bc1-5da9-9a71-0eba8eee6706",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "029928"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10544055810"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00002740",
+       "display": "Fluoroquinolone Antibiotics"
+      }
+     ],
+     "text": "Levaquin"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:09:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/9087b257-e0c8-56a7-aa04-ddede3117fb9",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "9087b257-e0c8-56a7-aa04-ddede3117fb9",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "016578"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10135051005"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00002747",
+       "display": "Antihyperlipidemic - HMG CoA Reductase Inhibitors (statins)"
+      }
+     ],
+     "text": "simvastatin"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:09:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/ec58c2ec-8fcd-52fa-94c3-8cd43189a121",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "ec58c2ec-8fcd-52fa-94c3-8cd43189a121",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "050631"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "21695049430"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00002530",
+       "display": "Beta Blockers Cardiac Selective"
+      }
+     ],
+     "text": "metoprolol tartrate"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:09:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/f8479b44-7278-57cc-b9c0-c26348462fe7",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "f8479b44-7278-57cc-b9c0-c26348462fe7",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "054003"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10939080333"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000411",
+       "display": "Laxative - Stimulant"
+      }
+     ],
+     "text": "senna"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:11:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/07ad4150-47c2-5a5c-a8cf-42a5562a9df2",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "07ad4150-47c2-5a5c-a8cf-42a5562a9df2",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "002947"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10135015401"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000411",
+       "display": "Laxative - Stimulant"
+      }
+     ],
+     "text": "bisacodyl"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:10:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/bb292afb-21a2-536a-b091-4d776ebaaf3f",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "bb292afb-21a2-536a-b091-4d776ebaaf3f",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "046203"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10544017930"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000530",
+       "display": "Antidepressant - Selective Serotonin Reuptake Inhibitors (SSRIs)"
+      }
+     ],
+     "text": "Celexa"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:10:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/296b88bb-9275-541a-ace0-185493e765ed",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "296b88bb-9275-541a-ace0-185493e765ed",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "047430"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "10544035630"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000589",
+       "display": "Analgesic Opioid Hydrocodone Combinations"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00006637",
+       "display": "Analgesic Opioid Hydrocodone and Non-Salicylate Combinations"
+      }
+     ],
+     "text": "Norco"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:11:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationStatement/0f5eb130-ea0d-5bb5-afb3-0f7a7300e307",
+   "resource": {
+    "resourceType": "MedicationStatement",
+    "id": "0f5eb130-ea0d-5bb5-afb3-0f7a7300e307",
+    "meta": {
+     "versionId": "1",
+     "lastUpdated": "2026-11-03T01:47:45.833-05:00",
+     "profile": [
+      "http://mimic.mit.edu/fhir/mimic/StructureDefinition/mimic-medication-statement-ed"
+     ],
+     "tag": [
+      {
+       "system": "https://github.com/Minwoo0206/cs6440-fall2026-group98",
+       "code": "mimic-demo-test"
+      }
+     ]
+    },
+    "status": "unknown",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-gsn",
+       "code": "000762"
+      },
+      {
+       "system": "http://hl7.org/fhir/sid/ndc",
+       "code": "11808030001"
+      },
+      {
+       "system": "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-medication-etc",
+       "code": "00000321",
+       "display": "Expectorants - Single Agents, General"
+      }
+     ],
+     "text": "Mucinex"
+    },
+    "subject": {
+     "reference": "Patient/e5408569-9931-5afe-b62d-4175e6b44784"
+    },
+    "context": {
+     "reference": "Encounter/0b06da44-26c8-5583-8375-aa8521490abb"
+    },
+    "dateAsserted": "2153-02-12T23:09:00-05:00"
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "201 Created",
+    "etag": "W/\"1\""
+   }
+  }
+ ]
+}

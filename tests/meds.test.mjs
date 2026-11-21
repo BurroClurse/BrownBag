@@ -188,3 +188,69 @@ test("groupByIngredient with an empty map changes nothing", () => {
   assert.equal(result.length, 2);
   assert.equal(doseChangeText(result[0]), null);
 });
+
+// Real SMART sandbox records, saved 2026-11-20. Synthetic patients:
+// 2a89ee40 has many prescriptions, 4970751 has a few that point to separate
+// Medication records, e5408569 has only "what the patient says" records,
+// and 2807decf has no medicines at all.
+import { readFileSync } from "node:fs";
+
+const FIXTURES = new URL("./fixtures/", import.meta.url);
+const FIXTURE_PATIENTS = [
+  "2a89ee40-606f-4df2-9e77-80aeb1304f4f",
+  "4970751",
+  "e5408569-9931-5afe-b62d-4175e6b44784",
+  "2807decf-744b-4abe-94ce-08c33ea905df"
+];
+
+function loadBundle(name) {
+  return JSON.parse(readFileSync(new URL(name, FIXTURES), "utf8"));
+}
+
+function itemsForPatient(id) {
+  const resources = ["requests", "statements"]
+    .flatMap((kind) => (loadBundle(id + "-" + kind + ".json").entry || []).map((entry) => entry.resource));
+  const medications = new Map(
+    resources.filter((r) => r.resourceType === "Medication").map((r) => ["Medication/" + r.id, r])
+  );
+  return resources.flatMap((r) => {
+    if (r.resourceType === "MedicationRequest") return [fromMedicationRequest(r, SOURCE, medications)];
+    if (r.resourceType === "MedicationStatement") return [fromMedicationStatement(r, SOURCE, medications)];
+    return [];
+  });
+}
+
+for (const id of FIXTURE_PATIENTS) {
+  test("sandbox patient " + id.slice(0, 8) + ": no medicine is dropped", () => {
+    const items = itemsForPatient(id);
+    const keys = new Set(items.map((item) => item.key));
+    const merged = dedupe(items);
+    assert.equal(merged.length, keys.size);
+    assert.deepEqual(new Set(merged.map((item) => item.key)), keys);
+    assert.equal(merged.reduce((sum, item) => sum + item.count, 0), items.length);
+  });
+}
+
+test("sandbox patient 4970751: prescriptions that point to a Medication get its name", () => {
+  const items = itemsForPatient("4970751");
+  assert.ok(items.length > 0);
+  assert.ok(items.every((item) => item.name !== "Unnamed medicine"));
+});
+
+test("sandbox patient 2807decf has no medicines", () => {
+  assert.equal(itemsForPatient("2807decf-744b-4abe-94ce-08c33ea905df").length, 0);
+});
+
+test("a statement with status unknown and no end date counts as current", () => {
+  const items = itemsForPatient("e5408569-9931-5afe-b62d-4175e6b44784");
+  assert.equal(items.length, 12);
+  assert.ok(items.every((item) => item.status === "current"));
+});
+
+test("a statement with status unknown and an end date in the past is older", () => {
+  const item = fromMedicationStatement(
+    { resourceType: "MedicationStatement", status: "unknown", medicationCodeableConcept: { text: "Colace" }, effectivePeriod: { end: "2020-01-01" } },
+    SOURCE
+  );
+  assert.equal(item.status, "older");
+});
