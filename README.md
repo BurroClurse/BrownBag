@@ -7,8 +7,8 @@ take over the counter, and shares the whole list with one QR code.
 It is a patient-facing SMART on FHIR app, first built for the HL7 Break the
 Code course. It runs as static pages (no server of its own), signs in with
 SMART App Launch against the SMART Health IT R4 sandbox, and reads FHIR R4
-records. It is built for older patients: one screen, big buttons, no
-scrolling on the main screen, and WCAG 2.2 AA throughout.
+records. It is built to be simple to use: one main screen with no
+scrolling, big buttons, plain words, and WCAG 2.2 AA throughout.
 
 **Live:** <https://burroclurse.github.io/BrownBag/launch.html> (sandbox data
 only, no real patients).
@@ -23,9 +23,14 @@ only, no real patients).
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
   (checked against RxNorm), and ones they marked stopped.
-- **The QR code** comes up out of the bag and fills the screen, with a
-  6-digit code, blurred until tapped, that they tell the person who scans it.
-  Staff scan it and type the code on `share.html` to see the list.
+- **The QR code** comes up out of the bag and fills the screen, for the
+  person checking their medicines. A 6-digit code, blurred until tapped, is
+  told to that person after they scan; they type it on `share.html` to see
+  the list. Two "?" buttons explain what's in the code and why the digits
+  matter.
+- **Changed the list with no signal?** The QR code still includes the
+  change, and the QR screen lists exactly what changed since the records
+  were last updated and says to get a connection to update them.
 - **No signal?** The last list is saved, encrypted, on the phone, and the QR
   code still works.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the
@@ -55,6 +60,10 @@ Every resource scope is read-only. `offline_access` asks for a refresh token
 5. RxNav ingredient lookups, to group strengths of the same drug.
 
 Nothing is written to the health record. Nothing runs on a schedule.
+
+Records whose medicine is only a placeholder word, such as "Medication",
+with no drug code, are left out of the list and the QR code; a note on My
+medicines says how many there were.
 
 **The refresh token** is stored encrypted (AES-GCM) with a key that comes
 from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
