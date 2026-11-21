@@ -469,14 +469,12 @@ async function openQr() {
   document.body.appendChild(overlay);
   root.inert = true;
   root.setAttribute("aria-hidden", "true");
-  requestAnimationFrame(function () { overlay.classList.add("open"); });
   document.getElementById("qr-close").focus();
 }
 
 function closeQr(after) {
   var overlay = document.getElementById("qr-overlay");
   if (!overlay || overlay.classList.contains("closing")) return;
-  overlay.classList.remove("open");
   overlay.classList.add("closing");
   root.inert = false;
   root.removeAttribute("aria-hidden");
@@ -492,7 +490,11 @@ function closeQr(after) {
       if (back) back.focus();
     }
   }
-  overlay.addEventListener("animationend", finish);
+  // Only the closing animation ends it; the opening one may still be
+  // finishing if Close was pressed quickly.
+  overlay.addEventListener("animationend", function (event) {
+    if (event.animationName === "qr-out" || event.animationName === "qr-fade-out") finish();
+  });
   setTimeout(finish, 700);
 }
 

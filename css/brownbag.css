@@ -142,7 +142,9 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
 .lock { margin-top: 2rem; }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  /* The QR screen is left out: it fades instead (see the swoosh below). */
+  *:not(.qr-overlay) { animation: none !important; }
+  * { transition: none !important; scroll-behavior: auto !important; }
 }
 
 /* ---- One-screen layout (docs/superpowers/specs/2026-11-21-one-screen-design.md) ---- */
@@ -256,3 +258,33 @@ button.secondary.big { border-color: var(--teal); }
 .qr-overlay .share-code { margin: 0.25rem 0 0; color: #1b1b1b; }
 .qr-overlay .big { max-width: 28rem; }
 .qr-overlay button.primary { background: #164F5A; border-color: #164F5A; color: #FFFFFF; }
+/* The swoosh. The code comes up out of the bag: it starts small and tilted
+   at the bag (--from-x and --from-y, set from the bag's spot on screen) and
+   grows to fill the screen. Close plays it backwards, back into the bag. */
+.qr-overlay { animation: qr-in 450ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.qr-overlay.closing { animation: qr-out 350ms cubic-bezier(0.5, 0, 0.8, 0.4) both; }
+@keyframes qr-in {
+  from {
+    transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.06) rotate(-12deg);
+    border-radius: 40%;
+    opacity: 0;
+  }
+  30% { opacity: 1; }
+  to { transform: none; border-radius: 0; opacity: 1; }
+}
+@keyframes qr-out {
+  from { transform: none; border-radius: 0; opacity: 1; }
+  70% { opacity: 1; }
+  to {
+    transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.06) rotate(-12deg);
+    border-radius: 40%;
+    opacity: 0;
+  }
+}
+/* With Reduce Motion on, the code only fades in and out. */
+@media (prefers-reduced-motion: reduce) {
+  .qr-overlay { animation: qr-fade-in 150ms ease-out both; }
+  .qr-overlay.closing { animation: qr-fade-out 150ms ease-in both; }
+}
+@keyframes qr-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes qr-fade-out { from { opacity: 1; } to { opacity: 0; } }
