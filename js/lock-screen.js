@@ -266,6 +266,12 @@ function panel(root, heading) {
     title.appendChild(picture);
   }
   box.appendChild(title);
+  if (!heading) {
+    var tagline = document.createElement("p");
+    tagline.className = "tagline";
+    tagline.textContent = "Every pill bottle, without the bag.";
+    box.appendChild(tagline);
+  }
   root.appendChild(box);
   return box;
 }

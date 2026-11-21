@@ -418,3 +418,6 @@ button.help-button {
 .qr-alert p { margin: 0.25rem 0; }
 .qr-alert ul { margin: 0.25rem 0; padding-left: 1.3rem; }
 .qr-alert-title { font-weight: 800; font-size: 1.1rem; }
+
+/* The tagline, under the bag on the sign-in and unlock screens. */
+.tagline { text-align: center; color: var(--teal); font-weight: 700; font-size: 1.2rem; margin: 0 0 1rem; }

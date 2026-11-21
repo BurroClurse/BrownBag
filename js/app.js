@@ -16,6 +16,7 @@ import { shouldLock } from "./idle.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
+var TAGLINE = "Every pill bottle, without the bag.";
 var SEARCH_DELAY_MS = 300;
 // How long an update with the pass waits for the health system.
 var UPDATE_WAIT_MS = 8000;
@@ -1068,6 +1069,7 @@ function plainScreen() {
   var picture = add(title, "img", null, "screen-logo");
   picture.src = "icons/logo-trimmed.png";
   picture.alt = "Brown Bag";
+  add(root, "p", TAGLINE, "tagline");
 }
 
 function heading(parent, text, id) {
