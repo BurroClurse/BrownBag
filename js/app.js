@@ -2,15 +2,15 @@
 // patient's additions, and the QR code. Everything the records or the
 // patient typed goes into the page with textContent, never innerHTML.
 
-import { showLockScreen } from "./lock-screen.js";
+import { showLockScreen, restoreBackupText } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
-import { LOCK_KEY } from "./lock.js";
+import { LOCK_KEY, hasLock } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "./view.js";
-import { saveRecords, loadLastRecords } from "./offline.js";
+import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom } from "./pass.js";
 
 var SOURCE = "SMART sandbox";
@@ -71,6 +71,12 @@ async function start() {
   // A reload keeps the last history step; start from home's.
   if (history.state && history.state.bb) history.replaceState(null, "");
   clear(root);
+  // Nothing saved yet: there's nothing for the lock to open, so go straight
+  // to Sign in. The lock comes once, when the sign-in comes back.
+  if (!cameBackFromAuth && !hasSavedList(localStorage)) {
+    drawSignedOut(null);
+    return;
+  }
   state.key = await showLockScreen(root);
   // One unlock: with a saved list and a pass, show the list now and update
   // it in place, with no sign-in page.
@@ -899,7 +905,38 @@ function drawSignedOut(error) {
   }
   var link = add(root, "a", "Sign in", "button primary big");
   link.href = "./launch.html";
+  if (!state.key && !hasLock()) {
+    drawRestoreFromSignIn();
+  }
   add(root, "p", DISCLAIMER, "disclaimer");
+}
+
+// A new phone or the Home Screen app starts empty, with no lock. Its first
+// screen is Sign in, so restoring a backup starts here too.
+function drawRestoreFromSignIn() {
+  var message = add(root, "p", "", "status");
+  message.setAttribute("role", "status");
+  var picker = add(root, "input");
+  picker.type = "file";
+  picker.accept = ".json,application/json";
+  picker.hidden = true;
+  button(root, "Restore from a backup", "secondary big", function () { picker.click(); });
+  picker.addEventListener("change", async function () {
+    var file = picker.files && picker.files[0];
+    if (!file) return;
+    try {
+      var key = await restoreBackupText(root, await file.text());
+      if (!key) {
+        drawSignedOut(null);
+        return;
+      }
+      state.key = key;
+      state.announce = "Your backup is restored. Sign in to load your medicines.";
+      await signInUnavailable(null);
+    } catch (error) {
+      message.textContent = "That file isn't a Brown Bag backup.";
+    }
+  });
 }
 
 function drawNoConnection() {

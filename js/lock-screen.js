@@ -72,28 +72,51 @@ function drawRestoreOption(root, box, done, message) {
   picker.addEventListener("change", async function () {
     var file = picker.files && picker.files[0];
     if (!file) return;
-    var text = await file.text();
-    var lock = lockRecordFrom(text);
-    var method = null;
-    try { method = JSON.parse(lock).method; } catch (error) { method = null; }
-    if (!lock || !method) {
+    if (!startRestore(root, await file.text(), done, function () { drawSetup(root, done); })) {
       say(message, "That file isn't a Brown Bag backup.");
-      return;
     }
-    var restoreThenDone = async function (key) {
-      try {
-        await importBackup(localStorage, key, text);
-      } catch (error) {
-        throw new LockError("restore-failed");
-      }
-      localStorage.setItem(LOCK_KEY, lock);
-      done(key);
-    };
-    var options = { record: lock, onBack: function () { drawSetup(root, done); } };
-    if (method === "pin") {
-      drawPinUnlock(root, restoreThenDone, options);
-    } else {
-      drawPasskeyUnlock(root, restoreThenDone, options);
+  });
+}
+
+// Unlocks a backup with the lock settings it carries, restores it, and only
+// then saves those lock settings. False if the file isn't a backup.
+function startRestore(root, text, done, onBack) {
+  var lock = lockRecordFrom(text);
+  var method = null;
+  try { method = JSON.parse(lock).method; } catch (error) { method = null; }
+  if (!lock || !method) {
+    return false;
+  }
+  var restoreThenDone = async function (key) {
+    try {
+      await importBackup(localStorage, key, text);
+    } catch (error) {
+      throw new LockError("restore-failed");
+    }
+    localStorage.setItem(LOCK_KEY, lock);
+    done(key);
+  };
+  var options = { record: lock, onBack: onBack };
+  if (method === "pin") {
+    drawPinUnlock(root, restoreThenDone, options);
+  } else {
+    drawPasskeyUnlock(root, restoreThenDone, options);
+  }
+  return true;
+}
+
+// For the sign-in screen on a phone with no lock yet (a new phone, or the
+// Home Screen app): restore a backup straight from a file's text. Resolves
+// with the key, or null if the patient goes Back. Rejects if the file isn't
+// a backup.
+export function restoreBackupText(root, text) {
+  return new Promise(function (resolve, reject) {
+    function done(key) {
+      clear(root);
+      resolve(key);
+    }
+    if (!startRestore(root, text, done, function () { resolve(null); })) {
+      reject(new LockError("bad-backup"));
     }
   });
 }

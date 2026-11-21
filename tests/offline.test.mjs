@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { saveRecords, loadLastRecords, listDate } from "../js/offline.js";
+import { saveRecords, loadLastRecords, listDate, hasSavedList } from "../js/offline.js";
 import { deriveKeyFromPin } from "../js/vault.js";
 
 function memoryStorage() {
@@ -90,4 +90,11 @@ test("every picture the app's pages use is saved for offline", () => {
   const pictures = [...new Set(pages.match(/icons\/[\w-]+\.png/g))];
   assert.ok(pictures.includes("icons/logo-trimmed.png"), "the logo is used on the screens");
   for (const picture of pictures) assert.ok(worker.includes('"./' + picture + '"'), picture + " is in the offline list");
+});
+
+test("hasSavedList says whether there's a saved list to unlock, without the key", async () => {
+  const storage = memoryStorage();
+  assert.equal(hasSavedList(storage), false);
+  await saveRecords(storage, await key(), SAVED);
+  assert.equal(hasSavedList(storage), true);
 });

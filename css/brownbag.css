@@ -15,25 +15,10 @@
   --warn-ink: #5c4200;
   --error-ink: #8a1f1f;
   --focus: #1a56db;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #f2f2f2;
-    --muted: #c4c4c4;
-    --paper: #161412;
-    --card: #221d18;
-    --line: #4a4540;
-    --brand: #e0b088;
-    --brand-ink: #1b1209;
-    --soft: #26211c;
-    --warn-bg: #3b3115;
-    --warn-ink: #ffe7a3;
-    --error-ink: #ffb4b4;
-    --focus: #8fb4ff;
-  }
-}
+/* One look in light and dark mode: the wheat page (Tyler, 2026-11-21). */
 
 * { box-sizing: border-box; }
 
@@ -184,9 +169,6 @@ a.button.big { text-align: center; line-height: 2.4rem; }
 /* ---- One-screen layout (docs/superpowers/specs/2026-11-21-one-screen-design.md) ---- */
 
 :root { --teal: #164F5A; --teal-ink: #FFFFFF; }
-@media (prefers-color-scheme: dark) {
-  :root { --teal: #2B6E76; }
-}
 
 .big {
   display: block;

@@ -819,6 +819,16 @@ connection". It also checked that the refresh token never appears in plain
 text in the phone's storage, and that the bag keeps a third of an iPhone
 SE screen with two notes showing.
 
+**After your screen recording.** Your first sign-in took two Face IDs:
+one before signing in and one after. The first opened nothing, because
+nothing was saved yet. Now a phone with no saved list goes straight to
+Sign in, and the lock comes once, when the sign-in comes back. That screen
+also has "Restore from a backup" when the phone has no lock yet, which is
+how the Home Screen app starts. The sandbox's Patient Login and Approve
+pages stay: they stand in for a real hospital's sign-in and consent, which
+the course wants you to be able to explain. You also chose one look for
+light and dark mode, the wheat page.
+
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens)
 explains access tokens. Look at what a sign-in returns, and compare it
 with what Brown Bag keeps (`passFromState` in `js/pass.js`).

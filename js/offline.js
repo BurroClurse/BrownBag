@@ -14,6 +14,12 @@ export async function saveRecords(storage, key, saved) {
   storage.setItem(LAST_KEY, await encryptJSON(key, saved.patientId));
 }
 
+// Whether there's a saved list for an unlock to open. Needs no key: it only
+// checks the encrypted pointer exists.
+export function hasSavedList(storage) {
+  return storage.getItem(LAST_KEY) !== null;
+}
+
 export async function loadLastRecords(storage, key) {
   var last = storage.getItem(LAST_KEY);
   if (!last) {
