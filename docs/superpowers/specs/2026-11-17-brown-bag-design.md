@@ -95,6 +95,29 @@ QR approaches:
    upgrade doesn't change the data.
 3. The whole FHIR list inside the QR as raw data. No records system reads
    this, and it runs out of room fast. Rejected.
+4. Brown Bag issuing its own SMART Health Cards (HL7 SMART Health Cards and
+   Links IG, hl7.org/fhir/uv/smart-health-cards-and-links). Rejected. A card
+   is trusted because a known issuer signs it and publishes its public key.
+   Brown Bag has no server to keep a signing key, so scanners would show
+   "issuer not recognized". Signing would also make the patient's own
+   additions and "stopped" marks look confirmed by a provider. A card holds
+   about 1,200 characters, less than the fall QR's 2,331 bytes.
+
+Borrowed from SMART Health Cards for the fall QR (Tyler, 2026-11-20):
+
+- **Trimming rules.** The shared Bundle follows the guide's FHIR Bundle
+  minimization rules: no resource ids, no meta, no narrative text, and
+  `resource:N` references with matching `entry.fullUrl` values. One
+  exception: the medicine name stays in `medicationCodeableConcept.text`,
+  because `share.html` reads offline and can't look names up. The Bundle is
+  already small, so this mostly makes the data match the guide; the size
+  gain is small.
+- **Digit encoding.** QR codes pack digits more tightly than letters. As in a
+  Health Card, the packed list after the `#` is written as digits (each
+  base64url character becomes two digits, its character code minus 45), and
+  the QR is built from two parts: the web address as text, the list as
+  digits. About 15 to 20% more medicines fit in one code. Nothing changes on
+  screen.
 
 ## The three features
 
@@ -275,7 +298,11 @@ TLS is already there. Two-factor sign-in belongs to each health system.
   list, and flag differences (upgrade to feature 2).
 - Pharmacy fills through the health plan's Patient Access API, read-only.
 - A second real source, such as Epic's or Oracle Health's public test system.
-- SMART Health Link QR codes that records systems can import.
+- SMART Health Link QR codes that records systems can import. The link can
+  also carry signed SMART Health Cards the patient already has from their
+  providers (vaccine records, CARIN digital insurance card), so staff see
+  those as verified next to Brown Bag's patient-reported list (Tyler,
+  2026-11-20).
 - Allergies with the reaction, health history, implanted devices, emergency
   contact.
 - Staff screen (Med History Helper).
@@ -323,6 +350,9 @@ If it becomes a business:
 - Security: passkey (fingerprint or Face ID) lock with a 6-digit PIN
   fallback, device storage encrypted, QR list encrypted with a spoken 6-digit
   code, local https testing with mkcert.
+- SMART Health Card trimming rules applied with one exception: the
+  medicine name stays in the shared Bundle, because `share.html` works
+  offline.
 
 ## Still open
 
