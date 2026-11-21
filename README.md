@@ -105,7 +105,7 @@ a certificate from [mkcert](https://github.com/FiloSottile/mkcert) kept in
 
 ## Copyright
 
-Copyright © 2026 BurroClurse. All rights reserved.
+Copyright © 2026 Tyler Beattie. All rights reserved.
 
 The code is public so that reviewers, instructors and the HL7 FHIR community
 can read how it works. Reading it is welcome. Copying it, using it, changing
