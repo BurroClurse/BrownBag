@@ -13,6 +13,7 @@ import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLi
 import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
+import { fillsFromClaims, attachFills, fillLine, completedLine } from "./claims.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -22,6 +23,9 @@ var SEARCH_DELAY_MS = 300;
 var UPDATE_WAIT_MS = 8000;
 // And for the records after that (the drug lookups inside have their own 8).
 var RECORDS_WAIT_MS = 12000;
+// And for the insurance claims inside that step, so a slow insurer never
+// holds up the medicines.
+var CLAIMS_WAIT_MS = 6000;
 
 var root = document.getElementById("app");
 var params = new URLSearchParams(location.search);
@@ -230,8 +234,32 @@ async function loadFresh(client) {
   return {
     patientId: patientId,
     patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
-    split: await loadMedicines(client, patientId)
+    split: await withClaims(client, patientId, await loadMedicines(client, patientId))
   };
+}
+
+// Pharmacy claims (FHIR ExplanationOfBenefit), matched to the medicines.
+// "refused": this sign-in can't read claims (an older pass); "failed": slow
+// or broken; "none": no pharmacy claims. The medicines show either way.
+async function withClaims(client, patientId, split) {
+  try {
+    return await withTimeout((async function () {
+      var claims = await client.request("ExplanationOfBenefit?patient=" + encodeURIComponent(patientId), { pageLimit: 0, flat: true });
+      var fills = fillsFromClaims((claims || []).filter(function (r) { return r && r.resourceType === "ExplanationOfBenefit"; }));
+      if (!fills.length) {
+        return Object.assign({}, split, { claims: "none" });
+      }
+      var ingredientOf = new Map(split.ingredientOf || []);
+      var missing = fills.map(function (f) { return f.rxcui; }).filter(function (code) { return code && !ingredientOf.has(code); });
+      if (missing.length) {
+        (await ingredientsFor(missing)).forEach(function (value, code) { ingredientOf.set(code, value); });
+      }
+      return attachFills(split, fills, ingredientOf, new Date());
+    })(), CLAIMS_WAIT_MS);
+  } catch (error) {
+    var status = error && (error.status || (error.response && error.response.status));
+    return Object.assign({}, split, { claims: status === 401 || status === 403 ? "refused" : "failed" });
+  }
 }
 
 function usePatient(result) {
@@ -251,6 +279,7 @@ async function keepFreshCopy() {
       current: state.split.current,
       older: state.split.older,
       placeholders: state.split.placeholders || 0,
+      claims: state.split.claims || null,
       savedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -315,7 +344,7 @@ async function signInUnavailable(error) {
 function useSaved(saved) {
   state.patientId = saved.patientId;
   state.patient = saved.patient;
-  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0 };
+  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, claims: saved.claims || null };
   state.savedAt = saved.savedAt;
 }
 
@@ -367,6 +396,7 @@ async function loadMedicines(client, patientId) {
   var split = splitByStatus(groupByIngredient(merged, ingredients));
   split.failed = failed;
   split.placeholders = placeholders;
+  split.ingredientOf = ingredients;
   return split;
 }
 
@@ -460,6 +490,7 @@ function drawMedicines(arranged) {
   title.tabIndex = -1;
   note(root, DISCLAIMER);
   drawRecords(arranged);
+  drawFillsOnly(arranged);
   drawAdditions();
   drawStopped(arranged);
 }
@@ -506,16 +537,14 @@ function drawRecords(arranged) {
     var one = state.split.placeholders === 1;
     note(section, "Your records also have " + state.split.placeholders + (one ? " entry" : " entries") + " with no medicine name, so " + (one ? "it isn't" : "they aren't") + " listed. Ask your care team what " + (one ? "it is." : "they are."));
   }
+  if (state.split.claims === "refused") {
+    note(section, "Sign in again to add your insurance fills.");
+  } else if (state.split.claims === "failed") {
+    note(section, "Your insurance fills couldn't be loaded.");
+  }
   var list = add(section, "ul", null, "meds");
-  arranged.current.forEach(function (entry) {
-    var row = medRow(list, entry);
-    button(row, "I stopped this", "stop card-action", function () {
-      state.data.stopped[entry.key] = today();
-      recordChange("stopped", entry.name);
-      state.announce = entry.name + " moved to Stopped by me.";
-      state.focusId = "stopped-heading";
-      save();
-    }, "I stopped this: " + entry.name);
+  arranged.current.filter(function (entry) { return entry.origin !== "claims"; }).forEach(function (entry) {
+    stopButton(medRow(list, entry), entry);
   });
   if (arranged.older.length) {
     var details = add(section, "details");
@@ -987,10 +1016,38 @@ function medRow(list, entry) {
   if (detail) add(row, "p", detail, "med-line");
   var change = doseChangeText(entry);
   if (change) add(row, "p", change, "med-line");
-  add(row, "p", sourceLine(entry), "med-line");
+  if (entry.origin !== "claims") add(row, "p", sourceLine(entry), "med-line");
   var count = countLine(entry);
   if (count) add(row, "p", count, "med-line");
+  if (entry.completedButFilled) add(row, "p", completedLine(entry.completedButFilled), "med-line");
+  // Fill lines only when this list's claims loaded, so "No fill found" never
+  // shows just because the claims couldn't be read.
+  var filled = state.split.claims === "loaded" ? fillLine(entry.fills) : null;
+  if (filled) add(row, "p", filled, "med-line fill-line");
   return row;
+}
+
+function stopButton(row, entry) {
+  button(row, "I stopped this", "stop card-action", function () {
+    state.data.stopped[entry.key] = today();
+    recordChange("stopped", entry.name);
+    state.announce = entry.name + " moved to Stopped by me.";
+    state.focusId = "stopped-heading";
+    save();
+  }, "I stopped this: " + entry.name);
+}
+
+// Fills the insurer paid for that the health record doesn't list.
+function drawFillsOnly(arranged) {
+  var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims"; });
+  if (!fillsOnly.length) return;
+  var section = add(root, "section");
+  heading(section, "Filled, not in your records", "fills-heading");
+  note(section, "Your insurance paid for these, but your health record doesn't list them. Check with your care team.");
+  var list = add(section, "ul", null, "meds");
+  fillsOnly.forEach(function (entry) {
+    stopButton(medRow(list, entry), entry);
+  });
 }
 
 async function save() {
