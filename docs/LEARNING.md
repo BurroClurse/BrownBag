@@ -485,6 +485,31 @@ Each fix got a failing test first.
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core" covers the
 MedicationRequest records this screen reads.
 
+### Step 8. The page staff see (`share.html`, `js/share-view.js`)
+
+**What staff see.** Scanning the QR code opens `share.html`. It asks "Enter
+the 6-digit code the patient gives you". With the right code it shows your
+name, birth date, when the code was made, the disclaimer, and three groups in
+large print: **From records**, **Added by patient**, **Patient says stopped**.
+
+**Why the server never sees the list.** The list sits after the `#` in the
+link. Browsers never send that part to the web server, so GitHub only
+delivers the empty page. The unlocking happens on the staff member's device.
+The robot check confirmed it: the requests to the server never contained
+the list, and nothing at all was requested after the page loaded.
+
+**Wrong or broken links.** A wrong code says "That code didn't work. Check it
+with the patient." A link cut short says "This link is damaged. Ask the
+patient to show a new code." Neither shows any part of the list.
+
+**A bug the robot found.** If the page was already open and a second QR code
+was scanned into the same tab, only the part after `#` changed. Browsers
+don't reload the page for that, so the old patient's list stayed on screen.
+Now any change to that part reloads the page.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes"
+for the kind of plain-language error messages this page uses.
+
 ---
 
 ## Glossary
