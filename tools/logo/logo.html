@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Brown Bag logo source</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&display=block" rel="stylesheet">
 <!--
   Source for the Brown Bag logo and app icon. tools/logo/render.mjs opens
   this page in headless Chrome and saves PNGs: ?mode=logo (bag with the
@@ -16,13 +18,17 @@
   .canvas.icon { background: #FFF8EF; }
   svg.bag { position: absolute; inset: 0; }
   .name {
-    position: absolute; left: 0; right: 0; top: 500px;
+    /* The name sits in front of the bag, centered on it, with no outline. */
+    position: absolute; left: 0; right: 0; top: 400px;
     display: flex; flex-direction: column; align-items: center;
-    font-family: "Arial Rounded MT Bold", sans-serif;
-    font-size: 124px; line-height: 0.95; color: #0F5E5A;
+    font-family: "Fredoka", "Arial Rounded MT Bold", sans-serif; font-weight: 700;
+    font-size: 210px; line-height: 0.92; color: #0F5E5A;
   }
-  .line { display: flex; align-items: baseline; }
-  .w { width: 134px; height: 90px; margin: 0 2px; align-self: auto; transform: translateY(6px); }
+  .line { white-space: nowrap; }
+  /* An empty gap the width of a w. The pills are drawn into it after the
+     font loads, measured from the real letters. */
+  #wslot { display: inline-block; width: 1.08em; height: 0; vertical-align: baseline; }
+  svg.overlay { position: absolute; inset: 0; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -44,9 +50,10 @@
     <g id="icon-pills"></g>
   </svg>
   <div class="name" id="name">
-    <div class="line">Bro<svg class="w" viewBox="0 0 190 128" id="w"></svg>n</div>
+    <div class="line">Bro<span id="wslot"></span>n</div>
     <div class="line">Bag</div>
   </div>
+  <svg class="overlay" id="overlay" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"></svg>
 </div>
 <script>
   var NS = "http://www.w3.org/2000/svg";
@@ -98,19 +105,36 @@
   }
 
   if (mode === "logo") {
-    // The W: four pills along its four strokes, the same height as the letters.
-    var w = document.getElementById("w");
-    // ("top" is a reserved browser name, so the rows are yHigh and yLow.)
-    var t = 30, inset = t / 2 + 4, yHigh = inset, yLow = 128 - inset;
-    var xs = [inset, 58, 95, 132, 190 - inset];
-    var strokes = [
-      [xs[0], yHigh, xs[1], yLow],
-      [xs[2], yHigh + 26, xs[1], yLow],
-      [xs[2], yHigh + 26, xs[3], yLow],
-      [xs[4], yHigh, xs[3], yLow]
-    ];
-    ["halo", "pill"].forEach(function (part) {
-      strokes.forEach(function (s) { capsule(w, s[0], s[1], s[2], s[3], t, 16, part); });
+    // The w: four pills along its four strokes. Measured from the font, so
+    // the pills are exactly as tall as the "o" and sit on the same baseline.
+    document.fonts.ready.then(function () {
+      var name = document.getElementById("name");
+      var style = getComputedStyle(name);
+      var size = parseFloat(style.fontSize);
+      var ctx = document.createElement("canvas").getContext("2d");
+      ctx.font = style.fontWeight + " " + size + "px " + style.fontFamily;
+      var o = ctx.measureText("o");
+      var canvasBox = document.getElementById("canvas").getBoundingClientRect();
+      var slot = document.getElementById("wslot").getBoundingClientRect();
+      var baseline = slot.bottom - canvasBox.top;
+      var t = size * 0.17;
+      // A pill runs exactly from one end point to the other, rounded ends included.
+      var yHigh = baseline - o.actualBoundingBoxAscent;
+      var yLow = baseline + o.actualBoundingBoxDescent;
+      var yMid = yHigh + (yLow - yHigh) * 0.28;
+      var left = slot.left - canvasBox.left + t * 0.15;
+      var right = slot.right - canvasBox.left - t * 0.15;
+      var step = (right - left) / 4;
+      var xs = [left, left + step, left + step * 2, left + step * 3, right];
+      var strokes = [
+        [xs[0], yHigh, xs[1], yLow],
+        [xs[2], yMid, xs[1], yLow],
+        [xs[2], yMid, xs[3], yLow],
+        [xs[4], yHigh, xs[3], yLow]
+      ];
+      var overlay = document.getElementById("overlay");
+      strokes.forEach(function (s) { capsule(overlay, s[0], s[1], s[2], s[3], t, 0, "pill"); });
+      document.body.dataset.ready = "yes";
     });
   } else {
     document.getElementById("name").remove();

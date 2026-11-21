@@ -48,7 +48,10 @@ try {
   await send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
   for (const out of OUTPUTS) {
     await send("Page.navigate", { url: PAGE + "?mode=" + out.mode });
-    await sleep(800);
+    await sleep(500);
+    // Wait for the web font, so the name is never drawn in a stand-in font.
+    await send("Runtime.evaluate", { expression: "document.fonts.ready.then(() => document.fonts.check('700 100px Fredoka'))", awaitPromise: true, returnByValue: true });
+    await sleep(300);
     const shot = await send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width: 1024, height: 1024, scale: out.size / 1024 } });
     writeFileSync(path.join(ROOT, out.file), Buffer.from(shot.data, "base64"));
     console.log("wrote " + out.file + " (" + out.size + "px)");
