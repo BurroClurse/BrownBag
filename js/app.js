@@ -9,8 +9,8 @@ import { shouldShowInstallHint, dismissInstallHint, installHint, backupFileName,
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText } from "./view.js";
-import { saveRecords, loadLastRecords, savedNotice } from "./offline.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "./view.js";
+import { saveRecords, loadLastRecords } from "./offline.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -30,7 +30,8 @@ var state = {
   qr: null,
   announce: "",
   focusId: null,
-  savedAt: null
+  savedAt: null,
+  screen: "home"
 };
 
 // Keeps the app's own files on the phone so it opens with no signal (sw.js).
@@ -146,46 +147,89 @@ async function loadMedicines(client, patientId) {
   return split;
 }
 
+// One screen at a time: "home" (the bag and two big buttons), "medicines"
+// (the full list) or "more" (backup and sign out). The QR code opens over
+// whichever screen is showing (openQr).
 function render() {
   clear(root);
+  root.className = "screen-" + state.screen;
   var arranged = arrangeList(state.split, state.data);
-
-  add(root, "h1", "Brown Bag");
-  add(root, "p", state.patient.name + (state.patient.birthDate ? " · born " + state.patient.birthDate : ""), "who");
-  if (state.savedAt) {
-    var notice = add(root, "div", null, "notice");
-    add(notice, "p", savedNotice(state.savedAt, navigator.onLine));
-    if (navigator.onLine) {
-      var update = add(notice, "a", "Sign in to update", "button");
-      update.href = "./launch.html";
-    }
+  if (state.screen === "medicines") {
+    drawMedicines(arranged);
+  } else if (state.screen === "more") {
+    drawMore();
+  } else {
+    drawHome(arranged);
   }
-  drawInstallHint();
-  add(root, "p", DISCLAIMER, "disclaimer");
-  var live = add(root, "p", state.announce, "visually-plain");
+  var live = add(root, "p", state.announce, "status-line");
   live.setAttribute("role", "status");
   state.announce = "";
-
-  drawRecords(arranged);
-  drawAdditions();
-  drawStopped(arranged);
-  drawShare();
-  drawBackup();
-
-  var signOut = add(root, "p", "");
-  var link = add(signOut, "a", "Sign out");
-  link.href = "./";
-  link.addEventListener("click", function (event) {
-    event.preventDefault();
-    sessionStorage.clear();
-    location.href = "./";
-  });
-
   if (state.focusId) {
     var target = document.getElementById(state.focusId);
     if (target) target.focus();
     state.focusId = null;
   }
+}
+
+function go(screen, focusId) {
+  state.screen = screen;
+  state.focusId = focusId;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function drawHome(arranged) {
+  drawNotices();
+  add(root, "h1", state.patient.name, "home-name");
+  var bag = add(root, "button", null, "home-bag");
+  bag.type = "button";
+  bag.id = "home-bag";
+  bag.setAttribute("aria-label", "Show my QR code");
+  var logo = add(bag, "img");
+  logo.src = "icons/logo-trimmed.png";
+  logo.alt = "";
+  bag.addEventListener("click", openQr);
+  var actions = add(root, "div", null, "home-actions");
+  button(actions, "Show my QR code", "primary big", openQr).id = "show-qr";
+  button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions)), "secondary big", function () {
+    go("medicines", "medicines-heading");
+  }).id = "open-medicines";
+  add(root, "p", DISCLAIMER, "disclaimer home-disclaimer");
+  button(root, "More options", "link-button", function () {
+    go("more", "more-heading");
+  }).id = "open-more";
+}
+
+function drawMedicines(arranged) {
+  var top = add(root, "div", null, "screen-top");
+  button(top, "Done", "secondary big", function () {
+    state.adding = false;
+    go("home", "open-medicines");
+  }).id = "medicines-done";
+  var title = add(root, "h1", "My medicines");
+  title.id = "medicines-heading";
+  title.tabIndex = -1;
+  drawRecords(arranged);
+  drawAdditions();
+  drawStopped(arranged);
+}
+
+function drawMore() {
+  var top = add(root, "div", null, "screen-top");
+  button(top, "Done", "secondary big", function () {
+    go("home", "open-more");
+  }).id = "more-done";
+  var title = add(root, "h1", "More options");
+  title.id = "more-heading";
+  title.tabIndex = -1;
+  drawBackup();
+  var section = add(root, "section");
+  heading(section, "Sign out", "signout-heading");
+  add(section, "p", "Signing out ends this visit to your records. Your saved list stays on this phone.", "med-line");
+  button(section, "Sign out", "secondary big", function () {
+    sessionStorage.clear();
+    location.href = "./";
+  });
 }
 
 function drawRecords(arranged) {
@@ -370,43 +414,86 @@ function drawStopped(arranged) {
   });
 }
 
-function drawShare() {
-  var section = add(root, "section");
-  heading(section, "Share my list", "share-heading");
-  if (!state.qr) {
-    button(section, "Show my QR code", null, showQr).id = "qr-open";
-    return;
-  }
-  if (state.qr.tooLong) {
-    add(section, "p", "Your list is too long for one QR code. Show this screen instead.", "notice");
-    button(section, "OK", "secondary", function () {
-      state.qr = null;
-      state.focusId = "qr-open";
-      render();
-    });
-    return;
-  }
-  var box = add(section, "div", null, "qr");
-  box.appendChild(qrCanvas(state.qr.prefix, state.qr.digits));
-  add(section, "p", "Read this code to the person who scans it:");
-  var code = add(section, "p", state.qr.code, "share-code");
-  code.setAttribute("aria-label", "Share code " + state.qr.code.split("").join(" "));
-  button(section, "Hide QR code", "secondary", function () {
-    state.qr = null;
-    state.focusId = "qr-open";
-    render();
-  });
-}
-
-async function showQr() {
+// The QR code covers the screen: it swooshes up out of the bag and tucks
+// back in on Close (css/brownbag.css; a fade with Reduce Motion). It shows
+// only the code, the 6 digits and Close. Focus stays inside it, Escape
+// closes it, and focus goes back to "Show my QR code".
+async function openQr() {
+  if (document.getElementById("qr-overlay")) return;
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   // Staff are told when the records part is an older saved copy, or when a
   // source failed to load, so a partial list never looks complete.
   var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed };
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
-  state.qr = fitsInQr(packed.prefix, packed.digits) ? packed : { tooLong: true };
-  state.focusId = "share-heading";
-  render();
+  var fits = fitsInQr(packed.prefix, packed.digits);
+
+  var overlay = document.createElement("div");
+  overlay.id = "qr-overlay";
+  overlay.className = "qr-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "qr-heading");
+  var bag = document.getElementById("home-bag");
+  if (bag) {
+    var from = bag.getBoundingClientRect();
+    overlay.style.setProperty("--from-x", (from.left + from.width / 2 - innerWidth / 2) + "px");
+    overlay.style.setProperty("--from-y", (from.top + from.height * 0.35 - innerHeight / 2) + "px");
+  }
+  var title = add(overlay, "h2", fits ? "Show this to the person checking you in" : "Your list is too long for one QR code");
+  title.id = "qr-heading";
+  if (fits) {
+    var box = add(overlay, "div", null, "qr");
+    box.appendChild(qrCanvas(packed.prefix, packed.digits));
+    add(overlay, "p", "Read this code out loud:", "qr-say");
+    var code = add(overlay, "p", packed.code, "share-code");
+    code.setAttribute("aria-label", "Share code " + packed.code.split("").join(" "));
+  } else {
+    add(overlay, "p", "Show your medicines on this screen instead.");
+    button(overlay, "Show my medicines instead", "secondary big", function () {
+      closeQr(function () { go("medicines", "medicines-heading"); });
+    });
+  }
+  button(overlay, "Close", "primary big", function () { closeQr(); }).id = "qr-close";
+  overlay.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeQr();
+    } else if (event.key === "Tab") {
+      var stops = Array.from(overlay.querySelectorAll("button"));
+      var at = stops.indexOf(document.activeElement);
+      var next = event.shiftKey ? (at <= 0 ? stops.length - 1 : at - 1) : (at + 1) % stops.length;
+      event.preventDefault();
+      stops[next].focus();
+    }
+  });
+  document.body.appendChild(overlay);
+  root.inert = true;
+  root.setAttribute("aria-hidden", "true");
+  requestAnimationFrame(function () { overlay.classList.add("open"); });
+  document.getElementById("qr-close").focus();
+}
+
+function closeQr(after) {
+  var overlay = document.getElementById("qr-overlay");
+  if (!overlay || overlay.classList.contains("closing")) return;
+  overlay.classList.remove("open");
+  overlay.classList.add("closing");
+  root.inert = false;
+  root.removeAttribute("aria-hidden");
+  var finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    overlay.remove();
+    if (typeof after === "function") {
+      after();
+    } else {
+      var back = document.getElementById("show-qr");
+      if (back) back.focus();
+    }
+  }
+  overlay.addEventListener("animationend", finish);
+  setTimeout(finish, 700);
 }
 
 // The web address goes in as text and the packed list as digits, which a
@@ -444,16 +531,29 @@ function isStandalone() {
   return navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
 }
 
-function drawInstallHint() {
-  if (!shouldShowInstallHint({ userAgent: navigator.userAgent, standalone: isStandalone(), storage: localStorage, now: new Date() })) {
-    return;
-  }
-  var box = add(root, "div", null, "notice");
-  add(box, "p", installHint(navigator.userAgent));
-  button(box, "Not now", "secondary", function () {
-    dismissInstallHint(localStorage, new Date());
-    state.focusId = "records-heading";
-    render();
+// The bar at the top of home, only when something needs saying: an older
+// saved list, a source that failed, or the Home Screen hint.
+function drawNotices() {
+  var hint = shouldShowInstallHint({ userAgent: navigator.userAgent, standalone: isStandalone(), storage: localStorage, now: new Date() })
+    ? installHint(navigator.userAgent)
+    : null;
+  var notes = noticesFor({ savedAt: state.savedAt, online: navigator.onLine, failed: state.split.failed, installHint: hint });
+  if (!notes.length) return;
+  var bar = add(root, "div", null, "notice-bar");
+  notes.forEach(function (text, index) {
+    var row = add(bar, "div", null, "notice-row");
+    add(row, "p", text);
+    if (index === 0 && state.savedAt && navigator.onLine) {
+      var update = add(row, "a", "Sign in to update", "button secondary");
+      update.href = "./launch.html";
+    }
+    if (hint && text === hint) {
+      button(row, "Not now", "secondary", function () {
+        dismissInstallHint(localStorage, new Date());
+        state.focusId = "show-qr";
+        render();
+      });
+    }
   });
 }
 
@@ -463,13 +563,13 @@ function drawBackup() {
   var section = add(root, "section");
   heading(section, "Backup", "backup-heading");
   add(section, "p", "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.", "med-line");
-  button(section, "Save a backup", null, saveBackup);
+  button(section, "Save a backup", "secondary big", saveBackup);
   var picker = add(section, "input");
   picker.type = "file";
   picker.accept = ".json,application/json";
   picker.hidden = true;
   picker.id = "restore-file";
-  button(section, "Restore a backup", "secondary", function () { picker.click(); });
+  button(section, "Restore a backup", "secondary big", function () { picker.click(); });
   picker.addEventListener("change", async function () {
     var file = picker.files && picker.files[0];
     if (!file) return;
@@ -566,8 +666,9 @@ function heading(parent, text, id) {
   return h;
 }
 
+// kind is a class list: "secondary", "primary big", "link-button", or null.
 function button(parent, text, kind, onClick, label) {
-  var b = add(parent, "button", text, kind === "secondary" ? "secondary" : null);
+  var b = add(parent, "button", text, kind || null);
   b.type = "button";
   if (label) b.setAttribute("aria-label", label);
   b.addEventListener("click", onClick);

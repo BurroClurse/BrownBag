@@ -105,6 +105,9 @@ button:disabled { opacity: 0.6; cursor: default; }
 a { color: var(--focus); }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* Headings get focus only so a screen reader starts there when a screen
+   opens. They are not buttons, so no outline. */
+[tabindex="-1"]:focus { outline: none; }
 
 label { display: block; font-weight: 600; margin-top: 0.75rem; }
 input[type="text"], input[type="password"], input:not([type]) {
@@ -141,3 +144,115 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---- One-screen layout (docs/superpowers/specs/2026-11-21-one-screen-design.md) ---- */
+
+:root { --teal: #164F5A; --teal-ink: #FFFFFF; }
+@media (prefers-color-scheme: dark) {
+  :root { --teal: #2B6E76; }
+}
+
+.big {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  margin: 0.6rem 0 0;
+  font-size: 1.25rem;
+  border-radius: 14px;
+}
+button.primary, .button.primary {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--teal-ink);
+}
+button.secondary.big { border-color: var(--teal); }
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-decoration: underline;
+  font-weight: 600;
+  display: block;
+  margin: 0.4rem auto 0;
+}
+
+/* Home fills exactly one screen: the bag takes whatever room is left and
+   shrinks first; the buttons never do. At very large text sizes it scrolls
+   instead of cutting anything off. */
+#app.screen-home {
+  height: 100dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.home-name {
+  text-align: center;
+  font-size: 1.6rem;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+.home-bag {
+  flex: 1 1 0;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The logo sits on the app icon's wheat card, so its dark letters read
+     in light and dark mode alike. */
+  background: #F3DDBE;
+  border: none;
+  padding: 0.75rem;
+  margin: 0.75rem 0 0.25rem;
+  min-width: 0;
+  border-radius: 24px;
+}
+.home-bag img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+}
+.home-actions { flex: none; }
+.home-disclaimer { flex: none; margin: 0.75rem 0 0; font-size: 1rem; }
+#open-more { flex: none; }
+.status-line:empty { display: none; }
+
+.notice-bar { flex: none; }
+.notice-row {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.notice-row p { margin: 0; }
+
+.screen-top { margin-bottom: 0.5rem; }
+.screen-top .big { margin-top: 0; }
+
+/* The QR code covers the whole screen, always dark on white. */
+.qr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  background: #FFFFFF;
+  color: #1b1b1b;
+  text-align: center;
+}
+.qr-overlay h2 { border: none; margin: 0 0 0.75rem; font-size: 1.4rem; }
+.qr-overlay .qr { margin: 0; }
+.qr-overlay .qr canvas { width: min(88vw, 52dvh); height: auto; }
+.qr-overlay .qr-say { margin: 0.75rem 0 0; font-size: 1.15rem; }
+.qr-overlay .share-code { margin: 0.25rem 0 0; color: #1b1b1b; }
+.qr-overlay .big { max-width: 28rem; }
+.qr-overlay button.primary { background: #164F5A; border-color: #164F5A; color: #FFFFFF; }

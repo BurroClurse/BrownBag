@@ -13,6 +13,8 @@ const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = 9340;
 const OUTPUTS = [
   { mode: "logo", size: 1024, file: "icons/logo.png" },
+  // The same logo without the empty space around it, for the app's screens.
+  { mode: "logo", size: 640, file: "icons/logo-trimmed.png", clip: { x: 190, y: 205, width: 660, height: 610 } },
   { mode: "icon", size: 512, file: "icons/icon-512.png" },
   { mode: "icon", size: 192, file: "icons/icon-192.png" },
   { mode: "icon", size: 180, file: "icons/apple-touch-icon.png" }
@@ -52,9 +54,10 @@ try {
     // Wait for the web font, so the name is never drawn in a stand-in font.
     await send("Runtime.evaluate", { expression: "document.fonts.ready.then(() => document.fonts.check('700 100px Fredoka'))", awaitPromise: true, returnByValue: true });
     await sleep(300);
-    const shot = await send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width: 1024, height: 1024, scale: out.size / 1024 } });
+    const area = out.clip || { x: 0, y: 0, width: 1024, height: 1024 };
+    const shot = await send("Page.captureScreenshot", { format: "png", clip: Object.assign({}, area, { scale: out.size / area.width }) });
     writeFileSync(path.join(ROOT, out.file), Buffer.from(shot.data, "base64"));
-    console.log("wrote " + out.file + " (" + out.size + "px)");
+    console.log("wrote " + out.file + " (" + out.size + "px wide)");
   }
 } finally {
   chrome.kill();
