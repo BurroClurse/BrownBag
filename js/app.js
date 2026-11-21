@@ -13,7 +13,7 @@ import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLi
 import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { fillsFromClaims, attachFills, fillLine, completedLine } from "./claims.js";
+import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -231,35 +231,14 @@ async function keepPass(client) {
 async function loadFresh(client) {
   var patient = await client.patient.read();
   var patientId = client.patient.id;
+  // Claims load alongside the medicines under their own time limit, so a
+  // slow insurer never holds up the list.
+  var claims = readClaims(function (url) { return client.request(url); }, patientId, ingredientsFor, CLAIMS_WAIT_MS);
   return {
     patientId: patientId,
     patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
-    split: await withClaims(client, patientId, await loadMedicines(client, patientId))
+    split: mergeClaims(await loadMedicines(client, patientId), await claims, new Date())
   };
-}
-
-// Pharmacy claims (FHIR ExplanationOfBenefit), matched to the medicines.
-// "refused": this sign-in can't read claims (an older pass); "failed": slow
-// or broken; "none": no pharmacy claims. The medicines show either way.
-async function withClaims(client, patientId, split) {
-  try {
-    return await withTimeout((async function () {
-      var claims = await client.request("ExplanationOfBenefit?patient=" + encodeURIComponent(patientId), { pageLimit: 0, flat: true });
-      var fills = fillsFromClaims((claims || []).filter(function (r) { return r && r.resourceType === "ExplanationOfBenefit"; }));
-      if (!fills.length) {
-        return Object.assign({}, split, { claims: "none" });
-      }
-      var ingredientOf = new Map(split.ingredientOf || []);
-      var missing = fills.map(function (f) { return f.rxcui; }).filter(function (code) { return code && !ingredientOf.has(code); });
-      if (missing.length) {
-        (await ingredientsFor(missing)).forEach(function (value, code) { ingredientOf.set(code, value); });
-      }
-      return attachFills(split, fills, ingredientOf, new Date());
-    })(), CLAIMS_WAIT_MS);
-  } catch (error) {
-    var status = error && (error.status || (error.response && error.response.status));
-    return Object.assign({}, split, { claims: status === 401 || status === 403 ? "refused" : "failed" });
-  }
 }
 
 function usePatient(result) {

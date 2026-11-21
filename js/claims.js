@@ -89,7 +89,8 @@ export function attachFills(split, fills, ingredientOf, now) {
   });
   var stillOlder = [];
   older.forEach(function (i) {
-    if (i.fills.count && recent(i.fills.last, now)) {
+    var written = String(i.lastDate || i.start || "").slice(0, 10);
+    if (i.fills.count && recent(i.fills.last, now) && i.fills.last > written) {
       current.push(Object.assign(i, { status: "current", completedButFilled: i.fills.last }));
     } else {
       stillOlder.push(i);
@@ -109,6 +110,55 @@ export function attachFills(split, fills, ingredientOf, now) {
   });
   var byName = function (a, b) { return a.name.localeCompare(b.name); };
   return Object.assign({}, split, { current: current.sort(byName), older: stillOlder.sort(byName), claims: "loaded" });
+}
+
+// Reads every page of a patient's claims, one page at a time, and looks up
+// the ingredients of each fill's drug, all inside ms. When time is up it
+// asks for no more pages and says "failed". Never throws: "refused" means
+// this sign-in can't read claims (an older pass), "none" means no pharmacy
+// claims. request(url) returns one FHIR Bundle; lookup is ingredientsFor.
+export async function readClaims(request, patientId, lookup, ms) {
+  var deadline = Date.now() + ms;
+  var timer;
+  var late = new Promise(function (resolve) {
+    timer = setTimeout(function () { resolve({ status: "failed" }); }, ms);
+  });
+  var work = (async function () {
+    var eobs = [];
+    var url = "ExplanationOfBenefit?patient=" + encodeURIComponent(patientId);
+    while (url) {
+      if (Date.now() >= deadline) return { status: "failed" };
+      var bundle = await request(url);
+      if (Date.now() >= deadline) return { status: "failed" };
+      ((bundle && bundle.entry) || []).forEach(function (entry) {
+        if (entry && entry.resource && entry.resource.resourceType === "ExplanationOfBenefit") eobs.push(entry.resource);
+      });
+      var next = ((bundle && bundle.link) || []).filter(function (l) { return l.relation === "next" && l.url; })[0];
+      url = next ? next.url : null;
+    }
+    var fills = fillsFromClaims(eobs);
+    if (!fills.length) return { status: "none" };
+    var codes = Array.from(new Set(fills.map(function (f) { return f.rxcui; }).filter(Boolean)));
+    var ingredientOf = codes.length ? await lookup(codes) : new Map();
+    return { status: "loaded", fills: fills, ingredientOf: ingredientOf };
+  })().catch(function (error) {
+    var status = error && (error.status || (error.response && error.response.status));
+    return { status: status === 401 || status === 403 ? "refused" : "failed" };
+  });
+  return Promise.race([work, late]).finally(function () { clearTimeout(timer); });
+}
+
+// Puts what readClaims found onto the medicine list. The medicines stay as
+// they are when the claims didn't load.
+export function mergeClaims(split, result, now) {
+  if (!result || result.status !== "loaded") {
+    return Object.assign({}, split, { claims: (result && result.status) || "failed" });
+  }
+  var ingredientOf = new Map(split.ingredientOf || []);
+  (result.ingredientOf || new Map()).forEach(function (value, code) {
+    if (!ingredientOf.has(code)) ingredientOf.set(code, value);
+  });
+  return attachFills(split, result.fills, ingredientOf, now);
 }
 
 function longDate(date) {

@@ -67,7 +67,7 @@ picked up, and when last.
 ### Reading the claims
 
 - `launch.html` adds the scope `patient/ExplanationOfBenefit.read`.
-- On each update (sign-in or the pass), after the medicines:
+- On each update (sign-in or the pass), alongside the medicines:
   `GET ExplanationOfBenefit?patient={id}`, every page, keeping only claims
   whose `type` is `pharmacy`
   (`http://terminology.hl7.org/CodeSystem/claim-type`). The app filters

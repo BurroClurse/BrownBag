@@ -891,8 +891,17 @@ list already uses). Then each card can say "Filled 2 times · last Sep 22,
 2026 · Aetna claims", or "No fill found in your claims". Fills that match
 nothing are prescriptions from outside this health system, so they get
 their own section. A prescription the record calls "completed" but that
-was filled this year moves back to the current list, because the pills are
-probably still at home.
+was filled this year, after it was written, moves back to the current
+list, because the pills are probably still at home. A fill on the day it
+was written doesn't count: that is just a finished course, like an
+antibiotic.
+
+**Two things at once.** The claims load at the same time as the
+medicines, not after them, each with its own time limit. If the insurer
+is slow, the medicines still arrive and the list says the fills couldn't
+be loaded. The claims also come one page at a time (`readClaims`), and
+when the 6 seconds are up the app stops asking for more pages, instead
+of downloading a patient's whole claim history in the background.
 
 **Careful wording.** "No fill found in your claims", never "not filled":
 people pay cash, get samples or use another insurer.

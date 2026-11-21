@@ -36,8 +36,8 @@ only, no real patients).
 - **What was actually filled.** Each medicine shows its insurance fills
   ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
-  and a prescription marked completed but filled recently moves back to
-  the current list.
+  and a prescription marked completed but filled again since it was
+  written moves back to the current list.
 - **The QR code** comes up out of the bag and fills the screen, for the
   person checking their medicines. A 6-digit code, blurred until tapped, is
   told to that person after they scan; they type it on `share.html` to see
@@ -74,8 +74,10 @@ Every resource scope is read-only. `offline_access` asks for a refresh token
 3. `GET MedicationRequest?patient={id}&_include=MedicationRequest:medication`, all pages.
 4. `GET MedicationStatement?patient={id}&_include=MedicationStatement:medication`, all pages.
 5. `GET ExplanationOfBenefit?patient={id}`, all pages, keeping pharmacy
-   claims: the drug (RxNorm), the fill date and the insurer. It has its own
-   6-second limit, so a slow insurer never holds up the medicines.
+   claims: the drug (RxNorm), the fill date and the insurer. It starts
+   alongside steps 3 and 4 with its own 6-second limit, and asks for no
+   more pages once that is up, so a slow insurer never holds up the
+   medicines.
 6. RxNav ingredient lookups, to group strengths of the same drug and match
    fills to medicines.
 
