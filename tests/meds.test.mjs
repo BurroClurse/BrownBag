@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   fromMedicationRequest,
   fromMedicationStatement,
+  isPlaceholderDrug,
   formatDosage,
   dedupe,
   splitByStatus,
@@ -354,4 +355,37 @@ test("dedupe remembers the earliest start date", () => {
     fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2024-05-01"), SOURCE)
   ]);
   assert.equal(merged[0].firstDate, "2019-06-01");
+});
+
+// Seen in the SMART sandbox (2026-11-21): statements whose medicine is only
+// the word "Medication", with no code, dose or date.
+test("a record that only says Medication is a placeholder, not a medicine", () => {
+  const placeholder = fromMedicationStatement({
+    resourceType: "MedicationStatement",
+    id: "3062473",
+    status: "active",
+    medicationCodeableConcept: { text: "Medication" },
+    note: [{ text: "Medication taken as prescribed" }]
+  }, "SMART sandbox");
+  assert.equal(isPlaceholderDrug(placeholder), true);
+  const unreadable = fromMedicationStatement({ resourceType: "MedicationStatement", status: "active", medicationCodeableConcept: { text: "Medication details not readable" } }, "SMART sandbox");
+  assert.equal(isPlaceholderDrug(unreadable), true);
+  const noName = fromMedicationStatement({ resourceType: "MedicationStatement", status: "active" }, "SMART sandbox");
+  assert.equal(isPlaceholderDrug(noName), true);
+});
+
+test("real medicines are not placeholders, even with a plain name", () => {
+  const real = fromMedicationStatement({
+    resourceType: "MedicationStatement",
+    status: "active",
+    medicationCodeableConcept: { text: "Lasix 40mg" }
+  }, "SMART sandbox");
+  assert.equal(isPlaceholderDrug(real), false);
+  const coded = fromMedicationStatement({
+    resourceType: "MedicationStatement",
+    status: "active",
+    medicationCodeableConcept: { text: "Medication", coding: [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: "310965", display: "ibuprofen 200 MG Oral Tablet" }] }
+  }, "SMART sandbox");
+  assert.equal(isPlaceholderDrug(coded), false);
+  assert.equal(coded.name, "ibuprofen 200 MG Oral Tablet");
 });

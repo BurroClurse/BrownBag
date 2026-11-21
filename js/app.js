@@ -6,7 +6,7 @@ import { showLockScreen, restoreBackupText } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
 import { LOCK_KEY, hasLock } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
-import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
+import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert } from "./view.js";
@@ -249,6 +249,7 @@ async function keepFreshCopy() {
       patient: state.patient,
       current: state.split.current,
       older: state.split.older,
+      placeholders: state.split.placeholders || 0,
       savedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -313,7 +314,7 @@ async function signInUnavailable(error) {
 function useSaved(saved) {
   state.patientId = saved.patientId;
   state.patient = saved.patient;
-  state.split = { current: saved.current, older: saved.older, failed: false };
+  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0 };
   state.savedAt = saved.savedAt;
 }
 
@@ -331,6 +332,7 @@ async function loadAdditions() {
 // If one kind fails to load, the screen says so instead of showing less.
 async function loadMedicines(client, patientId) {
   var items = [];
+  var placeholders = 0;
   var failed = false;
   var kinds = [["MedicationRequest", fromMedicationRequest], ["MedicationStatement", fromMedicationStatement]];
   for (var i = 0; i < kinds.length; i += 1) {
@@ -346,7 +348,14 @@ async function loadMedicines(client, patientId) {
         .map(function (r) { return ["Medication/" + r.id, r]; }));
       resources
         .filter(function (r) { return r && r.resourceType === type && usableRecord(r); })
-        .forEach(function (r) { items.push(convert(r, SOURCE, medications)); });
+        .forEach(function (r) {
+          var item = convert(r, SOURCE, medications);
+          if (isPlaceholderDrug(item)) {
+            placeholders += 1;
+          } else {
+            items.push(item);
+          }
+        });
     } catch (error) {
       failed = true;
     }
@@ -356,6 +365,7 @@ async function loadMedicines(client, patientId) {
   var ingredients = rxcuis.length ? await ingredientsFor(rxcuis) : new Map();
   var split = splitByStatus(groupByIngredient(merged, ingredients));
   split.failed = failed;
+  split.placeholders = placeholders;
   return split;
 }
 
@@ -490,6 +500,10 @@ function drawRecords(arranged) {
   var empty = emptyRecordsText(state.split, arranged);
   if (empty && !state.split.failed) {
     add(section, "p", empty);
+  }
+  if (state.split.placeholders) {
+    var one = state.split.placeholders === 1;
+    note(section, "Your records also have " + state.split.placeholders + (one ? " entry" : " entries") + " with no medicine name, so " + (one ? "it isn't" : "they aren't") + " listed. Ask your care team what " + (one ? "it is." : "they are."));
   }
   var list = add(section, "ul", null, "meds");
   arranged.current.forEach(function (entry) {

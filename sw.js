@@ -3,7 +3,7 @@
 // It never keeps health data. Records (FHIR), the sign-in server and RxNav
 // always go straight to the network and are never cached.
 
-var CACHE = "brownbag-v4";
+var CACHE = "brownbag-v5";
 // On weak Wi-Fi, stop waiting after this long and use the phone's copy.
 var NETWORK_WAIT_MS = 3000;
 
@@ -58,7 +58,10 @@ self.routeFor = function (url) {
 self.fetchWithin = function (request, ms) {
   return new Promise(function (resolve, reject) {
     var timer = setTimeout(function () { reject(new Error("network too slow")); }, ms);
-    fetch(request).then(function (response) {
+    // "no-cache": always check with GitHub when there's signal, instead of
+    // a copy the browser may keep for 10 minutes.
+    var url = typeof request === "string" ? request : request.url;
+    fetch(url, { cache: "no-cache", credentials: "same-origin" }).then(function (response) {
       clearTimeout(timer);
       resolve(response);
     }, function (error) {
@@ -70,7 +73,7 @@ self.fetchWithin = function (request, ms) {
 
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE).then(function (cache) {
-    return cache.addAll(APP_FILES).then(function () {
+    return cache.addAll(APP_FILES.map(function (url) { return new Request(url, { cache: "reload" }); })).then(function () {
       return Promise.all(LIBRARIES.map(function (url) {
         return fetch(url, { mode: "cors" }).then(function (response) {
           if (response.ok) return cache.put(url, response);

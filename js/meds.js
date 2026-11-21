@@ -11,6 +11,17 @@ var UNIT_WORDS = { h: "hour", d: "day", wk: "week", mo: "month", a: "year" };
 
 var unnamedCount = 0;
 
+// Words a record uses when it doesn't really say which medicine it is.
+var PLACEHOLDER = /^(medication|medications|medicine|medicines|drug|unknown|unnamed medicine|medication details not readable)$/i;
+
+// A record with no real drug in it: no RxNorm code and only a placeholder
+// word (or nothing) for a name. Seen in the SMART sandbox, where some
+// statements are just { text: "Medication" }. There's nothing to show or
+// stop, so the list leaves these out and says how many there were.
+export function isPlaceholderDrug(item) {
+  return !item.rxcui && PLACEHOLDER.test(String(item.name || "").trim());
+}
+
 export function fromMedicationRequest(resource, sourceName, medications = new Map()) {
   var drug = readDrug(resource, medications);
   var dosage = formatDosage(resource.dosageInstruction);
@@ -219,7 +230,9 @@ function readDrug(resource, medications) {
   var codings = Array.isArray(concept.coding) ? concept.coding : [];
   var rxnorm = codings.filter(function (coding) { return coding.system === RXNORM && coding.code; })[0];
   return {
-    name: concept.text || (rxnorm && rxnorm.display) || (codings[0] && codings[0].display) || null,
+    // A placeholder text like "Medication" gives way to the coded name.
+    name: (concept.text && !PLACEHOLDER.test(concept.text.trim()) ? concept.text : null) ||
+      (rxnorm && rxnorm.display) || (codings[0] && codings[0].display) || concept.text || null,
     rxcui: rxnorm ? String(rxnorm.code) : null
   };
 }

@@ -98,3 +98,10 @@ test("hasSavedList says whether there's a saved list to unlock, without the key"
   await saveRecords(storage, await key(), SAVED);
   assert.equal(hasSavedList(storage), true);
 });
+
+test("the service worker always asks GitHub for app files, not the browser's 10-minute copy", async () => {
+  const calls = [];
+  const worker = loadWorker({ fetch: (url, init) => { calls.push([typeof url === "string" ? url : url.url, init && init.cache]); return Promise.resolve({ ok: true }); } });
+  await worker.fetchWithin({ url: "https://burroclurse.github.io/BrownBag/js/app.js", method: "GET" }, 1000);
+  assert.deepEqual(calls[0], ["https://burroclurse.github.io/BrownBag/js/app.js", "no-cache"]);
+});
