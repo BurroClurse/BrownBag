@@ -24,8 +24,8 @@ only, no real patients).
   one drug grouped, older prescriptions folded away), medicines they added
   (checked against RxNorm), and ones they marked stopped.
 - **The QR code** comes up out of the bag and fills the screen, with a
-  6-digit code they read out loud. Staff scan it and type the code on
-  `share.html` to see the list.
+  6-digit code, blurred until tapped, that they tell the person who scans it.
+  Staff scan it and type the code on `share.html` to see the list.
 - **No signal?** The last list is saved, encrypted, on the phone, and the QR
   code still works.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the

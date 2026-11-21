@@ -709,12 +709,12 @@ async function buildQr() {
     var box = add(overlay, "div", null, "qr");
     box.appendChild(qrCanvas(packed.prefix, packed.digits));
     var sayRow = add(overlay, "div", null, "help-row");
-    add(sayRow, "p", "Read this code out loud:", "qr-say");
-    var why = helpBubble(sayRow, "Why read the code out loud?", function (panel) {
-      add(panel, "p", "The QR code holds your list, locked. These 6 digits are its key. Saying them out loud lets the person checking you in open your list. Someone who only sees or takes a photo of the QR code can't read it. You get a new code each time.");
+    add(sayRow, "p", "After they scan it, tell them this code:", "qr-say");
+    var why = helpBubble(sayRow, "Why tell them the code?", function (panel) {
+      add(panel, "p", "The QR code holds your list, locked. These 6 digits are its key. After the person checking you in scans it, their screen asks for the digits, and telling them opens your list. Someone who only sees or takes a photo of the QR code can't read it.");
+      add(panel, "p", "The digits stay hidden until you tap them, so people nearby can't see them. You get a new code each time.");
     });
-    var code = add(overlay, "p", packed.code, "share-code");
-    code.setAttribute("aria-label", "Share code " + packed.code.split("").join(" "));
+    drawCodeReveal(overlay, packed.code);
     overlay.appendChild(why);
   } else {
     add(overlay, "p", "Show your medicines on this screen instead.");
@@ -1037,6 +1037,28 @@ function button(parent, text, kind, onClick, label) {
 
 // An explanation, set apart from the instructions and buttons around it:
 // "Note:" in bold, in a box with a teal bar down its left side.
+// The 6 digits, blurred until tapped so people nearby can't read them. A
+// second tap hides them again. VoiceOver reads them only once shown.
+function drawCodeReveal(parent, digits) {
+  var spoken = digits.split("").join(" ");
+  var reveal = add(parent, "button", null, "code-reveal");
+  reveal.type = "button";
+  reveal.id = "code-reveal";
+  var code = add(reveal, "span", digits, "share-code");
+  var hint = add(reveal, "span", "", "code-hint");
+  function show(shown) {
+    reveal.classList.toggle("shown", shown);
+    reveal.setAttribute("aria-expanded", String(shown));
+    code.setAttribute("aria-hidden", String(!shown));
+    hint.textContent = shown ? "Tap to hide the code" : "Tap to show the code";
+    reveal.setAttribute("aria-label", shown ? "Code " + spoken + ". Tap to hide." : "Tap to show the code");
+  }
+  show(false);
+  reveal.addEventListener("click", function () {
+    show(!reveal.classList.contains("shown"));
+  });
+}
+
 // A round "?" button that opens an explanation under it, as a note. The
 // caller puts the returned panel where it should open.
 var helpCount = 0;

@@ -856,6 +856,12 @@ lists exactly what the code carries (the same things `shareListFrom` in
 digits are the key to the locked list. Each "?" tells VoiceOver whether its
 explanation is open (`aria-expanded`).
 
+**The hidden code.** The 6 digits are blurred (a CSS `filter`) until the
+patient taps them, so people nearby can't read them over a shoulder.
+VoiceOver can't read them while hidden either (`aria-hidden`). The line
+above them now says "After they scan it, tell them this code:", so nobody
+reads the code out before the staff page asks for it.
+
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens)
 explains access tokens. Look at what a sign-in returns, and compare it
 with what Brown Bag keeps (`passFromState` in `js/pass.js`).
