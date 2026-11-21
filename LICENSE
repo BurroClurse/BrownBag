@@ -1,0 +1,18 @@
+Copyright (c) 2026 BurroClurse. All rights reserved.
+
+This repository is public so that its code can be read and reviewed,
+including by course instructors and the HL7 FHIR community.
+
+No license is granted to copy, use, run, modify, merge, publish, distribute,
+sublicense or sell this software or any part of it, or to make works based
+on it, without the copyright holder's prior written permission.
+
+GitHub's Terms of Service let GitHub users view this repository and fork it
+on GitHub. That is the only permission given. It does not allow using this
+code, or a fork of it, anywhere else.
+
+To ask for permission, open an issue on this repository.
+
+Parts that came from the course starter, samoanGuy7/Smart-App, belong to
+their author. Libraries loaded from jsDelivr keep their own licenses:
+fhirclient (Apache License 2.0) and qrcode-generator (MIT License).

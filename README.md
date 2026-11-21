@@ -1,110 +1,121 @@
 # Brown Bag
 
-Brown Bag helps patients give every healthcare worker an accurate medication list by gathering their medicines from their records, adding what they buy over the counter, and sharing it with one QR code.
+Brown Bag helps patients give every healthcare worker an accurate medication
+list. It gathers their medicines from their health records, adds what they
+take over the counter, and shares the whole list with one QR code.
 
-It is a patient-facing SMART on FHIR app for the HL7 Break the Code course. It runs as static pages on GitHub Pages, signs in against the SMART Health IT R4 sandbox, and reads the patient's MedicationRequest and MedicationStatement records.
+It is a patient-facing SMART on FHIR app, first built for the HL7 Break the
+Code course. It runs as static pages (no server of its own), signs in with
+SMART App Launch against the SMART Health IT R4 sandbox, and reads FHIR R4
+records. It is built for older patients: one screen, big buttons, no
+scrolling on the main screen, and WCAG 2.2 AA throughout.
 
-Design: [`docs/superpowers/specs/2026-11-17-brown-bag-design.md`](docs/superpowers/specs/2026-11-17-brown-bag-design.md). How it was built, step by step: [`docs/LEARNING.md`](docs/LEARNING.md).
+**Live:** <https://burroclurse.github.io/BrownBag/launch.html> (sandbox data
+only, no real patients).
 
 ## What the patient sees
 
-- **A lock first.** Face ID or fingerprint (a passkey), or a 6-digit PIN where the phone can't do that.
-- **From your records.** One line per medicine, repeats merged, strengths of the same medicine shown as a dose change, older prescriptions folded away. "I stopped this" moves a medicine to **Stopped by me**.
-- **Added by me.** Over-the-counter medicines and supplements, checked against RxNorm, saved on the phone only, encrypted.
-- **Show my QR code.** The list packed into the link after `#`, encrypted, with a 6-digit code the patient reads out. Staff open it on `share.html`.
-- **Works with no signal.** The last list is saved encrypted on the phone, and the app's files are kept by a service worker.
-- **Backups.** An encrypted backup file to keep in Files or iCloud, with Restore.
+- **Sign in once.** The first time, the patient signs in at their health
+  system and approves access. After that, Face ID (or a 6-digit PIN) opens
+  Brown Bag and the list updates by itself.
+- **One screen.** Their name, the Brown Bag logo, **Show my QR code**,
+  **My medicines (N)**, and **More options**.
+- **My medicines.** Medicines from their records (repeats merged, strengths of
+  one drug grouped, older prescriptions folded away), medicines they added
+  (checked against RxNorm), and ones they marked stopped.
+- **The QR code** comes up out of the bag and fills the screen, with a
+  6-digit code they read out loud. Staff scan it and type the code on
+  `share.html` to see the list.
+- **No signal?** The last list is saved, encrypted, on the phone, and the QR
+  code still works.
+- **Locks itself** after 5 minutes without a tap or 5 minutes away from the
+  app. The health record connection ends after 30 days without opening it.
+
+## How it uses SMART and FHIR
+
+**Launch.** `launch.html` starts a patient standalone launch with
+`FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
+3.0.1, PKCE, public client). Scopes:
+
+```
+launch/patient openid fhirUser offline_access patient/Patient.read
+patient/MedicationRequest.read patient/MedicationStatement.read
+patient/Medication.read patient/Practitioner.read
+```
+
+Every resource scope is read-only. `offline_access` asks for a refresh token
+([SMART App Launch: scopes](https://hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html)).
+
+**Reads, each time the app is opened and unlocked:**
+
+1. Refresh token → new access token (about an hour).
+2. `GET Patient/{id}`.
+3. `GET MedicationRequest?patient={id}&_include=MedicationRequest:medication`, all pages.
+4. `GET MedicationStatement?patient={id}&_include=MedicationStatement:medication`, all pages.
+5. RxNav ingredient lookups, to group strengths of the same drug.
+
+Nothing is written to the health record. Nothing runs on a schedule.
+
+**The refresh token** is stored encrypted (AES-GCM) with a key that comes
+from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
+never put in a backup file. It is deleted on Sign out, when the token server
+refuses it, or after 30 days unused.
+
+**The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient` and
+`MedicationStatement` resources, compressed, encrypted with a key made from
+the 6-digit code, and written after the `#` of a `share.html` link (browsers
+never send that part to a server). The packing borrows the trimming rules and
+numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
+The list never passes through a server.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | The app: lock, sign-in return (OAuth redirect target), the medicine list, additions, QR code, backup. |
-| `launch.html` | Patient standalone launch. Calls `FHIR.oauth2.authorize()`. |
-| `share.html` | The page staff see after scanning. Asks for the 6-digit code, then shows the list. |
-| `health.html` | Static hosting smoke check. |
-| `manifest.webmanifest`, `icons/` | Home Screen install: name and paper-bag icon. |
-| `sw.js` | Service worker. Keeps the app's own files for offline use. Never stores health data. |
-| `css/brownbag.css` | Shared styles, light and dark. |
-| `js/meds.js` | Turns FHIR records into one deduplicated list. |
+| `launch.html` | Patient standalone launch. |
+| `index.html` | The app: lock, sign-in return, home, My medicines, QR code. |
+| `share.html` | The page staff see after scanning. |
+| `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
+| `js/meds.js` | FHIR records into one deduplicated list. |
 | `js/rxnorm.js` | Drug name search and ingredient lookup through RxNav. |
-| `js/vault.js` | Encryption (AES-GCM), PIN keys (PBKDF2), encrypted storage and backups. |
-| `js/lock.js`, `js/lock-screen.js` | The passkey or PIN lock and its screens. |
-| `js/share.js` | Builds the shared FHIR Bundle and packs it into the encrypted QR link. |
-| `js/share-view.js` | Runs `share.html`. |
-| `js/view.js`, `js/app.js` | The main screen. |
-| `js/install.js` | Home Screen hint and backup helpers. |
-| `js/offline.js` | The saved list for use with no signal. |
-| `tests/` | Node tests, plus saved sandbox records in `tests/fixtures/`. |
-| `tools/serve.mjs` | Local https server for testing on a phone. |
-| `docs/` | Design, build plan and learning log. |
-| `.nojekyll` | Serves the files as-is on GitHub Pages. |
+| `js/pass.js` | The encrypted refresh token ("the pass"). |
+| `js/vault.js`, `js/lock.js`, `js/lock-screen.js` | Encryption, the passkey or PIN lock, backups. |
+| `js/idle.js` | When the app locks itself. |
+| `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
+| `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
+| `js/install.js` | Home Screen steps and backup helpers. |
+| `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
+| `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
+| `tools/` | Local https server and the logo source. |
+| `docs/` | Designs, build plans and the learning log. |
 
 ## Run the tests
 
-Needs Node 22 or later. No packages to install.
+Node 22 or later, nothing to install. From this folder:
 
 ```bash
-cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && node --test "tests/*.test.mjs"
+node --test "tests/*.test.mjs"
 ```
 
-## Run it on the Mac and a phone
+## Run it locally on a phone
 
-Encryption, passkeys and the camera only work on https pages, so the local server uses a certificate from [mkcert](https://github.com/FiloSottile/mkcert).
+Passkeys and encryption need https. `tools/serve.mjs` serves this folder with
+a certificate from [mkcert](https://github.com/FiloSottile/mkcert) kept in
+`.certs/` (never committed). See the comments at the top of that file.
 
-1. Install mkcert and trust it on the Mac (asks for the Mac password):
+## Copyright
 
-   ```bash
-   brew install mkcert
-   ```
+Copyright © 2026 BurroClurse. All rights reserved.
 
-   ```bash
-   mkcert -install
-   ```
+The code is public so that reviewers, instructors and the HL7 FHIR community
+can read how it works. Reading it is welcome. Copying it, using it, changing
+it or sharing it requires written permission. See [`LICENSE`](LICENSE).
 
-2. Make the certificate for this Mac's addresses. It goes in `.certs/`, which is never committed:
+The course starter it grew from is
+[samoanGuy7/Smart-App](https://github.com/samoanGuy7/Smart-App). Libraries
+loaded from jsDelivr keep their own licenses: fhirclient (Apache 2.0) and
+qrcode-generator (MIT).
 
-   ```bash
-   cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && mkdir -p .certs && mkcert -cert-file .certs/cert.pem -key-file .certs/key.pem localhost 127.0.0.1 "$(ipconfig getifaddr en0)" "$(scutil --get LocalHostName).local"
-   ```
-
-3. On the iPhone, install `rootCA.pem` from `$(mkcert -CAROOT)` (AirDrop it; never send `rootCA-key.pem`), then turn it on in Settings ▸ General ▸ About ▸ Certificate Trust Settings.
-
-4. Start the server:
-
-   ```bash
-   cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && node tools/serve.mjs
-   ```
-
-   It prints the addresses to open. On the phone, use the `.local` address to test Face ID: passkeys don't work on a plain number address like `192.168.0.224`, which falls back to the PIN.
-
-## Publish and verify
-
-1. Push the files, including `.nojekyll`, to `main` of a GitHub project repository.
-2. In **Settings → Pages → Build and deployment**, select **Deploy from a branch**, then **main** and **/(root)**. Save.
-3. After deployment, open `launch.html`. The SMART sandbox asks you to sign in as a patient. After you approve access, the app opens `index.html`, asks you to set up the lock, and shows that patient's medicines.
-
-| Page | Default GitHub Pages URL |
-| --- | --- |
-| App, after sign-in | `https://<owner>.github.io/<repo>/` |
-| Health check | `https://<owner>.github.io/<repo>/health.html` |
-| Patient sign-in | `https://<owner>.github.io/<repo>/launch.html` |
-
-These URLs assume a project site with the default domain. [GitHub Pages setup](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
-
-## Patient sign-in
-
-`launch.html` starts a standalone launch at the [SMART Health IT R4 sandbox](https://launch.smarthealthit.org/). The scopes are:
-
-```
-launch/patient openid fhirUser patient/Patient.read patient/MedicationRequest.read patient/MedicationStatement.read patient/Medication.read patient/Practitioner.read
-```
-
-`launch/patient` makes the sandbox ask which patient is signing in. Each `patient/<Resource>.read` scope lets the app read only that patient's records of that type, and never change them. The sandbox sends the browser back to `index.html`, and `FHIR.oauth2.ready()` exchanges the authorization code for an access token. [HL7 SMART App Launch](https://hl7.org/fhir/smart-app-launch/app-launch.html)
-
-## Privacy
-
-- Health data goes only to the patient's phone and, through the QR code, to the person they show it to.
-- The QR list sits after `#` in the link, which browsers never send to the web server.
-- Everything Brown Bag saves on the phone is encrypted with a key rebuilt from Face ID or the PIN. The key itself is never stored.
-- This list is what the patient and their records say. Their care team confirms it.
+This list is what the patient and their records say. Their care team
+confirms it. Brown Bag is not a medical device and does not give medical
+advice.
