@@ -6,146 +6,131 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&display=block" rel="stylesheet">
 <!--
-  Source for the Brown Bag logo and app icon. tools/logo/render.mjs opens
-  this page in headless Chrome and saves PNGs: ?mode=logo (bag with the
-  name) and ?mode=icon (bag with the pills, no text).
-  Colors: kraft #C89A62, shade #A97A4C, outline #6B3F1D, name #0F5E5A,
-  pill teal #8CC9B8.
+  Source for the Brown Bag logo and app icon, drawn to match Tyler's
+  sketch (Nov 21). tools/logo/render.mjs opens this page in headless Chrome
+  and saves PNGs: ?mode=logo (bag with the name) and ?mode=icon (bag with
+  two pills, no text).
+  Colors: kraft #C8925E, side #A97548, shade #B37E50, outline #6B3A1F,
+  name and pill outline #164F5A, pill mint #93C8B9.
 -->
 <style>
   html, body { margin: 0; background: transparent; }
   .canvas { width: 1024px; height: 1024px; position: relative; }
-  .canvas.icon { background: #FFF8EF; }
-  svg.bag { position: absolute; inset: 0; }
+  .canvas.icon { background: #FFFFFF; }
+  svg.art { position: absolute; inset: 0; }
   .name {
-    /* The name sits in front of the bag, centered on it, with no outline. */
-    position: absolute; left: 0; right: 0; top: 400px;
-    display: flex; flex-direction: column; align-items: center;
-    font-family: "Fredoka", "Arial Rounded MT Bold", sans-serif; font-weight: 700;
-    font-size: 210px; line-height: 0.92; color: #0F5E5A;
+    /* The name sits in front of the bag, centered, with no outline. */
+    position: absolute; left: 0; right: 0; top: 404px;
+    text-align: center;
+    font-family: "Fredoka", sans-serif; font-weight: 700;
+    font-size: 200px; line-height: 0.8; color: #164F5A;
   }
   .line { white-space: nowrap; }
-  /* An empty gap the width of a w. The pills are drawn into it after the
-     font loads, measured from the real letters. */
-  #wslot { display: inline-block; width: 1.08em; height: 0; vertical-align: baseline; }
-  svg.overlay { position: absolute; inset: 0; pointer-events: none; }
+  /* The real "w" keeps its own spacing but is drawn invisible; four pills
+     are laid over its four strokes. The empty marker after it sits on the
+     baseline, so the pills can be placed exactly. */
+  #w { color: transparent; }
+  #baseline { display: inline-block; width: 0; height: 0; }
 </style>
 </head>
 <body>
 <div id="canvas" class="canvas">
-  <svg class="bag" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-    <g id="bag-group" transform="translate(-57 0)">
-    <g stroke="#6B3F1D" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
-      <!-- side of the bag -->
-      <path d="M346 236 L266 770 L266 838 L380 912 L380 250 Z" fill="#A97A4C"/>
-      <path d="M266 838 L336 800 L380 912 Z" fill="#B8895A"/>
+  <svg class="art" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <g id="bag" stroke="#6B3A1F" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+      <!-- side of the bag, with its fold line and the folded bottom corner -->
+      <path d="M323 233 L351 292 L366 800 L264 744 L272 640 Z" fill="#A97548"/>
+      <path d="M323 233 L332 709" fill="none" stroke-width="5"/>
+      <path d="M264 744 L332 709 L366 800 Z" fill="#B37E50"/>
       <!-- front -->
-      <path d="M380 250 L700 250 L758 864 Q760 884 740 886 L380 912 Z" fill="#C89A62"/>
+      <path d="M351 292 L648 295 L692 708 Q695 723 680 726 L366 800 Z" fill="#C8925E"/>
+      <!-- shading under the fold -->
+      <path d="M353 297 L649 300 L651 320 L354 320 Z" fill="#B37E50" stroke="none"/>
       <!-- folded top -->
-      <path d="M356 206 L688 206 Q700 206 705 216 L732 274 Q737 288 722 288 L394 288 Z" fill="#C89A62"/>
+      <path d="M323 230 L630 222 Q638 222 641 229 L667 276 Q671 287 660 289 L351 292 Z" fill="#C8925E"/>
     </g>
-    <!-- shadow under the fold -->
-    <path d="M388 296 L710 296 L714 336 L388 336 Z" fill="#A97A4C" opacity="0.55"/>
-    </g>
-    <g id="icon-pills"></g>
+    <g id="pills"></g>
   </svg>
   <div class="name" id="name">
-    <div class="line">Bro<span id="wslot"></span>n</div>
+    <div class="line">Bro<span id="w">w</span><span id="baseline"></span>n</div>
     <div class="line">Bag</div>
   </div>
-  <svg class="overlay" id="overlay" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"></svg>
 </div>
 <script>
   var NS = "http://www.w3.org/2000/svg";
   var mode = new URLSearchParams(location.search).get("mode") || "logo";
 
-  // One capsule from (x1,y1) to (x2,y2): white half, teal half, dark outline,
-  // with a kraft halo behind it so it reads on top of the bag.
-  // part "halo" draws only the kraft outline, part "pill" only the pill, so
-  // a W can draw every outline first and no pill cuts into another.
-  function capsule(parent, x1, y1, x2, y2, width, halo, part) {
-    var dx = x2 - x1, dy = y2 - y1;
-    var length = Math.hypot(dx, dy);
-    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    var g = document.createElementNS(NS, "g");
-    g.setAttribute("transform", "translate(" + x1 + " " + y1 + ") rotate(" + angle + ")");
-    function rect(x, w, fill, stroke, sw, rx) {
-      var r = document.createElementNS(NS, "rect");
-      r.setAttribute("x", x); r.setAttribute("y", -width / 2);
-      r.setAttribute("width", w); r.setAttribute("height", width);
-      r.setAttribute("rx", rx); r.setAttribute("fill", fill);
-      if (stroke) { r.setAttribute("stroke", stroke); r.setAttribute("stroke-width", sw); }
-      g.appendChild(r);
-    }
-    if (halo && part !== "pill") rect(0, length, "none", "#C89A62", halo, width / 2);
-    if (part === "halo") { parent.appendChild(g); return; }
-    var clip = "c" + Math.random().toString(36).slice(2);
-    var cp = document.createElementNS(NS, "clipPath"); cp.id = clip;
-    var cr = document.createElementNS(NS, "rect");
-    cr.setAttribute("x", 0); cr.setAttribute("y", -width / 2); cr.setAttribute("width", length);
-    cr.setAttribute("height", width); cr.setAttribute("rx", width / 2);
-    cp.appendChild(cr); g.appendChild(cp);
-    var halves = document.createElementNS(NS, "g"); halves.setAttribute("clip-path", "url(#" + clip + ")");
-    var a = document.createElementNS(NS, "rect");
-    a.setAttribute("x", 0); a.setAttribute("y", -width / 2); a.setAttribute("width", length / 2); a.setAttribute("height", width); a.setAttribute("fill", "#FFFFFF");
-    var b = document.createElementNS(NS, "rect");
-    b.setAttribute("x", length / 2); b.setAttribute("y", -width / 2); b.setAttribute("width", length / 2); b.setAttribute("height", width); b.setAttribute("fill", "#8CC9B8");
-    halves.appendChild(a); halves.appendChild(b); g.appendChild(halves);
-    var shine = document.createElementNS(NS, "path");
-    shine.setAttribute("d", "M" + (length * 0.62) + " " + (-width * 0.22) + " L" + (length * 0.82) + " " + (-width * 0.22));
-    shine.setAttribute("stroke", "#FFFFFF"); shine.setAttribute("stroke-width", width * 0.12); shine.setAttribute("stroke-linecap", "round"); shine.setAttribute("opacity", "0.8");
-    g.appendChild(shine);
-    rect(0, length, "none", "#0F5E5A", width * 0.13, width / 2);
-    var seam = document.createElementNS(NS, "line");
-    seam.setAttribute("x1", length / 2); seam.setAttribute("x2", length / 2);
-    seam.setAttribute("y1", -width / 2); seam.setAttribute("y2", width / 2);
-    seam.setAttribute("stroke", "#0F5E5A"); seam.setAttribute("stroke-width", width * 0.1);
-    g.appendChild(seam);
-    parent.appendChild(g);
+  function el(tag, attrs, parent) {
+    var node = document.createElementNS(NS, tag);
+    Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+
+  // One capsule from end (x1,y1) to end (x2,y2), rounded ends included:
+  // white half first, mint half second, a soft shine on the mint half, and
+  // a thin dark teal outline and seam, like the sketch.
+  var clips = 0;
+  function capsule(parent, x1, y1, x2, y2, width) {
+    var length = Math.hypot(x2 - x1, y2 - y1);
+    var angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    var r = width / 2;
+    var g = el("g", { transform: "translate(" + x1 + " " + y1 + ") rotate(" + angle + ")" }, parent);
+    var id = "pill" + (clips += 1);
+    var clip = el("clipPath", { id: id }, g);
+    el("rect", { x: 0, y: -r, width: length, height: width, rx: r }, clip);
+    var inside = el("g", { "clip-path": "url(#" + id + ")" }, g);
+    el("rect", { x: 0, y: -r, width: length / 2, height: width, fill: "#FFFFFF" }, inside);
+    el("rect", { x: length / 2, y: -r, width: length / 2, height: width, fill: "#93C8B9" }, inside);
+    el("path", {
+      d: "M" + (length * 0.6) + " " + (-r * 0.45) + " L" + (length - r * 1.0) + " " + (-r * 0.45),
+      stroke: "#FFFFFF", "stroke-width": width * 0.11, "stroke-linecap": "round", opacity: 0.7
+    }, inside);
+    el("line", { x1: length / 2, y1: -r, x2: length / 2, y2: r, stroke: "#164F5A", "stroke-width": width * 0.08 }, g);
+    el("rect", { x: 0, y: -r, width: length, height: width, rx: r, fill: "none", stroke: "#164F5A", "stroke-width": width * 0.09 }, g);
   }
 
   if (mode === "logo") {
-    // The w: four pills along its four strokes. Measured from the font, so
-    // the pills are exactly as tall as the "o" and sit on the same baseline.
     document.fonts.ready.then(function () {
       var name = document.getElementById("name");
-      var style = getComputedStyle(name);
-      var size = parseFloat(style.fontSize);
+      var size = parseFloat(getComputedStyle(name).fontSize);
       var ctx = document.createElement("canvas").getContext("2d");
-      ctx.font = style.fontWeight + " " + size + "px " + style.fontFamily;
-      var o = ctx.measureText("o");
-      var canvasBox = document.getElementById("canvas").getBoundingClientRect();
-      var slot = document.getElementById("wslot").getBoundingClientRect();
-      var baseline = slot.bottom - canvasBox.top;
-      var t = size * 0.17;
-      // A pill runs exactly from one end point to the other, rounded ends included.
-      var yHigh = baseline - o.actualBoundingBoxAscent;
-      var yLow = baseline + o.actualBoundingBoxDescent;
-      var yMid = yHigh + (yLow - yHigh) * 0.28;
-      var left = slot.left - canvasBox.left + t * 0.15;
-      var right = slot.right - canvasBox.left - t * 0.15;
+      ctx.font = "700 " + size + "px Fredoka";
+      var w = ctx.measureText("w");
+      var box = document.getElementById("canvas").getBoundingClientRect();
+      var span = document.getElementById("w").getBoundingClientRect();
+      var baseline = document.getElementById("baseline").getBoundingClientRect().bottom - box.top;
+      // The invisible w's ink: left and right edges, top and bottom.
+      var inkLeft = span.left - box.left - w.actualBoundingBoxLeft;
+      var inkRight = span.left - box.left + w.actualBoundingBoxRight;
+      var yTop = baseline - w.actualBoundingBoxAscent;
+      var yBottom = baseline + w.actualBoundingBoxDescent;
+      // Four pills of the same size on the four strokes of the w.
+      var t = size * 0.115;
+      var left = inkLeft + t * 0.5;
+      var right = inkRight - t * 0.5;
       var step = (right - left) / 4;
       var xs = [left, left + step, left + step * 2, left + step * 3, right];
-      var strokes = [
-        [xs[0], yHigh, xs[1], yLow],
-        [xs[2], yMid, xs[1], yLow],
-        [xs[2], yMid, xs[3], yLow],
-        [xs[4], yHigh, xs[3], yLow]
-      ];
-      var overlay = document.getElementById("overlay");
-      strokes.forEach(function (s) { capsule(overlay, s[0], s[1], s[2], s[3], t, 0, "pill"); });
+      var pills = document.getElementById("pills");
+      capsule(pills, xs[0], yTop, xs[1], yBottom, t);
+      capsule(pills, xs[2], yTop, xs[1], yBottom, t);
+      capsule(pills, xs[2], yTop, xs[3], yBottom, t);
+      capsule(pills, xs[4], yTop, xs[3], yBottom, t);
       document.body.dataset.ready = "yes";
     });
   } else {
     document.getElementById("name").remove();
     document.getElementById("canvas").classList.add("icon");
-    // The whole bag centered in the icon, and the two pills centered on the
-    // bag's front.
-    document.getElementById("bag-group").setAttribute("transform", "translate(0 0)");
-    var pills = document.getElementById("icon-pills");
-    var cx = 569, cy = 600;
-    capsule(pills, cx - 120, cy - 70, cx + 20, cy + 70, 78, 0);
-    capsule(pills, cx - 60, cy + 70, cx + 120, cy + 70, 78, 0);
+    // Bag centered in the icon; two pills centered on the bag's front, as in
+    // the sketch: one tilted, white end low and left, and one lying flat in
+    // front of it.
+    // The bag is scaled up to fill the icon, around its own middle.
+    var fit = "translate(512 512) scale(1.4) translate(-480 -511)";
+    document.getElementById("bag").setAttribute("transform", fit);
+    var pills = document.getElementById("pills");
+    pills.setAttribute("transform", fit);
+    var cx = 510, cy = 567;
+    capsule(pills, cx - 85, cy + 5, cx + 25, cy - 95, 56);
+    capsule(pills, cx - 52, cy + 26, cx + 103, cy + 26, 56);
   }
 </script>
 </body>
