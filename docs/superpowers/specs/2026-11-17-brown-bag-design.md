@@ -169,6 +169,28 @@ Borrowed from SMART Health Cards for the fall QR (Tyler, 2026-11-20):
 - If the list is too long for one QR code, say so and offer the on-screen
   list instead.
 
+### Works with no signal (Tyler, 2026-11-20)
+
+An ER or a basement clinic may have weak Wi-Fi and no cell signal. Sign-in
+ends when the app closes, so without this the patient couldn't load their
+records list there, and couldn't make a QR code.
+
+- Each time the records list loads, Brown Bag saves a copy in its encrypted
+  storage on the phone, with the date it was saved.
+- The app's own files (pages, scripts, the QR library) are kept on the phone
+  by a service worker (a small script the browser runs to keep a site's
+  files for offline use), so the app opens with no connection.
+- With no connection, the patient unlocks with Face ID, fingerprint or PIN as
+  usual (this works offline) and sees the saved list under a notice: "No
+  connection. Showing your list saved on Nov 20, 2026. It may be out of
+  date." The notice is text, not just a color.
+- "Show my QR code" works the same offline, with the same 6-digit code.
+- The service worker never keeps health data. Records and RxNav lookups are
+  never cached by it, only the app's own files. Health data stays in the
+  encrypted storage.
+- The staff member's phone or computer still needs a connection to open
+  `share.html`. Hospital devices usually have one.
+
 ## What the patient sees
 
 ```
@@ -359,3 +381,12 @@ If it becomes a business:
 - Course staff: does one app with patient and staff sign-ins count as one
   app, and does spring have to be provider-facing. Doesn't affect the fall
   build.
+- Provider Health Cards inside Brown Bag (Tyler, 2026-11-20). The patient
+  adds signed SMART Health Cards they already have (vaccine record, lab
+  result, insurance card) and Brown Bag keeps them in its encrypted storage
+  to show offline. Signed by the provider, so scanners verify them. Not
+  encrypted once shown: anyone who scans one reads it. Depends on course
+  staff's answer: the SMART sandbox can't issue Health Cards (checked
+  2026-11-20: no issue operation in its capability statement, no
+  `health-cards` in its SMART settings). If staff name a test server that
+  can, this moves into the fall build. If not, it moves to Later.
