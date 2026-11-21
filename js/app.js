@@ -11,7 +11,8 @@ import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom } from "./pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
+import { shouldLock } from "./idle.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -43,6 +44,35 @@ var state = {
   offline: false,
   needsSignIn: false
 };
+
+// Locks Brown Bag again after 5 minutes without a tap, or 5 minutes away
+// from it (js/idle.js). Locking reloads the page, which forgets the key; the
+// next unlock opens and updates the list as usual.
+var autoLockStarted = false;
+function startAutoLock() {
+  if (autoLockStarted) return;
+  autoLockStarted = true;
+  var lastActive = Date.now();
+  var hiddenAt = null;
+  ["pointerdown", "keydown", "touchstart", "input"].forEach(function (type) {
+    document.addEventListener(type, function () { lastActive = Date.now(); }, { capture: true, passive: true });
+  });
+  function check() {
+    if (state.key && shouldLock({ now: Date.now(), lastActive: lastActive, hiddenAt: hiddenAt })) {
+      state.key = null;
+      location.reload();
+    }
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") {
+      hiddenAt = Date.now();
+    } else {
+      check();
+      hiddenAt = null;
+    }
+  });
+  setInterval(check, 15000);
+}
 
 // A status area that stays on the page between redraws, so VoiceOver reads
 // "Updating your list…" and how the update ended.
@@ -78,6 +108,7 @@ async function start() {
     return;
   }
   state.key = await showLockScreen(root);
+  startAutoLock();
   // One unlock: with a saved list and a pass, show the list now and update
   // it in place, with no sign-in page.
   if (!cameBackFromAuth && await openWithPass()) {
@@ -104,9 +135,16 @@ async function start() {
 async function openWithPass() {
   var saved = await loadLastRecords(localStorage, state.key);
   var pass = saved ? await loadPass(localStorage, state.key, saved.patientId) : null;
+  if (pass && passExpired(pass, Date.now())) {
+    // 30 days without opening: the connection ends; sign in again.
+    await deletePass(localStorage, pass.patientId);
+    pass = null;
+  }
   if (!pass) {
     return false;
   }
+  pass.usedAt = Date.now();
+  await savePass(localStorage, state.key, pass);
   useSaved(saved);
   await loadAdditions();
   state.updating = navigator.onLine;
@@ -388,7 +426,7 @@ function drawMedicines(arranged) {
   var title = add(root, "h1", "My medicines");
   title.id = "medicines-heading";
   title.tabIndex = -1;
-  add(root, "p", DISCLAIMER, "screen-note");
+  note(root, DISCLAIMER);
   drawRecords(arranged);
   drawAdditions();
   drawStopped(arranged);
@@ -412,7 +450,7 @@ function drawMore() {
   }
   var section = add(root, "section");
   heading(section, "Sign out", "signout-heading");
-  add(section, "p", "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time.", "med-line");
+  note(section, "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time.");
   button(section, "Sign out", "secondary big", async function () {
     if (state.patientId) {
       await deletePass(localStorage, state.patientId);
@@ -453,7 +491,7 @@ function drawRecords(arranged) {
 function drawAdditions() {
   var section = add(root, "section");
   heading(section, "Added by me", "added-heading");
-  add(section, "p", "Saved on this phone only. Clearing your browser erases these.", "section-note");
+  note(section, "Saved on this phone only. Clearing your browser erases these.");
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
@@ -806,7 +844,7 @@ function drawInstall() {
   var title = add(root, "h1", "Add Brown Bag to your Home Screen");
   title.id = "install-heading";
   title.tabIndex = -1;
-  add(root, "p", "Brown Bag works best from your Home Screen. Your phone keeps its list safe there.", "med-line");
+  note(root, "Brown Bag works best from your Home Screen. Your phone keeps its list safe there.");
   var steps = add(root, "ol", null, "install-steps");
   installSteps(navigator.userAgent).forEach(function (step) {
     add(steps, "li", step);
@@ -823,7 +861,7 @@ function drawInstall() {
 function drawBackup() {
   var section = add(root, "section");
   heading(section, "Backup", "backup-heading");
-  add(section, "p", "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.", "med-line");
+  note(section, "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.");
   button(section, "Save a backup", "secondary big", saveBackup);
   var picker = add(section, "input");
   picker.type = "file";
@@ -908,7 +946,7 @@ function drawSignedOut(error) {
   if (!state.key && !hasLock()) {
     drawRestoreFromSignIn();
   }
-  add(root, "p", DISCLAIMER, "disclaimer");
+  note(root, DISCLAIMER);
 }
 
 // A new phone or the Home Screen app starts empty, with no lock. Its first
@@ -931,6 +969,7 @@ function drawRestoreFromSignIn() {
         return;
       }
       state.key = key;
+      startAutoLock();
       state.announce = "Your backup is restored. Sign in to load your medicines.";
       await signInUnavailable(null);
     } catch (error) {
@@ -975,6 +1014,15 @@ function button(parent, text, kind, onClick, label) {
   if (label) b.setAttribute("aria-label", label);
   b.addEventListener("click", onClick);
   return b;
+}
+
+// An explanation, set apart from the instructions and buttons around it:
+// "Note:" in bold, in a box with a teal bar down its left side.
+function note(parent, text) {
+  var p = add(parent, "p", null, "note");
+  add(p, "strong", "Note: ", "note-label");
+  p.appendChild(document.createTextNode(text));
+  return p;
 }
 
 function add(parent, tag, text, className) {

@@ -34,7 +34,7 @@ function drawCodeForm(message) {
   clear(root);
   addLogo();
   add(root, "h1", "Shared medicine list");
-  add(root, "p", DISCLAIMER, "disclaimer");
+  note(root, DISCLAIMER);
   var form = add(root, "form");
   var label = add(form, "label", "Enter the 6-digit code the patient gives you");
   label.htmlFor = "share-code";
@@ -92,7 +92,7 @@ function drawList(groups) {
   if (groups.incomplete) {
     add(root, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
   }
-  add(root, "p", DISCLAIMER, "disclaimer");
+  note(root, DISCLAIMER);
   group("From records", groups.fromRecords, "No medicines from records.");
   group("Added by patient", groups.addedByPatient, "Nothing added by the patient.");
   group("Patient says stopped", groups.patientSaysStopped, "Nothing marked stopped.");
@@ -125,6 +125,15 @@ function addLogo() {
   var picture = add(root, "img", null, "share-logo");
   picture.src = "icons/logo-trimmed.png";
   picture.alt = "";
+}
+
+// An explanation, set apart from the instructions and buttons around it:
+// "Note:" in bold, in a box with a teal bar down its left side.
+function note(parent, text) {
+  var p = add(parent, "p", null, "note");
+  add(p, "strong", "Note: ", "note-label");
+  p.appendChild(document.createTextNode(text));
+  return p;
 }
 
 function add(parent, tag, text, className) {

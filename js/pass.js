@@ -7,6 +7,9 @@
 import { encryptJSON, decryptJSON, idTag } from "./vault.js";
 
 var PASS_PREFIX = "brownbag:pass:";
+// Brown Bag ends the connection itself after this many days without being
+// opened (Tyler, 2026-11-21), so a lost or unused phone stops being connected.
+export var PASS_UNUSED_DAYS = 30;
 
 // Only what's needed to trade the pass for fresh access later. Null when the
 // server sent no refresh token, which leaves Brown Bag working as before.
@@ -21,8 +24,17 @@ export function passFromState(fhirState) {
     tokenUri: fhirState.tokenUri,
     scope: fhirState.scope,
     refreshToken: token.refresh_token,
-    patientId: token.patient
+    patientId: token.patient,
+    usedAt: Date.now()
   };
+}
+
+// A pass from before this rule has no usedAt; it counts as used now.
+export function passExpired(pass, now) {
+  if (!pass || !pass.usedAt) {
+    return false;
+  }
+  return now - pass.usedAt > PASS_UNUSED_DAYS * 24 * 60 * 60 * 1000;
 }
 
 // The state FHIR.client() takes; client.refresh() then gets fresh access.

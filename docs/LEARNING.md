@@ -829,6 +829,24 @@ pages stay: they stand in for a real hospital's sign-in and consent, which
 the course wants you to be able to explain. You also chose one look for
 light and dark mode, the wheat page.
 
+**Signing out on its own.** SMART doesn't set a sign-out time for apps.
+It says access tokens should last an hour or less, and leaves the refresh
+token's life to the health system. You chose two limits of Brown Bag's own:
+
+- **It locks after 5 minutes** without a tap, or 5 minutes away from it
+  (another app, or the screen off). Locking forgets the key in memory
+  (`js/idle.js`), so Face ID or the PIN is needed again, but the connection
+  stays, so one unlock still updates the list. HIPAA's "automatic logoff"
+  rule for hospitals is the same idea: end a session after a set time of
+  inactivity.
+- **The connection ends after 30 days** without opening Brown Bag. The pass
+  remembers when it was last used (`passExpired` in `js/pass.js`), so a lost
+  or unused phone stops being connected.
+
+**Notes.** Explanations like "Saved on this phone only" now look the same
+everywhere: a bold "Note:" in a lighter box with a teal bar, so they read
+as side remarks rather than instructions.
+
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens)
 explains access tokens. Look at what a sign-in returns, and compare it
 with what Brown Bag keeps (`passFromState` in `js/pass.js`).

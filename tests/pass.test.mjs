@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom } from "../js/pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, PASS_UNUSED_DAYS } from "../js/pass.js";
 import { deriveKeyFromPin, exportBackup, savePatientData } from "../js/vault.js";
 
 // A localStorage stand-in with the parts the app uses.
@@ -32,7 +32,8 @@ async function key(pin = "246810") {
 }
 
 test("passFromState keeps only what's needed to update later", () => {
-  assert.deepEqual(passFromState(STATE), {
+  const { usedAt, ...rest } = passFromState(STATE);
+  assert.deepEqual(rest, {
     serverUrl: STATE.serverUrl,
     clientId: "my_web_app",
     tokenUri: STATE.tokenUri,
@@ -117,4 +118,19 @@ test("a sign-in that returns no refresh token removes the old pass", async () =>
   await savePass(storage, await key(), passFromState(STATE));
   await storePassFrom(storage, await key(), { ...STATE, tokenResponse: { access_token: "a2", patient: "p1-patient-id" } }, "p1-patient-id");
   assert.equal(await loadPass(storage, await key(), "p1-patient-id"), null);
+});
+
+test("the connection ends after 30 days without opening Brown Bag", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const now = Date.UTC(2026, 11, 31);
+  assert.equal(PASS_UNUSED_DAYS, 30);
+  assert.equal(passExpired({ usedAt: now - 29 * DAY }, now), false);
+  assert.equal(passExpired({ usedAt: now - 31 * DAY }, now), true);
+  assert.equal(passExpired({}, now), false);
+});
+
+test("passFromState stamps when the pass was last used", () => {
+  const before = Date.now();
+  const pass = passFromState(STATE);
+  assert.ok(pass.usedAt >= before && pass.usedAt <= Date.now());
 });
