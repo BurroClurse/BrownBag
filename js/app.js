@@ -5,7 +5,7 @@
 import { showLockScreen } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
 import { LOCK_KEY } from "./lock.js";
-import { shouldShowInstallHint, dismissInstallHint, installTip, backupFileName, restoreMessage, withLockRecord } from "./install.js";
+import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
@@ -41,6 +41,11 @@ var state = {
   offline: false,
   needsSignIn: false
 };
+
+// Android tells the page when Brown Bag was installed; the tip is done.
+window.addEventListener("appinstalled", function () {
+  markInstallDone(localStorage);
+});
 
 // Keeps the app's own files on the phone so it opens with no signal (sw.js).
 if ("serviceWorker" in navigator) {
@@ -243,6 +248,8 @@ function render() {
     drawMedicines(arranged);
   } else if (state.screen === "more") {
     drawMore();
+  } else if (state.screen === "install") {
+    drawInstall();
   } else {
     drawHome(arranged);
   }
@@ -262,7 +269,7 @@ function render() {
 // The phone's Back button. Each screen past home, and the QR code, is one
 // step in the browser's history, so Back goes home or closes the code
 // instead of leaving Brown Bag. Done and Close take that same step back.
-var BACK_FOCUS = { medicines: "open-medicines", more: "open-more" };
+var BACK_FOCUS = { medicines: "open-medicines", more: "open-more", install: "show-qr" };
 window.addEventListener("popstate", function () {
   if (document.getElementById("qr-overlay")) {
     var after = qrAfter;
@@ -331,6 +338,13 @@ function drawMore() {
   title.id = "more-heading";
   title.tabIndex = -1;
   drawBackup();
+  if (installTip(navigator.userAgent) && !isStandalone()) {
+    var home = add(root, "section");
+    heading(home, "Home Screen", "home-screen-heading");
+    button(home, "Add to Home Screen", "secondary big", function () {
+      go("install", "install-heading");
+    }).id = "open-install";
+  }
   var section = add(root, "section");
   heading(section, "Sign out", "signout-heading");
   add(section, "p", "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time.", "med-line");
@@ -692,22 +706,51 @@ function drawNotices() {
     now: new Date()
   });
   if (!notes.length) return;
+  // One card, one short line per note. It's a live area, so VoiceOver
+  // reads "Updating your list…" and what replaces it.
   var bar = add(root, "div", null, "notice-bar");
+  bar.setAttribute("role", "status");
   notes.forEach(function (note) {
-    var row = add(bar, "div", null, "notice-row");
+    var row = add(bar, "div", null, "notice-row notice-" + note.kind);
     add(row, "p", note.text);
     if (note.kind === "sign-in") {
       var update = add(row, "a", "Sign in", "button secondary");
       update.href = "./launch.html";
     }
     if (note.kind === "install") {
-      button(row, "Not now", "secondary", function () {
+      var actions = add(row, "div", null, "notice-actions");
+      button(actions, "How?", "secondary", function () {
+        go("install", "install-heading");
+      }).id = "install-how";
+      button(actions, "Not now", "secondary", function () {
         dismissInstallHint(localStorage, new Date());
         state.focusId = "show-qr";
         render();
       });
     }
   });
+}
+
+// The Home Screen steps for this phone, and a way to put the tip away for
+// good once they're done.
+function drawInstall() {
+  var top = add(root, "div", null, "screen-top");
+  button(top, "Done", "secondary big", function () {
+    go("home", "show-qr");
+  }).id = "install-back";
+  var title = add(root, "h1", "Add Brown Bag to your Home Screen");
+  title.id = "install-heading";
+  title.tabIndex = -1;
+  add(root, "p", "Brown Bag works best from your Home Screen. Your phone keeps its list safe there.", "med-line");
+  var steps = add(root, "ol", null, "install-steps");
+  installSteps(navigator.userAgent).forEach(function (step) {
+    add(steps, "li", step);
+  });
+  button(root, "I've done this", "primary big", function () {
+    markInstallDone(localStorage);
+    state.announce = "The Home Screen tip is put away.";
+    go("home", "show-qr");
+  }).id = "install-done";
 }
 
 // The backup stays encrypted. It also carries the lock settings (never the

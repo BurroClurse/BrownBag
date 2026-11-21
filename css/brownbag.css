@@ -202,13 +202,13 @@ button.secondary.big { border-color: var(--teal); }
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-top: max(1rem, env(safe-area-inset-top));
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 .home-name {
   text-align: center;
-  font-size: 1.6rem;
-  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+  margin: 0.15rem 0 0;
   overflow-wrap: anywhere;
 }
 .home-bag {
@@ -222,7 +222,7 @@ button.secondary.big { border-color: var(--teal); }
   background: #F3DDBE;
   border: none;
   padding: 0.75rem;
-  margin: 0.75rem 0 0.25rem;
+  margin: 0.5rem 0 0.1rem;
   min-width: 0;
   border-radius: 24px;
 }
@@ -234,19 +234,28 @@ button.secondary.big { border-color: var(--teal); }
   object-fit: contain;
 }
 .home-actions { flex: none; }
-.home-disclaimer { flex: none; margin: 0.75rem 0 0; font-size: 1rem; }
+.home-disclaimer { flex: none; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; font-size: 0.95rem; line-height: 1.35; }
+.home-actions .big { margin-top: 0.5rem; }
+#open-more { margin-top: 0.15rem; }
 #open-more { flex: none; }
 .status-line:empty { display: none; }
 
-.notice-bar { flex: none; }
-.notice-row {
+/* The notes: one card, one short line each, a thin line between them. */
+.notice-bar {
+  flex: none;
   background: var(--warn-bg);
   color: var(--warn-ink);
   border-radius: 10px;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: 0 0.75rem;
+  margin-bottom: 0.25rem;
 }
-.notice-row p { margin: 0; }
+.notice-row { padding: 0.35rem 0; }
+.notice-row + .notice-row { border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); }
+.notice-row p { margin: 0; line-height: 1.35; }
+.notice-row .button, .notice-row button { margin: 0.3rem 0.5rem 0 0; padding: 0.3rem 0.9rem; }
+.notice-actions { display: flex; flex-wrap: wrap; }
+.install-steps { font-size: 1.2rem; line-height: 1.5; padding-left: 1.6rem; }
+.install-steps li { margin: 0.5rem 0; }
 
 .screen-top { margin-bottom: 0.5rem; }
 .screen-top .big { margin-top: 0; }
