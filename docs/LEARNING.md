@@ -847,6 +847,15 @@ token's life to the health system. You chose two limits of Brown Bag's own:
 everywhere: a bold "Note:" in a lighter box with a teal bar, so they read
 as side remarks rather than instructions.
 
+**Buttons and "?" bubbles.** "I stopped this" and "Remove" are now brick
+red, a color next to the bag's browns, because they take something off the
+list. The big outlined buttons got a soft cream fill so they stand off the
+wheat page. The QR screen has two round "?" buttons: "What's in this code?"
+lists exactly what the code carries (the same things `shareListFrom` in
+`js/view.js` packs), and "Why read the code out loud?" explains that the 6
+digits are the key to the locked list. Each "?" tells VoiceOver whether its
+explanation is open (`aria-expanded`).
+
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens)
 explains access tokens. Look at what a sign-in returns, and compare it
 with what Brown Bag keeps (`passFromState` in `js/pass.js`).

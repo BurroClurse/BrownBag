@@ -473,7 +473,7 @@ function drawRecords(arranged) {
   var list = add(section, "ul", null, "meds");
   arranged.current.forEach(function (entry) {
     var row = medRow(list, entry);
-    button(row, "I stopped this", "secondary card-action", function () {
+    button(row, "I stopped this", "stop card-action", function () {
       state.data.stopped[entry.key] = today();
       state.announce = entry.name + " moved to Stopped by me.";
       state.focusId = "stopped-heading";
@@ -499,7 +499,7 @@ function drawAdditions() {
     var line = detailLine(addition);
     if (line) add(row, "p", line, "med-line");
     add(row, "p", "Added " + addition.addedAt, "med-line");
-    button(row, "Remove", "secondary card-action", function () {
+    button(row, "Remove", "stop card-action", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
       state.lastRemoved = addition;
       state.announce = addition.name + " removed.";
@@ -689,14 +689,33 @@ async function buildQr() {
     overlay.style.setProperty("--from-x", (from.left + from.width / 2 - innerWidth / 2) + "px");
     overlay.style.setProperty("--from-y", (from.top + from.height * 0.35 - innerHeight / 2) + "px");
   }
-  var title = add(overlay, "h2", fits ? "Show this to the person checking you in" : "Your list is too long for one QR code");
+  var titleRow = add(overlay, "div", null, "help-row");
+  var title = add(titleRow, "h2", fits ? "Show this to the person checking you in" : "Your list is too long for one QR code");
   title.id = "qr-heading";
   if (fits) {
+    var whatsIn = helpBubble(titleRow, "What's in this code?", function (panel) {
+      add(panel, "p", "Your list from My medicines, as it is right now:");
+      var items = add(panel, "ul");
+      [
+        "Your name and birth date",
+        "Your current medicines from your records, with the dose, how often, and who prescribed them",
+        "Medicines you added",
+        "Medicines you marked stopped",
+        "When the code was made, and a warning if the list is an older saved copy or some records didn't load"
+      ].forEach(function (text) { add(items, "li", text); });
+      add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
+    });
+    overlay.appendChild(whatsIn);
     var box = add(overlay, "div", null, "qr");
     box.appendChild(qrCanvas(packed.prefix, packed.digits));
-    add(overlay, "p", "Read this code out loud:", "qr-say");
+    var sayRow = add(overlay, "div", null, "help-row");
+    add(sayRow, "p", "Read this code out loud:", "qr-say");
+    var why = helpBubble(sayRow, "Why read the code out loud?", function (panel) {
+      add(panel, "p", "The QR code holds your list, locked. These 6 digits are its key. Saying them out loud lets the person checking you in open your list. Someone who only sees or takes a photo of the QR code can't read it. You get a new code each time.");
+    });
     var code = add(overlay, "p", packed.code, "share-code");
     code.setAttribute("aria-label", "Share code " + packed.code.split("").join(" "));
+    overlay.appendChild(why);
   } else {
     add(overlay, "p", "Show your medicines on this screen instead.");
     button(overlay, "Show my medicines instead", "secondary big", function () {
@@ -1018,6 +1037,29 @@ function button(parent, text, kind, onClick, label) {
 
 // An explanation, set apart from the instructions and buttons around it:
 // "Note:" in bold, in a box with a teal bar down its left side.
+// A round "?" button that opens an explanation under it, as a note. The
+// caller puts the returned panel where it should open.
+var helpCount = 0;
+function helpBubble(row, label, fill) {
+  helpCount += 1;
+  var panel = document.createElement("div");
+  panel.className = "note help-panel";
+  panel.id = "help-" + helpCount;
+  panel.hidden = true;
+  fill(panel);
+  var ask = add(row, "button", "?", "help-button");
+  ask.type = "button";
+  ask.setAttribute("aria-label", label);
+  ask.setAttribute("aria-expanded", "false");
+  ask.setAttribute("aria-controls", panel.id);
+  ask.addEventListener("click", function () {
+    var opening = panel.hidden;
+    panel.hidden = !opening;
+    ask.setAttribute("aria-expanded", String(opening));
+  });
+  return panel;
+}
+
 function note(parent, text) {
   var p = add(parent, "p", null, "note");
   add(p, "strong", "Note: ", "note-label");
