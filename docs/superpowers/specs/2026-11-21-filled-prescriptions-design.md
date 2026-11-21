@@ -1,6 +1,6 @@
 # Brown Bag: filled prescriptions from the insurer
 
-Status: draft for Tyler's approval, 2026-11-21.
+Status: approved by Tyler, 2026-11-21.
 
 ## Why
 
