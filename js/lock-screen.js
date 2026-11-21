@@ -160,7 +160,7 @@ function drawPinSetup(root, done) {
 function drawPinUnlock(root, done, options) {
   clear(root);
   var restoring = Boolean(options.record);
-  var box = panel(root, restoring ? "Unlock your backup" : "Unlock Brown Bag");
+  var box = panel(root, restoring ? "Unlock your backup" : null);
   var form = document.createElement("form");
   box.appendChild(form);
   var field = pinField(form, "pin", restoring ? "The PIN you used for this backup" : "Your 6-digit PIN", "current-password");
@@ -186,7 +186,7 @@ function drawPinUnlock(root, done, options) {
 function drawPasskeyUnlock(root, done, options) {
   clear(root);
   var restoring = Boolean(options.record);
-  var box = panel(root, restoring ? "Unlock your backup" : "Unlock Brown Bag");
+  var box = panel(root, restoring ? "Unlock your backup" : null);
   var message = status(box);
   var button = action(box, "Unlock with Face ID or fingerprint");
   async function attempt() {
@@ -243,20 +243,28 @@ function drawStartOver(root, done) {
   keep.focus();
 }
 
+// heading null: the bag itself is the heading, read as "Brown Bag", for the
+// everyday unlock screen, where the button already says what to do.
 function panel(root, heading) {
   var box = document.createElement("section");
   box.className = "lock";
   box.setAttribute("aria-labelledby", "lock-heading");
-  // The bag above the heading, as on every screen. Decoration only: the
-  // heading says what the screen is for.
   var picture = document.createElement("img");
   picture.className = "screen-logo";
   picture.src = "icons/logo-trimmed.png";
-  picture.alt = "";
-  box.appendChild(picture);
   var title = document.createElement("h1");
   title.id = "lock-heading";
-  title.textContent = heading;
+  if (heading) {
+    // The bag above the heading, as on every screen. Decoration only: the
+    // heading says what the screen is for.
+    picture.alt = "";
+    box.appendChild(picture);
+    title.textContent = heading;
+  } else {
+    picture.alt = "Brown Bag";
+    title.className = "screen-title";
+    title.appendChild(picture);
+  }
   box.appendChild(title);
   root.appendChild(box);
   return box;
