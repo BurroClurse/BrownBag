@@ -20,15 +20,17 @@
   svg.art { position: absolute; inset: 0; }
   .name {
     /* The name sits in front of the bag, centered, with no outline. */
-    position: absolute; left: 0; right: 0; top: 376px;
+    position: absolute; left: 0; right: 0; top: 344px;
     text-align: center;
     font-family: "Fredoka", sans-serif; font-weight: 700;
     font-size: 200px; line-height: 0.8; color: #164F5A;
   }
   .line { white-space: nowrap; }
-  /* An empty gap where the "w" goes. Its width is set from the pill size,
-     and it sits on the baseline, so the pills can be placed exactly. */
-  #wslot { display: inline-block; width: 0; height: 0; }
+  /* The real "w" keeps its normal spacing but is invisible. Its strokes are
+     traced from the font and a pill is laid on each one. The empty marker
+     after it sits on the baseline. */
+  #w { color: transparent; }
+  #baseline { display: inline-block; width: 0; height: 0; }
 </style>
 </head>
 <body>
@@ -49,7 +51,7 @@
     <g id="pills"></g>
   </svg>
   <div class="name" id="name">
-    <div class="line">Bro<span id="wslot"></span>n</div>
+    <div class="line">Bro<span id="w">w</span><span id="baseline"></span>n</div>
     <div class="line">Bag</div>
   </div>
 </div>
@@ -97,34 +99,89 @@
   // The same shape as the app icon's pills: 2.7 times as long as wide.
   var PILL_RATIO = 2.7;
 
+  // Traces the four strokes of the font's "w": draws it on a hidden canvas,
+  // finds where each stroke is near the top and near the bottom, and
+  // extends those lines to the letter's top and bottom. Coordinates are
+  // relative to the letter's origin on the baseline.
+  function traceW(font, size) {
+    var pad = Math.round(size * 0.3);
+    var c = document.createElement("canvas");
+    c.width = Math.round(size * 1.6); c.height = Math.round(size * 1.6);
+    var ctx = c.getContext("2d");
+    ctx.font = font; ctx.fillStyle = "#000";
+    var base = Math.round(size * 1.1);
+    ctx.fillText("w", pad, base);
+    var data = ctx.getImageData(0, 0, c.width, c.height).data;
+    function ink(x, y) { return data[(y * c.width + x) * 4 + 3] > 128; }
+    function runs(y) {
+      var out = [], start = -1;
+      for (var x = 0; x <= c.width; x += 1) {
+        var on = x < c.width && ink(x, y);
+        if (on && start < 0) start = x;
+        if (!on && start >= 0) { out.push([start, x - 1]); start = -1; }
+      }
+      return out;
+    }
+    var minY = c.height, maxY = 0;
+    for (var y = 0; y < c.height; y += 1) {
+      if (runs(y).length) { minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+    }
+    // This font's w is heavy: its middle strokes merge into one peak. Its
+    // five points are clear, though: three tops (left, middle, right), read
+    // just under the top edge, and two bottoms, read on the bottom edge.
+    var h = maxY - minY;
+    var mid = function (run) { return (run[0] + run[1]) / 2; };
+    var topRow = runs(Math.round(minY + h * 0.08));
+    var bottomRow = runs(maxY);
+    var tops = [mid(topRow[0]), mid(topRow[1]), mid(topRow[topRow.length - 1])];
+    var bottoms = [mid(bottomRow[0]), mid(bottomRow[bottomRow.length - 1])];
+    // Pills a third of the letter's height thick, so the gaps between the
+    // strokes show. Each pill is given by the centers of its rounded ends:
+    // a top end just inside the top edge and a bottom end just inside the
+    // bottom edge, on the stroke's line. Pills that meet share an end
+    // center, so they join like the letter's own strokes.
+    var thick = h / 3.1, r = thick / 2;
+    // Spread the strokes out from the letter's middle so each V shows; the
+    // letter gets the extra room on each side.
+    var SPREAD = 1.42;
+    var center = tops[1];
+    function spread(x) { return center + (x - center) * SPREAD; }
+    tops = tops.map(spread);
+    bottoms = bottoms.map(spread);
+    var extra = (tops[2] - tops[0]) * (1 - 1 / SPREAD);
+    function at(xTop, xBottom, y) { return xTop + (xBottom - xTop) * (y - minY) / h; }
+    function stroke(xTop, xBottom) {
+      var y1 = minY + r, y2 = maxY - r;
+      return [at(xTop, xBottom, y1) - pad, y1 - base, at(xTop, xBottom, y2) - pad, y2 - base];
+    }
+    return {
+      width: thick,
+      extra: extra,
+      strokes: [
+        stroke(tops[0], bottoms[0]),
+        stroke(tops[2], bottoms[1]),
+        stroke(tops[1], bottoms[0]),
+        stroke(tops[1], bottoms[1])
+      ]
+    };
+  }
+
   if (mode === "logo") {
     document.fonts.ready.then(function () {
       var name = document.getElementById("name");
       var size = parseFloat(getComputedStyle(name).fontSize);
-      var ctx = document.createElement("canvas").getContext("2d");
-      ctx.font = "700 " + size + "px Fredoka";
-      // The pills fill the height of the small letters, like a real w.
-      var h = ctx.measureText("w").actualBoundingBoxAscent;
-      var t = h / 2.6;
-      var r = t / 2;
-      var axis = t * PILL_RATIO - t;          // distance between end centers
-      var rise = h - t;                        // top end center to bottom end center
-      var dx = Math.sqrt(axis * axis - rise * rise);
-      var gap = t * 0.9;                       // where two pills meet, side by side
-      var inkWidth = 4 * dx + 3 * gap + t;
-      var side = size * 0.035;                 // a little space each side
-      var slot = document.getElementById("wslot");
-      slot.style.width = (inkWidth + 2 * side) + "px";
+      var w = traceW("700 " + size + "px Fredoka", size);
+      var letter = document.getElementById("w");
+      letter.style.margin = "0 " + (w.extra / 2) + "px";
       var box = document.getElementById("canvas").getBoundingClientRect();
-      var rect = slot.getBoundingClientRect();
-      var baseline = rect.bottom - box.top;
-      var top = baseline - h + r, bottom = baseline - r;
-      var x = rect.left - box.left + side + r;
+      var originX = document.getElementById("w").getBoundingClientRect().left - box.left;
+      var baseline = document.getElementById("baseline").getBoundingClientRect().bottom - box.top;
+      var t = w.width;
+      document.body.dataset.trace = JSON.stringify(w);
       var pills = document.getElementById("pills");
-      pillBetween(pills, x, top, x + dx, bottom, t);
-      pillBetween(pills, x + 2 * dx + gap, top, x + dx + gap, bottom, t);
-      pillBetween(pills, x + 2 * dx + 2 * gap, top, x + 3 * dx + 2 * gap, bottom, t);
-      pillBetween(pills, x + 4 * dx + 3 * gap, top, x + 3 * dx + 3 * gap, bottom, t);
+      w.strokes.forEach(function (s) {
+        pillBetween(pills, originX + s[0], baseline + s[1], originX + s[2], baseline + s[3], t);
+      });
       document.body.dataset.ready = "yes";
     });
   } else {
