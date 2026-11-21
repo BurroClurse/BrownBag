@@ -309,7 +309,6 @@ function drawHome(arranged) {
   button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions)), "secondary big", function () {
     go("medicines", "medicines-heading");
   }).id = "open-medicines";
-  add(root, "p", DISCLAIMER, "disclaimer home-disclaimer");
   button(root, "More options", "link-button", function () {
     go("more", "more-heading");
   }).id = "open-more";
@@ -324,6 +323,7 @@ function drawMedicines(arranged) {
   var title = add(root, "h1", "My medicines");
   title.id = "medicines-heading";
   title.tabIndex = -1;
+  add(root, "p", DISCLAIMER, "screen-note");
   drawRecords(arranged);
   drawAdditions();
   drawStopped(arranged);
@@ -370,7 +370,7 @@ function drawRecords(arranged) {
   var list = add(section, "ul", null, "meds");
   arranged.current.forEach(function (entry) {
     var row = medRow(list, entry);
-    button(row, "I stopped this", "secondary", function () {
+    button(row, "I stopped this", "secondary card-action", function () {
       state.data.stopped[entry.key] = today();
       state.announce = entry.name + " moved to Stopped by me.";
       state.focusId = "stopped-heading";
@@ -388,6 +388,7 @@ function drawRecords(arranged) {
 function drawAdditions() {
   var section = add(root, "section");
   heading(section, "Added by me", "added-heading");
+  add(section, "p", "Saved on this phone only. Clearing your browser erases these.", "section-note");
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
@@ -395,7 +396,7 @@ function drawAdditions() {
     var line = detailLine(addition);
     if (line) add(row, "p", line, "med-line");
     add(row, "p", "Added " + addition.addedAt, "med-line");
-    button(row, "Remove", "secondary", function () {
+    button(row, "Remove", "secondary card-action", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
       state.lastRemoved = addition;
       state.announce = addition.name + " removed.";
@@ -415,7 +416,6 @@ function drawAdditions() {
     }, "Undo: put " + removed.name + " back");
     undo.id = "undo-remove";
   }
-  add(section, "p", "Saved on this phone only. Clearing your browser erases these.", "med-line");
   if (state.adding) {
     drawAddForm(section);
   } else {
@@ -459,9 +459,9 @@ function drawAddForm(section) {
   often.id = "add-frequency";
   often.type = "text";
 
-  var saveButton = add(form, "button", "Save");
+  var saveButton = add(form, "button", "Save", "primary big");
   saveButton.type = "submit";
-  button(form, "Cancel", "secondary", function () {
+  button(form, "Cancel", "secondary big", function () {
     state.adding = false;
     state.focusId = "add-open";
     render();
@@ -530,7 +530,7 @@ function drawStopped(arranged) {
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
     add(row, "p", "You marked this stopped on " + entry.stoppedAt, "med-line");
-    button(row, "Undo", "secondary", function () {
+    button(row, "Undo", "secondary card-action", function () {
       delete state.data.stopped[entry.key];
       state.announce = entry.name + " moved back to From your records.";
       state.focusId = "records-heading";
