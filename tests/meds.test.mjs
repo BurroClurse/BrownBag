@@ -7,7 +7,8 @@ import {
   dedupe,
   splitByStatus,
   groupByIngredient,
-  doseChangeText
+  doseChangeText,
+  usableRecord
 } from "../js/meds.js";
 
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
@@ -102,7 +103,7 @@ test("formatDosage builds frequency from timing", () => {
   assert.deepEqual(formatDosage(undefined), { dose: null, route: null, frequency: null });
 });
 
-test("dedupe keeps the newest and counts", () => {
+test("dedupe shows the current record, counts all of them", () => {
   const items = [
     fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2019-01-01", "stopped"), SOURCE),
     fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2023-06-01", "stopped"), SOURCE),
@@ -110,7 +111,7 @@ test("dedupe keeps the newest and counts", () => {
   ];
   const result = dedupe(items);
   assert.equal(result.length, 1);
-  assert.equal(result[0].lastDate, "2023-06-01");
+  assert.equal(result[0].lastDate, "2021-01-01");
   assert.equal(result[0].count, 3);
   assert.equal(result[0].status, "current");
 });
@@ -328,4 +329,29 @@ test("a reference's display name is used when the Medication isn't sent", () => 
     SOURCE
   );
   assert.equal(item.name, "Warfarin 5 MG Oral Tablet");
+});
+
+test("records entered in error are left out", () => {
+  assert.equal(usableRecord({ resourceType: "MedicationRequest", status: "entered-in-error" }), false);
+  assert.equal(usableRecord({ resourceType: "MedicationRequest", status: "active" }), true);
+  assert.equal(usableRecord({ resourceType: "MedicationStatement", status: "entered-in-error" }), false);
+});
+
+test("dedupe shows the current prescription's details even when a newer one is stopped", () => {
+  const merged = dedupe([
+    fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2023-01-01", "active", { requester: { display: "Dr. Current" } }), SOURCE),
+    fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2024-05-01", "stopped", { requester: { display: "Dr. Stopped" } }), SOURCE)
+  ]);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].status, "current");
+  assert.equal(merged[0].prescriber, "Dr. Current");
+});
+
+test("dedupe remembers the earliest start date", () => {
+  const merged = dedupe([
+    fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2021-03-01"), SOURCE),
+    fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2019-06-01"), SOURCE),
+    fromMedicationRequest(request("314076", "lisinopril 10 MG Oral Tablet", "2024-05-01"), SOURCE)
+  ]);
+  assert.equal(merged[0].firstDate, "2019-06-01");
 });

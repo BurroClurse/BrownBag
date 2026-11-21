@@ -48,11 +48,27 @@ export function detailLine(entry) {
 }
 
 export function sourceLine(entry) {
-  return [entry.prescriber, entry.start ? "since " + String(entry.start).slice(0, 10) : null, entry.source].filter(Boolean).join(" · ");
+  return [
+    entry.prescriber,
+    entry.start ? "since " + String(entry.start).slice(0, 10) : null,
+    entry.end ? "until " + String(entry.end).slice(0, 10) : null,
+    entry.source
+  ].filter(Boolean).join(" · ");
 }
 
 export function countLine(entry) {
-  return entry.count > 1 ? "In your records " + entry.count + " times" : null;
+  if (!(entry.count > 1)) return null;
+  return entry.firstDate
+    ? "Prescribed " + entry.count + " times since " + String(entry.firstDate).slice(0, 4)
+    : "In your records " + entry.count + " times";
+}
+
+// Why "From your records" is empty, or null when it isn't.
+export function emptyRecordsText(split, arranged) {
+  if (arranged.current.length) return null;
+  if (arranged.stopped.length) return "You've marked all your current medicines stopped.";
+  if (split.older.length) return "No current medicines in your records.";
+  return "No medicines in your records.";
 }
 
 export function makeAddition(input, now) {

@@ -16,7 +16,18 @@ window.addEventListener("hashchange", function () {
   location.reload();
 });
 
-drawCodeForm("");
+if (fragment) {
+  drawCodeForm("");
+} else {
+  drawNoList();
+}
+
+// Opened without the list part of the link (for example, typed by hand).
+function drawNoList() {
+  clear(root);
+  add(root, "h1", "Shared medicine list");
+  add(root, "p", "This link has no list in it. Ask the patient to show their QR code again.", "notice");
+}
 
 function drawCodeForm(message) {
   clear(root);

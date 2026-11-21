@@ -1,7 +1,7 @@
 // Keeps the last records list on the phone, encrypted with the lock's key,
 // so Brown Bag still shows it (and makes the QR code) with no signal.
 
-import { encryptJSON, decryptJSON } from "./vault.js";
+import { encryptJSON, decryptJSON, idTag } from "./vault.js";
 
 var RECORDS_PREFIX = "brownbag:records:";
 var LAST_KEY = "brownbag:records:last";
@@ -43,10 +43,4 @@ export function savedNotice(savedAt, online) {
 function shortDate(iso) {
   var date = new Date(iso);
   return MONTHS[date.getMonth()] + " " + date.getDate() + ", " + date.getFullYear();
-}
-
-// A one-way tag for the storage name, so the patient id isn't readable there.
-async function idTag(patientId) {
-  var digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode("brownbag:" + patientId));
-  return Array.from(new Uint8Array(digest).slice(0, 12), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
 }

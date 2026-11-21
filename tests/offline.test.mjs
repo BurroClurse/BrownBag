@@ -53,7 +53,7 @@ test("offlineNotice formats the date", () => {
 // its routing rule.
 function loadWorker(overrides = {}) {
   const listeners = {};
-  const context = Object.assign({ self: { addEventListener: (type, fn) => { listeners[type] = fn; }, location: { origin: "https://burroclurse.github.io" } }, URL, Request: class {}, caches: {}, fetch: () => {}, setTimeout, clearTimeout, Promise, Error }, overrides);
+  const context = Object.assign({ self: { addEventListener: (type, fn) => { listeners[type] = fn; }, location: { origin: "https://burroclurse.github.io" }, registration: { scope: "https://burroclurse.github.io/BrownBag/" } }, URL, Request: class {}, caches: {}, fetch: () => {}, setTimeout, clearTimeout, Promise, Error }, overrides);
   vm.runInNewContext(readFileSync(new URL("../sw.js", import.meta.url), "utf8"), context);
   return context.self;
 }
@@ -80,4 +80,9 @@ test("the service worker stops waiting for a stalled network and uses its copy",
   const started = Date.now();
   await assert.rejects(worker.fetchWithin("https://burroclurse.github.io/BrownBag/index.html", 50));
   assert.ok(Date.now() - started < 2000);
+});
+
+test("the service worker leaves other sites on the same address alone", () => {
+  const route = loadWorker().routeFor;
+  assert.equal(route("https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/index.html"), "network");
 });

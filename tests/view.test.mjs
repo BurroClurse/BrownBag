@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -113,4 +113,19 @@ test("latestOnly quietly drops an older search that fails", async () => {
   await search("ibuprofen");
   fail(new Error("network"));
   assert.equal((await older).isLatest, false);
+});
+
+test("countLine says how long a medicine has been prescribed", () => {
+  assert.equal(countLine(item("rx:1", "x", { count: 6, firstDate: "2019-06-01T10:00:00Z" })), "Prescribed 6 times since 2019");
+});
+
+test("sourceLine shows an end date when there is one", () => {
+  assert.equal(sourceLine(item("rx:1", "x", { end: "2024-05-01" })), "Dr. Patel · since 2023-03-02 · until 2024-05-01 · SMART sandbox");
+});
+
+test("emptyRecordsText explains why From your records is empty", () => {
+  assert.equal(emptyRecordsText({ current: [], older: [] }, { current: [], stopped: [] }), "No medicines in your records.");
+  assert.equal(emptyRecordsText({ current: [], older: [item("rx:2", "y")] }, { current: [], stopped: [] }), "No current medicines in your records.");
+  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [], stopped: [item("rx:1", "x")] }), "You've marked all your current medicines stopped.");
+  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [item("rx:1", "x")], stopped: [] }), null);
 });

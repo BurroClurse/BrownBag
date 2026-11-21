@@ -34,6 +34,12 @@
 
 * { box-sizing: border-box; }
 
+/* On iPhone, follow the Larger Text setting (Settings > Accessibility >
+   Display & Text Size). Everything below is sized in rem from this. */
+@supports (font: -apple-system-body) {
+  html { font: -apple-system-body; }
+}
+
 body {
   margin: 0;
   background: var(--paper);

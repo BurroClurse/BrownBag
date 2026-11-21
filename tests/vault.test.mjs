@@ -18,6 +18,7 @@ function memoryStorage() {
     map: map,
     getItem: function (key) { return map.has(key) ? map.get(key) : null; },
     setItem: function (key, value) { map.set(key, String(value)); },
+    removeItem: function (key) { map.delete(key); },
     get length() { return map.size; },
     key: function (index) { return Array.from(map.keys())[index] ?? null; }
   };
@@ -47,7 +48,7 @@ test("a damaged blob throws VaultError locked", async () => {
 test("stored text does not contain the medicine name", async () => {
   var storage = memoryStorage();
   await savePatientData(storage, await keyA, "p1", { additions: [VITAMIN], stopped: {} });
-  var raw = storage.getItem("brownbag:data:p1");
+  var raw = Array.from(storage.map.values()).join("\n");
   assert.ok(raw);
   assert.ok(!raw.includes("Vitamin"));
 });
@@ -119,4 +120,32 @@ test("restoring a backup keeps what was added since, and adds what the backup ha
   const data = await loadPatientData(storage, key, "p-1");
   assert.deepEqual(data.additions.map((a) => a.id).sort(), ["new", "old"]);
   assert.deepEqual(Object.keys(data.stopped).sort(), ["rx:1", "rx:2"]);
+});
+
+test("saved additions don't show the patient id in storage", async () => {
+  const storage = memoryStorage();
+  const key = await deriveKeyFromPin("123456", new Uint8Array(16));
+  await savePatientData(storage, key, "patient-7f3a9c-sandbox", { additions: [], stopped: {} });
+  const names = [];
+  for (let i = 0; i < storage.length; i += 1) names.push(storage.key(i));
+  assert.ok(names.every((name) => !name.includes("patient-7f3a9c-sandbox")));
+  const backup = await exportBackup(storage, key);
+  assert.ok(!backup.includes("patient-7f3a9c-sandbox"));
+});
+
+test("additions saved the old way still load, and move to the new name", async () => {
+  const storage = memoryStorage();
+  const key = await deriveKeyFromPin("123456", new Uint8Array(16));
+  storage.setItem("brownbag:data:p-old", await encryptJSON(key, { additions: [{ id: "a" }], stopped: {} }));
+  assert.deepEqual((await loadPatientData(storage, key, "p-old")).additions, [{ id: "a" }]);
+  assert.equal(storage.getItem("brownbag:data:p-old"), null);
+  assert.deepEqual((await loadPatientData(storage, key, "p-old")).additions, [{ id: "a" }]);
+});
+
+test("a backup made the old way still restores", async () => {
+  const storage = memoryStorage();
+  const key = await deriveKeyFromPin("123456", new Uint8Array(16));
+  const old = JSON.stringify({ app: "brownbag", version: 1, data: { "p-old": await encryptJSON(key, { additions: [{ id: "a" }], stopped: {} }) } });
+  assert.equal(await importBackup(storage, key, old), 1);
+  assert.deepEqual((await loadPatientData(storage, key, "p-old")).additions, [{ id: "a" }]);
 });

@@ -670,6 +670,30 @@ in `icons/`. One bug on the way: a variable named `top` clashed with a name
 the browser already uses for the page's top window, so every pill came out
 with no size.
 
+### The reviewer's small items (Nov 21)
+
+You chose to fix all nine. What changed on screen:
+
+- **Clearer empty messages:** "No current medicines in your records" when
+  only older ones exist, and "You've marked all your current medicines
+  stopped" when that's why the list is empty.
+- **Dates:** "Prescribed 6 times since 2019" instead of "In your records 6
+  times", and "until <date>" when a prescription has an end date.
+- **Undo after Remove** under "Added by me".
+- **The "too long for one QR code" message** has an OK button.
+- **A staff link with nothing after the `#`** says "This link has no list in
+  it" right away instead of asking for a code.
+- **Records marked "entered in error"** in the chart are left out.
+- **A newer stopped record no longer hides the current one's dose.**
+- **Patient ids are hidden** in the phone's storage and in backup files (a
+  one-way tag instead). Old data and old backups still work.
+- **The service worker only touches Brown Bag's own folder,** not other
+  sites published on the same github.io address.
+- **Larger Text:** the pages now follow the iPhone's Larger Text setting.
+
+Two older tests had pinned the old behavior (brand names first, and a newer
+stopped record's details). They were updated to the new rules on purpose.
+
 ---
 
 ## Glossary

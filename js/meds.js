@@ -60,6 +60,16 @@ export function formatDosage(dosageInstruction) {
   };
 }
 
+// A record marked "entered in error" was a mistake in the chart. It is
+// left out completely so it can't supply a name or a dose.
+export function usableRecord(resource) {
+  return Boolean(resource) && resource.status !== "entered-in-error";
+}
+
+// Repeats of one medicine become one line. The line shows the newest
+// current record when there is one (a newer stopped record must not hide
+// the dose the patient takes now), counts every record, and keeps the
+// earliest start date for "since <year>".
 export function dedupe(items) {
   var groups = new Map();
   items.forEach(function (item) {
@@ -68,12 +78,20 @@ export function dedupe(items) {
       groups.set(item.key, Object.assign({}, item));
       return;
     }
-    var newest = isNewer(item, group) ? Object.assign({}, item) : group;
-    newest.count = group.count + item.count;
-    newest.status = group.status === "current" || item.status === "current" ? "current" : "older";
-    groups.set(item.key, newest);
+    var preferItem = item.status === group.status ? isNewer(item, group) : item.status === "current";
+    var shown = preferItem ? Object.assign({}, item) : group;
+    shown.count = group.count + item.count;
+    shown.status = group.status === "current" || item.status === "current" ? "current" : "older";
+    shown.firstDate = earliest(group.firstDate, item.firstDate);
+    groups.set(item.key, shown);
   });
   return Array.from(groups.values());
+}
+
+function earliest(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  return a < b ? a : b;
 }
 
 export function splitByStatus(items) {
@@ -142,6 +160,7 @@ function mergeIngredientGroup(members) {
   var shownFrom = current.length ? current[0] : newest;
   var shown = Object.assign({}, shownFrom);
   shown.count = members.reduce(function (sum, item) { return sum + item.count; }, 0);
+  shown.firstDate = members.reduce(function (first, item) { return earliest(first, item.firstDate); }, null);
   shown.status = current.length ? "current" : "older";
   // A dose history only makes sense when it ends with the one shown.
   if (shownFrom === newest) {
@@ -181,6 +200,7 @@ function makeItem(parts) {
     status: parts.current ? "current" : "older",
     origin: "records",
     lastDate: parts.lastDate,
+    firstDate: parts.start,
     count: 1
   };
 }

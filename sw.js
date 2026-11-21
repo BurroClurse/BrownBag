@@ -43,7 +43,10 @@ self.routeFor = function (url) {
   if (LIBRARIES.indexOf(parsed.origin + parsed.pathname) !== -1) {
     return "library";
   }
-  if (parsed.origin === self.location.origin) {
+  // Only Brown Bag's own folder. Other sites published on the same address
+  // (other repos on burroclurse.github.io) are left alone.
+  var scope = self.registration ? self.registration.scope : self.location.origin + "/";
+  if (parsed.href.indexOf(scope) === 0) {
     return "app";
   }
   return "network";

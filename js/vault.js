@@ -56,8 +56,38 @@ export async function decryptJSON(key, blob) {
   }
 }
 
+// Saved data is filed under a one-way tag of the patient id, so the id
+// itself is never readable in the phone's storage or in a backup file.
+// Data saved before that (under the plain id) is moved on first use.
+export async function idTag(patientId) {
+  var digest = await subtle.digest("SHA-256", new TextEncoder().encode("brownbag:" + patientId));
+  return Array.from(new Uint8Array(digest).slice(0, 12), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+}
+
+var TAG_PATTERN = /^[0-9a-f]{24}$/;
+
+async function nameFor(storage, patientId) {
+  var name = DATA_PREFIX + await idTag(patientId);
+  var legacy = DATA_PREFIX + patientId;
+  if (!storage.getItem(name) && storage.getItem(legacy)) {
+    storage.setItem(name, storage.getItem(legacy));
+    storage.removeItem(legacy);
+  }
+  return name;
+}
+
 export async function loadPatientData(storage, key, patientId) {
-  var blob = storage.getItem(DATA_PREFIX + patientId);
+  return loadByName(storage, key, await nameFor(storage, patientId));
+}
+
+// Refuses to replace saved data this key can't open, so a mix-up with the
+// lock never quietly erases a patient's additions.
+export async function savePatientData(storage, key, patientId, data) {
+  await saveByName(storage, key, await nameFor(storage, patientId), data);
+}
+
+async function loadByName(storage, key, name) {
+  var blob = storage.getItem(name);
   if (!blob) {
     return { additions: [], stopped: {} };
   }
@@ -65,18 +95,17 @@ export async function loadPatientData(storage, key, patientId) {
   return { additions: data.additions || [], stopped: data.stopped || {} };
 }
 
-// Refuses to replace saved data this key can't open, so a mix-up with the
-// lock never quietly erases a patient's additions.
-export async function savePatientData(storage, key, patientId, data) {
-  var existing = storage.getItem(DATA_PREFIX + patientId);
+async function saveByName(storage, key, name, data) {
+  var existing = storage.getItem(name);
   if (existing) {
     await decryptJSON(key, existing);
   }
-  storage.setItem(DATA_PREFIX + patientId, await encryptJSON(key, data));
+  storage.setItem(name, await encryptJSON(key, data));
 }
 
 // Backups stay encrypted. Restoring needs the same unlock as the phone that
-// made them, so a lost backup file doesn't expose anything.
+// made them, so a lost backup file doesn't expose anything. Version 2 files
+// list patients by tag; version 1 files (plain ids) still restore.
 export async function exportBackup(storage, key) {
   var data = {};
   for (var i = 0; i < storage.length; i += 1) {
@@ -84,10 +113,11 @@ export async function exportBackup(storage, key) {
     if (name && name.indexOf(DATA_PREFIX) === 0) {
       var blob = storage.getItem(name);
       await decryptJSON(key, blob);
-      data[name.slice(DATA_PREFIX.length)] = blob;
+      var suffix = name.slice(DATA_PREFIX.length);
+      data[TAG_PATTERN.test(suffix) ? suffix : await idTag(suffix)] = blob;
     }
   }
-  return JSON.stringify({ app: "brownbag", version: 1, data: data });
+  return JSON.stringify({ app: "brownbag", version: 2, data: data });
 }
 
 export async function importBackup(storage, key, text) {
@@ -97,24 +127,24 @@ export async function importBackup(storage, key, text) {
   } catch (error) {
     throw new VaultError("bad-backup", "That file isn't a Brown Bag backup.");
   }
-  if (!backup || backup.app !== "brownbag" || backup.version !== 1 || typeof backup.data !== "object" || backup.data === null) {
+  if (!backup || backup.app !== "brownbag" || (backup.version !== 1 && backup.version !== 2) || typeof backup.data !== "object" || backup.data === null) {
     throw new VaultError("bad-backup", "That file isn't a Brown Bag backup.");
   }
   var entries = Object.entries(backup.data);
   var restored = [];
   for (var entry of entries) {
-    restored.push([entry[0], await decryptJSON(key, entry[1])]);
+    var tag = backup.version === 1 ? await idTag(entry[0]) : entry[0];
+    restored.push([DATA_PREFIX + tag, await decryptJSON(key, entry[1])]);
   }
   // Merge, never replace: anything added on this phone since the backup was
   // made stays. Additions match by id; a stopped mark on the phone wins.
   for (var pair of restored) {
-    var patientId = pair[0];
     var fromBackup = pair[1] || {};
-    var onPhone = await loadPatientData(storage, key, patientId);
+    var onPhone = await loadByName(storage, key, pair[0]);
     var ids = new Set(onPhone.additions.map(function (a) { return a.id; }));
     var additions = onPhone.additions.concat((fromBackup.additions || []).filter(function (a) { return !ids.has(a.id); }));
     var stopped = Object.assign({}, fromBackup.stopped || {}, onPhone.stopped);
-    await savePatientData(storage, key, patientId, { additions: additions, stopped: stopped });
+    await saveByName(storage, key, pair[0], { additions: additions, stopped: stopped });
   }
   return restored.length;
 }

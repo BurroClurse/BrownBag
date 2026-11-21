@@ -6,10 +6,10 @@ import { showLockScreen } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
 import { LOCK_KEY } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installHint, backupFileName, restoreMessage, withLockRecord } from "./install.js";
-import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText } from "./meds.js";
+import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText } from "./view.js";
 import { saveRecords, loadLastRecords, savedNotice } from "./offline.js";
 
 var SOURCE = "SMART sandbox";
@@ -132,7 +132,7 @@ async function loadMedicines(client, patientId) {
         .filter(function (r) { return r && r.resourceType === "Medication"; })
         .map(function (r) { return ["Medication/" + r.id, r]; }));
       resources
-        .filter(function (r) { return r && r.resourceType === type; })
+        .filter(function (r) { return r && r.resourceType === type && usableRecord(r); })
         .forEach(function (r) { items.push(convert(r, SOURCE, medications)); });
     } catch (error) {
       failed = true;
@@ -194,8 +194,9 @@ function drawRecords(arranged) {
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
-  if (!arranged.current.length && !state.split.failed) {
-    add(section, "p", "No medicines in your records.");
+  var empty = emptyRecordsText(state.split, arranged);
+  if (empty && !state.split.failed) {
+    add(section, "p", empty);
   }
   var list = add(section, "ul", null, "meds");
   arranged.current.forEach(function (entry) {
@@ -227,11 +228,24 @@ function drawAdditions() {
     add(row, "p", "Added " + addition.addedAt, "med-line");
     button(row, "Remove", "secondary", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
+      state.lastRemoved = addition;
       state.announce = addition.name + " removed.";
-      state.focusId = "added-heading";
+      state.focusId = "undo-remove";
       save();
     }, "Remove: " + addition.name);
   });
+  if (state.lastRemoved) {
+    var removed = state.lastRemoved;
+    var undoRow = add(section, "p", "Removed " + removed.name + ".", "med-line");
+    var undo = button(undoRow, "Undo", "secondary", function () {
+      state.data.additions.push(removed);
+      state.lastRemoved = null;
+      state.announce = removed.name + " is back.";
+      state.focusId = "added-heading";
+      save();
+    }, "Undo: put " + removed.name + " back");
+    undo.id = "undo-remove";
+  }
   add(section, "p", "Saved on this phone only. Clearing your browser erases these.", "med-line");
   if (state.adding) {
     drawAddForm(section);
@@ -365,6 +379,11 @@ function drawShare() {
   }
   if (state.qr.tooLong) {
     add(section, "p", "Your list is too long for one QR code. Show this screen instead.", "notice");
+    button(section, "OK", "secondary", function () {
+      state.qr = null;
+      state.focusId = "qr-open";
+      render();
+    });
     return;
   }
   var box = add(section, "div", null, "qr");
@@ -506,6 +525,7 @@ function medRow(list, entry) {
 
 async function save() {
   state.qr = null;
+  if (state.focusId !== "undo-remove") state.lastRemoved = null;
   try {
     await savePatientData(localStorage, state.key, state.patientId, state.data);
   } catch (error) {
