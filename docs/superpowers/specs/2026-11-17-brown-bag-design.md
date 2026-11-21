@@ -385,8 +385,16 @@ If it becomes a business:
   medicine name stays in the shared Bundle, because `share.html` works
   offline.
 
+## Spring (answered by course staff, 2026-11-20)
+
+- Keep building Brown Bag in the spring and add a provider-facing side. No
+  need to start a new app.
+- Spring adds AI components and topics like AI transparency and
+  provenance (a record of where each piece of data came from). Brown Bag's
+  "From records", "Added by patient" and "Patient says stopped" labels are
+  already a simple form of provenance, and FHIR has a Provenance resource
+  for it.
+
 ## Still open
 
-- Course staff: does one app with patient and staff sign-ins count as one
-  app, and does spring have to be provider-facing. Doesn't affect the fall
-  build.
+- Nothing that affects the fall build.
