@@ -120,9 +120,11 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
 .qr { text-align: center; margin: 1rem 0; }
 .qr canvas { width: min(100%, 22rem); height: auto; image-rendering: pixelated; background: #fff; }
 .share-code {
-  font-size: 2.5rem;
+  /* Never wider than the screen, even at the phone's largest text size. */
+  font-size: min(2.5rem, 13vw);
   font-weight: 800;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }

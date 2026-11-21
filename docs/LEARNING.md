@@ -580,6 +580,36 @@ store held 22 app files and no health data.
 DevTools ▸ Application ▸ Service workers is where you can see `sw.js`, and
 the Network tab has an Offline switch to try this yourself.
 
+### Step 10. Accessibility checks
+
+**The bar.** WCAG 2.2 level AA: the accessibility standard most US health
+organizations are held to. In practice: strong contrast, every control
+labelled for screen readers, big tap targets, a visible focus outline, works
+at the largest text size, and nothing that depends on color alone.
+
+**axe.** A free checker that reads a page and lists accessibility problems.
+A robot run of headless Chrome opened every screen (lock set-up, PIN set-up,
+signed out, PIN unlock, the list with the add form and older prescriptions
+open, the QR code, and both states of the staff page) in light and dark mode
+and ran axe on each. **No problems found.**
+
+**Keyboard.** The robot pressed Tab through the main screen. Every control
+was reached and each showed a focus outline.
+
+**Large text.** The robot doubled the text size on a 320-pixel-wide screen,
+the narrowest common iPhone width. The 6-digit share code, in big
+spaced-out digits, was wider than the screen and made the page scroll
+sideways. The code's size is now capped to the screen width. Both pages now
+fit with no sideways scrolling.
+
+**What a robot can't check:** how VoiceOver on iPhone and TalkBack on Android
+actually read the screens. That's on your phone (see the list at the end of
+this session's notes).
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools":
+Chrome DevTools also has a Lighthouse tab that runs an accessibility check
+like axe.
+
 ---
 
 ## Glossary
@@ -599,6 +629,7 @@ the Network tab has an Offline switch to try this yourself.
 - **GitHub Pages**: GitHub's free hosting for web pages. It publishes `main`.
 - **https**: the secure version of web pages. The padlock in the address bar.
 - **Manifest**: a small file that tells a phone how to install a website like an app.
+- **WCAG**: the web accessibility standard. Brown Bag aims for level AA.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
 - **Passkey**: a sign-in that uses Face ID, fingerprint or the phone's PIN.
 - **PRF**: a passkey add-on that returns the same secret each time, after Face ID.
