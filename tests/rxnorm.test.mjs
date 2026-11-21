@@ -38,8 +38,8 @@ test("drugs.json results come back as rxcui and name", async () => {
   });
   var results = await searchDrugs("ibuprofen", fetchFn);
   assert.deepEqual(results, [
-    { rxcui: "206878", name: "ibuprofen 200 MG Oral Tablet [Advil]" },
-    { rxcui: "310965", name: "ibuprofen 200 MG Oral Tablet" }
+    { rxcui: "310965", name: "ibuprofen 200 MG Oral Tablet" },
+    { rxcui: "206878", name: "ibuprofen 200 MG Oral Tablet [Advil]" }
   ]);
 });
 
@@ -126,4 +126,31 @@ test("a stalled RxNav lookup gives up instead of hanging the list", { timeout: 3
 
 test("a stalled name search throws RxNormError", { timeout: 3000 }, async () => {
   await assert.rejects(searchDrugs("ibuprofen", stalledFetch, { timeoutMs: 50 }), RxNormError);
+});
+
+test("plain generic matches come first, combinations and brands after", async () => {
+  var fetchFn = fakeFetch({
+    [DRUGS]: { body: { drugGroup: { conceptGroup: [
+      { tty: "SBD", conceptProperties: [
+        concept("1", "famotidine 26.6 MG / ibuprofen 800 MG Oral Tablet [Duexis]", "SBD"),
+        concept("2", "ibuprofen 200 MG Oral Tablet [Advil]", "SBD")
+      ] },
+      { tty: "SCD", conceptProperties: [
+        concept("3", "ibuprofen 400 MG / oxycodone hydrochloride 5 MG Oral Tablet", "SCD"),
+        concept("4", "ibuprofen 200 MG Oral Tablet", "SCD")
+      ] }
+    ] } } }
+  });
+  var results = await searchDrugs("ibuprofen", fetchFn);
+  assert.deepEqual(results.map((r) => r.rxcui), ["4", "2", "3", "1"]);
+});
+
+test("the generic comes before a brand, even a shorter brand name", async () => {
+  var fetchFn = fakeFetch({
+    [DRUGS]: { body: { drugGroup: { conceptGroup: [
+      { tty: "SBD", conceptProperties: [concept("9", "ibuprofen 200 MG [X]", "SBD")] },
+      { tty: "SCD", conceptProperties: [concept("8", "ibuprofen 200 MG Oral Tablet", "SCD")] }
+    ] } } }
+  });
+  assert.deepEqual((await searchDrugs("ibuprofen", fetchFn)).map((r) => r.rxcui), ["8", "9"]);
 });

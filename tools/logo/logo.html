@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brown Bag logo source</title>
+<!--
+  Source for the Brown Bag logo and app icon. tools/logo/render.mjs opens
+  this page in headless Chrome and saves PNGs: ?mode=logo (bag with the
+  name) and ?mode=icon (bag with the pills, no text).
+  Colors: kraft #C89A62, shade #A97A4C, outline #6B3F1D, name #0F5E5A,
+  pill teal #8CC9B8.
+-->
+<style>
+  html, body { margin: 0; background: transparent; }
+  .canvas { width: 1024px; height: 1024px; position: relative; }
+  .canvas.icon { background: #FFF8EF; }
+  svg.bag { position: absolute; inset: 0; }
+  .name {
+    position: absolute; left: 0; right: 0; top: 500px;
+    display: flex; flex-direction: column; align-items: center;
+    font-family: "Arial Rounded MT Bold", sans-serif;
+    font-size: 124px; line-height: 0.95; color: #0F5E5A;
+  }
+  .line { display: flex; align-items: baseline; }
+  .w { width: 134px; height: 90px; margin: 0 2px; align-self: auto; transform: translateY(6px); }
+</style>
+</head>
+<body>
+<div id="canvas" class="canvas">
+  <svg class="bag" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <g id="bag-group" transform="translate(-57 0)">
+    <g stroke="#6B3F1D" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+      <!-- side of the bag -->
+      <path d="M346 236 L266 770 L266 838 L380 912 L380 250 Z" fill="#A97A4C"/>
+      <path d="M266 838 L336 800 L380 912 Z" fill="#B8895A"/>
+      <!-- front -->
+      <path d="M380 250 L700 250 L758 864 Q760 884 740 886 L380 912 Z" fill="#C89A62"/>
+      <!-- folded top -->
+      <path d="M356 206 L688 206 Q700 206 705 216 L732 274 Q737 288 722 288 L394 288 Z" fill="#C89A62"/>
+    </g>
+    <!-- shadow under the fold -->
+    <path d="M388 296 L710 296 L714 336 L388 336 Z" fill="#A97A4C" opacity="0.55"/>
+    </g>
+    <g id="icon-pills"></g>
+  </svg>
+  <div class="name" id="name">
+    <div class="line">Bro<svg class="w" viewBox="0 0 190 128" id="w"></svg>n</div>
+    <div class="line">Bag</div>
+  </div>
+</div>
+<script>
+  var NS = "http://www.w3.org/2000/svg";
+  var mode = new URLSearchParams(location.search).get("mode") || "logo";
+
+  // One capsule from (x1,y1) to (x2,y2): white half, teal half, dark outline,
+  // with a kraft halo behind it so it reads on top of the bag.
+  // part "halo" draws only the kraft outline, part "pill" only the pill, so
+  // a W can draw every outline first and no pill cuts into another.
+  function capsule(parent, x1, y1, x2, y2, width, halo, part) {
+    var dx = x2 - x1, dy = y2 - y1;
+    var length = Math.hypot(dx, dy);
+    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("transform", "translate(" + x1 + " " + y1 + ") rotate(" + angle + ")");
+    function rect(x, w, fill, stroke, sw, rx) {
+      var r = document.createElementNS(NS, "rect");
+      r.setAttribute("x", x); r.setAttribute("y", -width / 2);
+      r.setAttribute("width", w); r.setAttribute("height", width);
+      r.setAttribute("rx", rx); r.setAttribute("fill", fill);
+      if (stroke) { r.setAttribute("stroke", stroke); r.setAttribute("stroke-width", sw); }
+      g.appendChild(r);
+    }
+    if (halo && part !== "pill") rect(0, length, "none", "#C89A62", halo, width / 2);
+    if (part === "halo") { parent.appendChild(g); return; }
+    var clip = "c" + Math.random().toString(36).slice(2);
+    var cp = document.createElementNS(NS, "clipPath"); cp.id = clip;
+    var cr = document.createElementNS(NS, "rect");
+    cr.setAttribute("x", 0); cr.setAttribute("y", -width / 2); cr.setAttribute("width", length);
+    cr.setAttribute("height", width); cr.setAttribute("rx", width / 2);
+    cp.appendChild(cr); g.appendChild(cp);
+    var halves = document.createElementNS(NS, "g"); halves.setAttribute("clip-path", "url(#" + clip + ")");
+    var a = document.createElementNS(NS, "rect");
+    a.setAttribute("x", 0); a.setAttribute("y", -width / 2); a.setAttribute("width", length / 2); a.setAttribute("height", width); a.setAttribute("fill", "#FFFFFF");
+    var b = document.createElementNS(NS, "rect");
+    b.setAttribute("x", length / 2); b.setAttribute("y", -width / 2); b.setAttribute("width", length / 2); b.setAttribute("height", width); b.setAttribute("fill", "#8CC9B8");
+    halves.appendChild(a); halves.appendChild(b); g.appendChild(halves);
+    var shine = document.createElementNS(NS, "path");
+    shine.setAttribute("d", "M" + (length * 0.62) + " " + (-width * 0.22) + " L" + (length * 0.82) + " " + (-width * 0.22));
+    shine.setAttribute("stroke", "#FFFFFF"); shine.setAttribute("stroke-width", width * 0.12); shine.setAttribute("stroke-linecap", "round"); shine.setAttribute("opacity", "0.8");
+    g.appendChild(shine);
+    rect(0, length, "none", "#0F5E5A", width * 0.13, width / 2);
+    var seam = document.createElementNS(NS, "line");
+    seam.setAttribute("x1", length / 2); seam.setAttribute("x2", length / 2);
+    seam.setAttribute("y1", -width / 2); seam.setAttribute("y2", width / 2);
+    seam.setAttribute("stroke", "#0F5E5A"); seam.setAttribute("stroke-width", width * 0.1);
+    g.appendChild(seam);
+    parent.appendChild(g);
+  }
+
+  if (mode === "logo") {
+    // The W: four pills along its four strokes, the same height as the letters.
+    var w = document.getElementById("w");
+    // ("top" is a reserved browser name, so the rows are yHigh and yLow.)
+    var t = 30, inset = t / 2 + 4, yHigh = inset, yLow = 128 - inset;
+    var xs = [inset, 58, 95, 132, 190 - inset];
+    var strokes = [
+      [xs[0], yHigh, xs[1], yLow],
+      [xs[2], yHigh + 26, xs[1], yLow],
+      [xs[2], yHigh + 26, xs[3], yLow],
+      [xs[4], yHigh, xs[3], yLow]
+    ];
+    ["halo", "pill"].forEach(function (part) {
+      strokes.forEach(function (s) { capsule(w, s[0], s[1], s[2], s[3], t, 16, part); });
+    });
+  } else {
+    document.getElementById("name").remove();
+    document.getElementById("canvas").classList.add("icon");
+    // The whole bag centered in the icon, and the two pills centered on the
+    // bag's front.
+    document.getElementById("bag-group").setAttribute("transform", "translate(0 0)");
+    var pills = document.getElementById("icon-pills");
+    var cx = 569, cy = 600;
+    capsule(pills, cx - 120, cy - 70, cx + 20, cy + 70, 78, 0);
+    capsule(pills, cx - 60, cy + 70, cx + 120, cy + 70, 78, 0);
+  }
+</script>
+</body>
+</html>

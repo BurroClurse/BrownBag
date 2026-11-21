@@ -33,7 +33,11 @@ export async function searchDrugs(term, fetchFn = globalThis.fetch, { timeoutMs 
     var approximate = await getJSON(BASE + "approximateTerm.json?term=" + encodeURIComponent(trimmed) + "&maxEntries=8", fetchFn, timeoutMs);
     found = (approximate.approximateGroup && approximate.approximateGroup.candidate) || [];
   }
-  return uniqueByRxcui(found.filter(function (item) { return item.rxcui && item.name; })).slice(0, MAX_RESULTS);
+  var word = trimmed.toLowerCase();
+  var ranked = found
+    .filter(function (item) { return item.rxcui && item.name; })
+    .sort(function (a, b) { return compareRank(rank(a, word), rank(b, word)); });
+  return uniqueByRxcui(ranked).slice(0, MAX_RESULTS);
 }
 
 export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch, { timeoutMs = TIMEOUT_MS } = {}) {
@@ -65,6 +69,25 @@ export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch, { timeo
   }
   await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, queue.length) }, worker));
   return map;
+}
+
+// Most useful first: one medicine before combinations, names that start with
+// what was typed, the generic before brands, then the shorter name.
+function rank(item, word) {
+  var name = item.name.toLowerCase();
+  return [
+    name.indexOf(" / ") !== -1 ? 1 : 0,
+    name.indexOf(word) === 0 ? 0 : 1,
+    item.tty === "SCD" ? 0 : 1,
+    name.length
+  ];
+}
+
+function compareRank(a, b) {
+  for (var i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return a[i] - b[i];
+  }
+  return 0;
 }
 
 async function getJSON(url, fetchFn, timeoutMs) {

@@ -649,6 +649,27 @@ got a test that failed first.
 design's goals. The first anti-goal ("a list that looks complete but silently
 drops medicines") was broken in a way no test covered.
 
+### After your first phone test (Nov 20)
+
+**Odd search results ("Ibuprohm").** While you typed "Ibupro", a search for
+that half-word started. RxNav doesn't know "Ibupro", so it answered with
+guesses like "Ibuprohm". Before it answered, you typed "fen" and a second
+search started. The first answer arrived and was drawn, and then the second
+search's results were added *below* it instead of replacing it. Now only the
+newest search's answer is ever shown (`latestOnly` in `js/view.js`), and the
+list is cleared before drawing. This kind of bug is called a **race**: two
+things finish in an order you didn't plan for.
+
+**Better match order.** Plain generic names come first ("ibuprofen 200 MG
+Oral Tablet"), then brands ("[Advil]"), then combination pills.
+
+**The logo.** Drawn as code in `tools/logo/logo.html`, so it's exact and can
+be changed later: the bag, "Brown Bag" centered on it, a plain "o", and a "w"
+made of four pills. `node tools/logo/render.mjs` turns it into the PNG files
+in `icons/`. One bug on the way: a variable named `top` clashed with a name
+the browser already uses for the page's top window, so every pill came out
+with no size.
+
 ---
 
 ## Glossary

@@ -70,6 +70,26 @@ export function makeAddition(input, now) {
   };
 }
 
+// Wraps a search so only the newest call's answer counts. Typing "Ibupro"
+// then "fen" starts two searches; if the first finishes later it must not
+// be shown. cancel() marks everything in flight as old (the typing changed).
+export function latestOnly(run) {
+  var latest = 0;
+  function call() {
+    var mine = (latest += 1);
+    return Promise.resolve(run.apply(null, arguments)).then(function (value) {
+      return { value: value, isLatest: mine === latest };
+    }, function (error) {
+      if (mine === latest) throw error;
+      return { value: null, isLatest: false };
+    });
+  }
+  call.cancel = function () {
+    latest += 1;
+  };
+  return call;
+}
+
 // The date on the phone's own calendar. toISOString would give the UTC
 // date, which is already tomorrow on a US evening.
 export function localDate(date) {

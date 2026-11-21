@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -83,4 +83,34 @@ test("localDate uses the phone's own date, not UTC", () => {
 
 test("makeAddition stamps the local date", () => {
   assert.equal(makeAddition({ name: "Fish oil" }, new Date(2026, 10, 20, 23, 59)).addedAt, "2026-11-20");
+});
+
+test("latestOnly drops an older search that finishes after a newer one started", async () => {
+  var release = {};
+  var search = latestOnly((term) => new Promise((resolve) => { release[term] = () => resolve(term); }));
+  var shown = [];
+  var older = search("ibupro").then((r) => { if (r.isLatest) shown.push(r.value); });
+  var newer = search("ibuprofen").then((r) => { if (r.isLatest) shown.push(r.value); });
+  release["ibupro"]();
+  release["ibuprofen"]();
+  await Promise.all([older, newer]);
+  assert.deepEqual(shown, ["ibuprofen"]);
+});
+
+test("latestOnly can be told the typing changed, so nothing in flight is shown", async () => {
+  var release;
+  var search = latestOnly(() => new Promise((resolve) => { release = resolve; }));
+  var pending = search("ibu");
+  search.cancel();
+  release("x");
+  assert.equal((await pending).isLatest, false);
+});
+
+test("latestOnly quietly drops an older search that fails", async () => {
+  var fail;
+  var search = latestOnly((term) => term === "ibu" ? new Promise((resolve, reject) => { fail = reject; }) : Promise.resolve(term));
+  var older = search("ibu");
+  await search("ibuprofen");
+  fail(new Error("network"));
+  assert.equal((await older).isLatest, false);
 });

@@ -9,7 +9,7 @@ import { shouldShowInstallHint, dismissInstallHint, installHint, backupFileName,
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly } from "./view.js";
 import { saveRecords, loadLastRecords, savedNotice } from "./offline.js";
 
 var SOURCE = "SMART sandbox";
@@ -248,8 +248,8 @@ function drawAdditions() {
 function drawAddForm(section) {
   var form = add(section, "form");
   var picked = null;
-  var searchToken = 0;
   var timer = null;
+  var search = latestOnly(searchDrugs);
 
   var nameLabel = add(form, "label", "Medicine or supplement name");
   nameLabel.htmlFor = "add-name";
@@ -287,6 +287,7 @@ function drawAddForm(section) {
   name.addEventListener("input", function () {
     if (picked && picked.name !== name.value) picked = null;
     clearTimeout(timer);
+    search.cancel();
     clear(results);
     var term = name.value.trim();
     if (term.length < 3) {
@@ -294,11 +295,12 @@ function drawAddForm(section) {
       return;
     }
     timer = setTimeout(async function () {
-      var token = ++searchToken;
       searchStatus.textContent = "Checking the name…";
       try {
-        var found = await searchDrugs(term);
-        if (token !== searchToken) return;
+        var answer = await search(term);
+        if (!answer.isLatest) return;
+        var found = answer.value;
+        clear(results);
         searchStatus.textContent = found.length ? found.length + " matches. Pick one, or keep what you typed." : "No matches. You can still add it.";
         found.forEach(function (drug) {
           var item = add(results, "li");
@@ -311,7 +313,6 @@ function drawAddForm(section) {
           });
         });
       } catch (error) {
-        if (token !== searchToken) return;
         searchStatus.textContent = "Couldn't check the name. You can still add it.";
       }
     }, SEARCH_DELAY_MS);
