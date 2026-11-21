@@ -1,6 +1,6 @@
 # Brown Bag: one unlock, and a shorter note at the top
 
-Status: draft for Tyler's approval, 2026-11-21.
+Status: approved by Tyler, 2026-11-21.
 
 ## Why
 
@@ -173,8 +173,9 @@ needed, is a follow-up.
 
 ## Calls made by Claude, for Tyler to check
 
-- The pass is kept with either lock, Face ID or PIN, pending Tyler's answer
-  (2026-11-21).
+- The pass is kept with either lock, Face ID or PIN. Tyler chose this
+  on 2026-11-21, knowing a 6-digit PIN can be guessed by someone who copies
+  the phone's Brown Bag data to a computer.
 - On open with a saved pass and signal, home shows the saved list at once
   and updates in place, rather than a loading screen, so the QR code is never
   more than one tap away.
