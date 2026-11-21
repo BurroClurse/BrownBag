@@ -115,10 +115,12 @@ export function doseChangeText(item) {
   }
   var first = strengthOf(history[0].name);
   var last = strengthOf(history[history.length - 1].name);
-  if (!first || !last || first === last) {
+  // Same amount in a different form (0.4 MG tablet, 0.4 MG/ACTUAT spray) is not a dose change.
+  if (!first || !last || parseFloat(first) === parseFloat(last)) {
     return null;
   }
-  return "dose changed from " + first + " to " + last + " on " + history[history.length - 1].date;
+  var date = String(history[history.length - 1].date || "").slice(0, 10);
+  return "dose changed from " + first + " to " + last + " on " + date;
 }
 
 function mergeIngredientGroup(members) {

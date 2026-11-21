@@ -254,3 +254,19 @@ test("a statement with status unknown and an end date in the past is older", () 
   );
   assert.equal(item.status, "older");
 });
+
+test("doseChangeText shows the date only, not the time", () => {
+  const item = { doseHistory: [
+    { name: "aspirin 325 MG Oral Tablet", date: "2022-12-03T20:36:37+00:00" },
+    { name: "aspirin 81 MG Oral Tablet", date: "2023-09-29T22:39:37+00:00" }
+  ] };
+  assert.equal(doseChangeText(item), "dose changed from 325 MG to 81 MG on 2023-09-29");
+});
+
+test("doseChangeText says nothing when only the form changed, not the amount", () => {
+  const item = { doseHistory: [
+    { name: "Nitroglycerin 0.4 MG Sublingual Tablet", date: "2022-12-03" },
+    { name: "Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray", date: "2023-11-21" }
+  ] };
+  assert.equal(doseChangeText(item), null);
+});

@@ -1,0 +1,134 @@
+/* Shared by index.html and share.html. Large text, strong contrast, big
+   buttons: WCAG 2.2 AA is the bar (see the design's Accessibility section). */
+
+:root {
+  --ink: #1b1b1b;
+  --muted: #4a4a4a;
+  --paper: #ffffff;
+  --line: #c9c9c9;
+  --brand: #6b3f1d;
+  --brand-ink: #ffffff;
+  --soft: #f6f1ea;
+  --warn-bg: #fff4d6;
+  --warn-ink: #5c4200;
+  --error-ink: #8a1f1f;
+  --focus: #1a56db;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f2f2f2;
+    --muted: #c4c4c4;
+    --paper: #161412;
+    --line: #4a4540;
+    --brand: #e0b088;
+    --brand-ink: #1b1209;
+    --soft: #26211c;
+    --warn-bg: #3b3115;
+    --warn-ink: #ffe7a3;
+    --error-ink: #ffb4b4;
+    --focus: #8fb4ff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+h1 { font-size: 1.75rem; margin: 0.5rem 0 0.25rem; }
+h2 { font-size: 1.3rem; margin: 2rem 0 0.5rem; border-bottom: 2px solid var(--line); padding-bottom: 0.25rem; }
+
+p { margin: 0.5rem 0; }
+
+.who { color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+
+.disclaimer {
+  background: var(--soft);
+  border-left: 4px solid var(--brand);
+  padding: 0.6rem 0.8rem;
+  margin: 1rem 0;
+}
+
+.notice {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+}
+
+.error, .status:not(:empty) { color: var(--error-ink); font-weight: 600; }
+
+ul.meds { list-style: none; margin: 0; padding: 0; }
+ul.meds > li { padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+.med-name { font-weight: 700; overflow-wrap: anywhere; }
+.med-line { color: var(--muted); margin: 0.1rem 0; overflow-wrap: anywhere; }
+
+.button, button {
+  display: inline-block;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.55rem 1rem;
+  margin: 0.5rem 0.5rem 0 0;
+  font: inherit;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 2px solid var(--brand);
+  background: var(--brand);
+  color: var(--brand-ink);
+  cursor: pointer;
+  text-decoration: none;
+}
+.button.secondary, button.secondary { background: transparent; color: var(--ink); }
+button:disabled { opacity: 0.6; cursor: default; }
+
+a { color: var(--focus); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+label { display: block; font-weight: 600; margin-top: 0.75rem; }
+input[type="text"], input[type="password"], input:not([type]) {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 2px solid var(--muted);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-weight: 600; }
+
+.results { list-style: none; padding: 0; margin: 0.25rem 0; }
+.results button { width: 100%; text-align: left; background: transparent; color: var(--ink); border-color: var(--line); font-weight: 400; }
+
+.qr { text-align: center; margin: 1rem 0; }
+.qr canvas { width: min(100%, 22rem); height: auto; image-rendering: pixelated; background: #fff; }
+.share-code {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.lock { margin-top: 2rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

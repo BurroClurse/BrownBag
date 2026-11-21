@@ -434,6 +434,57 @@ phone.
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes"
 is the place to go when a sign-in or unlock fails during your own testing.
 
+### Step 7. The main screen (`index.html`, `js/app.js`, `js/view.js`)
+
+**What you see.** After unlocking and signing in: your name and birth date,
+the disclaimer, then four parts. "From your records" (each medicine with
+dose, prescriber, start date and source, plus "I stopped this"), a folded
+"Older prescriptions", "Added by me" with "+ Add a medicine or supplement",
+"Stopped by me", and "Show my QR code" with the 6-digit code in big digits.
+
+**How the records are fetched.** Two FHIR searches, one per kind of record:
+
+```
+MedicationRequest?patient=<id>&_include=MedicationRequest:medication
+MedicationStatement?patient=<id>&_include=MedicationStatement:medication
+```
+
+`_include` asks the server to send the separate **Medication** records some
+prescriptions point to, in the same answer. That's how the drug name is found
+when a prescription only says "see Medication/123". fhirclient's
+`pageLimit: 0` keeps asking for the next page until every record is in.
+
+**Then Step 1's code runs:** merge repeats, look up ingredients in RxNav,
+merge strengths of one medicine, and split current from older.
+
+**Never `innerHTML`.** Every piece of text from the records or from you goes
+in with `textContent`, so a medicine named `<b>test</b>` shows those
+characters instead of turning bold. That stops a booby-trapped record from
+running code in your app.
+
+**Integrity checks.** The two outside scripts (fhirclient and the QR code
+maker) now carry an `integrity` hash. If the download site ever served a
+changed copy, the browser would refuse to run it.
+
+**A robot test run.** Chrome can run with no window and be steered by a
+script. A test script set up a PIN, signed in to the sandbox as a test
+patient, marked a medicine stopped, added `<b>test</b>`, searched RxNorm,
+showed the QR code, and reloaded to check everything was kept. It caught three
+things the unit tests didn't:
+
+- Dates showed the full timestamp (`2023-11-21T20:36:37+00:00`). Now just the
+  date.
+- "dose changed from 0.4 MG to 0.4 MG/ACTUAT": the same amount, once a tablet
+  and once a spray. Same amount now means no dose-change line.
+- An addition made at 8:30 PM said it was added tomorrow, because computers
+  count dates in UTC (London time) unless told otherwise. Now it uses your
+  phone's own date.
+
+Each fix got a failing test first.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core" covers the
+MedicationRequest records this screen reads.
+
 ---
 
 ## Glossary
@@ -449,6 +500,7 @@ is the place to go when a sign-in or unlock fails during your own testing.
 - **Compression**: shrinking data, like zipping a file.
 - **FHIR**: the standard format for health records data.
 - **Fork**: your own copy of someone else's repo.
+- **_include**: a FHIR search option that also returns the records the results point to.
 - **GitHub Pages**: GitHub's free hosting for web pages. It publishes `main`.
 - **https**: the secure version of web pages. The padlock in the address bar.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
