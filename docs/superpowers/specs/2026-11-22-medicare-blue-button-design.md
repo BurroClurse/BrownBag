@@ -113,7 +113,9 @@ service for other insurers later; both use this same small server.
 
 - After sign-in and on each update, Brown Bag reads the Medicare
   `Patient` and compares family name, first given name and birth date
-  with the health-record patient (case and spacing ignored).
+  with the health-record patient. Capitals, spaces, punctuation, accents
+  and endings like Jr., Sr., II and III are ignored; the birth date must
+  match exactly (Tyler, 2026-11-22: option 1).
 - Different: the fills are not added, and My medicines says "This
   Medicare account is for someone else." The pass is kept so the
   patient can see why, and Remove clears it.
@@ -191,9 +193,11 @@ list updates as usual:
   the live site and the home test server. He puts the client id and
   secret in Netlify's settings himself.
 - Medicare's sandbox has synthetic enrollees with test logins. The
-  builder picks one whose Part D fills include drugs that RxNav knows,
-  and may add matching prescriptions to a second demo patient on the
-  SMART sandbox so the test-patient section has something to compare.
+  builder picks one whose Part D fills include drugs that RxNav knows.
+- A second demo patient on the SMART sandbox with the same name and
+  birth date as that Medicare test person, so the demo shows Medicare
+  fills joined with the records: Tyler, 2026-11-22, "hold off but add it
+  to the plan later". The plan includes it as a later, separate task.
 
 ## Constraints
 
