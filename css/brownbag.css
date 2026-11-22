@@ -106,6 +106,9 @@ a { color: var(--focus); }
    opens. They are not buttons, so no outline. */
 [tabindex="-1"]:focus { outline: none; }
 
+/* Hidden stays hidden, even on elements a rule makes display: block. */
+[hidden] { display: none !important; }
+
 label { display: block; font-weight: 600; margin-top: 0.75rem; }
 input[type="text"], input[type="password"], input:not([type]), select {
   display: block;
@@ -421,3 +424,10 @@ button.help-button {
 
 /* The tagline, under the bag on the sign-in and unlock screens. */
 .tagline { text-align: center; color: var(--teal); font-weight: 700; font-size: 1.2rem; margin: 0 0 1rem; }
+
+/* The question asked before adding a medicine that is already there. */
+.add-check { background: var(--warn-bg); color: var(--warn-ink); border: 2px solid var(--warn-ink); border-radius: 14px; padding: 1rem; margin-top: 1rem; }
+.add-check h3 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.add-check .check-line { margin: 0.25rem 0; font-weight: 600; }
+.add-check .big { font-size: 1.25rem; overflow-wrap: anywhere; }
+.other-box { margin-top: 0.25rem; }

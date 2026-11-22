@@ -38,6 +38,10 @@ only, no real patients).
   in your claims". Fills the record doesn't list get their own section,
   and a prescription marked completed but filled again since it was
   written moves back to the current list.
+- **Adding a medicine** uses lists for how much and how often, so the
+  QR code carries the dose as numbers other systems can read, and asks
+  first when the medicine is already there, was marked stopped, or only
+  looks like one on the list.
 - **The QR code** comes up out of the bag and fills the screen, for the
   person checking their medicines. A 6-digit code, blurred until tapped, is
   told to that person after they scan; they type it on `share.html` to see

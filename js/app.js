@@ -15,6 +15,7 @@ import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, ref
 import { shouldLock } from "./idle.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
+import { checkAddition } from "./add-check.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -611,11 +612,12 @@ function drawAddForm(section) {
 
   var saveButton = add(form, "button", "Save", "primary big");
   saveButton.type = "submit";
-  button(form, "Cancel", "secondary big", function () {
+  var cancelButton = button(form, "Cancel", "secondary big", function () {
     state.adding = false;
     state.focusId = "add-open";
     render();
   });
+  var checking = false;
 
   name.addEventListener("input", function () {
     if (picked && picked.name !== name.value) {
@@ -655,8 +657,9 @@ function drawAddForm(section) {
     }, SEARCH_DELAY_MS);
   });
 
-  form.addEventListener("submit", function (event) {
+  form.addEventListener("submit", async function (event) {
     event.preventDefault();
+    if (checking || document.getElementById("add-check")) return;
     if (!name.value.trim()) {
       searchStatus.textContent = "Type a name first.";
       name.focus();
@@ -672,13 +675,128 @@ function drawAddForm(section) {
       quantity: doseChoice ? doseChoice.quantity : null,
       schedule: oftenChoice ? oftenChoice.schedule : null
     }, new Date());
-    state.data.additions.push(addition);
-    recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
-    state.adding = false;
-    state.announce = addition.name + " added.";
-    state.focusId = "add-open";
-    save();
+    checking = true;
+    saveButton.disabled = true;
+    saveButton.textContent = "Checking…";
+    var result = await checkAgainstList(addition);
+    checking = false;
+    saveButton.disabled = false;
+    saveButton.textContent = "Save";
+    if (!result) {
+      keepAddition(addition);
+      return;
+    }
+    drawAddCheck(form, result, addition, {
+      back: function () {
+        saveButton.hidden = false;
+        cancelButton.hidden = false;
+        name.focus();
+      }
+    });
+    saveButton.hidden = true;
+    cancelButton.hidden = true;
   });
+}
+
+function keepAddition(addition, replacing) {
+  if (replacing) {
+    state.data.additions = state.data.additions.filter(function (a) { return a.id !== replacing.id; });
+    recordChange("removed", replacing.name);
+  }
+  state.data.additions.push(addition);
+  recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
+  state.adding = false;
+  state.announce = addition.name + " added.";
+  state.focusId = "add-open";
+  save();
+}
+
+// Everything the new medicine is compared with: the patient's own additions
+// first (so "Replace the one I added" is offered when one matches), then
+// the records and fills, then what they marked stopped. Ingredient lookups
+// get 4 seconds; without them (offline) the codes and names still count.
+async function checkAgainstList(addition) {
+  var arranged = arrangeList(state.split, state.data);
+  var list = state.data.additions.map(function (a) { return Object.assign({ origin: "added" }, a); })
+    .concat(arranged.current.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }))
+    .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: "records" }); }));
+  var ingredientOf = new Map(state.split.ingredientOf instanceof Map ? state.split.ingredientOf : []);
+  var missing = [addition.rxcui].concat(list.map(function (e) { return e.rxcui; }))
+    .filter(function (code, i, all) { return code && !ingredientOf.has(code) && all.indexOf(code) === i; });
+  if (addition.rxcui && missing.length) {
+    try {
+      (await withTimeout(ingredientsFor(missing, globalThis.fetch.bind(globalThis), { timeoutMs: 3000 }), 4000)).forEach(function (value, code) { ingredientOf.set(code, value); });
+    } catch (error) {
+      // Offline or slow: codes and names only.
+    }
+  }
+  return checkAddition({ name: addition.name, rxcui: addition.rxcui, dose: addition.dose, frequency: addition.frequency }, list, ingredientOf);
+}
+
+var ORIGIN_WORDS = { records: "from your records", claims: "filled, not in your records", added: "added by you" };
+
+function shortName(name) {
+  var first = String(name || "").trim().split(/[\s,]+/)[0] || "";
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+}
+
+function shortDate(date) {
+  var parts = String(date).slice(0, 10).split("-").map(Number);
+  return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][parts[1] - 1] + " " + parts[2];
+}
+
+// The question asked before adding: drawn in the form, in place of Save and
+// Cancel, never a browser pop-up. Its heading takes focus.
+function drawAddCheck(form, result, addition, how) {
+  var panel = add(form, "section", null, "add-check");
+  panel.id = "add-check";
+  var match = result.match;
+  var mine = shortName(addition.name);
+  var theirs = shortName(match.name);
+  var title;
+  if (result.kind === "stopped") title = theirs + " is on your stopped list";
+  else if (result.kind === "lookalike") title = "Check the name";
+  else title = mine + " is already on your list";
+  var h = add(panel, "h3", title);
+  h.tabIndex = -1;
+  function close() {
+    form.removeChild(panel);
+    how.back();
+  }
+  function line(label, entry, origin) {
+    var detail = [entry.dose, entry.frequency].filter(Boolean).join(" · ") || "no dose given";
+    add(panel, "p", label + " " + detail + (origin ? " · " + origin : ""), "check-line");
+  }
+  if (result.kind === "stopped") {
+    add(panel, "p", "You marked " + theirs + " stopped on " + shortDate(match.stoppedAt) + ".");
+    button(panel, "Start it again", "primary big", function () {
+      delete state.data.stopped[match.key];
+      recordChange("unstopped", match.name);
+      state.adding = false;
+      state.announce = match.name + " moved back to From your records.";
+      state.focusId = "records-heading";
+      save();
+    });
+    button(panel, "Go back", "secondary big", close);
+  } else if (result.kind === "lookalike") {
+    add(panel, "p", addition.name + " looks like " + theirs + ", which is already on your list. They're different medicines. Check the bottle.");
+    button(panel, "Go back", "secondary big", close);
+    button(panel, "Add " + addition.name, "primary big", function () { keepAddition(addition); });
+  } else {
+    line("On your list:", match, ORIGIN_WORDS[match.origin]);
+    line("Adding:", addition, null);
+    if (result.kind === "duplicate") {
+      button(panel, "Don't add it", "secondary big", close);
+      button(panel, "Add it anyway", "primary big", function () { keepAddition(addition); });
+    } else {
+      button(panel, "Go back and change it", "secondary big", close);
+      button(panel, "Add it anyway", "primary big", function () { keepAddition(addition); });
+      if (match.origin === "added") {
+        button(panel, "Replace the one I added", "secondary big", function () { keepAddition(addition, match); });
+      }
+    }
+  }
+  h.focus();
 }
 
 // A labelled list with "Choose" first and "Other…" last. "Other…" shows a

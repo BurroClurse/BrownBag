@@ -923,6 +923,46 @@ two wrong codes in the plan before anything was written.
 Look at a resource type the lab doesn't use, then read Avery's claims in a
 browser: `https://r4.smarthealthit.org/ExplanationOfBenefit?patient=brownbag-demo-patient`.
 
+### Step 15. Picking a dose, and a second look before adding (`js/add-choices.js`, `js/add-check.js`)
+
+**Lists instead of blank boxes.** "How much" and "How often" are now
+lists. "How much" fits the medicine: the end of an RxNorm name says its
+form ("amoxicillin 250 MG/5ML Oral Suspension" is a liquid), so a liquid
+offers mL and a tablet offers ½ to 4 tablets. "Other…" is always there
+for a label the lists don't cover, like insulin units.
+
+**Words a computer can read.** A typed "twice a day" is just words to
+another system. A picked one also goes into the QR code as FHIR numbers:
+`doseQuantity` (5, "mL", with the UCUM code, the standard list of units)
+and `timing.repeat` (2 times, every 1 day). "At bedtime" is
+`when: ["HS"]`, and "As needed" is `asNeededBoolean`. The words stay too,
+for people. This is what lets a pharmacy or clinic system take in the
+schedule without a person retyping it.
+
+**A second look before adding.** Save now compares the new medicine with
+the whole list. The same RxNorm code, or the same ingredients from RxNav
+(so Zestril matches lisinopril), counts as the same medicine. Then the
+patient is asked, in a panel on the page (a browser pop-up would be lost
+by VoiceOver):
+
+- already there with the same dose and schedule: Don't add it, or Add it
+  anyway;
+- there at another strength, dose or schedule: Go back and change it, Add
+  it anyway, or Replace the one I added;
+- marked stopped: Start it again, or Go back;
+- a name that only looks alike (Hydroxyzine and Hydralazine), or a typo
+  of one on the list: Go back, or Add it.
+
+Names that look or sound alike are a well-known cause of medicine
+mistakes, so the look-alike question counts letters: names a few letters
+apart get asked about. Nothing is ever blocked; the patient holding the
+bottle decides.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
+Look at how a medicine's dosage is written in US Core, then compare it
+with what Brown Bag puts in the QR code.
+
+
 ---
 
 ## Glossary
@@ -946,6 +986,7 @@ browser: `https://r4.smarthealthit.org/ExplanationOfBenefit?patient=brownbag-dem
 - **CSS animation**: motion described in the stylesheet; the browser draws the frames between start and end.
 - **dvh**: a CSS unit, one hundredth of the screen height you can actually see.
 - **Manifest**: a small file that tells a phone how to install a website like an app.
+- **UCUM**: the standard list of units of measure (mL, mg) that FHIR uses.
 - **WCAG**: the web accessibility standard. Brown Bag aims for level AA.
 - **mkcert**: a tool that makes trusted certificates for testing at home.
 - **Passkey**: a sign-in that uses Face ID, fingerprint or the phone's PIN.
