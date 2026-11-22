@@ -425,6 +425,15 @@ button.help-button {
 /* The tagline, under the bag on the sign-in and unlock screens. */
 .tagline { text-align: center; color: var(--teal); font-weight: 700; font-size: 1.2rem; margin: 0 0 1rem; }
 
+/* On a computer, make the bag 50% larger than the 260px phone/logo size.
+   Keep the text and controls at their existing sizes. */
+@media (min-width: 48rem) {
+  #app.screen-plain .screen-logo,
+  .lock .screen-logo {
+    width: min(24.375rem, 50dvh);
+  }
+}
+
 /* The question asked before adding a medicine that is already there. */
 .add-check { background: var(--warn-bg); color: var(--warn-ink); border: 2px solid var(--warn-ink); border-radius: 14px; padding: 1rem; margin-top: 1rem; }
 .add-check h3 { margin: 0 0 0.5rem; font-size: 1.2rem; }
