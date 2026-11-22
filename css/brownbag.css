@@ -107,7 +107,7 @@ a { color: var(--focus); }
 [tabindex="-1"]:focus { outline: none; }
 
 label { display: block; font-weight: 600; margin-top: 0.75rem; }
-input[type="text"], input[type="password"], input:not([type]) {
+input[type="text"], input[type="password"], input:not([type]), select {
   display: block;
   width: 100%;
   min-height: 44px;

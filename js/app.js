@@ -14,6 +14,7 @@ import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
+import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -597,17 +598,16 @@ function drawAddForm(section) {
   searchStatus.setAttribute("role", "status");
   var results = add(form, "ul", null, "results");
 
-  var doseLabel = add(form, "label", "How much (for example, 1 tablet)");
-  doseLabel.htmlFor = "add-dose";
-  var dose = add(form, "input");
-  dose.id = "add-dose";
-  dose.type = "text";
-
-  var oftenLabel = add(form, "label", "How often (for example, once a day)");
-  oftenLabel.htmlFor = "add-frequency";
-  var often = add(form, "input");
-  often.id = "add-frequency";
-  often.type = "text";
+  var dose = pickList(form, "add-dose", "How much", "How much, in your words");
+  var often = pickList(form, "add-frequency", "How often", "How often, in your words");
+  var doseChoicesNow = [];
+  // "How much" fits the picked medicine's form (tablets, mL, puffs…).
+  function fillDose(drugName) {
+    doseChoicesNow = doseChoices(drugName);
+    dose.fill(doseChoicesNow.map(function (choice) { return choice.label; }));
+  }
+  fillDose(null);
+  often.fill(FREQUENCY_CHOICES.map(function (choice) { return choice.label; }));
 
   var saveButton = add(form, "button", "Save", "primary big");
   saveButton.type = "submit";
@@ -618,7 +618,10 @@ function drawAddForm(section) {
   });
 
   name.addEventListener("input", function () {
-    if (picked && picked.name !== name.value) picked = null;
+    if (picked && picked.name !== name.value) {
+      picked = null;
+      fillDose(null);
+    }
     clearTimeout(timer);
     search.cancel();
     clear(results);
@@ -640,6 +643,7 @@ function drawAddForm(section) {
           button(item, drug.name, null, function () {
             picked = { rxcui: drug.rxcui, name: drug.name };
             name.value = drug.name;
+            fillDose(drug.name);
             clear(results);
             searchStatus.textContent = "Picked " + drug.name + ".";
             dose.focus();
@@ -658,11 +662,15 @@ function drawAddForm(section) {
       name.focus();
       return;
     }
+    var doseChoice = doseChoicesNow[dose.chosen()];
+    var oftenChoice = FREQUENCY_CHOICES[often.chosen()];
     var addition = makeAddition({
       name: name.value,
       rxcui: picked && picked.name === name.value ? picked.rxcui : null,
-      dose: dose.value,
-      frequency: often.value
+      dose: dose.words(),
+      frequency: often.words(),
+      quantity: doseChoice ? doseChoice.quantity : null,
+      schedule: oftenChoice ? oftenChoice.schedule : null
     }, new Date());
     state.data.additions.push(addition);
     recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
@@ -671,6 +679,48 @@ function drawAddForm(section) {
     state.focusId = "add-open";
     save();
   });
+}
+
+// A labelled list with "Choose" first and "Other…" last. "Other…" shows a
+// text box under it for words of the patient's own. fill(labels) replaces
+// the choices and goes back to "Choose"; chosen() is the picked index, or
+// -1 for Choose and Other; words() is what to save as text.
+function pickList(form, id, labelText, otherText) {
+  var label = add(form, "label", labelText);
+  label.htmlFor = id;
+  var select = add(form, "select");
+  select.id = id;
+  var otherBox = add(form, "div", null, "other-box");
+  otherBox.hidden = true;
+  var otherLabel = add(otherBox, "label", otherText);
+  otherLabel.htmlFor = id + "-other";
+  var other = add(otherBox, "input");
+  other.id = id + "-other";
+  other.type = "text";
+  var labels = [];
+  select.addEventListener("change", function () {
+    otherBox.hidden = select.value !== "other";
+    if (!otherBox.hidden) other.focus();
+  });
+  return {
+    focus: function () { select.focus(); },
+    fill: function (list) {
+      labels = list;
+      clear(select);
+      add(select, "option", "Choose").value = "";
+      list.forEach(function (text, index) { add(select, "option", text).value = String(index); });
+      add(select, "option", "Other…").value = "other";
+      select.value = "";
+      otherBox.hidden = true;
+    },
+    chosen: function () {
+      return select.value === "" || select.value === "other" ? -1 : Number(select.value);
+    },
+    words: function () {
+      if (select.value === "other") return other.value;
+      return select.value === "" ? "" : labels[Number(select.value)];
+    }
+  };
 }
 
 function drawStopped(arranged) {
