@@ -1,6 +1,6 @@
 # Brown Bag: adding a medicine, with lists and a check
 
-Status: draft for Tyler, 2026-11-22.
+Status: approved by Tyler, 2026-11-22.
 
 ## Why
 
