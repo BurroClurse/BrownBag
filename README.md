@@ -2,6 +2,8 @@
 
 **Every pill bottle, without the bag.**
 
+<img src="assets/BrownBagAppIcon.png" width="200" alt="Brown Bag app icon">
+
 Brown Bag helps patients give every healthcare worker an accurate medication
 list. It gathers their medicines from their health records, adds what they
 take over the counter, and shares the whole list with one QR code.
