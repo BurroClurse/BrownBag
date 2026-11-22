@@ -28,6 +28,7 @@ var APP_FILES = [
   "./js/idle.js",
   "./js/claims.js",
   "./js/add-choices.js",
+  "./js/add-check.js",
   "./icons/logo-trimmed.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
