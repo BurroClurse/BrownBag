@@ -233,3 +233,27 @@ test("a list without fills shares no fill notes", () => {
   assert.deepEqual(statement.note.map((n) => n.text), ["From records: SMART sandbox"]);
   assert.deepEqual(groupShareBundle(buildShareBundle(list, new Date())).fromClaims, []);
 });
+
+function addedDosage(addition) {
+  const bundle = buildShareBundle({ patient: PATIENT, current: [], stopped: [], additions: [addition] }, NOW);
+  return bundle.entry.map((e) => e.resource).find((r) => r.resourceType === "MedicationStatement").dosage;
+}
+
+test("a picked dose and schedule go in as FHIR dosage, words kept", () => {
+  const d = addedDosage({ name: "Amoxicillin", rxcui: "308191", dose: "5 mL", frequency: "3 times a day", quantity: { value: 5, unit: "mL", system: "http://unitsofmeasure.org", code: "mL" }, schedule: { frequency: 3, period: 1, periodUnit: "d" } })[0];
+  assert.equal(d.text, "5 mL · 3 times a day");
+  assert.deepEqual(d.doseAndRate, [{ doseQuantity: { value: 5, unit: "mL", system: "http://unitsofmeasure.org", code: "mL" } }]);
+  assert.deepEqual(d.timing, { repeat: { frequency: 3, period: 1, periodUnit: "d" } });
+});
+
+test("bedtime and as needed use when and asNeededBoolean", () => {
+  const bed = addedDosage({ name: "Melatonin", rxcui: null, dose: null, frequency: "At bedtime", quantity: null, schedule: { frequency: 1, period: 1, periodUnit: "d", when: ["HS"] } })[0];
+  assert.deepEqual(bed.timing.repeat.when, ["HS"]);
+  const prn = addedDosage({ name: "Ibuprofen", rxcui: null, dose: null, frequency: "As needed", quantity: null, schedule: { asNeeded: true } })[0];
+  assert.equal(prn.asNeededBoolean, true);
+  assert.equal(prn.timing, undefined);
+});
+
+test("additions saved before this change share as words only", () => {
+  assert.deepEqual(addedDosage({ name: "Vitamin D3", rxcui: null, dose: "1 capsule", frequency: "daily" }), [{ text: "1 capsule · daily" }]);
+});

@@ -59,7 +59,7 @@ export function buildShareBundle(list, now, warnings = {}) {
     entries.push({ resource: statement });
   });
   list.additions.forEach(function (addition) {
-    var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active");
+    var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", addition);
     statement.informationSource = SELF;
     entries.push({ resource: statement });
   });
@@ -204,7 +204,9 @@ function fromDigits(digits) {
   return out;
 }
 
-function statementFor(name, rxcui, dosage, status) {
+// structured: an addition's picked answers ({ quantity, schedule }), added
+// as FHIR dosage numbers next to the words.
+function statementFor(name, rxcui, dosage, status, structured) {
   var concept = { text: name };
   if (rxcui) {
     concept.coding = [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: rxcui }];
@@ -215,10 +217,30 @@ function statementFor(name, rxcui, dosage, status) {
     subject: SELF,
     medicationCodeableConcept: concept
   };
-  if (dosage) {
-    statement.dosage = [{ text: dosage }];
+  var parts = structuredDosage(structured);
+  if (dosage || parts) {
+    statement.dosage = [Object.assign(dosage ? { text: dosage } : {}, parts || {})];
   }
   return statement;
+}
+
+function structuredDosage(structured) {
+  var quantity = structured && structured.quantity;
+  var schedule = structured && structured.schedule;
+  if (!quantity && !schedule) return null;
+  var out = {};
+  if (quantity) {
+    out.doseAndRate = [{ doseQuantity: Object.assign({}, quantity) }];
+  }
+  if (schedule) {
+    var repeat = {};
+    ["frequency", "period", "periodUnit", "when"].forEach(function (field) {
+      if (schedule[field] !== undefined) repeat[field] = schedule[field];
+    });
+    if (Object.keys(repeat).length) out.timing = { repeat: repeat };
+    if (schedule.asNeeded) out.asNeededBoolean = true;
+  }
+  return out;
 }
 
 function dosageText(item) {

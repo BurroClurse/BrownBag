@@ -204,3 +204,13 @@ test("changeAlert says nothing with no changes or a fresh list", () => {
   assert.equal(changeAlert(undefined, at, now), null);
   assert.equal(changeAlert([{ kind: "removed", name: "Fish oil" }], null, now), null);
 });
+
+test("makeAddition keeps picked amounts and schedules, null when typed", () => {
+  const when = new Date("2026-11-22T12:00:00Z");
+  const a = makeAddition({ name: "Lisinopril", dose: "1 tablet", frequency: "Once a day", quantity: { value: 1, unit: "tablet" }, schedule: { frequency: 1, period: 1, periodUnit: "d" } }, when);
+  assert.deepEqual(a.quantity, { value: 1, unit: "tablet" });
+  assert.deepEqual(a.schedule, { frequency: 1, period: 1, periodUnit: "d" });
+  const b = makeAddition({ name: "Fish oil", dose: "2 gummies", frequency: "with lunch" }, when);
+  assert.equal(b.quantity, null);
+  assert.equal(b.schedule, null);
+});

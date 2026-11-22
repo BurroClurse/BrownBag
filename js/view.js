@@ -84,6 +84,9 @@ export function makeAddition(input, now) {
     name: name,
     dose: blankToNull(input.dose),
     frequency: blankToNull(input.frequency),
+    // Picked from the lists: the same answer as numbers, for the QR code.
+    quantity: input.quantity || null,
+    schedule: input.schedule || null,
     addedAt: localDate(now)
   };
 }
