@@ -1,7 +1,6 @@
 # Brown Bag
 
 **Every pill bottle, without the bag.**
-
 ![Brown Bag logo](assets/BrownBagLogo.png)
 Brown Bag helps patients give every healthcare worker an accurate medication
 list. It gathers their medicines from their health records, adds what they
