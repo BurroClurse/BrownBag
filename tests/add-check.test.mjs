@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { checkAddition } from "../js/add-check.js";
+import { checkAddition, displayName } from "../js/add-check.js";
 
 const rec = (o) => Object.assign({ key: "rx:314076", name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", dose: "1 tablet", frequency: "1 by mouth once a day", origin: "records" }, o);
 
@@ -49,4 +49,19 @@ test("short names and unrelated names pass", () => {
 
 test("the check is kept for offline use", () => {
   assert.ok(readFileSync(new URL("../sw.js", import.meta.url), "utf8").includes('"./js/add-check.js"'));
+});
+
+test("offline, a different code of the same drug name is still the same medicine", () => {
+  assert.equal(checkAddition({ name: "lisinopril 20 MG Oral Tablet", rxcui: "314077", dose: "1 tablet", frequency: "Once a day" }, [rec()], new Map()).kind, "different");
+});
+
+test("long-acting names skip the leading 24 HR when matching", () => {
+  const er = rec({ key: "rx:860975", name: "24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet", rxcui: "860975", dose: "1 tablet", frequency: "once a day" });
+  assert.equal(checkAddition({ name: "Metformin", rxcui: null, dose: "1 tablet", frequency: "Once a day" }, [er], new Map()).kind, "duplicate");
+});
+
+test("displayName is the drug's first word, capitalized, past any 24 HR", () => {
+  assert.equal(displayName("24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"), "Metformin");
+  assert.equal(displayName("lisinopril 10 MG Oral Tablet"), "Lisinopril");
+  assert.equal(displayName("Lisinoprill"), "Lisinoprill");
 });

@@ -15,7 +15,7 @@ import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, ref
 import { shouldLock } from "./idle.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
-import { checkAddition } from "./add-check.js";
+import { checkAddition, displayName } from "./add-check.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -677,17 +677,27 @@ function drawAddForm(section) {
     }, new Date());
     checking = true;
     saveButton.disabled = true;
+    cancelButton.disabled = true;
     saveButton.textContent = "Checking…";
     var result = await checkAgainstList(addition);
     checking = false;
     saveButton.disabled = false;
+    cancelButton.disabled = false;
     saveButton.textContent = "Save";
+    // The form may have gone while the check ran (the app locked, the
+    // screen changed): then nothing is added.
+    if (!form.isConnected || !state.adding) return;
     if (!result) {
       keepAddition(addition);
       return;
     }
+    // The answers stay as they were when Save was tapped until the patient
+    // chooses: the fields are locked while the panel asks.
+    var fields = Array.prototype.slice.call(form.querySelectorAll("input, select"));
+    fields.forEach(function (field) { field.disabled = true; });
     drawAddCheck(form, result, addition, {
       back: function () {
+        fields.forEach(function (field) { field.disabled = false; });
         saveButton.hidden = false;
         cancelButton.hidden = false;
         name.focus();
@@ -735,10 +745,6 @@ async function checkAgainstList(addition) {
 
 var ORIGIN_WORDS = { records: "from your records", claims: "filled, not in your records", added: "added by you" };
 
-function shortName(name) {
-  var first = String(name || "").trim().split(/[\s,]+/)[0] || "";
-  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
-}
 
 function shortDate(date) {
   var parts = String(date).slice(0, 10).split("-").map(Number);
@@ -751,8 +757,8 @@ function drawAddCheck(form, result, addition, how) {
   var panel = add(form, "section", null, "add-check");
   panel.id = "add-check";
   var match = result.match;
-  var mine = shortName(addition.name);
-  var theirs = shortName(match.name);
+  var mine = displayName(addition.name);
+  var theirs = displayName(match.name);
   var title;
   if (result.kind === "stopped") title = theirs + " is on your stopped list";
   else if (result.kind === "lookalike") title = "Check the name";
@@ -764,7 +770,8 @@ function drawAddCheck(form, result, addition, how) {
     how.back();
   }
   function line(label, entry, origin) {
-    var detail = [entry.dose, entry.frequency].filter(Boolean).join(" · ") || "no dose given";
+    // The full name carries the strength (10 MG or 20 MG).
+    var detail = [entry.name, entry.dose, entry.frequency].filter(Boolean).join(" · ");
     add(panel, "p", label + " " + detail + (origin ? " · " + origin : ""), "check-line");
   }
   if (result.kind === "stopped") {

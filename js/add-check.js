@@ -4,8 +4,21 @@
 // another (Hydroxyzine and Hydralazine). No DOM here, so Node's test runner
 // can check it. The answer is a question for the patient, never a refusal.
 
+// The drug's own first word: past "24 HR", "3 ML" and other leading
+// numbers and units in RxNorm names, so "24 HR metformin …" is metformin.
+var UNIT_WORDS = ["hr", "ml", "mg", "mcg", "unt", "actuat", "g", "l"];
 function firstWord(name) {
-  return String(name || "").trim().toLowerCase().split(/[\s,]+/)[0] || "";
+  var words = String(name || "").trim().toLowerCase().split(/[\s,{}()\[\]]+/);
+  for (var i = 0; i < words.length; i += 1) {
+    if (/^[a-z][a-z-]*$/.test(words[i]) && UNIT_WORDS.indexOf(words[i]) === -1) return words[i];
+  }
+  return "";
+}
+
+// "Lisinopril" for "lisinopril 10 MG Oral Tablet": how the panel names it.
+export function displayName(name) {
+  var first = firstWord(name);
+  return first ? first.charAt(0).toUpperCase() + first.slice(1) : String(name || "").trim();
 }
 
 function ingredientKey(ingredientOf, rxcui) {
@@ -17,7 +30,10 @@ function sameMedicine(candidate, entry, ingredientOf) {
   if (candidate.rxcui && entry.rxcui) {
     if (candidate.rxcui === entry.rxcui) return true;
     var a = ingredientKey(ingredientOf, candidate.rxcui);
-    return Boolean(a) && a === ingredientKey(ingredientOf, entry.rxcui);
+    var b = ingredientKey(ingredientOf, entry.rxcui);
+    // Both ingredients known: they decide. Otherwise (offline, slow
+    // lookup) fall back to the drug's name, as for typed names.
+    if (a && b) return a === b;
   }
   return firstWord(candidate.name) !== "" && firstWord(candidate.name) === firstWord(entry.name);
 }
