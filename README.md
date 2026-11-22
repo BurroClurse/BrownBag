@@ -2,6 +2,7 @@
 
 **Every pill bottle, without the bag.**
 
+<img src="assets/BrownBagAppIcon.png" width="200" alt="Brown Bag app icon">
 <img src="assets/BrownBagLogo.png" width="200" alt="Brown Bag logo">
 
 Brown Bag helps patients give every healthcare worker an accurate medication
