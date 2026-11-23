@@ -446,3 +446,13 @@ button.help-button {
 .add-check .check-line { margin: 0.25rem 0; font-weight: 600; }
 .add-check .big { font-size: 1.25rem; overflow-wrap: anywhere; }
 .other-box { margin-top: 0.25rem; }
+
+/* The sign-in list: the one that works is a button; the rest is grey text
+   (not dimmed below 4.5 to 1), and nothing in it can be tapped. */
+.screen-launch .button.big, .screen-launch button.big { display: block; width: 100%; text-align: center; margin-right: 0; }
+.source-note { margin-top: 0.25rem; }
+.not-connected, .not-connected h2 { color: #5c5650; }
+.not-connected h2 { margin-top: 1.75rem; }
+.not-connected h3 { margin: 0.9rem 0 0.2rem; font-size: 1.05rem; }
+.not-connected ul { margin: 0; padding-left: 1.25rem; }
+.fine-print { font-size: 0.85rem; color: var(--muted); margin-top: 1.25rem; }

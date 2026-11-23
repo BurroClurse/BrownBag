@@ -4,48 +4,59 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in | Brown Bag</title>
+  <link rel="icon" href="data:,">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#6b3f1d">
+  <link rel="stylesheet" href="css/brownbag.css">
   <script src="vendor/fhir-client-3.0.1.js" integrity="sha384-KCMFUEhPpmBodyBFJ/fdPsY5TQrayEi08dDvK6gTHSvz4BVSRtn8fpbMBFg2nmCJ"></script>
 </head>
 <body>
-  <main>
-    <h1>Starting patient sign-in…</h1>
-    <p>You are leaving this page for the SMART sandbox. Sign in there as the patient, then the sandbox sends you back here.</p>
-    <p id="error"></p>
+  <main id="launch" class="screen-launch">
+    <p>Loading Brown Bag…</p>
   </main>
+  <noscript><p>Brown Bag needs JavaScript turned on.</p></noscript>
   <script>
-    // Patient standalone against the SMART Health IT R4 sandbox.
-    // The sandbox reads the "/sim/..." segment and shows a patient login
-    // because the launch type is patient-standalone (the 3 below).
-    // A different iss on the query string wins, so the SMART Launcher can
-    // still start this same page.
-    var launchOptions = [
-      3, "", "", "AUTO",
-      0, 0, 0,
-      "", "", "", "", "", "", "",
-      0, 1, ""
-    ];
+    // js/launch.js shows the list of sources and calls this when the patient
+    // chooses the sandbox, or right away for a link that names its server.
+    function startSignIn() {
+      // Patient standalone against the SMART Health IT R4 sandbox.
+      // The sandbox reads the "/sim/..." segment and shows a patient login
+      // because the launch type is patient-standalone (the 3 below).
+      // A different iss on the query string wins, so the SMART Launcher can
+      // still start this same page.
+      var launchOptions = [
+        3, "", "", "AUTO",
+        0, 0, 0,
+        "", "", "", "", "", "", "",
+        0, 1, ""
+      ];
 
-    var sandboxIss = "https://launch.smarthealthit.org/v/r4/sim/"
-      + btoa(JSON.stringify(launchOptions)).replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_")
-      + "/fhir";
+      var sandboxIss = "https://launch.smarthealthit.org/v/r4/sim/"
+        + btoa(JSON.stringify(launchOptions)).replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_")
+        + "/fhir";
 
-    // authorize() redirects the browser. Code after it does not run
-    // unless the sandbox cannot be reached.
-    FHIR.oauth2.authorize({
-      // Public client. The sandbox does not require a registered secret.
-      clientId: "my_web_app",
-      // launch/patient asks the sandbox to pick the patient during sign-in.
-      // offline_access asks for a long-lasting pass (a refresh token), so
-      // the next unlock updates the list without this sign-in page.
-      scope: "launch/patient openid fhirUser offline_access patient/Patient.read patient/MedicationRequest.read patient/MedicationStatement.read patient/Medication.read patient/Practitioner.read patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read",
-      // Must be this app's index.html. fhir-client turns the relative URL
-      // into the full GitHub Pages URL before sending it.
-      redirectUri: "index.html",
-      iss: sandboxIss
-    }).catch(function (error) {
-      document.querySelector("h1").textContent = "Could not start sign-in";
-      document.getElementById("error").textContent = error.message || String(error);
-    });
+      // authorize() redirects the browser. Code after it does not run
+      // unless the sandbox cannot be reached.
+      return Promise.resolve().then(function () {
+        return FHIR.oauth2.authorize({
+          // Public client. The sandbox does not require a registered secret.
+          clientId: "my_web_app",
+          // launch/patient asks the sandbox to pick the patient during sign-in.
+          // offline_access asks for a long-lasting pass (a refresh token), so
+          // the next unlock updates the list without this sign-in page.
+          scope: "launch/patient openid fhirUser offline_access patient/Patient.read patient/MedicationRequest.read patient/MedicationStatement.read patient/Medication.read patient/Practitioner.read patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read",
+          // Must be this app's index.html. fhir-client turns the relative URL
+          // into the full GitHub Pages URL before sending it.
+          redirectUri: "index.html",
+          iss: sandboxIss
+        });
+      });
+    }
+    function didNotArrive() {
+      document.getElementById("launch").textContent = "Part of Brown Bag didn't arrive. Check your connection, then open it again.";
+    }
   </script>
+  <script type="module" src="js/launch.js" onerror="didNotArrive()"></script>
 </body>
 </html>

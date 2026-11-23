@@ -32,7 +32,7 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- Nothing yet.
+- The sign-in list: both phones before it is published (it touches sign-in).
 
 ## On a real iPhone (Tyler)
 
@@ -85,3 +85,5 @@ pass, when it touches:
   "You're signed out", the saved list behind the lock, allergies, the QR
   code, the staff page). Passed. The duplicate panel was checked on Loria's
   metoprolol, since Avery is gone.
+- 2026-11-23, Tyler's iPhone: Sign out shows "You're signed out" with Sign in
+  and Open my saved list. Works.

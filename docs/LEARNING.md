@@ -1200,6 +1200,34 @@ but asks for a license first.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
 
+### Step 27. Choosing where the records are (`launch.html`, `js/sources.js`, `js/launch.js`)
+
+Real apps start by asking which health system you use, because every one of
+them is its own FHIR server with its own sign-in. Now Brown Bag asks too.
+
+**Data first, screen second.** The list is a few lines of data: a name, a
+kind, and whether it's connected. The screen draws whatever is there. Turning
+on a new source later means building its sign-in, then changing one line.
+
+**Only known answers sign in.** The address can say `?source=smart-sandbox`.
+Anything else, even a name on the list, just shows the list. A link that
+brings its own server (`iss`) still works, because that's how SMART launches
+from a portal.
+
+**Greyed out, but readable.** The grey names aren't disabled buttons. They're
+text, so there's nothing to tap and VoiceOver doesn't offer a button that does
+nothing. The grey still passes 4.5 to 1.
+
+**Names have rules.** Each company says how its name may be used. A name of a
+government program has a law: nothing may suggest a connection that isn't
+there. So the heading says "Not connected", not "Coming soon".
+
+**A library can remember a failure.** After one failed try, Try again failed
+too, with the signal back: the sign-in library keeps its first answer. A fresh
+page forgets it. The test browser found this, not reading the code.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

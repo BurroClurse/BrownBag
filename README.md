@@ -26,6 +26,9 @@ only, no real patients). To open it as a certain patient, see
 
 ## What the patient sees
 
+- **Choose where the records are.** Sign in opens a list. The SMART sandbox
+  works today; the health systems and insurers Brown Bag may add later show
+  in grey, under "Not connected".
 - **Sign in once.** The first time, the patient signs in at their health
   system and approves access. After that, Face ID (or a 6-digit PIN) opens
   Brown Bag and the list updates by itself.
@@ -68,7 +71,8 @@ only, no real patients). To open it as a certain patient, see
 
 ## How it uses SMART and FHIR
 
-**Launch.** `launch.html` starts a patient standalone launch with
+**Launch.** `launch.html` lists the sources. Choosing the sandbox (or a link
+that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
 
@@ -128,13 +132,14 @@ The list never passes through a server.
 
 | File | Purpose |
 | --- | --- |
-| `launch.html` | Patient standalone launch. |
+| `launch.html`, `js/launch.js` | The list of sources, then the patient standalone launch. |
 | `index.html` | The app: lock, sign-in return, home, My medicines, QR code. |
 | `share.html` | The page staff see after scanning. |
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
 | `js/meds.js` | FHIR records into one deduplicated list. |
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/allergies.js` | Allergy records and the patient's own, one card each. |
+| `js/sources.js` | The sources: which are connected, and what shows for the rest. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/rxnorm.js` | Drug name search and ingredient lookup through RxNav. |
 | `js/add-choices.js`, `js/add-check.js` | The add form's lists, and the check for medicines already there. |
@@ -198,6 +203,11 @@ The course starter it grew from is
 [samoanGuy7/Smart-App](https://github.com/samoanGuy7/Smart-App). The libraries
 in `vendor/` keep their own licenses: fhirclient (Apache 2.0) and
 qrcode-generator (MIT).
+
+Epic is a trademark of Epic Systems Corporation. Oracle is a registered
+trademark of Oracle and/or its affiliates. Other names may be trademarks of
+their respective owners. Brown Bag isn't affiliated with or endorsed by any of
+them, or by any government agency.
 
 This list is what the patient and their records say. Their care team
 confirms it. Brown Bag is not a medical device and does not give medical

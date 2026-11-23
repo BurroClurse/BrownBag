@@ -15,6 +15,7 @@ import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, ref
 import { shouldLock } from "./idle.js";
 import { recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, ALLERGENS, REACTIONS } from "./allergies.js";
+import { signInLink } from "./sources.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -656,7 +657,7 @@ function drawAllergies(parent) {
   allergyNotes(state.allergies, new Date()).forEach(function (text) {
     add(section, "p", text.text, "notice");
     if (text.signIn) {
-      add(section, "a", "Sign in", "button secondary").href = "./launch.html";
+      add(section, "a", "Sign in", "button secondary").href = signInLink();
     }
   });
   arranged.statements.forEach(function (text) { add(section, "p", "Your records say: " + text + "."); });
@@ -1486,7 +1487,7 @@ function drawNotices() {
     if (note.kind === "sign-in") {
       var update = add(row, "a", "Sign in", "button secondary");
       update.id = "notice-sign-in";
-      update.href = "./launch.html";
+      update.href = signInLink();
     }
     if (note.kind === "install") {
       var actions = add(row, "div", null, "notice-actions");
