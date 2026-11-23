@@ -13,7 +13,7 @@ import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLi
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { readAllergies, keepAllergies, arrangeAllergies } from "./allergies.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, ALLERGENS, REACTIONS } from "./allergies.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -45,6 +45,11 @@ var state = {
   adding: false,
   // The add form as the patient left it (never saved to the phone).
   draft: null,
+  // "new" while adding an allergy, or the key of the one whose reaction is
+  // being added; and its form as the patient left it.
+  allergyForm: null,
+  allergyDraft: null,
+  lastRemovedAllergy: null,
   announce: "",
   focusId: null,
   savedAt: null,
@@ -210,6 +215,8 @@ async function updateWithPass(pass) {
       if (!samePatient) {
         state.adding = false;
         state.draft = null;
+        state.allergyForm = null;
+        state.allergyDraft = null;
         await loadAdditions();
       }
       // After loadAdditions: clearing the change log saves state.data, which
@@ -500,19 +507,32 @@ function go(screen, focusId) {
     return;
   }
   // Undo for a removed addition lasts until the patient leaves the list.
-  if (state.screen === "medicines" && screen !== "medicines") state.lastRemoved = null;
-  if (state.screen === "medicines" && screen !== "medicines" && state.adding) {
-    if (draftStarted(state.draft)) {
-      state.announce = unsavedText(state.draft);
-    } else {
-      state.adding = false;
-      state.draft = null;
-    }
-  }
+  if (state.screen === "medicines" && screen !== "medicines") leaveMedicines();
   state.screen = screen;
   state.focusId = focusId;
   render();
   window.scrollTo(0, 0);
+}
+
+// Half-typed forms stay, and home says they aren't saved. Empty ones close.
+function leaveMedicines() {
+  state.lastRemoved = null;
+  state.lastRemovedAllergy = null;
+  var unsaved = [];
+  if (state.adding && draftStarted(state.draft)) {
+    unsaved.push(unsavedText(state.draft));
+  } else {
+    state.adding = false;
+    state.draft = null;
+  }
+  if (state.allergyForm && allergyDraftStarted(state.allergyDraft)) {
+    var of = arrangeAllergies(state.allergies, state.data).cards.filter(function (card) { return card.key === state.allergyForm; })[0];
+    unsaved.push(unsavedAllergyText(state.allergyDraft, of ? of.name : null));
+  } else {
+    state.allergyForm = null;
+    state.allergyDraft = null;
+  }
+  if (unsaved.length) state.announce = unsaved.join(" ");
 }
 
 function drawHome(arranged) {
@@ -545,6 +565,7 @@ function drawMedicines(arranged) {
   title.id = "medicines-heading";
   title.tabIndex = -1;
   note(root, DISCLAIMER);
+  drawAllergies(root);
   drawRecords(arranged);
   drawFillsOnly(arranged);
   drawAdditions();
@@ -577,6 +598,221 @@ function drawMore() {
     sessionStorage.clear();
     location.href = "./";
   });
+}
+
+// Allergies (design 2026-11-23): the records' and the patient's own, first
+// on My medicines. Drawn on its own so it can move to its own screen.
+function drawAllergies(parent) {
+  var arranged = arrangeAllergies(state.allergies, state.data);
+  var section = add(parent, "section");
+  heading(section, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", "allergies-heading");
+  allergyNotes(state.allergies, new Date()).forEach(function (text) {
+    add(section, "p", text.text, "notice");
+    if (text.signIn) {
+      add(section, "a", "Sign in", "button secondary").href = "./launch.html";
+    }
+  });
+  arranged.statements.forEach(function (text) { add(section, "p", "Your records say: " + text + "."); });
+  var loaded = state.allergies.status === "loaded" || state.allergies.savedAt;
+  if (arranged.saidNone) {
+    var said = add(section, "p", "You said you have no known allergies on " + longDate(arranged.saidNone) + ".");
+    button(said, "Undo", "secondary", function () {
+      state.data.noKnownAllergies = null;
+      allergyChange("none-unsaid", "No known allergies");
+      allergySaved("Taken back.", "allergies-heading");
+    }, "Undo: no known allergies");
+  } else if (!arranged.count && !arranged.statements.length && loaded) {
+    add(section, "p", "No allergies in your records.");
+  }
+  var list = arranged.count ? add(section, "ul", null, "meds") : null;
+  arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
+  if (state.lastRemovedAllergy) drawAllergyUndo(section);
+  if (state.allergyForm === "new") {
+    drawAllergyForm(section, arranged, null);
+  } else {
+    button(section, "+ Add an allergy", "secondary big", function () { openAllergyForm("new", "allergen"); }).id = "allergy-add-open";
+    if (arranged.canSayNone) {
+      button(section, "I have no known allergies", "secondary big", function () {
+        state.data.noKnownAllergies = today();
+        allergyChange("none-said", "No known allergies");
+        allergySaved("Saved: you have no known allergies.", "allergies-heading");
+      }).id = "allergy-none";
+    }
+  }
+}
+
+function drawAllergyCard(list, card) {
+  var row = add(list, "li");
+  add(row, "p", card.name, "med-name");
+  add(row, "p", reactionLine(card), "med-line");
+  detailLines(card).forEach(function (text) { add(row, "p", text, "med-line"); });
+  if (state.allergyForm === card.key) {
+    drawAllergyForm(row, null, card);
+    return;
+  }
+  var open = function () { openAllergyForm(card.key, "allergy-reaction"); };
+  if (card.origin === "records" && !card.mine && !card.reactions.length) {
+    button(row, "Add the reaction", "secondary card-action", open, "Add the reaction: " + card.name);
+  } else if (card.origin === "records" && card.mine) {
+    button(row, "Change the reaction", "secondary card-action", open, "Change the reaction: " + card.name);
+  }
+  if (card.mine) {
+    var label = card.origin === "added" ? "Remove" : (card.mine.id ? "Remove mine" : "Remove my reaction");
+    button(row, label, "stop card-action", function () { removeMine(card); }, label + ": " + card.name);
+  }
+}
+
+// The patient's own allergy, or the reaction they added to one from the
+// records.
+function removeMine(card) {
+  if (card.mine.id) {
+    var own = state.data.allergies.filter(function (a) { return a.id === card.mine.id; })[0];
+    state.data.allergies = state.data.allergies.filter(function (a) { return a.id !== card.mine.id; });
+    state.lastRemovedAllergy = { name: card.name, own: own };
+    allergyChange("allergy-removed", card.name);
+  } else {
+    state.lastRemovedAllergy = { name: "your reaction to " + card.name, of: card.name, key: card.mineKey, reaction: state.data.allergyReactions[card.mineKey] };
+    delete state.data.allergyReactions[card.mineKey];
+    allergyChange("reaction-removed", card.name);
+  }
+  allergySaved("Removed " + state.lastRemovedAllergy.name + ".", "undo-allergy");
+}
+
+function drawAllergyUndo(section) {
+  var removed = state.lastRemovedAllergy;
+  var row = add(section, "p", "Removed " + removed.name + ". ", "med-line");
+  button(row, "Undo", "secondary", function () {
+    if (removed.own) {
+      state.data.allergies.push(removed.own);
+      allergyChange("allergy-added", removed.name);
+    } else {
+      state.data.allergyReactions[removed.key] = removed.reaction;
+      allergyChange("reaction-added", removed.of);
+    }
+    allergySaved("Put back.", "allergies-heading");
+  }, "Undo: put " + removed.name + " back").id = "undo-allergy";
+}
+
+function openAllergyForm(which, focusId) {
+  state.allergyForm = which;
+  state.allergyDraft = null;
+  state.focusId = focusId;
+  render();
+}
+
+function allergyChange(kind, name) {
+  recordChange(kind, name, { part: "allergies" });
+}
+
+function allergySaved(announce, focusId) {
+  state.announce = announce;
+  state.focusId = focusId;
+  save();
+}
+
+function closeAllergyForm() {
+  state.allergyForm = null;
+  state.allergyDraft = null;
+}
+
+function setReaction(card, reaction) {
+  var own = card.mine && card.mine.id && state.data.allergies.filter(function (a) { return a.id === card.mine.id; })[0];
+  if (own) {
+    own.reaction = reaction;
+  } else {
+    state.data.allergyReactions[card.mineKey || card.key] = { reaction: reaction, addedAt: today() };
+  }
+  allergyChange("reaction-added", card.name);
+  closeAllergyForm();
+  allergySaved("Reaction to " + card.name + " saved.", "allergies-heading");
+}
+
+// Adds an allergy (card null), or a reaction to one from the records.
+function drawAllergyForm(parent, arranged, card) {
+  var form = add(parent, "form");
+  form.id = "allergy-form";
+  form.noValidate = true;
+  var allergen = card ? null : pickList(form, "allergen", "Allergic to", "Allergic to, in your words");
+  if (allergen) allergen.fill(ALLERGENS.map(function (choice) { return choice.label; }));
+  var reaction = pickList(form, "allergy-reaction", "What happened", "What happened, in your words");
+  reaction.fill(REACTIONS.map(function (choice) { return choice.label; }));
+  var status = add(form, "p", "", "status");
+  status.id = "allergy-status";
+  status.setAttribute("role", "status");
+  var saveButton = add(form, "button", "Save", "primary big");
+  saveButton.type = "submit";
+  var cancelButton = button(form, "Cancel", "secondary big", function () {
+    closeAllergyForm();
+    state.focusId = card ? "allergies-heading" : "allergy-add-open";
+    render();
+  });
+  if (state.allergyDraft) {
+    if (allergen) allergen.restore(state.allergyDraft.allergen);
+    reaction.restore(state.allergyDraft.reaction);
+  }
+  function keepDraft() {
+    state.allergyDraft = { allergen: allergen ? allergen.draft() : { choice: "", other: "" }, reaction: reaction.draft() };
+  }
+  form.addEventListener("input", keepDraft);
+  form.addEventListener("change", keepDraft);
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (document.getElementById("allergy-check")) return;
+    var name = allergen ? allergen.words().trim() : card.name;
+    var happened = reaction.words().trim();
+    if (!name) {
+      status.textContent = "Choose what you're allergic to.";
+      allergen.focus();
+      return;
+    }
+    if (!happened) {
+      status.textContent = "Choose what happened, or Not sure.";
+      reaction.focus();
+      return;
+    }
+    status.textContent = "";
+    if (card) {
+      setReaction(card, happened);
+      return;
+    }
+    var match = sameAllergen(name, arranged.cards);
+    if (match) {
+      drawAllergyCheck(form, match, happened, [saveButton, cancelButton], function () { allergen.focus(); });
+      return;
+    }
+    var picked = ALLERGENS.filter(function (choice) { return choice.label === name; })[0];
+    if (state.data.noKnownAllergies) {
+      state.data.noKnownAllergies = null;
+      allergyChange("none-unsaid", "No known allergies");
+    }
+    var id = makeAddition({ name: name }, new Date()).id;
+    state.data.allergies.push({ id: id, name: name, rxcui: (picked && picked.rxcui) || null, reaction: happened, addedAt: today() });
+    allergyChange("allergy-added", name);
+    closeAllergyForm();
+    allergySaved(name + " added to your allergies.", "allergy-add-open");
+  });
+}
+
+// The allergy is already there: never a second card for it.
+function drawAllergyCheck(form, match, reaction, hide, back) {
+  var fields = Array.prototype.slice.call(form.querySelectorAll("input, select"));
+  fields.forEach(function (field) { field.disabled = true; });
+  hide.forEach(function (b) { b.hidden = true; });
+  var panel = add(form, "section", null, "add-check");
+  panel.id = "allergy-check";
+  var h = add(panel, "h3", match.name + " is already on your list");
+  h.tabIndex = -1;
+  add(panel, "p", reactionLine(match), "check-line");
+  button(panel, "Go back", "secondary big", function () {
+    form.removeChild(panel);
+    fields.forEach(function (field) { field.disabled = false; });
+    hide.forEach(function (b) { b.hidden = false; });
+    back();
+  });
+  if (match.origin === "records" && !match.mine && !match.reactions.length) {
+    button(panel, "Use my reaction for it", "primary big", function () { setReaction(match, reaction); });
+  }
+  h.focus();
 }
 
 function drawRecords(arranged) {
@@ -1033,6 +1269,7 @@ async function buildQr() {
       var items = add(panel, "ul");
       [
         "Your name and birth date",
+        "Your allergies and reactions",
         "Your current medicines from your records, with the dose, how often, and who prescribed them",
         "Medicines you added",
         "Medicines you marked stopped",
@@ -1320,6 +1557,7 @@ function drawFillsOnly(arranged) {
 
 async function save() {
   if (state.focusId !== "undo-remove") state.lastRemoved = null;
+  if (state.focusId !== "undo-allergy") state.lastRemovedAllergy = null;
   try {
     await savePatientData(localStorage, state.key, state.patientId, state.data);
   } catch (error) {

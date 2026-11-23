@@ -3,6 +3,8 @@
 // failed read never turns into "no allergies". No DOM here, so Node's test
 // runner can check it.
 
+import { listDate } from "./offline.js";
+
 var SNOMED = "http://snomed.info/sct";
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 var NOT_NOW = ["inactive", "resolved"];
@@ -23,10 +25,11 @@ export function noneCode(statement) {
   return Object.keys(NONE_CODES).filter(function (code) { return NONE_CODES[code] === statement; })[0] || null;
 }
 
-// What the add form offers, with "Other…" after. A code is sent only when it
-// has been checked against RxNorm.
+// What the add form offers, with "Other…" after. The codes are RxNorm
+// ingredients, checked against RxNav on 2026-11-23; the others are words.
+var RXCUI = { Amoxicillin: "723", Aspirin: "1191", Ibuprofen: "5640", Codeine: "2670" };
 export var ALLERGENS = ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye", "Latex", "Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk", "Bee stings"]
-  .map(function (label) { return { label: label }; });
+  .map(function (label) { return RXCUI[label] ? { label: label, rxcui: RXCUI[label] } : { label: label }; });
 export var REACTIONS = ["Hives or rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea or vomiting", NOT_SURE]
   .map(function (label) { return { label: label }; });
 
@@ -251,4 +254,31 @@ export function detailLines(card) {
     card.unconfirmed ? "Not confirmed" : null,
     card.origin === "added" ? "Added by me · " + longDate(card.mine.addedAt) : card.source
   ].filter(Boolean);
+}
+
+// The lines at the top of the section when the records' allergies aren't
+// fresh. Nothing here ever says "none".
+export function allergyNotes(allergies, now) {
+  var from = allergies.savedAt ? "These are from " + listDate(allergies.savedAt, now) + "." : null;
+  if (allergies.status === "refused") {
+    return [{ text: from ? "Sign in again to update your allergies. " + from : "Sign in again to add your allergies.", signIn: true }];
+  }
+  if (allergies.status === "failed") {
+    return [{ text: from ? "Your allergies couldn't be updated. " + from : "Your allergies couldn't be loaded.", signIn: false }];
+  }
+  if (allergies.status === "not-loaded") {
+    return [{ text: "Your allergies haven't been loaded yet.", signIn: false }];
+  }
+  return from ? [{ text: from, signIn: false }] : [];
+}
+
+export function allergyDraftStarted(draft) {
+  return Boolean(draft && (draft.allergen.choice || draft.reaction.choice));
+}
+
+// reactionTo: the allergy from the records whose reaction was being added.
+export function unsavedAllergyText(draft, reactionTo) {
+  var name = draft.allergen.choice === "other" ? draft.allergen.other.trim() : draft.allergen.choice;
+  var what = reactionTo ? "The reaction to " + reactionTo : (name || "The allergy you were adding");
+  return what + " isn't saved yet. Open My medicines to finish adding it.";
 }

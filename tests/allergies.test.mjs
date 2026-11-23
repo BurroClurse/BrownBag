@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -171,6 +171,35 @@ test("the pick lists hold the approved choices", () => {
   assert.deepEqual(REACTIONS.map((a) => a.label), ["Hives or rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea or vomiting", "Not sure"]);
 });
 
+test("the drug ingredients on the list carry their RxNorm code, and nothing else does", () => {
+  assert.deepEqual(ALLERGENS.filter((a) => a.rxcui).map((a) => a.label + " " + a.rxcui), ["Amoxicillin 723", "Aspirin 1191", "Ibuprofen 5640", "Codeine 2670"]);
+});
+
 test("the allergies module is kept for offline use", () => {
   assert.ok(readFileSync(new URL("../sw.js", import.meta.url), "utf8").includes('"./js/allergies.js"'));
+});
+
+test("allergyNotes says what didn't load, and when the saved ones are from", () => {
+  const now = new Date(2026, 10, 23, 12, 0);
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  const notes = (status, savedAt) => allergyNotes({ status, savedAt, items: [], statements: [] }, now);
+  assert.deepEqual(notes("loaded", null), []);
+  assert.deepEqual(notes("loaded", at), [{ text: "These are from Nov 21.", signIn: false }]);
+  assert.deepEqual(notes("failed", null), [{ text: "Your allergies couldn't be loaded.", signIn: false }]);
+  assert.deepEqual(notes("failed", at), [{ text: "Your allergies couldn't be updated. These are from Nov 21.", signIn: false }]);
+  assert.deepEqual(notes("refused", null), [{ text: "Sign in again to add your allergies.", signIn: true }]);
+  assert.deepEqual(notes("refused", at), [{ text: "Sign in again to update your allergies. These are from Nov 21.", signIn: true }]);
+  assert.deepEqual(notes("not-loaded", null), [{ text: "Your allergies haven't been loaded yet.", signIn: false }]);
+});
+
+test("a half-typed allergy counts once anything is chosen, and is named", () => {
+  const none = { allergen: { choice: "", other: "" }, reaction: { choice: "", other: "" } };
+  assert.equal(allergyDraftStarted(null), false);
+  assert.equal(allergyDraftStarted(none), false);
+  assert.equal(allergyDraftStarted({ allergen: { choice: "Latex", other: "" }, reaction: none.reaction }), true);
+  assert.equal(allergyDraftStarted({ allergen: none.allergen, reaction: { choice: "Itching", other: "" } }), true);
+  assert.equal(unsavedAllergyText({ allergen: { choice: "Penicillin", other: "" }, reaction: none.reaction }, null), "Penicillin isn't saved yet. Open My medicines to finish adding it.");
+  assert.equal(unsavedAllergyText({ allergen: { choice: "other", other: " Kiwi " }, reaction: none.reaction }, null), "Kiwi isn't saved yet. Open My medicines to finish adding it.");
+  assert.equal(unsavedAllergyText({ allergen: none.allergen, reaction: { choice: "Itching" } }, null), "The allergy you were adding isn't saved yet. Open My medicines to finish adding it.");
+  assert.equal(unsavedAllergyText({ allergen: none.allergen, reaction: { choice: "Itching" } }, "Mold"), "The reaction to Mold isn't saved yet. Open My medicines to finish adding it.");
 });
