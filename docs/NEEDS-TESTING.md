@@ -31,15 +31,7 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- Screen fixes (2026-11-23): start adding a medicine, tap Done, see the
-  "isn't saved yet" line on home (fits the screen), open My medicines and
-  find the form as it was; the same with the phone's Back button. More
-  options, Add to Home Screen, then Done, "I've done this" and Back each go
-  back to More options. QR code: tap its blank space (no ring drawn), Close
-  still works. Undo on a "Filled, not in your records" medicine.
-- Leftover fixes (2026-11-23): add Vitamin D3, then Vitamin B12 (no
-  question), then Vitamin D 1000 IU (asks). Remove an addition, Done, open
-  My medicines: no Undo row.
+- Nothing yet.
 
 ## On a real iPhone (Tyler)
 
@@ -65,3 +57,10 @@ pass, when it touches:
   preauthorized, undated, stopped but filled, brand and generic, stays
   stopped), then both virtual phones on the live site with Chantell Bartell
   (fills on the cards, no "undefined", QR code fits). Passed.
+- 2026-11-23, screen and leftover fixes: both virtual phones on the live site
+  with Chantell Bartell (half-typed addition through Done and Back, the
+  "isn't saved yet" line fits home, Home Screen steps back to More options,
+  blank tap on the QR screen, vitamins, the Undo row). Passed. Undo on a
+  "Filled, not in your records" medicine only in the test browser: no
+  built-in patient has one. Scripts that tap through code must mark it as a
+  real tap on Android, or Chrome's Back skips Brown Bag's steps.
