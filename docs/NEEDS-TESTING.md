@@ -77,3 +77,6 @@ pass, when it touches:
   page), after both passed on unpublished code. Android first stuck on
   "Loading" on a slow start; fixed the same day, then passed. Repeat runs on
   Android find the earlier run's allergies still saved, as they should.
+- 2026-11-23, the ten allergy leftovers: the test browser, then both virtual
+  phones on the live site (allergies as before, the message tied to its
+  field, a half-typed allergy surviving another form). Passed.
