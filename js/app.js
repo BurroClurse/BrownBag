@@ -15,7 +15,7 @@ import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, ref
 import { shouldLock } from "./idle.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
-import { checkAddition, displayName } from "./add-check.js";
+import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -42,7 +42,6 @@ var state = {
   adding: false,
   // The add form as the patient left it (never saved to the phone).
   draft: null,
-  qr: null,
   announce: "",
   focusId: null,
   savedAt: null,
@@ -440,6 +439,8 @@ function go(screen, focusId) {
     history.back();
     return;
   }
+  // Undo for a removed addition lasts until the patient leaves the list.
+  if (state.screen === "medicines" && screen !== "medicines") state.lastRemoved = null;
   if (state.screen === "medicines" && screen !== "medicines" && state.adding) {
     if (draftStarted(state.draft)) {
       state.announce = unsavedText(state.draft);
@@ -822,7 +823,7 @@ function drawAddCheck(form, result, addition, how) {
     button(panel, "Add it anyway", "secondary big", function () { keepAddition(addition); });
     button(panel, "Go back", "secondary big", close);
   } else if (result.kind === "lookalike") {
-    add(panel, "p", addition.name + " looks like " + theirs + ", which is already on your list. They're different medicines. Check the bottle.");
+    add(panel, "p", lookalikeText(addition.name, match));
     button(panel, "Go back", "secondary big", close);
     button(panel, "Add " + addition.name, "primary big", function () { keepAddition(addition); });
   } else {
@@ -1002,7 +1003,7 @@ async function buildQr() {
     drawCodeReveal(overlay, packed.code);
     overlay.appendChild(why);
   } else {
-    add(overlay, "p", "Show your medicines on this screen instead.");
+    add(overlay, "p", "Show the person checking your medicines the list on your phone instead.");
     button(overlay, "Show my medicines instead", "secondary big", function () {
       closeQr(function () { go("medicines", "medicines-heading"); });
     });
@@ -1122,6 +1123,7 @@ function drawNotices() {
     add(row, "p", note.text);
     if (note.kind === "sign-in") {
       var update = add(row, "a", "Sign in", "button secondary");
+      update.id = "notice-sign-in";
       update.href = "./launch.html";
     }
     if (note.kind === "install") {
@@ -1133,7 +1135,7 @@ function drawNotices() {
         dismissInstallHint(localStorage, new Date());
         state.focusId = "show-qr";
         render();
-      });
+      }).id = "install-not-now";
     }
   });
 }
@@ -1227,7 +1229,7 @@ function medRow(list, entry) {
   // Fill lines only when this list's claims loaded, so "No fill found" never
   // shows just because the claims couldn't be read.
   var filled = state.split.claims === "loaded" ? fillLine(entry.fills) : null;
-  if (filled) add(row, "p", filled, "med-line fill-line");
+  if (filled) add(row, "p", filled, "med-line");
   return row;
 }
 
@@ -1255,7 +1257,6 @@ function drawFillsOnly(arranged) {
 }
 
 async function save() {
-  state.qr = null;
   if (state.focusId !== "undo-remove") state.lastRemoved = null;
   try {
     await savePatientData(localStorage, state.key, state.patientId, state.data);
