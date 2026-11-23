@@ -29,6 +29,7 @@ var APP_FILES = [
   "./js/claims.js",
   "./js/add-choices.js",
   "./js/add-check.js",
+  "./js/allergies.js",
   "./vendor/fhir-client-3.0.1.js",
   "./vendor/qrcode-generator-1.4.4.js",
   "./icons/logo-trimmed.png",
