@@ -1177,7 +1177,7 @@ function medRow(list, entry) {
   if (entry.origin !== "claims") add(row, "p", sourceLine(entry), "med-line");
   var count = countLine(entry);
   if (count) add(row, "p", count, "med-line");
-  if (entry.completedButFilled) add(row, "p", completedLine(entry.completedButFilled), "med-line");
+  if (entry.completedButFilled) add(row, "p", completedLine(entry.completedButFilled, entry.recordStatus), "med-line");
   // Fill lines only when this list's claims loaded, so "No fill found" never
   // shows just because the claims couldn't be read.
   var filled = state.split.claims === "loaded" ? fillLine(entry.fills) : null;

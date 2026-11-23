@@ -31,7 +31,8 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- Nothing yet.
+- Claims fixes (2026-11-23): My medicines and the QR code with fills. The
+  QR text changes, so both phones are checked right after publishing.
 
 ## On a real iPhone (Tyler)
 

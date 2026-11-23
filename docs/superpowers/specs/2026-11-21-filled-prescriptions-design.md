@@ -178,6 +178,19 @@ January 1, 2016. Original Medicare offers Blue Button 2.0. Employer plans
 and state-marketplace plans aren't required to, though some offer one.
 Brown Bag shows claims only where a patient's insurer offers such an API.
 
+## Fixes added 2026-11-23 (Tyler: fix what could be wrong on the list)
+
+- Claims marked cancelled, draft or entered-in-error, and preauthorizations
+  and predeterminations, aren't fills.
+- Missing or partial dates read "date not given", "Sep 2026" or "2026".
+- Fill-only cards for one drug join when the code matches, or the name
+  matches apart from case and the [Brand] part. Different strengths stay
+  apart (Claude's call). An "I stopped this" under either old card holds.
+- An ingredient match goes to a current medicine before a finished one.
+- The line names the record's own status: "Marked completed", "Marked
+  stopped", "Marked canceled", "Marked not taken", else "Not current in
+  your records". The QR note matches.
+
 ## Left to the builder
 
 - Exact module and function names.

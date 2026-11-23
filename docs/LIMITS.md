@@ -48,7 +48,7 @@ an idea becomes a plan only after its own design.
   - Ideas: say plainly on the Medicare screen what is being left out.
 - [ ] **8. Sources disagree** (two strengths, stopped in one and current in
   another).
-  - Now: one card per drug, the source named, "Marked completed but filled"
+  - Now: one card per drug, the source named, "Marked completed (or stopped), but filled"
     and "dose changed" lines; the patient and care team decide.
   - Ideas: a "differences to check" screen for the person at the desk.
 - [ ] **9. Sandbox only.** Real patients need each company's production

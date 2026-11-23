@@ -14,11 +14,18 @@ function isPharmacy(eob) {
   return codings.some(function (c) { return c.system === CLAIM_TYPE && c.code === "pharmacy"; });
 }
 
+// A claim that was canceled, entered by mistake or never sent isn't a fill,
+// and neither is asking the insurer ahead of time (a preauthorization).
+var NOT_A_FILL = ["cancelled", "entered-in-error", "draft"];
+function isRealClaim(eob) {
+  return NOT_A_FILL.indexOf(eob.status) === -1 && (!eob.use || eob.use === "claim");
+}
+
 // One fill per item of each pharmacy claim. A claim marked NO_INSURANCE was
 // still filled, paid another way.
 export function fillsFromClaims(eobs) {
   var fills = [];
-  (eobs || []).filter(isPharmacy).forEach(function (eob) {
+  (eobs || []).filter(isPharmacy).filter(isRealClaim).forEach(function (eob) {
     var insurer = eob.insurer && eob.insurer.display ? String(eob.insurer.display) : null;
     var cash = !insurer || /^no[_ ]insurance$/i.test(insurer);
     (eob.item || []).forEach(function (line) {
@@ -51,13 +58,19 @@ function addFill(fills, fill) {
   if (fill.cash) fills.cash = true;
 }
 
+// The date can be a day, a month or just a year; all three parse as UTC.
 function recent(date, now) {
   if (!date) return false;
-  return now.getTime() - Date.parse(date + "T00:00:00Z") <= RECENT_DAYS * 24 * 60 * 60 * 1000;
+  return now.getTime() - Date.parse(date) <= RECENT_DAYS * 24 * 60 * 60 * 1000;
 }
 
 function latestStart(items) {
   return items.slice().sort(function (a, b) { return String(b.start || "").localeCompare(String(a.start || "")); })[0];
+}
+
+function currentFirst(items) {
+  var current = items.filter(function (i) { return i.status === "current"; });
+  return current.length ? current : items;
 }
 
 function ingredientKey(ingredientOf, rxcui) {
@@ -65,27 +78,79 @@ function ingredientKey(ingredientOf, rxcui) {
   return found ? found.rxcui : null;
 }
 
+// "Sertraline 50 MG Oral Tablet [Zoloft]" and "sertraline 50 mg oral tablet"
+// are the same drug, strength and form. Different strengths stay different.
+function plainName(name) {
+  return String(name || "").toLowerCase().replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Fills of one drug together: the same code or the same plain name. A fill
+// can link two groups (the code of one, the name of the other), which then
+// become one.
+function groupSameDrug(fills) {
+  var groups = [];
+  fills.forEach(function (fill) {
+    var name = plainName(fill.name);
+    var same = groups.filter(function (g) { return (fill.rxcui && g.codes.has(fill.rxcui)) || (name && g.names.has(name)); });
+    var joined = { codes: new Set(), names: new Set(), list: [] };
+    same.forEach(function (g) {
+      g.codes.forEach(function (c) { joined.codes.add(c); });
+      g.names.forEach(function (n) { joined.names.add(n); });
+      joined.list = joined.list.concat(g.list);
+    });
+    if (fill.rxcui) joined.codes.add(fill.rxcui);
+    if (name) joined.names.add(name);
+    joined.list.push(fill);
+    groups = groups.filter(function (g) { return same.indexOf(g) === -1; }).concat([joined]);
+  });
+  return groups.map(function (g) { return g.list; });
+}
+
+// One card for a drug no record lists. It shows the newest fill's name. Its
+// key comes from the oldest fill, so it stays the same as new fills come in;
+// the other keys are kept so an "I stopped this" under one of them holds.
+function fillOnlyItem(group) {
+  var fills = emptyFills();
+  group.forEach(function (fill) { addFill(fills, fill); });
+  var keyOf = function (fill) { return "fill:" + (fill.rxcui || fill.name.toLowerCase()); };
+  var oldest = group.slice().sort(function (a, b) {
+    return (a.date || "9999").localeCompare(b.date || "9999") || keyOf(a).localeCompare(keyOf(b));
+  })[0];
+  var newestFirst = group.slice().sort(function (a, b) { return b.date.localeCompare(a.date); });
+  var shown = newestFirst.filter(function (f) { return f.rxcui && f.name; })[0] || newestFirst.filter(function (f) { return f.name; })[0] || newestFirst[0];
+  var keys = new Set(group.map(keyOf));
+  keys.delete(keyOf(oldest));
+  return {
+    key: keyOf(oldest),
+    otherKeys: Array.from(keys),
+    origin: "claims",
+    name: shown.name,
+    rxcui: shown.rxcui,
+    fills: fills,
+    source: claimsLabel(fills)
+  };
+}
+
 // Gives each medicine its fills (same RxNorm code, else the same ingredients;
-// if that fits several, the one started most recently). A prescription the
-// record calls completed, filled within a year, moves to the current list.
+// if that fits several, a current one first, then the one started most
+// recently). A prescription the record calls finished (completed, stopped),
+// filled within a year, moves to the current list.
 // Fills that match nothing become their own items.
 export function attachFills(split, fills, ingredientOf, now) {
   var current = split.current.map(function (i) { return Object.assign({}, i, { fills: emptyFills() }); });
   var older = split.older.map(function (i) { return Object.assign({}, i, { fills: emptyFills() }); });
   var all = current.concat(older);
-  var unmatched = new Map();
+  var unmatched = [];
   (fills || []).forEach(function (fill) {
     var exact = all.filter(function (i) { return fill.rxcui && i.rxcui === fill.rxcui; });
     var key = ingredientKey(ingredientOf, fill.rxcui);
     var byIngredient = key ? all.filter(function (i) { return ingredientKey(ingredientOf, i.rxcui) === key; }) : [];
-    var target = exact.length ? latestStart(exact) : (byIngredient.length ? latestStart(byIngredient) : null);
+    var target = exact.length ? latestStart(exact) : (byIngredient.length ? latestStart(currentFirst(byIngredient)) : null);
     if (target) {
       addFill(target.fills, fill);
       return;
     }
-    var groupKey = fill.rxcui || fill.name.toLowerCase();
-    if (!unmatched.has(groupKey)) unmatched.set(groupKey, { first: fill, fills: emptyFills() });
-    addFill(unmatched.get(groupKey).fills, fill);
+    unmatched.push(fill);
   });
   var stillOlder = [];
   older.forEach(function (i) {
@@ -96,16 +161,9 @@ export function attachFills(split, fills, ingredientOf, now) {
       stillOlder.push(i);
     }
   });
-  unmatched.forEach(function (group, groupKey) {
-    var entry = {
-      key: "fill:" + groupKey,
-      origin: "claims",
-      name: group.first.name,
-      rxcui: group.first.rxcui,
-      fills: group.fills,
-      source: claimsLabel(group.fills),
-      status: recent(group.fills.last, now) ? "current" : "older"
-    };
+  groupSameDrug(unmatched).forEach(function (group) {
+    var entry = fillOnlyItem(group);
+    entry.status = recent(entry.fills.last, now) ? "current" : "older";
     (entry.status === "current" ? current : stillOlder).push(entry);
   });
   var byName = function (a, b) { return a.name.localeCompare(b.name); };
@@ -161,8 +219,11 @@ export function mergeClaims(split, result, now) {
   return attachFills(split, result.fills, ingredientOf, now);
 }
 
+// Claims can give a day, a month ("2026-09") or only a year.
 function longDate(date) {
   var parts = String(date).split("-").map(Number);
+  if (parts.length < 2) return String(date);
+  if (parts.length < 3) return MONTHS[parts[1] - 1] + " " + parts[0];
   return MONTHS[parts[1] - 1] + " " + parts[2] + ", " + parts[0];
 }
 
@@ -180,16 +241,27 @@ export function claimsLabel(fills) {
 export function fillLine(fills) {
   if (!fills) return null;
   if (!fills.count) return "No fill found in your claims";
-  return fills.count === 1
-    ? "Filled once · " + longDate(fills.last) + " · " + claimsLabel(fills)
-    : "Filled " + fills.count + " times · last " + longDate(fills.last) + " · " + claimsLabel(fills);
+  var once = fills.count === 1;
+  var when = fills.last ? (once ? "" : "last ") + longDate(fills.last) : (once ? "date not given" : "dates not given");
+  return (once ? "Filled once" : "Filled " + fills.count + " times") + " · " + when + " · " + claimsLabel(fills);
 }
 
-export function completedLine(date) {
-  return "Marked completed in your records, but filled " + longDate(date);
+// What the record calls a prescription that was filled anyway. Lists saved
+// before Brown Bag kept the status just say "Not current".
+var STATUS_WORDS = { completed: "completed", stopped: "stopped", cancelled: "canceled", "not-taken": "not taken" };
+
+export function completedLine(date, status) {
+  var word = STATUS_WORDS[status];
+  return (word ? "Marked " + word + " in your records" : "Not current in your records") + ", but filled " + longDate(date);
+}
+
+export function completedNote(date, status) {
+  var word = STATUS_WORDS[status];
+  return (word ? "Record marked " + word : "Not current in the record") + ", but filled " + date;
 }
 
 export function fillNote(fills) {
   if (!fills || !fills.count) return "No fill found in claims";
-  return "Last filled " + fills.last + " (" + claimsLabel(fills) + "), " + fills.count + (fills.count === 1 ? " fill" : " fills");
+  var when = fills.last ? "Last filled " + fills.last : "Filled, " + (fills.count === 1 ? "date" : "dates") + " not given";
+  return when + " (" + claimsLabel(fills) + "), " + fills.count + (fills.count === 1 ? " fill" : " fills");
 }

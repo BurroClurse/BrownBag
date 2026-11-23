@@ -989,6 +989,37 @@ travel with the files. `vendor/LICENSES.md` holds them.
 Open Brown Bag's live site, then the Network tab, and find the two
 `vendor/` files. The whole page should load from one address.
 
+### Step 17. Reading claims more carefully (`js/claims.js`)
+
+A pharmacy claim is a message between a pharmacy and an insurer, so not
+every claim means the patient has the pills. Five small fixes:
+
+**Status and use.** A FHIR claim (ExplanationOfBenefit) has a `status`
+(active, cancelled, draft, entered-in-error) and a `use` (claim, or
+preauthorization, which only asks the insurer ahead of time). Brown Bag now
+counts only real, live claims as fills.
+
+**Dates can be partial.** FHIR lets a date be a year, a year and month, or a
+full day, and it can be missing. The card says "Sep 2026", "2026" or "date
+not given" instead of "undefined NaN".
+
+**The same drug under two codes.** Brand and generic have different RxNorm
+codes. Fills with the same name, ignoring the [Brand] part, now share one
+card. Different strengths keep their own cards, because hiding a strength
+could hide a mistake.
+
+**Current first.** When a fill fits two prescriptions of one ingredient, it
+goes to the one the patient takes now, not a finished one.
+
+**Say what the record says.** "Marked stopped" when it was stopped, "Marked
+canceled" when it was canceled. A card that says "completed" about a stopped
+medicine would mislead a nurse.
+
+**Keys.** When two cards become one, "I stopped this" saved under either
+card's key still counts, so a stopped medicine doesn't come back.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
+
 
 ---
 

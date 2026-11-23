@@ -36,8 +36,9 @@ only, no real patients).
 - **What was actually filled.** Each medicine shows its insurance fills
   ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
-  and a prescription marked completed but filled again since it was
-  written moves back to the current list.
+  and a prescription the record calls finished (completed, stopped or
+  canceled) but filled since it was written moves back to the current
+  list, saying so.
 - **Adding a medicine** uses lists for how much and how often, so the
   QR code carries the dose as numbers other systems can read, and asks
   first when the medicine is already there, was marked stopped, or only

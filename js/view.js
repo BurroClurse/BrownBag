@@ -26,8 +26,13 @@ export function arrangeList(split, data) {
   var current = [];
   var stopped = [];
   split.current.forEach(function (entry) {
-    if (Object.prototype.hasOwnProperty.call(marks, entry.key)) {
-      stopped.push(Object.assign({}, entry, { stoppedAt: marks[entry.key] }));
+    // A fill-only card can answer to several keys (claims.js); a mark saved
+    // under any of them counts.
+    var marked = [entry.key].concat(entry.otherKeys || []).filter(function (key) {
+      return Object.prototype.hasOwnProperty.call(marks, key);
+    })[0];
+    if (marked !== undefined) {
+      stopped.push(Object.assign({}, entry, { key: marked, stoppedAt: marks[marked] }));
     } else {
       current.push(entry);
     }
