@@ -281,3 +281,13 @@ export function changeAlert(changes, saved, now) {
     advice: "Your " + parts.join(" and ") + " from your records are from " + when + ". Get a connection and open Brown Bag again to update them, then show a new code."
   };
 }
+
+// Where the QR code comes out from: the bag, measured from the middle of the
+// screen, and never past its edge (home can be scrolled with large text).
+export function swooshFrom(bag, width, height) {
+  var within = function (value, most) { return Math.max(-most, Math.min(most, value)); };
+  return {
+    x: within(bag.left + bag.width / 2 - width / 2, width / 2),
+    y: within(bag.top + bag.height * 0.35 - height / 2, height / 2)
+  };
+}

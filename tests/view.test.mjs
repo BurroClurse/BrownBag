@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -322,4 +322,10 @@ test("sign-in asks to read allergies, and the README says so", async () => {
   for (const file of ["launch.html", "README.md"]) {
     assert.ok(readFileSync(new URL("../" + file, import.meta.url), "utf8").includes("patient/AllergyIntolerance.read"), file);
   }
+});
+
+test("the swoosh always starts on the screen", () => {
+  assert.deepEqual(swooshFrom({ left: 100, top: 200, width: 200, height: 300 }, 400, 800), { x: 0, y: -95 });
+  assert.deepEqual(swooshFrom({ left: 100, top: -900, width: 200, height: 300 }, 400, 800), { x: 0, y: -400 });
+  assert.deepEqual(swooshFrom({ left: 100, top: 2000, width: 200, height: 300 }, 400, 800), { x: 0, y: 400 });
 });

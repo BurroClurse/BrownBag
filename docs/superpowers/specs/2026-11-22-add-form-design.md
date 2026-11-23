@@ -172,3 +172,6 @@ uses the codes and names only, and says nothing about it.
   still on the list is shown first.
 - A half-typed addition is kept until Save or Cancel, or until Brown Bag
   locks or closes. Home says it isn't saved.
+- Doses are compared with the record's dose, not with words in its schedule;
+  a dose with no unit matches the same number of the drug's own form; "as
+  needed" never matches a fixed schedule.

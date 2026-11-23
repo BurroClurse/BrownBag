@@ -99,3 +99,24 @@ test("lookalikeText says where the look-alike is", () => {
   assert.equal(lookalikeText("Hydroxyzine", { name: "hydralazine 25 MG Oral Tablet" }), "Hydroxyzine looks like Hydralazine, which is already on your list. They're different medicines. Check the bottle.");
   assert.equal(lookalikeText("Hydroxyzine", { name: "hydralazine 25 MG Oral Tablet", stoppedAt: "2026-11-01" }), "Hydroxyzine looks like Hydralazine, which is on your stopped list. They're different medicines. Check the bottle.");
 });
+
+const rx = (dose, frequency, o = {}) => Object.assign({ key: "rx:1", name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", dose, frequency, origin: "records" }, o);
+const kind = (dose, frequency, entry) => { const r = checkAddition({ name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", dose, frequency }, [entry], new Map()); return r && r.kind; };
+
+test("a dose is compared with the dose, not with words in the schedule", () => {
+  assert.equal(kind("2 tablets", "Once a day", rx("1 tablet", "2 tablets on Sunday, once a day otherwise")), "different");
+  assert.equal(kind("1 tablet", "Once a day", rx("1 tablet", "once a day")), "duplicate");
+  // Records often put it all in the schedule.
+  assert.equal(kind("1 tablet", "Once a day", rx(null, "Take 1 tablet by mouth once a day")), "duplicate");
+});
+
+test("a dose with no unit matches the same number of the drug's own form", () => {
+  assert.equal(kind("1 tablet", "Once a day", rx("1", "once a day")), "duplicate");
+  assert.equal(kind("2 tablets", "Once a day", rx("1", "once a day")), "different");
+  assert.equal(kind("1 mL", "Once a day", rx("1", "once a day")), "different");
+});
+
+test("as needed isn't the same as every day", () => {
+  assert.equal(kind("1 tablet", "Once a day", rx("1 tablet", "once a day, as needed")), "different");
+  assert.equal(kind("1 tablet", "As needed", rx("1 tablet", "as needed")), "duplicate");
+});

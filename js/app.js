@@ -9,9 +9,9 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, ALLERGENS, REACTIONS } from "./allergies.js";
@@ -34,6 +34,9 @@ var RECORDS_WAIT_MS = 12000;
 // And for the insurance claims inside that step, so a slow insurer never
 // holds up the medicines.
 var CLAIMS_WAIT_MS = 6000;
+
+// Set by Sign out, until someone signs in again.
+var SIGNED_OUT_KEY = "brownbag:signed-out";
 
 var root = document.getElementById("app");
 var params = new URLSearchParams(location.search);
@@ -65,7 +68,9 @@ var state = {
   // or the pass ended (or there is none) and the list is a saved copy.
   updating: false,
   offline: false,
-  needsSignIn: false
+  needsSignIn: false,
+  // Sign out was tapped: nothing may save a pass after this.
+  signedOut: false
 };
 
 function emptyData() {
@@ -134,6 +139,10 @@ async function start() {
     drawSignedOut(null);
     return;
   }
+  // Signed out: say so, and let them sign in or open the list they saved.
+  if (!cameBackFromAuth && localStorage.getItem(SIGNED_OUT_KEY)) {
+    await savedListAsked();
+  }
   state.key = await showLockScreen(root);
   startAutoLock();
   // One unlock: with a saved list and a pass, show the list now and update
@@ -183,6 +192,16 @@ async function openWithPass() {
   return true;
 }
 
+async function keepRotated(client, pass) {
+  var fresh = passFromState(client.state);
+  if (state.signedOut || !fresh || fresh.refreshToken === pass.refreshToken) return;
+  try {
+    await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
+  } catch (error) {
+    // Not kept: the next open asks to sign in.
+  }
+}
+
 // Trades the pass for fresh access, then loads the records the same way a
 // sign-in does. Each step has a time limit, and the new list only replaces
 // the saved one once it has fully arrived, so a late answer can't change
@@ -193,7 +212,9 @@ async function updateWithPass(pass) {
   var client;
   try {
     client = FHIR.client(clientStateFromPass(pass));
-    await withTimeout(client.refresh(), UPDATE_WAIT_MS);
+    // The new pass is kept even if it arrives after the wait is over: the
+    // server may already have ended the old one.
+    await withTimeout(client.refresh().then(function () { return keepRotated(client, pass); }), UPDATE_WAIT_MS);
   } catch (error) {
     if (refreshRefused(error)) {
       await deletePass(localStorage, pass.patientId);
@@ -208,10 +229,6 @@ async function updateWithPass(pass) {
   // medicines don't.
   var found = {};
   try {
-    var fresh = passFromState(client.state);
-    if (fresh && fresh.refreshToken !== pass.refreshToken) {
-      await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
-    }
     var result = await withTimeout(loadFresh(client, found, RECORDS_WAIT_MS), RECORDS_WAIT_MS);
     if (result.split.failed) {
       state.offline = true;
@@ -255,6 +272,8 @@ function finishUpdate() {
 // Saves the pass a sign-in returned, or removes the old one if this sign-in
 // didn't give one (the patient said no to staying signed in).
 async function keepPass(client) {
+  if (state.signedOut) return;
+  localStorage.removeItem(SIGNED_OUT_KEY);
   try {
     await storePassFrom(localStorage, state.key, client.state, state.patientId);
   } catch (error) {
@@ -602,14 +621,30 @@ function drawMore() {
   }
   var section = add(root, "section");
   heading(section, "Sign out", "signout-heading");
-  note(section, "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time.");
-  button(section, "Sign out", "secondary big", async function () {
-    if (state.patientId) {
-      await deletePass(localStorage, state.patientId);
-    }
-    sessionStorage.clear();
+  note(section, "Signing out disconnects Brown Bag from the records of everyone who signed in on this phone. Saved lists stay on this phone, locked. You'll sign in again next time.");
+  var out = button(section, "Sign out", "secondary big", async function () {
+    out.disabled = true;
+    out.textContent = "Signing out…";
+    await signOutEveryone();
     location.href = "./";
   });
+}
+
+// Everyone who signed in on this phone. The passes go from the phone first,
+// so no signal or a slow server can't keep one; then each health system that
+// offers it is told to end its side.
+var SIGN_OUT_WAIT_MS = 3000;
+async function signOutEveryone() {
+  state.signedOut = true;
+  var passes = await allPasses(localStorage, state.key);
+  deleteAllPasses(localStorage);
+  sessionStorage.clear();
+  try {
+    localStorage.setItem(SIGNED_OUT_KEY, "yes");
+    await withTimeout(Promise.all(passes.map(function (pass) { return revokePass(pass); })), SIGN_OUT_WAIT_MS);
+  } catch (error) {
+    // Gone from this phone either way.
+  }
 }
 
 // Allergies (design 2026-11-23): the records' and the patient's own, first
@@ -1068,6 +1103,8 @@ function keepAddition(addition, replacing) {
 // first (so "Replace the one I added" is offered when one matches), then
 // the records and fills, then what they marked stopped. Ingredient lookups
 // get 4 seconds; without them (offline) the codes and names still count.
+// Codes RxNav has no ingredient for, so each Save doesn't ask again.
+var noIngredient = new Set();
 async function checkAgainstList(addition) {
   var arranged = arrangeList(state.split, state.data);
   var list = state.data.additions.map(function (a) { return Object.assign({ origin: "added" }, a); })
@@ -1075,10 +1112,10 @@ async function checkAgainstList(addition) {
     .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }));
   var ingredientOf = new Map(state.split.ingredientOf instanceof Map ? state.split.ingredientOf : []);
   var missing = [addition.rxcui].concat(list.map(function (e) { return e.rxcui; }))
-    .filter(function (code, i, all) { return code && !ingredientOf.has(code) && all.indexOf(code) === i; });
+    .filter(function (code, i, all) { return code && !ingredientOf.has(code) && !noIngredient.has(code) && all.indexOf(code) === i; });
   if (addition.rxcui && missing.length) {
     try {
-      (await withTimeout(ingredientsFor(missing, globalThis.fetch.bind(globalThis), { timeoutMs: 3000 }), 4000)).forEach(function (value, code) { ingredientOf.set(code, value); });
+      (await withTimeout(ingredientsFor(missing, globalThis.fetch.bind(globalThis), { timeoutMs: 3000, none: noIngredient }), 4000)).forEach(function (value, code) { ingredientOf.set(code, value); });
     } catch (error) {
       // Offline or slow: codes and names only.
     }
@@ -1282,8 +1319,9 @@ async function buildQr() {
   var bag = document.getElementById("home-bag");
   if (bag) {
     var from = bag.getBoundingClientRect();
-    overlay.style.setProperty("--from-x", (from.left + from.width / 2 - innerWidth / 2) + "px");
-    overlay.style.setProperty("--from-y", (from.top + from.height * 0.35 - innerHeight / 2) + "px");
+    var start = swooshFrom(from, innerWidth, innerHeight);
+    overlay.style.setProperty("--from-x", start.x + "px");
+    overlay.style.setProperty("--from-y", start.y + "px");
   }
   var titleRow = add(overlay, "div", null, "help-row");
   var title = add(titleRow, "h2", fits ? "Show this to the person checking your medicines" : "Your list is too long for one QR code");
@@ -1589,6 +1627,24 @@ async function save() {
     state.announce = "Couldn't save on this phone. Your change shows now but may be lost.";
   }
   render();
+}
+
+// After Sign out. Resolves when they ask for the list saved on this phone.
+function savedListAsked() {
+  return new Promise(function (resolve) {
+    plainScreen();
+    var title = add(root, "h2", "You're signed out");
+    title.id = "signed-out-heading";
+    title.tabIndex = -1;
+    add(root, "p", "Sign in to update your list from your health records.", "screen-text");
+    add(root, "a", "Sign in", "button primary big").href = "./launch.html";
+    button(root, "Open my saved list", "secondary big", function () {
+      clear(root);
+      resolve();
+    }).id = "open-saved";
+    note(root, DISCLAIMER);
+    title.focus();
+  });
 }
 
 function drawSignedOut(error) {

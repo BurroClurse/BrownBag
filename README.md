@@ -61,6 +61,8 @@ only, no real patients). To open it as a certain patient, see
   tried once more, and then Brown Bag says what to do.
 - **Interrupted while adding?** A half-typed medicine or allergy is kept until
   Brown Bag locks or closes, and home says it isn't saved.
+- **Sign out** signs out everyone on the phone. Saved lists stay, locked: the
+  next open says "You're signed out", with Sign in and Open my saved list.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the
   app. The health record connection ends after 30 days without opening it.
 
@@ -106,7 +108,10 @@ it's to gets a note the same way.
 **The refresh token** is stored encrypted (AES-GCM) with a key that comes
 from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
 never put in a backup file. It is deleted on Sign out, when the token server
-refuses it, or after 30 days unused.
+refuses it, or after 30 days unused. Sign out is for everyone who signed in
+on the phone: every refresh token is deleted first, then each server whose
+SMART configuration offers a `revocation_endpoint` is told to end its side
+([RFC 7009](https://www.rfc-editor.org/rfc/rfc7009)); the sandbox has none.
 
 **The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient`,
 `MedicationStatement` and `AllergyIntolerance` resources, compressed, encrypted with a key made from

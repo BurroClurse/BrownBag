@@ -1156,6 +1156,26 @@ together. Before, it read the message with no hint of which field.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes".
 
+### Step 25. What signing out really means (`js/pass.js`, `js/app.js`)
+
+Sign out used to delete one person's refresh token. A second person who had
+signed in on the same phone stayed connected. Now it's for everyone.
+
+**Order matters.** The tokens leave the phone first. Then each health system
+that offers it is asked to end its side (**token revocation**, RFC 7009). If
+there's no signal, the phone is still signed out.
+
+**Never send a token to the wrong place.** The address to revoke it at comes
+from the server's SMART configuration, and Brown Bag uses it only if it's on
+the same server the token came from.
+
+**Late answers.** A server may swap the refresh token each time it's used. If
+its answer came after Brown Bag stopped waiting, the new token was lost and
+the old one no longer worked. It's kept now whenever it arrives, unless
+someone has signed out.
+
+**Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens).
+
 ---
 
 ## Glossary

@@ -70,12 +70,32 @@ function words(text) {
     .replace(/[^a-z0-9.]+/g, " ").trim() + " ";
 }
 
+// Doses: the same words, or the same number when the record gives no unit
+// and the drug comes in that form ("1" for a tablet is 1 tablet).
+function sameDose(dose, theirs, names) {
+  var mine = words(dose);
+  var other = words(theirs);
+  if (mine === other) return true;
+  var bare = /^ (\d+(?:\.\d+)?) $/.exec(other);
+  var counted = /^ (\d+(?:\.\d+)?) ([a-z]+) $/.exec(mine);
+  return Boolean(bare && counted && bare[1] === counted[1] && words(names).indexOf(" " + counted[2] + " ") !== -1);
+}
+
+function asNeeded(text) {
+  return /\b(as needed|prn)\b/i.test(String(text || ""));
+}
+
 function sameDoseAndSchedule(candidate, entry) {
   if (!candidate.dose || !candidate.frequency) return false;
   // Two products of one drug (10 MG and 20 MG) are never a duplicate.
   if (candidate.rxcui && entry.rxcui && candidate.rxcui !== entry.rxcui) return false;
-  var theirs = words([entry.dose, entry.frequency].filter(Boolean).join(" "));
-  return theirs.indexOf(words(candidate.dose)) !== -1 && theirs.indexOf(words(candidate.frequency)) !== -1;
+  if (asNeeded(candidate.frequency) !== asNeeded(entry.frequency)) return false;
+  var schedule = words(entry.frequency);
+  // With no dose of its own, the record has it in the schedule's words.
+  var dose = entry.dose
+    ? sameDose(candidate.dose, entry.dose, candidate.name + " " + entry.name)
+    : schedule.indexOf(words(candidate.dose)) !== -1;
+  return dose && schedule.indexOf(words(candidate.frequency)) !== -1;
 }
 
 function distance(a, b) {

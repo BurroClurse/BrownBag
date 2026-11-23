@@ -36,11 +36,7 @@ pass, when it touches:
 
 ## On a real iPhone (Tyler)
 
-- VoiceOver on the "… is already on your list" panel: it reads the heading
-  first, and every button can be reached.
-
-- VoiceOver on the Allergies section of My medicines: it reads the heading
-  first, each allergy with its reaction, and every button.
+- Nothing yet.
 
 ## Tested
 
@@ -81,3 +77,6 @@ pass, when it touches:
 - 2026-11-23, the ten allergy leftovers: the test browser, then both virtual
   phones on the live site (allergies as before, the message tied to its
   field, a half-typed allergy surviving another form). Passed.
+- 2026-11-23, Tyler's iPhone: allergies, opened as Chantell from the README
+  link; VoiceOver on the Allergies section and on the "… is already on your
+  list" panel. Works.

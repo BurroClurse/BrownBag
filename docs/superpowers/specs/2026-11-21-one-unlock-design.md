@@ -180,3 +180,12 @@ needed, is a follow-up.
   and updates in place, rather than a loading screen, so the QR code is never
   more than one tap away.
 - Backup files leave the pass out.
+
+## Changed 2026-11-23 (Tyler: sign out of everyone, like a real app)
+
+- Sign out deletes every pass on the phone, then asks each health system that
+  offers revocation (RFC 7009, same server only) to end its side, within 3 s.
+- The next open says "You're signed out", with Sign in and Open my saved list
+  (still behind the lock). Signing in ends it.
+- A rotated refresh token that arrives after the wait is kept. A sign-in with
+  no token address gives no pass.

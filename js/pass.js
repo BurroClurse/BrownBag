@@ -12,10 +12,11 @@ var PASS_PREFIX = "brownbag:pass:";
 export var PASS_UNUSED_DAYS = 30;
 
 // Only what's needed to trade the pass for fresh access later. Null when the
-// server sent no refresh token, which leaves Brown Bag working as before.
+// server sent no refresh token, or no address to renew it at, which leaves
+// Brown Bag working as before.
 export function passFromState(fhirState) {
   var token = fhirState && fhirState.tokenResponse;
-  if (!token || !token.refresh_token) {
+  if (!token || !token.refresh_token || !fhirState.tokenUri) {
     return null;
   }
   return {
@@ -66,6 +67,51 @@ export async function loadPass(storage, key, patientId) {
 
 export async function deletePass(storage, patientId) {
   storage.removeItem(PASS_PREFIX + await idTag(patientId));
+}
+
+function passNames(storage) {
+  var names = [];
+  for (var i = 0; i < storage.length; i += 1) {
+    var name = storage.key(i);
+    if (name && name.indexOf(PASS_PREFIX) === 0) names.push(name);
+  }
+  return names;
+}
+
+// Every pass on this phone this key can open. Sign out is for everyone.
+export async function allPasses(storage, key) {
+  var found = [];
+  for (var name of passNames(storage)) {
+    try {
+      found.push(await decryptJSON(key, storage.getItem(name)));
+    } catch (error) {
+      // Made with another lock; it can only be deleted.
+    }
+  }
+  return found;
+}
+
+export function deleteAllPasses(storage) {
+  passNames(storage).forEach(function (name) { storage.removeItem(name); });
+}
+
+// Asks the health system to end a pass (OAuth 2.0 token revocation, RFC
+// 7009), when its SMART configuration offers that, so signing out ends the
+// connection there too. The pass goes only to the server that gave it.
+export async function revokePass(pass, fetchFn) {
+  var ask = fetchFn || globalThis.fetch.bind(globalThis);
+  try {
+    var config = await (await ask(pass.serverUrl.replace(/\/*$/, "") + "/.well-known/smart-configuration", { headers: { Accept: "application/json" } })).json();
+    var endpoint = config && config.revocation_endpoint;
+    if (!endpoint || new URL(endpoint).origin !== new URL(pass.tokenUri).origin) return false;
+    var answer = await ask(endpoint, {
+      method: "POST",
+      body: new URLSearchParams({ token: pass.refreshToken, token_type_hint: "refresh_token", client_id: pass.clientId })
+    });
+    return answer.ok;
+  } catch (error) {
+    return false;
+  }
 }
 
 // After a sign-in: keep the pass it returned, or, if it returned none (the
