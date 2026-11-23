@@ -92,7 +92,8 @@ async function loadByName(storage, key, name) {
     return { additions: [], stopped: {} };
   }
   var data = await decryptJSON(key, blob);
-  return { additions: data.additions || [], stopped: data.stopped || {} };
+  // Everything saved comes back (the log of changes made without signal too).
+  return Object.assign({}, data, { additions: data.additions || [], stopped: data.stopped || {} });
 }
 
 async function saveByName(storage, key, name, data) {
@@ -144,9 +145,24 @@ export async function importBackup(storage, key, text) {
     var ids = new Set(onPhone.additions.map(function (a) { return a.id; }));
     var additions = onPhone.additions.concat((fromBackup.additions || []).filter(function (a) { return !ids.has(a.id); }));
     var stopped = Object.assign({}, fromBackup.stopped || {}, onPhone.stopped);
-    await saveByName(storage, key, pair[0], { additions: additions, stopped: stopped });
+    await saveByName(storage, key, pair[0], Object.assign({}, fromBackup, onPhone, {
+      additions: additions,
+      stopped: stopped,
+      changes: joinChanges(onPhone.changes, fromBackup.changes)
+    }));
   }
   return restored.length;
+}
+
+// Both logs, without repeats. A change undone on one side only stays listed:
+// saying too much is better than losing the warning.
+function joinChanges(onPhone, fromBackup) {
+  var joined = (onPhone || []).slice();
+  (fromBackup || []).forEach(function (change) {
+    var known = joined.some(function (c) { return c.kind === change.kind && c.name === change.name; });
+    if (!known) joined.push(change);
+  });
+  return joined;
 }
 
 export function toBase64Url(bytes) {

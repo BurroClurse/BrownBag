@@ -1068,6 +1068,23 @@ stopped list, not "already on your list".
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
 
+### Step 20. Read back everything you wrote (`js/vault.js`)
+
+Brown Bag keeps a small log of changes made without signal, so the QR screen
+can warn "This code isn't fully up to date". The log was saved, but the code
+that loads it named only two fields, the additions and the stopped marks. So
+the log vanished when Brown Bag reopened, and the warning with it.
+
+**The lesson:** code that lists fields by name silently drops any field added
+later. The loader now starts from everything saved. Restoring a backup joins
+both logs without repeats.
+
+**Why no test caught it:** the tests checked the log in memory, and checked
+saving, but never saved, reopened and looked. That **round trip** is now a
+test, and a browser check closes and reopens Brown Bag with no signal.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+
 ---
 
 ## Glossary

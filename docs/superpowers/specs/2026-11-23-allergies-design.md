@@ -1,6 +1,6 @@
 # Brown Bag: allergies, with the reaction
 
-Status: draft, waiting on Tyler's approval.
+Status: approved by Tyler, 2026-11-23.
 
 ## Why
 
@@ -188,10 +188,8 @@ What happened         [ Choose ▾ ]
   so they are in the backup. Restore merges and never replaces: own
   allergies by id; the phone's reaction wins; a "no known allergies" date is
   dropped if either side has an own allergy.
-- **Fix while there:** the loader in `js/vault.js` keeps only additions and
-  stopped marks, so the log of offline changes is dropped when Brown Bag
-  reopens and the QR screen's warning disappears; restoring a backup drops it
-  too (`loadByName` and `importBackup`). Both must keep every field.
+- `js/vault.js` already keeps every saved field on load and restore (fixed
+  2026-11-23: the log of offline changes used to be lost on reopen).
 - Changes made while the list is a saved copy join the QR screen's warning:
   "Added the allergy Penicillin", and so on. Each change belongs to the
   medicines or the allergies, and is cleared when that part updates.

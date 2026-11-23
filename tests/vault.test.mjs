@@ -149,3 +149,25 @@ test("a backup made the old way still restores", async () => {
   assert.equal(await importBackup(storage, key, old), 1);
   assert.deepEqual((await loadPatientData(storage, key, "p-old")).additions, [{ id: "a" }]);
 });
+
+test("the log of changes made without signal is kept when Brown Bag reopens", async () => {
+  const storage = memoryStorage();
+  const key = await keyA;
+  const changes = [{ kind: "added", name: "Zinc", checked: false }];
+  await savePatientData(storage, key, "p1", { additions: [], stopped: {}, changes });
+  assert.deepEqual((await loadPatientData(storage, key, "p1")).changes, changes);
+});
+
+test("restoring a backup keeps the change log, joined without repeats", async () => {
+  const key = await keyA;
+  const there = memoryStorage();
+  await savePatientData(there, key, "p1", { additions: [], stopped: {}, changes: [{ kind: "added", name: "Zinc", checked: false }, { kind: "stopped", name: "Aspirin" }] });
+  const backup = await exportBackup(there, key);
+  const here = memoryStorage();
+  await savePatientData(here, key, "p1", { additions: [], stopped: {}, changes: [{ kind: "stopped", name: "Aspirin" }] });
+  await importBackup(here, key, backup);
+  assert.deepEqual((await loadPatientData(here, key, "p1")).changes, [{ kind: "stopped", name: "Aspirin" }, { kind: "added", name: "Zinc", checked: false }]);
+  const empty = memoryStorage();
+  await importBackup(empty, key, backup);
+  assert.equal((await loadPatientData(empty, key, "p1")).changes.length, 2);
+});
