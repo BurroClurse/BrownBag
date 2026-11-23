@@ -31,8 +31,7 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- Claims fixes (2026-11-23): My medicines and the QR code with fills. The
-  QR text changes, so both phones are checked right after publishing.
+- Nothing yet.
 
 ## On a real iPhone (Tyler)
 
@@ -54,3 +53,7 @@ pass, when it touches:
   panel, QR; no CDN requests). Passed.
 - 2026-11-23, Tyler's iPhone: "Tap to show the code" sits clear of Close;
   Face ID unlock from the Home Screen icon works.
+- 2026-11-23, claims fixes: the test browser with made-up claims (canceled,
+  preauthorized, undated, stopped but filled, brand and generic, stays
+  stopped), then both virtual phones on the live site with Chantell Bartell
+  (fills on the cards, no "undefined", QR code fits). Passed.
