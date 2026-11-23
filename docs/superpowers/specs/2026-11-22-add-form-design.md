@@ -122,7 +122,8 @@ Same medicine means the same RxNorm code, or the same ingredients from
 RxNav (so Zestril matches lisinopril). The cases, first match wins:
 
 1. **Marked stopped.** "You marked Metformin stopped on Nov 20." Start
-   it again (undoes the stop) · Go back.
+   it again (undoes the stop) · Add it anyway (the old one stays stopped;
+   Tyler, 2026-11-23) · Go back.
 2. **Same medicine, same dose and schedule.** "Lisinopril 10 mg once a
    day is already on your list." Don't add it · Add it anyway.
 3. **Same medicine, different strength, dose or schedule** (sketch

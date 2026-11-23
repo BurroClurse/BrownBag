@@ -1,7 +1,9 @@
 # Brown Bag
 
 **Every pill bottle, without the bag.**
+
 ![Brown Bag logo](assets/BrownBagLogo.png)
+
 Brown Bag helps patients give every healthcare worker an accurate medication
 list. It gathers their medicines from their health records, adds what they
 take over the counter, and shares the whole list with one QR code.
@@ -118,6 +120,7 @@ The list never passes through a server.
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
+| `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/` and this README. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
 | `tools/` | Local https server and the logo source. |
 | `docs/` | Designs, build plans and the learning log. |

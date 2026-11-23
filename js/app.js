@@ -784,6 +784,9 @@ function drawAddCheck(form, result, addition, how) {
       state.focusId = "records-heading";
       save();
     });
+    // A new strength of a stopped medicine: add it, the old one stays stopped
+    // (Tyler, 2026-11-23).
+    button(panel, "Add it anyway", "secondary big", function () { keepAddition(addition); });
     button(panel, "Go back", "secondary big", close);
   } else if (result.kind === "lookalike") {
     add(panel, "p", addition.name + " looks like " + theirs + ", which is already on your list. They're different medicines. Check the bottle.");

@@ -949,7 +949,8 @@ by VoiceOver):
   anyway;
 - there at another strength, dose or schedule: Go back and change it, Add
   it anyway, or Replace the one I added;
-- marked stopped: Start it again, or Go back;
+- marked stopped: Start it again, Add it anyway (a new strength, with the
+  old one left stopped), or Go back;
 - a name that only looks alike (Hydroxyzine and Hydralazine), or a typo
   of one on the list: Go back, or Add it.
 
