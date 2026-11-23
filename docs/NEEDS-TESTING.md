@@ -37,10 +37,6 @@ pass, when it touches:
 
 - VoiceOver on the "… is already on your list" panel: it reads the heading
   first, and every button can be reached.
-- "Show my QR code": "Tap to show the code" is not hidden behind Close
-  (fixed 2026-11-23 after the simulator caught it in a Safari tab).
-- Face ID unlock from the Home Screen icon still works after the logo and
-  cache updates of 2026-11-23.
 
 ## Tested
 
@@ -51,3 +47,5 @@ pass, when it touches:
   medicine; the QR code; the logo with no box. Found and fixed: the logo's
   color profile made a box on Android; Close covered "Tap to show the code"
   in iPhone Safari.
+- 2026-11-23, Tyler's iPhone: "Tap to show the code" sits clear of Close;
+  Face ID unlock from the Home Screen icon works.
