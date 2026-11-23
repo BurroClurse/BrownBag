@@ -163,7 +163,7 @@ export function medicinesButtonText(count) {
 
 // The notes at the top of the home screen, one short line each, only when
 // needed, in order. While the list is updating, its date line waits.
-export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, installTip, now }) {
+export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, allergiesRefused, installTip, now }) {
   var out = [];
   if (updating) {
     out.push({ kind: "updating", text: "Updating your list…" });
@@ -171,6 +171,8 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, in
     out.push({ kind: "offline", text: "No connection. List from " + listDate(savedAt, now) + "." });
   } else if (savedAt && needsSignIn) {
     out.push({ kind: "sign-in", text: "List from " + listDate(savedAt, now) + ". Sign in again to update it." });
+  } else if (allergiesRefused) {
+    out.push({ kind: "sign-in", text: "Sign in again to add your allergies." });
   }
   if (failed) out.push({ kind: "failed", text: "Some records didn't load." });
   if (installTip) out.push({ kind: "install", text: installTip });

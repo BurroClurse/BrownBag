@@ -66,7 +66,7 @@ only, no real patients).
 launch/patient openid fhirUser offline_access patient/Patient.read
 patient/MedicationRequest.read patient/MedicationStatement.read
 patient/Medication.read patient/Practitioner.read
-patient/ExplanationOfBenefit.read
+patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read
 ```
 
 Every resource scope is read-only. `offline_access` asks for a refresh token

@@ -9,10 +9,11 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText } from "./view.js";
-import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges } from "./view.js";
+import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
+import { readAllergies, keepAllergies, arrangeAllergies } from "./allergies.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -38,7 +39,9 @@ var state = {
   patientId: null,
   patient: null,
   split: { current: [], older: [], failed: false },
-  data: { additions: [], stopped: {} },
+  data: emptyData(),
+  // The records' allergies; the patient's own are in data (js/allergies.js).
+  allergies: keepAllergies(null),
   adding: false,
   // The add form as the patient left it (never saved to the phone).
   draft: null,
@@ -52,6 +55,10 @@ var state = {
   offline: false,
   needsSignIn: false
 };
+
+function emptyData() {
+  return { additions: [], stopped: {}, allergies: [], allergyReactions: {}, noKnownAllergies: null };
+}
 
 // Locks Brown Bag again after 5 minutes without a tap, or 5 minutes away
 // from it (js/idle.js). Locking reloads the page, which forgets the key; the
@@ -185,14 +192,18 @@ async function updateWithPass(pass) {
     finishUpdate();
     return;
   }
+  // What has arrived so far, so allergies that loaded aren't lost when the
+  // medicines don't.
+  var found = {};
   try {
     var fresh = passFromState(client.state);
     if (fresh && fresh.refreshToken !== pass.refreshToken) {
       await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
     }
-    var result = await withTimeout(loadFresh(client), RECORDS_WAIT_MS);
+    var result = await withTimeout(loadFresh(client, found), RECORDS_WAIT_MS);
     if (result.split.failed) {
       state.offline = true;
+      await allergiesAlone(found);
     } else {
       var samePatient = result.patientId === state.patientId;
       usePatient(result);
@@ -201,18 +212,22 @@ async function updateWithPass(pass) {
         state.draft = null;
         await loadAdditions();
       }
+      // After loadAdditions: clearing the change log saves state.data, which
+      // must already be this patient's.
+      await takeAllergies(found);
       await keepFreshCopy();
-      await clearChanges();
+      await clearChanges("medicines");
     }
   } catch (error) {
     state.offline = true;
+    await allergiesAlone(found);
   }
   finishUpdate();
 }
 
 function finishUpdate() {
   state.updating = false;
-  var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, now: new Date() })[0];
+  var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
   sayUpdate(note ? note.text : "Your list is up to date.");
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
@@ -233,17 +248,55 @@ async function keepPass(client) {
 
 // Reads the patient and the medicines without touching what's on screen.
 // Throws if the patient can't be read.
-async function loadFresh(client) {
+async function loadFresh(client, found) {
   var patient = await client.patient.read();
   var patientId = client.patient.id;
+  found.patientId = patientId;
+  // So do allergies.
+  var allergies = readAllergies(function (url) { return client.request(url); }, patientId, SOURCE, CLAIMS_WAIT_MS)
+    .then(function (result) { found.allergies = result; });
   // Claims load alongside the medicines under their own time limit, so a
   // slow insurer never holds up the list.
   var claims = readClaims(function (url) { return client.request(url); }, patientId, ingredientsFor, CLAIMS_WAIT_MS);
+  var split = mergeClaims(await loadMedicines(client, patientId), await claims, new Date());
+  await allergies;
   return {
     patientId: patientId,
     patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
-    split: mergeClaims(await loadMedicines(client, patientId), await claims, new Date())
+    split: split
   };
+}
+
+// Puts the allergies that loaded on screen, or keeps this patient's saved
+// ones with their date. Never another patient's.
+async function takeAllergies(found) {
+  var saved = await loadRecordsFor(localStorage, state.key, found.patientId);
+  state.allergies = keepAllergies(found.allergies || { status: "failed" }, saved ? saved.allergies : undefined);
+  if (state.allergies.status === "loaded") {
+    await clearChanges("allergies");
+  }
+}
+
+// The medicines didn't load, so the saved list stays; allergies that did
+// load join it, with their own date.
+async function allergiesAlone(found) {
+  if (!found.allergies || found.patientId !== state.patientId) return;
+  await takeAllergies(found);
+  try {
+    var saved = await loadRecordsFor(localStorage, state.key, state.patientId);
+    if (saved) await saveRecords(localStorage, state.key, Object.assign({}, saved, { allergies: allergiesToSave() }));
+  } catch (error) {
+    // Not saved for offline use this time. They still show.
+  }
+}
+
+// What the saved copy holds: nothing (never loaded) stays nothing, so a
+// later open says "haven't been loaded yet", not "none".
+function allergiesToSave() {
+  var a = state.allergies;
+  if (a.savedAt) return { items: a.items, statements: a.statements, savedAt: a.savedAt };
+  if (a.status === "loaded") return { items: a.items, statements: a.statements, savedAt: new Date().toISOString() };
+  return undefined;
 }
 
 function usePatient(result) {
@@ -264,6 +317,7 @@ async function keepFreshCopy() {
       older: state.split.older,
       placeholders: state.split.placeholders || 0,
       claims: state.split.claims || null,
+      allergies: allergiesToSave(),
       savedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -274,32 +328,37 @@ async function keepFreshCopy() {
 // After a sign-in: the patient, the patient's additions and the medicines,
 // then the copy saved for offline use. Throws if the patient can't be read.
 async function loadFromClient(client) {
-  var result = await loadFresh(client);
+  var found = {};
+  var result = await loadFresh(client, found);
   usePatient(result);
   await loadAdditions();
+  await takeAllergies(found);
   if (state.split.failed) {
     var saved = await loadLastRecords(localStorage, state.key);
     if (saved && saved.patientId === state.patientId) {
       useSaved(saved);
       state.needsSignIn = true;
+      await allergiesAlone(found);
     }
   } else {
     await keepFreshCopy();
-    await clearChanges();
+    await clearChanges("medicines");
   }
 }
 
 // Changes made while the records part is a saved copy are kept, so the QR
 // screen can say what changed since the records were last updated.
 function recordChange(kind, name, extra) {
-  if (state.savedAt) {
+  var savedAt = extra && extra.part === "allergies" ? state.allergies.savedAt : state.savedAt;
+  if (savedAt) {
     state.data.changes = logChange(state.data.changes, kind, name, extra);
   }
 }
 
-async function clearChanges() {
-  if (state.data.changes && state.data.changes.length) {
-    state.data.changes = [];
+async function clearChanges(part) {
+  var left = keepChanges(state.data.changes, part);
+  if (left.length !== (state.data.changes || []).length) {
+    state.data.changes = left;
     try {
       await savePatientData(localStorage, state.key, state.patientId, state.data);
     } catch (error) {
@@ -330,13 +389,14 @@ function useSaved(saved) {
   state.patient = saved.patient;
   state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, claims: saved.claims || null };
   state.savedAt = saved.savedAt;
+  state.allergies = keepAllergies(null, saved.allergies);
 }
 
 async function loadAdditions() {
   try {
     state.data = await loadPatientData(localStorage, state.key, state.patientId);
   } catch (error) {
-    state.data = { additions: [], stopped: {} };
+    state.data = emptyData();
     state.announce = "Your saved additions couldn't be opened on this phone, so new changes can't be saved over them.";
   }
 }
@@ -944,7 +1004,8 @@ async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   // Staff are told when the records part is an older saved copy, or when a
   // source failed to load, so a partial list never looks complete.
-  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed };
+  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed, allergies: { status: state.allergies.status, savedAt: state.allergies.savedAt } };
+  list.allergies = arrangeAllergies(state.allergies, state.data);
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   var fits = fitsInQr(packed.prefix, packed.digits);
 
@@ -981,7 +1042,7 @@ async function buildQr() {
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
     overlay.appendChild(whatsIn);
-    var alert = changeAlert(state.data.changes, { medicines: state.savedAt, allergies: null }, new Date());
+    var alert = changeAlert(state.data.changes, { medicines: state.savedAt, allergies: state.allergies.savedAt }, new Date());
     if (alert) {
       var warning = add(overlay, "div", null, "qr-alert");
       warning.id = "qr-alert";
@@ -1110,6 +1171,7 @@ function drawNotices() {
     offline: state.offline,
     needsSignIn: state.needsSignIn,
     failed: state.split.failed,
+    allergiesRefused: state.allergies.status === "refused",
     installTip: hint,
     now: new Date()
   });

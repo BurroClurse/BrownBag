@@ -291,3 +291,20 @@ test("keepChanges drops only the part that was updated", () => {
   assert.deepEqual(keepChanges(changes, "allergies"), [changes[0]]);
   assert.deepEqual(keepChanges(undefined, "allergies"), []);
 });
+
+test("a sign-in that can't read allergies gets one sign-in note, never two", () => {
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  const now = new Date(2026, 10, 21, 9, 0);
+  assert.deepEqual(noticesFor({ allergiesRefused: true, now }), [{ kind: "sign-in", text: "Sign in again to add your allergies." }]);
+  assert.deepEqual(noticesFor({ allergiesRefused: true, needsSignIn: true, savedAt: at, now }).map((n) => n.text), ["List from Nov 21. Sign in again to update it."]);
+  assert.deepEqual(noticesFor({ allergiesRefused: true, offline: true, savedAt: at, now }).map((n) => n.kind), ["offline"]);
+  assert.deepEqual(noticesFor({ allergiesRefused: true, updating: true, now }).map((n) => n.kind), ["updating"]);
+  assert.deepEqual(noticesFor({ allergiesRefused: true, installTip: "x", now }).map((n) => n.kind), ["sign-in", "install"]);
+});
+
+test("sign-in asks to read allergies, and the README says so", async () => {
+  const { readFileSync } = await import("node:fs");
+  for (const file of ["launch.html", "README.md"]) {
+    assert.ok(readFileSync(new URL("../" + file, import.meta.url), "utf8").includes("patient/AllergyIntolerance.read"), file);
+  }
+});

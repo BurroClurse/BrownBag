@@ -37,7 +37,7 @@
       // launch/patient asks the sandbox to pick the patient during sign-in.
       // offline_access asks for a long-lasting pass (a refresh token), so
       // the next unlock updates the list without this sign-in page.
-      scope: "launch/patient openid fhirUser offline_access patient/Patient.read patient/MedicationRequest.read patient/MedicationStatement.read patient/Medication.read patient/Practitioner.read patient/ExplanationOfBenefit.read",
+      scope: "launch/patient openid fhirUser offline_access patient/Patient.read patient/MedicationRequest.read patient/MedicationStatement.read patient/Medication.read patient/Practitioner.read patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read",
       // Must be this app's index.html. fhir-client turns the relative URL
       // into the full GitHub Pages URL before sending it.
       redirectUri: "index.html",

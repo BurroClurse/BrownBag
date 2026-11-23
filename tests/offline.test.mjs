@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { saveRecords, loadLastRecords, listDate, hasSavedList } from "../js/offline.js";
+import { saveRecords, loadLastRecords, loadRecordsFor, listDate, hasSavedList } from "../js/offline.js";
 import { deriveKeyFromPin } from "../js/vault.js";
 
 function memoryStorage() {
@@ -111,4 +111,13 @@ test("the service worker always asks GitHub for app files, not the browser's 10-
   const worker = loadWorker({ fetch: (url, init) => { calls.push([typeof url === "string" ? url : url.url, init && init.cache]); return Promise.resolve({ ok: true }); } });
   await worker.fetchWithin({ url: "https://burroclurse.github.io/BrownBag/js/app.js", method: "GET" }, 1000);
   assert.deepEqual(calls[0], ["https://burroclurse.github.io/BrownBag/js/app.js", "no-cache"]);
+});
+
+test("loadRecordsFor opens one patient's saved list, not just the last one's", async () => {
+  const storage = memoryStorage();
+  await saveRecords(storage, await key(), SAVED);
+  await saveRecords(storage, await key(), Object.assign({}, SAVED, { patientId: "other" }));
+  assert.equal((await loadRecordsFor(storage, await key(), SAVED.patientId)).patientId, SAVED.patientId);
+  assert.equal(await loadRecordsFor(storage, await key(), "nobody"), null);
+  assert.equal(await loadRecordsFor(storage, await key("111111"), SAVED.patientId), null);
 });
