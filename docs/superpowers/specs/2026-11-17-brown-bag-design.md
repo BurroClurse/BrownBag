@@ -320,6 +320,15 @@ TLS is already there. Two-factor sign-in belongs to each health system.
   list, and flag differences (upgrade to feature 2).
 - Pharmacy fills through the health plan's Patient Access API, read-only.
 - A second real source, such as Epic's or Oracle Health's public test system.
+  Epic first, when Tyler picks it up again (parked 2026-11-23 to focus on the
+  SMART sandbox). His choices: one system at a time, so sign-in offers either
+  sandbox and home shows the one signed in to last, ending at a demo with
+  Epic's test patient; combining two systems' lists is its own later design.
+  Ask open@epic.com about the Client ID in a browser app before adding it to
+  this repo. Before making an account, read
+  [Epic's terms](https://fhir.epic.com/Resources/Terms) and ask the
+  instructors about the responsibility they put on the developer. Brown Bag
+  needs the trademark sentence, a privacy page and an erase button on More.
 - SMART Health Link QR codes that records systems can import. The link can
   also carry signed SMART Health Cards the patient already has from their
   providers (vaccine records, CARIN digital insurance card), so staff see
