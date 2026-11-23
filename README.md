@@ -9,12 +9,24 @@ list. It gathers their medicines from their health records, adds what they
 take over the counter, and shares the whole list with one QR code.
 
 The records come from the patient's own health system, the hospital or
-clinic whose patient portal (such as MyChart) they already use. They sign in
-with that portal account, and Brown Bag reads their prescriptions and listed
-medicines through SMART on FHIR, which US certified health record systems
-must offer to patient apps. It adds pharmacy fills from insurance claims,
-showing what was actually picked up. Today it connects to the SMART Health
-IT sandbox (test patients only), whose claims stand in for an insurer's.
+clinic whose patient portal they already use. They sign in with that portal
+account, and Brown Bag reads their prescriptions and listed medicines
+through SMART on FHIR, which US certified health record systems must offer
+to patient apps. It adds pharmacy fills from insurance claims, showing what
+was actually picked up. Today it connects to the SMART Health IT sandbox
+(test patients only), whose claims stand in for an insurer's.
+
+The accounts it is built to work with:
+
+| Kind | Examples |
+| --- | --- |
+| Patient portals on the big health record systems | Epic MyChart, Oracle Health (Cerner) HealtheLife, MEDITECH (Patient Portal and MHealth), athenahealth (athenaPatient), eClinicalWorks (healow), NextGen Patient Portal, Veradigm (FollowMyHealth) |
+| Hospital and health systems | Any hospital, clinic or practice on those systems, such as Kaiser Permanente, Mayo Clinic, Cleveland Clinic, or a local hospital's MyChart |
+| Government | The VA (My HealtheVet, through the VA's Lighthouse API) |
+| Insurance claims, for pharmacy fills | Medicare (Blue Button), and Medicare Advantage, Medicaid and other health plans, which must offer patients the same kind of access (the CMS Patient Access API) |
+
+Each one needs Brown Bag registered with it before real patients can sign
+in; the sandbox is the only one connected so far.
 
 It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox and reads FHIR R4 records.
 It is built to be simple to use: one main screen with no
@@ -32,7 +44,11 @@ only, no real patients).
   **My medicines (N)**, and **More options**.
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
-  (checked against RxNorm), and ones they marked stopped.
+  (checked against RxNorm). Each medicine from the records has two
+  buttons: **As needed** moves it to its own group, still on the list, for
+  one taken only when needed (pain medicine after surgery, say), and **Not
+  taking** moves it to Not taking, for one finished or stopped. Either can
+  be undone.
 - **What was actually filled.** Each medicine shows its insurance fills
   ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
