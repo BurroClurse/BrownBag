@@ -382,3 +382,12 @@ test("staff hear about an entry that doesn't say what it's to", () => {
   assert.equal(allergyNotices(said).length, 1);
   assert.equal(allergyNotices(groupShareBundle(withAllergies([], { unspecified: 1, status: "failed" })).allergies).length, 2);
 });
+
+test("every code and the record's own status travel", () => {
+  const [a] = allergyEntries(withAllergies([CARD({ codes: [{ system: "http://local", code: "A1" }, { system: "http://snomed.info/sct", code: "84489001" }, { system: null, code: "x" }], clinical: "recurrence" })]));
+  assert.deepEqual(a.code.coding.map((c) => c.code), ["A1", "84489001"]);
+  assert.equal(a.clinicalStatus.coding[0].code, "recurrence");
+  // A list saved before this has one code and no status.
+  const [b] = allergyEntries(withAllergies([CARD({ code: { system: "http://snomed.info/sct", code: "1" } })]));
+  assert.deepEqual([b.code.coding[0].code, b.clinicalStatus.coding[0].code], ["1", "active"]);
+});

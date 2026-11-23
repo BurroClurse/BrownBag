@@ -9,12 +9,12 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { recordReader } from "./read.js";
-import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, ALLERGENS, REACTIONS } from "./allergies.js";
+import { recordReader, waitLeft } from "./read.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, ALLERGENS, REACTIONS } from "./allergies.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -55,7 +55,7 @@ var state = {
   // "new" while adding an allergy, or the key of the one whose reaction is
   // being added; and its form as the patient left it.
   allergyForm: null,
-  allergyDraft: null,
+  allergyDrafts: {},
   lastRemovedAllergy: null,
   announce: "",
   focusId: null,
@@ -212,7 +212,7 @@ async function updateWithPass(pass) {
     if (fresh && fresh.refreshToken !== pass.refreshToken) {
       await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
     }
-    var result = await withTimeout(loadFresh(client, found), RECORDS_WAIT_MS);
+    var result = await withTimeout(loadFresh(client, found, RECORDS_WAIT_MS), RECORDS_WAIT_MS);
     if (result.split.failed) {
       state.offline = true;
       await allergiesAlone(found);
@@ -223,7 +223,9 @@ async function updateWithPass(pass) {
         state.adding = false;
         state.draft = null;
         state.allergyForm = null;
-        state.allergyDraft = null;
+        state.allergyDrafts = {};
+        state.lastRemoved = null;
+        state.lastRemovedAllergy = null;
         await loadAdditions();
       }
       // After loadAdditions: clearing the change log saves state.data, which
@@ -242,7 +244,7 @@ async function updateWithPass(pass) {
 function finishUpdate() {
   state.updating = false;
   var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
-  sayUpdate(note ? note.text : "Your list is up to date.");
+  sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
   if (state.screen === "home") {
@@ -262,16 +264,17 @@ async function keepPass(client) {
 
 // Reads the patient and the medicines without touching what's on screen.
 // Throws if the patient can't be read.
-async function loadFresh(client, found) {
+async function loadFresh(client, found, total) {
+  var started = Date.now();
   var patient = await client.patient.read();
   var patientId = client.patient.id;
   found.patientId = patientId;
-  // So do allergies.
-  var allergies = readAllergies(recordReader(client), patientId, SOURCE, CLAIMS_WAIT_MS)
+  var extras = waitLeft(Date.now() - started, CLAIMS_WAIT_MS, total);
+  // Claims and allergies load alongside the medicines under their own time
+  // limit, so neither ever holds up the list.
+  var allergies = readAllergies(recordReader(client), patientId, SOURCE, extras)
     .then(function (result) { found.allergies = result; });
-  // Claims load alongside the medicines under their own time limit, so a
-  // slow insurer never holds up the list.
-  var claims = readClaims(recordReader(client), patientId, ingredientsFor, CLAIMS_WAIT_MS);
+  var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras);
   var split = mergeClaims(await loadMedicines(client, patientId), await claims, new Date());
   await allergies;
   return {
@@ -343,7 +346,7 @@ async function keepFreshCopy() {
 // then the copy saved for offline use. Throws if the patient can't be read.
 async function loadFromClient(client) {
   var found = {};
-  var result = await loadFresh(client, found);
+  var result = await loadFresh(client, found, Infinity);
   usePatient(result);
   await loadAdditions();
   await takeAllergies(found);
@@ -534,13 +537,13 @@ function leaveMedicines() {
     state.adding = false;
     state.draft = null;
   }
-  if (state.allergyForm && allergyDraftStarted(state.allergyDraft)) {
-    var of = arrangeAllergies(state.allergies, state.data).cards.filter(function (card) { return card.key === state.allergyForm; })[0];
-    unsaved.push(unsavedAllergyText(state.allergyDraft, of ? of.name : null));
-  } else {
-    state.allergyForm = null;
-    state.allergyDraft = null;
-  }
+  var cards = arrangeAllergies(state.allergies, state.data).cards;
+  state.allergyDrafts = keepDrafts(state.allergyDrafts, cards);
+  state.allergyForm = startedDraft(state.allergyDrafts, state.allergyForm);
+  Object.keys(state.allergyDrafts).forEach(function (which) {
+    var of = cards.filter(function (card) { return card.key === which; })[0];
+    unsaved.push(unsavedAllergyText(state.allergyDrafts[which], of ? of.name : null));
+  });
   if (unsaved.length) state.announce = unsaved.join(" ");
 }
 
@@ -678,8 +681,10 @@ function drawAllergyCard(list, card) {
 function removeMyPart(card) {
   var removed = removeMine(state.data, card);
   var whole = removed.own.length > 0;
-  state.lastRemovedAllergy = { name: whole ? card.name : "your reaction to " + card.name, of: card.name, whole: whole, removed: removed };
-  allergyChange(whole ? "allergy-removed" : "reaction-removed", card.name);
+  var record = card.origin === "records";
+  var name = !record ? card.name : (whole ? "your entry for " : "your reaction to ") + card.name;
+  state.lastRemovedAllergy = { name: name, of: card.name, whole: whole, record: record, removed: removed };
+  allergyChange(whole ? "allergy-removed" : "reaction-removed", card.name, record);
   allergySaved("Removed " + state.lastRemovedAllergy.name + ".", "undo-allergy");
 }
 
@@ -688,20 +693,20 @@ function drawAllergyUndo(section) {
   var row = add(section, "p", "Removed " + last.name + ". ", "med-line");
   button(row, "Undo", "secondary", function () {
     putBack(state.data, last.removed);
-    allergyChange(last.whole ? "allergy-added" : "reaction-added", last.of);
+    allergyChange(last.whole ? "allergy-added" : "reaction-restored", last.of);
     allergySaved("Put back.", "allergies-heading");
   }, "Undo: put " + last.name + " back").id = "undo-allergy";
 }
 
 function openAllergyForm(which, focusId) {
+  // The other form's answers stay, for when it's opened again.
   state.allergyForm = which;
-  state.allergyDraft = null;
   state.focusId = focusId;
   render();
 }
 
-function allergyChange(kind, name) {
-  recordChange(kind, name, { part: "allergies" });
+function allergyChange(kind, name, record) {
+  recordChange(kind, name, record ? { part: "allergies", record: true } : { part: "allergies" });
 }
 
 function allergySaved(announce, focusId) {
@@ -711,13 +716,14 @@ function allergySaved(announce, focusId) {
 }
 
 function closeAllergyForm() {
+  delete state.allergyDrafts[state.allergyForm];
   state.allergyForm = null;
-  state.allergyDraft = null;
 }
 
 function setReaction(card, reaction) {
+  var before = Boolean(card.mine);
   setMyReaction(state.data, card, reaction, today());
-  allergyChange("reaction-added", card.name);
+  allergyChange(before ? "reaction-changed" : "reaction-added", card.name);
   closeAllergyForm();
   allergySaved("Reaction to " + card.name + " saved.", "allergies-heading");
 }
@@ -741,12 +747,23 @@ function drawAllergyForm(parent, arranged, card) {
     state.focusId = card ? "allergies-heading" : "allergy-add-open";
     render();
   });
-  if (state.allergyDraft) {
-    if (allergen) allergen.restore(state.allergyDraft.allergen);
-    reaction.restore(state.allergyDraft.reaction);
+  var which = card ? card.key : "new";
+  var kept = state.allergyDrafts[which];
+  if (kept) {
+    if (allergen) allergen.restore(kept.allergen);
+    reaction.restore(kept.reaction);
   }
   function keepDraft() {
-    state.allergyDraft = { allergen: allergen ? allergen.draft() : { choice: "", other: "" }, reaction: reaction.draft() };
+    if (allergen) allergen.invalid(null);
+    reaction.invalid(null);
+    status.textContent = "";
+    state.allergyDrafts[which] = { allergen: allergen ? allergen.draft() : { choice: "", other: "" }, reaction: reaction.draft() };
+  }
+  // The message belongs to the field it's about (VoiceOver reads it there).
+  function askFor(list, text) {
+    status.textContent = text;
+    list.invalid("allergy-status");
+    list.focus();
   }
   form.addEventListener("input", keepDraft);
   form.addEventListener("change", keepDraft);
@@ -756,18 +773,15 @@ function drawAllergyForm(parent, arranged, card) {
     var name = allergen ? allergen.words().trim() : card.name;
     var happened = reaction.words().trim();
     if (!name) {
-      status.textContent = "Choose what you're allergic to.";
-      allergen.focus();
+      askFor(allergen, "Choose what you're allergic to.");
       return;
     }
     if (allergen && saysNone(name)) {
-      status.textContent = "That says you have none. Cancel, then use “I have no known allergies” if it's there.";
-      allergen.focus();
+      askFor(allergen, "That says you have none. Cancel, then use “I have no known allergies” if it's there.");
       return;
     }
     if (!happened) {
-      status.textContent = "Choose what happened, or Not sure.";
-      reaction.focus();
+      askFor(reaction, "Choose what happened, or Not sure.");
       return;
     }
     status.textContent = "";
@@ -1161,7 +1175,18 @@ function pickList(form, id, labelText, otherText) {
     if (!otherBox.hidden) other.focus();
   });
   return {
-    focus: function () { select.focus(); },
+    focus: function () { (select.value === "other" && !otherBox.hidden ? other : select).focus(); },
+    // The field in use is marked wrong, with the message that says why.
+    invalid: function (messageId) {
+      [select, other].forEach(function (field) {
+        field.removeAttribute("aria-invalid");
+        field.removeAttribute("aria-describedby");
+      });
+      if (!messageId) return;
+      var field = select.value === "other" ? other : select;
+      field.setAttribute("aria-invalid", "true");
+      field.setAttribute("aria-describedby", messageId);
+    },
     fill: function (list) {
       labels = list;
       clear(select);

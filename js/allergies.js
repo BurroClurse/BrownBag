@@ -102,18 +102,20 @@ function reactionsOf(resource) {
   return out;
 }
 
-function itemFrom(resource, sourceName, index) {
+function itemFrom(resource, sourceName) {
   var name = words(resource.code);
   var codes = codesOf(resource.code).filter(function (c) { return !NO_CODE.test(c.system || ""); });
-  var code = codes[0];
   var keys = codes.map(function (c) { return "alg:" + (c.system || "") + "|" + c.code; });
   if (name) keys.push("alg:name:" + plainName(name));
-  if (!keys.length) keys.push("alg:id:" + (resource.id || "none-" + index));
+  // Nothing to tell it by: its id, else what it does say.
+  if (!keys.length) keys.push("alg:id:" + (resource.id || JSON.stringify([resource.recordedDate, resource.category, resource.type, resource.criticality, resource.onsetDateTime, reactionsOf(resource)])));
   return {
     key: keys[0],
     otherKeys: keys.slice(1),
     name: name || UNNAMED,
-    code: code ? { system: code.system || null, code: code.code } : null,
+    codes: codes.map(function (c) { return { system: c.system || null, code: c.code }; }),
+    // Only current ones get here; with no status it's taken as active.
+    clinical: (codesOf(resource.clinicalStatus)[0] || { code: "active" }).code,
     reactions: reactionsOf(resource),
     intolerance: resource.type === "intolerance",
     unconfirmed: hasStatus(resource.verificationStatus, UNCONFIRMED),
@@ -129,6 +131,10 @@ function allKeys(item) {
 function join(into, item) {
   allKeys(item).forEach(function (key) {
     if (allKeys(into).indexOf(key) === -1) into.otherKeys.push(key);
+  });
+  item.codes.forEach(function (code) {
+    var known = into.codes.some(function (c) { return c.system === code.system && c.code === code.code; });
+    if (!known) into.codes.push(code);
   });
   item.reactions.forEach(function (reaction) {
     var same = into.reactions.filter(function (r) { return r.text.toLowerCase() === reaction.text.toLowerCase(); })[0];
@@ -157,7 +163,7 @@ export function fromAllergyRecords(resources, sourceName) {
   var items = [];
   var statements = [];
   var unspecified = 0;
-  (resources || []).forEach(function (resource, index) {
+  (resources || []).forEach(function (resource) {
     if (!resource || resource.resourceType !== "AllergyIntolerance") return;
     if (hasStatus(resource.verificationStatus, NOT_REAL) || hasStatus(resource.clinicalStatus, NOT_NOW)) return;
     var statement = statementOf(resource, words(resource.code));
@@ -169,7 +175,7 @@ export function fromAllergyRecords(resources, sourceName) {
       unspecified += 1;
       return;
     }
-    var item = itemFrom(resource, sourceName, index);
+    var item = itemFrom(resource, sourceName);
     // One record can link two already read (a nameless one by its code, a
     // named one by its name); then all of them are one.
     var same = items.filter(function (other) { return sameAllergy(other, item); });
@@ -288,7 +294,7 @@ export function arrangeAllergies(allergies, data) {
     var card = sameAllergen(own.name, cards) || (byCode && byCode.length === 1 ? byCode[0] : null);
     if (!card) {
       card = {
-        key: "own:" + own.id, otherKeys: [], name: own.name.trim(), code: null, rxcui: own.rxcui || null, reactions: [],
+        key: "own:" + own.id, otherKeys: [], name: own.name.trim(), codes: [], clinical: "active", rxcui: own.rxcui || null, reactions: [],
         intolerance: false, unconfirmed: false, highRisk: false, source: null, origin: "added", mine: null
       };
       cards.push(card);
@@ -388,6 +394,24 @@ export function allergyNotes(allergies, now) {
 
 export function allergyDraftStarted(draft) {
   return Boolean(draft && (draft.allergen.choice || draft.reaction.choice));
+}
+
+// Forms as the patient left them, by form: "new", or the key of the allergy
+// whose reaction was being added. Empty ones, and ones for an allergy that's
+// no longer there, are dropped.
+export function keepDrafts(drafts, cards) {
+  var out = {};
+  Object.keys(drafts || {}).forEach(function (which) {
+    var there = which === "new" || cards.some(function (card) { return card.key === which; });
+    if (there && allergyDraftStarted(drafts[which])) out[which] = drafts[which];
+  });
+  return out;
+}
+
+// The form to open again: the one that was open, else any started one.
+export function startedDraft(drafts, open) {
+  if (open && allergyDraftStarted(drafts[open])) return open;
+  return Object.keys(drafts || {}).filter(function (which) { return allergyDraftStarted(drafts[which]); })[0] || null;
 }
 
 // reactionTo: the allergy from the records whose reaction was being added.

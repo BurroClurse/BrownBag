@@ -1138,6 +1138,24 @@ passed had the new files already.
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
 In the Network tab, set the speed to Slow 3G and open Brown Bag.
 
+### Step 24. Budgets, logs and telling fields apart
+
+Three ideas from the last allergy fixes:
+
+**A time budget.** The medicines get 12 seconds. Allergies and claims used to
+get 6 of their own, whatever had been spent. If reading the patient took 7,
+the total passed 12 and the medicines were thrown away. Now they get only
+what's left.
+
+**A log should say what's true now, not everything that happened.** Change a
+reaction, remove it, undo: the truth is "changed". Each rule is one test.
+
+**Tie a message to its field.** `aria-invalid` marks the field that's wrong
+and `aria-describedby` points at the message, so VoiceOver reads the two
+together. Before, it read the message with no hint of which field.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes".
+
 ---
 
 ## Glossary

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -280,9 +280,24 @@ test("changeAlert speaks only for the part that is a saved copy", () => {
   assert.equal(changeAlert([changes[1]], { medicines: "2026-11-20T18:00:00Z", allergies: null }, now), null);
 });
 
-test("changing a reaction twice is one line", () => {
-  const c = logChange([], "reaction-added", "Mold", { part: "allergies" });
-  assert.equal(logChange(c, "reaction-added", "Mold", { part: "allergies" }).length, 1);
+test("the log of reaction changes says what really changed", () => {
+  const p = { part: "allergies" };
+  const log = (...kinds) => kinds.reduce((list, kind) => logChange(list, kind, "Mold", p), []).map((c) => c.kind);
+  assert.deepEqual(log("reaction-added", "reaction-removed"), []);
+  assert.deepEqual(log("reaction-added", "reaction-changed"), ["reaction-added"]);
+  assert.deepEqual(log("reaction-changed", "reaction-changed"), ["reaction-changed"]);
+  assert.deepEqual(log("reaction-changed", "reaction-removed"), ["reaction-removed"]);
+  assert.deepEqual(log("reaction-removed", "reaction-restored"), []);
+  assert.deepEqual(log("reaction-added", "reaction-removed", "reaction-restored"), ["reaction-added"]);
+  assert.deepEqual(log("reaction-changed", "reaction-removed", "reaction-restored"), ["reaction-changed"]);
+  assert.deepEqual(log("reaction-removed", "reaction-added"), ["reaction-removed", "reaction-added"]);
+  const alert = changeAlert(logChange([], "reaction-changed", "Mold", p), { medicines: null, allergies: "2026-11-21T18:00:00Z" }, new Date("2026-11-23T12:00:00Z"));
+  assert.deepEqual(alert.lines, ["Changed your reaction to Mold"]);
+});
+
+test("updateDoneText never says up to date when the allergies didn't load", () => {
+  assert.equal(updateDoneText("loaded"), "Your list is up to date.");
+  assert.equal(updateDoneText("failed"), "Your medicines are up to date. Your allergies couldn't be updated.");
 });
 
 test("keepChanges drops only the part that was updated", () => {

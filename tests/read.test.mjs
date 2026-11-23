@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { recordReader } from "../js/read.js";
+import { recordReader, waitLeft } from "../js/read.js";
 
 const client = { state: { serverUrl: "https://ehr.example/r4" }, getAuthorizationHeader: () => "Bearer abc" };
 const answer = (status, body) => ({ ok: status < 400, status, json: async () => body });
@@ -34,4 +34,13 @@ test("recordReader passes a refusal on with its status and leaves the sign-in al
 
 test("the reader is kept for offline use", () => {
   assert.ok(readFileSync(new URL("../sw.js", import.meta.url), "utf8").includes('"./js/read.js"'));
+});
+
+test("extras never push the medicines past their own limit", () => {
+  assert.equal(waitLeft(0, 6000, 12000), 6000);
+  assert.equal(waitLeft(4000, 6000, 12000), 6000);
+  assert.equal(waitLeft(7000, 6000, 12000), 3500);
+  assert.equal(waitLeft(11900, 6000, 12000), 0);
+  // A sign-in has no limit on the records, so extras keep their own.
+  assert.equal(waitLeft(30000, 6000, Infinity), 6000);
 });

@@ -20,3 +20,10 @@ export function recordReader(client, fetchFn) {
     return response.json();
   };
 }
+
+// How long an extra read may still take: at most its own limit, and never so
+// long that the medicines miss theirs (with time left to show them).
+var TIME_TO_SHOW_MS = 1500;
+export function waitLeft(elapsed, most, total) {
+  return Math.max(0, Math.min(most, total - TIME_TO_SHOW_MS - elapsed));
+}

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, startedDraft, keepDrafts } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -19,7 +19,7 @@ const items = (...list) => fromAllergyRecords(list, "SMART sandbox").items;
 test("a record becomes one allergy with a plain name and a key from its code", () => {
   assert.deepEqual(items(rec()), [{
     key: "alg:http://snomed.info/sct|84489001", otherKeys: ["alg:name:mold"], name: "Mold",
-    code: { system: SNOMED, code: "84489001" }, reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox"
+    codes: [{ system: SNOMED, code: "84489001" }], clinical: "active", reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox"
   }]);
   assert.equal(items(named("Latex"))[0].key, "alg:name:latex");
   assert.equal(items(named("Penicillin (class of drug)"))[0].name, "Penicillin (class of drug)");
@@ -316,4 +316,33 @@ test("unspecifiedText says it, and never beside 'none'", () => {
   assert.equal(unspecifiedText(1, 1), "Your records also have an allergy entry that doesn't say what it's to. Ask your care team.");
   assert.equal(unspecifiedText(1, 0), "Your records have an allergy entry that doesn't say what it's to. Ask your care team.");
   assert.equal(unspecifiedText(2, 1), "Your records also have 2 allergy entries that don't say what they're to. Ask your care team.");
+});
+
+test("every code of a record is kept, and its own clinical status", () => {
+  const two = items(rec({ clinicalStatus: { coding: [{ code: "recurrence" }] }, code: { text: "Aspirin", coding: [{ system: "http://local", code: "A1" }, { system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: "1191" }] } }))[0];
+  assert.deepEqual(two.codes.map((c) => c.code), ["A1", "1191"]);
+  assert.equal(two.clinical, "recurrence");
+  assert.equal(items(rec({ clinicalStatus: undefined }))[0].clinical, "active");
+  assert.deepEqual(items(coded("1", "Peanut"), coded("2", "peanut"))[0].codes.map((c) => c.code), ["1", "2"]);
+});
+
+test("a record with no code, name or id keeps its key when the order changes", () => {
+  const a = { resourceType: "AllergyIntolerance", recordedDate: "2020-01-01", category: ["food"] };
+  const b = { resourceType: "AllergyIntolerance", recordedDate: "2021-01-01", category: ["food"] };
+  const keys = (list) => Object.fromEntries(items(...list).map((i, n) => [n, i.key]));
+  assert.deepEqual(new Set(Object.values(keys([a, b]))), new Set(Object.values(keys([b, a]))));
+  assert.equal(new Set(items(a, b).map((i) => i.key)).size, 2);
+  // Two that say exactly the same nothing are one.
+  assert.equal(items(a, Object.assign({}, a)).length, 1);
+});
+
+test("a half-typed new allergy survives opening a reaction form, and goes when its record does", () => {
+  const started = { allergen: { choice: "Latex", other: "" }, reaction: { choice: "", other: "" } };
+  const empty = { allergen: { choice: "", other: "" }, reaction: { choice: "", other: "" } };
+  const onMold = { allergen: { choice: "", other: "" }, reaction: { choice: "Itching", other: "" } };
+  const cards = [{ key: "alg:mold", name: "Mold" }];
+  assert.deepEqual(Object.keys(keepDrafts({ new: started, "alg:mold": onMold, "alg:gone": onMold, "alg:x": empty }, cards)), ["new", "alg:mold"]);
+  assert.equal(startedDraft({ new: empty }), null);
+  assert.equal(startedDraft({ "alg:mold": onMold, new: started }, "new"), "new");
+  assert.equal(startedDraft({ "alg:mold": onMold }, "new"), "alg:mold");
 });

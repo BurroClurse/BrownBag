@@ -153,15 +153,15 @@ export function groupShareBundle(bundle) {
 function allergyEntriesFor(allergies) {
   var out = allergies.cards.map(allergyFor);
   allergies.statements.forEach(function (text) {
-    var resource = allergyResource(text, noneCode(text) ? { system: SNOMED, code: noneCode(text) } : null);
+    var resource = allergyResource(text, noneCode(text) ? [{ system: SNOMED, code: noneCode(text) }] : null);
     resource.note = [{ text: "From records" }];
     out.push(resource);
   });
   for (var i = 0; i < (allergies.unspecified || 0); i += 1) {
-    out.push(allergyResource("Allergic disposition", UNSPECIFIED));
+    out.push(allergyResource("Allergic disposition", [UNSPECIFIED]));
   }
   if (allergies.saidNone) {
-    var none = allergyResource("No known allergy", { system: SNOMED, code: noneCode("No known allergy") });
+    var none = allergyResource("No known allergy", [{ system: SNOMED, code: noneCode("No known allergy") }]);
     none.asserter = SELF;
     none.recordedDate = allergies.saidNone;
     out.push(none);
@@ -169,11 +169,13 @@ function allergyEntriesFor(allergies) {
   return out;
 }
 
-function allergyResource(text, coding) {
+function allergyResource(text, codings, clinical) {
+  // A code with no system means nothing to another system.
+  var coding = (codings || []).filter(function (c) { return c && c.system; });
   return {
     resourceType: "AllergyIntolerance",
-    clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", code: "active" }] },
-    code: coding && coding.system ? { text: text, coding: [coding] } : { text: text },
+    clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", code: clinical || "active" }] },
+    code: coding.length ? { text: text, coding: coding } : { text: text },
     patient: SELF
   };
 }
@@ -184,7 +186,7 @@ function unconfirmed() {
 
 function allergyFor(card) {
   var own = card.origin === "added";
-  var resource = allergyResource(card.name, own ? (card.rxcui ? { system: RXNORM, code: card.rxcui } : null) : card.code);
+  var resource = allergyResource(card.name, own ? (card.rxcui ? [{ system: RXNORM, code: card.rxcui }] : null) : (card.codes || [card.code]), card.clinical);
   var notes = own ? [] : ["From records: " + card.source];
   if (own || card.unconfirmed) resource.verificationStatus = unconfirmed();
   if (card.intolerance) resource.type = "intolerance";

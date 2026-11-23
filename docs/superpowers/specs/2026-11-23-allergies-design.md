@@ -275,3 +275,10 @@ RxNav during the build; any that can't be checked sends words only.
 - Claims and allergies are read outside the SMART library (`js/read.js`), so
   a 401 on either can't drop the medicines or the pass.
 - If the patient's own saved part can't be opened, staff are told to ask.
+- The review's ten minor leftovers are fixed (Tyler, same day). Claims and
+  allergies get only the time left before the medicines' own limit; each
+  form keeps its half-typed answers; the QR warning says one true line per
+  reaction; every code of a record travels; a record with no status is sent
+  as active, as it's shown (FHIR requires a status).
+- Chrome's offer to save the PIN stays (Tyler): WCAG 2.2 (3.3.8) counts
+  password managers as help.

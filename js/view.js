@@ -184,20 +184,55 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, al
 var OPPOSITE = {
   stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added",
   "allergy-added": "allergy-removed", "allergy-removed": "allergy-added",
-  "reaction-removed": "reaction-added", "none-said": "none-unsaid", "none-unsaid": "none-said"
+  "none-said": "none-unsaid", "none-unsaid": "none-said"
 };
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
+  if (kind.indexOf("reaction-") === 0) return logReaction(list, kind, name, extra);
   for (var i = list.length - 1; i >= 0; i -= 1) {
     if (list[i].name === name && list[i].kind === OPPOSITE[kind]) {
       list.splice(i, 1);
       return list;
     }
   }
-  // A reaction changed twice is one change.
-  var again = kind === "reaction-added" && list.some(function (c) { return c.kind === kind && c.name === name; });
-  if (!again) list.push(Object.assign({ kind: kind, name: name }, extra || {}));
+  list.push(Object.assign({ kind: kind, name: name }, extra || {}));
   return list;
+}
+
+// One line per reaction, saying what changed since the records were updated:
+// added, changed or removed. "reaction-restored" is Undo after a removal.
+function logReaction(list, kind, name, extra) {
+  var at = function (k) { return list.findIndex(function (c) { return c.kind === k && c.name === name; }); };
+  var entry = function (k, more) { return Object.assign({ kind: k, name: name }, extra || {}, more || {}); };
+  var added = at("reaction-added");
+  var changed = at("reaction-changed");
+  var removed = at("reaction-removed");
+  if (kind === "reaction-restored") {
+    if (removed === -1) return list.concat(entry("reaction-added"));
+    var was = list[removed].was;
+    list.splice(removed, 1);
+    return was ? list.concat(entry(was)) : list;
+  }
+  if (kind === "reaction-removed") {
+    if (added !== -1) {
+      list.splice(added, 1);
+      return list;
+    }
+    if (changed !== -1) {
+      list.splice(changed, 1);
+      return list.concat(entry(kind, { was: "reaction-changed" }));
+    }
+    return removed === -1 ? list.concat(entry(kind)) : list;
+  }
+  if (kind === "reaction-changed" && (added !== -1 || changed !== -1)) return list;
+  return added === -1 ? list.concat(entry(kind)) : list;
+}
+
+// Said when an update ends with nothing else to say.
+export function updateDoneText(allergyStatus) {
+  return allergyStatus === "failed"
+    ? "Your medicines are up to date. Your allergies couldn't be updated."
+    : "Your list is up to date.";
 }
 
 function partOf(change) {
@@ -216,8 +251,9 @@ function changeLine(change) {
     case "unstopped": return "Put " + change.name + " back on your list";
     case "removed": return "Removed " + change.name;
     case "allergy-added": return "Added the allergy " + change.name;
-    case "allergy-removed": return "Removed the allergy " + change.name;
+    case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;
     case "reaction-added": return "Added a reaction to " + change.name;
+    case "reaction-changed": return "Changed your reaction to " + change.name;
     case "reaction-removed": return "Removed your reaction to " + change.name;
     case "none-said": return "Said you have no known allergies";
     case "none-unsaid": return "Took back that you have no known allergies";
