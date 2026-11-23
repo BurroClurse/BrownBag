@@ -31,7 +31,12 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- Nothing yet.
+- Screen fixes (2026-11-23): start adding a medicine, tap Done, see the
+  "isn't saved yet" line on home (fits the screen), open My medicines and
+  find the form as it was; the same with the phone's Back button. More
+  options, Add to Home Screen, then Done, "I've done this" and Back each go
+  back to More options. QR code: tap its blank space (no ring drawn), Close
+  still works. Undo on a "Filled, not in your records" medicine.
 
 ## On a real iPhone (Tyler)
 

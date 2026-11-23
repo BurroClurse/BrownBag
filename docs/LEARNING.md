@@ -1020,6 +1020,34 @@ card's key still counts, so a stopped medicine doesn't come back.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
 
+### Step 18. Screens that remember where you were (`js/app.js`, `js/view.js`)
+
+Brown Bag draws each screen from scratch from one object called `state`.
+Anything not in `state` is gone at the next draw. That caused most of these
+five rough edges.
+
+**The half-typed medicine** lived only in the boxes on the page. Now every
+keystroke copies it into `state.draft`, and the form fills itself back in.
+Home says "isn't saved yet", because a medicine that isn't saved isn't in
+the QR code. The draft stays in memory only: locking or closing Brown Bag
+forgets it, so nothing unencrypted is stored.
+
+**Back goes back.** The browser keeps a history of steps, and each Brown
+Bag screen adds one (`history.pushState`). The Home Screen steps opened
+from More options didn't add theirs, so Back skipped to home. Now they do.
+
+**Escape on the QR code.** Key presses go to whatever has **focus**. A tap
+on blank space moved focus off the code screen, so it never heard Escape.
+Giving the code screen `tabIndex = -1` lets a tap land on it, without adding
+a stop for the Tab key.
+
+**Say the right list.** "From your records" now says why it's empty when
+only insurance-only medicines are current, and Undo names the list the
+medicine really goes back to.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+Open Brown Bag, type `history.length` in the Console, and watch it change
+as you open screens.
 
 ---
 

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -126,7 +126,7 @@ test("sourceLine shows an end date when there is one", () => {
 test("emptyRecordsText explains why From your records is empty", () => {
   assert.equal(emptyRecordsText({ current: [], older: [] }, { current: [], stopped: [] }), "No medicines in your records.");
   assert.equal(emptyRecordsText({ current: [], older: [item("rx:2", "y")] }, { current: [], stopped: [] }), "No current medicines in your records.");
-  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [], stopped: [item("rx:1", "x")] }), "You've marked all your current medicines stopped.");
+  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [], stopped: [item("rx:1", "x")] }), "You've marked all the medicines from your records stopped.");
   assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [item("rx:1", "x")], stopped: [] }), null);
 });
 
@@ -222,4 +222,33 @@ test("arrangeList keeps a stopped mark saved under another of the card's keys", 
   assert.equal(arranged.stopped[0].stoppedAt, "2026-11-01");
   // Put back deletes the mark by this key, so it must be the marked one.
   assert.equal(arranged.stopped[0].key, "fill:2");
+});
+
+test("emptyRecordsText looks only at the records, not the insurance-only medicines", () => {
+  const fill = item("fill:1", "sertraline", { origin: "claims" });
+  assert.equal(emptyRecordsText({ current: [fill], older: [] }, { current: [fill], stopped: [] }), "No medicines in your records.");
+  assert.equal(emptyRecordsText({ current: [fill], older: [item("rx:2", "y")] }, { current: [fill], stopped: [] }), "No current medicines in your records.");
+  assert.equal(emptyRecordsText({ current: [], older: [Object.assign({}, fill)] }, { current: [], stopped: [] }), "No medicines in your records.");
+  assert.equal(emptyRecordsText({ current: [fill], older: [] }, { current: [], stopped: [fill] }), "No medicines in your records.");
+  assert.equal(emptyRecordsText({ current: [fill, item("rx:1", "x")], older: [] }, { current: [fill], stopped: [item("rx:1", "x")] }), "You've marked all the medicines from your records stopped.");
+});
+
+test("backToList names the list a medicine goes back to", () => {
+  assert.deepEqual(backToList({ origin: "claims" }), { name: "Filled, not in your records", focusId: "fills-heading" });
+  assert.deepEqual(backToList({ origin: "records" }), { name: "From your records", focusId: "records-heading" });
+});
+
+test("a draft counts as started once anything is typed or chosen", () => {
+  const draft = (extra) => Object.assign({ name: "", picked: null, dose: { choice: "", other: "" }, often: { choice: "", other: "" } }, extra);
+  assert.equal(draftStarted(null), false);
+  assert.equal(draftStarted(draft()), false);
+  assert.equal(draftStarted(draft({ name: "  " })), false);
+  assert.equal(draftStarted(draft({ name: "zinc" })), true);
+  assert.equal(draftStarted(draft({ dose: { choice: "1 tablet", other: "" } })), true);
+  assert.equal(draftStarted(draft({ often: { choice: "other", other: "Sundays" } })), true);
+});
+
+test("unsavedText says what isn't saved and where to finish it", () => {
+  assert.equal(unsavedText({ name: " zinc ", dose: {}, often: {} }), "zinc isn't saved yet. Open My medicines to finish adding it.");
+  assert.equal(unsavedText({ name: "", dose: { choice: "1 tablet" }, often: {} }), "The medicine you were adding isn't saved yet. Open My medicines to finish adding it.");
 });

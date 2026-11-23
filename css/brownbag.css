@@ -287,6 +287,8 @@ button.secondary.big { border-color: var(--teal); }
    short screen (iPhone Safari with its toolbars) it scrolls instead, so
    "Tap to show the code" never slides under Close. */
 .qr-overlay > * { flex-shrink: 0; }
+/* Focused only by a tap on its blank space; its buttons show their own ring. */
+.qr-overlay:focus { outline: none; }
 .qr-overlay > :last-child { margin-bottom: auto; }
 /* The code screen is white in dark mode too, so its outline buttons and
    focus ring use the light-mode colors. */

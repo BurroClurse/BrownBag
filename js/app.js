@@ -9,7 +9,7 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
@@ -40,6 +40,8 @@ var state = {
   split: { current: [], older: [], failed: false },
   data: { additions: [], stopped: {} },
   adding: false,
+  // The add form as the patient left it (never saved to the phone).
+  draft: null,
   qr: null,
   announce: "",
   focusId: null,
@@ -196,6 +198,8 @@ async function updateWithPass(pass) {
       var samePatient = result.patientId === state.patientId;
       usePatient(result);
       if (!samePatient) {
+        state.adding = false;
+        state.draft = null;
         await loadAdditions();
       }
       await keepFreshCopy();
@@ -421,17 +425,28 @@ window.addEventListener("popstate", function () {
     var after = qrAfter;
     qrAfter = null;
     closeQr(after, true);
+  } else if (state.screen === "install" && history.state && history.state.bb === "more") {
+    // The Home Screen steps opened from More options go back there.
+    go("more", "open-install");
   } else if (state.screen !== "home") {
     go("home", BACK_FOCUS[state.screen]);
   }
 });
 
 function go(screen, focusId) {
-  if (screen !== "home" && state.screen === "home") {
+  if (screen === "install" || (screen !== "home" && state.screen === "home")) {
     history.pushState({ bb: screen }, "");
   } else if (screen === "home" && history.state && history.state.bb) {
     history.back();
     return;
+  }
+  if (state.screen === "medicines" && screen !== "medicines" && state.adding) {
+    if (draftStarted(state.draft)) {
+      state.announce = unsavedText(state.draft);
+    } else {
+      state.adding = false;
+      state.draft = null;
+    }
   }
   state.screen = screen;
   state.focusId = focusId;
@@ -463,7 +478,6 @@ function drawHome(arranged) {
 function drawMedicines(arranged) {
   var top = add(root, "div", null, "screen-top");
   button(top, "Done", "secondary big", function () {
-    state.adding = false;
     go("home", "open-medicines");
   }).id = "medicines-done";
   var title = add(root, "h1", "My medicines");
@@ -614,10 +628,26 @@ function drawAddForm(section) {
   saveButton.type = "submit";
   var cancelButton = button(form, "Cancel", "secondary big", function () {
     state.adding = false;
+    state.draft = null;
     state.focusId = "add-open";
     render();
   });
   var checking = false;
+
+  // Coming back to a half-typed addition (Done, Back, or an update redrew
+  // the screen): the answers are as the patient left them.
+  if (state.draft) {
+    picked = state.draft.picked;
+    name.value = state.draft.name;
+    if (picked) fillDose(picked.name);
+    dose.restore(state.draft.dose);
+    often.restore(state.draft.often);
+  }
+  function keepDraft() {
+    state.draft = { name: name.value, picked: picked, dose: dose.draft(), often: often.draft() };
+  }
+  form.addEventListener("input", keepDraft);
+  form.addEventListener("change", keepDraft);
 
   name.addEventListener("input", function () {
     if (picked && picked.name !== name.value) {
@@ -646,6 +676,7 @@ function drawAddForm(section) {
             picked = { rxcui: drug.rxcui, name: drug.name };
             name.value = drug.name;
             fillDose(drug.name);
+            keepDraft();
             clear(results);
             searchStatus.textContent = "Picked " + drug.name + ".";
             dose.focus();
@@ -716,6 +747,7 @@ function keepAddition(addition, replacing) {
   state.data.additions.push(addition);
   recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
   state.adding = false;
+  state.draft = null;
   state.announce = addition.name + " added.";
   state.focusId = "add-open";
   save();
@@ -729,7 +761,7 @@ async function checkAgainstList(addition) {
   var arranged = arrangeList(state.split, state.data);
   var list = state.data.additions.map(function (a) { return Object.assign({ origin: "added" }, a); })
     .concat(arranged.current.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }))
-    .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: "records" }); }));
+    .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }));
   var ingredientOf = new Map(state.split.ingredientOf instanceof Map ? state.split.ingredientOf : []);
   var missing = [addition.rxcui].concat(list.map(function (e) { return e.rxcui; }))
     .filter(function (code, i, all) { return code && !ingredientOf.has(code) && all.indexOf(code) === i; });
@@ -780,8 +812,9 @@ function drawAddCheck(form, result, addition, how) {
       delete state.data.stopped[match.key];
       recordChange("unstopped", match.name);
       state.adding = false;
-      state.announce = match.name + " moved back to From your records.";
-      state.focusId = "records-heading";
+      state.draft = null;
+      state.announce = match.name + " moved back to " + backToList(match).name + ".";
+      state.focusId = backToList(match).focusId;
       save();
     });
     // A new strength of a stopped medicine: add it, the old one stays stopped
@@ -844,6 +877,16 @@ function pickList(form, id, labelText, otherText) {
     chosen: function () {
       return select.value === "" || select.value === "other" ? -1 : Number(select.value);
     },
+    draft: function () {
+      var index = Number(select.value);
+      return { choice: select.value === "" || select.value === "other" ? select.value : labels[index], other: other.value };
+    },
+    restore: function (kept) {
+      other.value = kept.other;
+      var at = labels.indexOf(kept.choice);
+      select.value = kept.choice === "other" ? "other" : at === -1 ? "" : String(at);
+      otherBox.hidden = select.value !== "other";
+    },
     words: function () {
       if (select.value === "other") return other.value;
       return select.value === "" ? "" : labels[Number(select.value)];
@@ -862,8 +905,8 @@ function drawStopped(arranged) {
     button(row, "Undo", "secondary card-action", function () {
       delete state.data.stopped[entry.key];
       recordChange("unstopped", entry.name);
-      state.announce = entry.name + " moved back to From your records.";
-      state.focusId = "records-heading";
+      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      state.focusId = backToList(entry).focusId;
       save();
     }, "Undo: " + entry.name);
   });
@@ -910,6 +953,9 @@ async function buildQr() {
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "qr-heading");
+  // A tap on the blank space lands on the overlay itself, so Escape and Tab
+  // still reach it.
+  overlay.tabIndex = -1;
   var bag = document.getElementById("home-bag");
   if (bag) {
     var from = bag.getBoundingClientRect();
@@ -1097,7 +1143,7 @@ function drawNotices() {
 function drawInstall() {
   var top = add(root, "div", null, "screen-top");
   button(top, "Done", "secondary big", function () {
-    go("home", "show-qr");
+    history.back();
   }).id = "install-back";
   var title = add(root, "h1", "Add Brown Bag to your Home Screen");
   title.id = "install-heading";
@@ -1110,7 +1156,7 @@ function drawInstall() {
   button(root, "I've done this", "primary big", function () {
     markInstallDone(localStorage);
     state.announce = "The Home Screen tip is put away.";
-    go("home", "show-qr");
+    history.back();
   }).id = "install-done";
 }
 

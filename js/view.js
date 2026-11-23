@@ -72,10 +72,29 @@ export function countLine(entry) {
 
 // Why "From your records" is empty, or null when it isn't.
 export function emptyRecordsText(split, arranged) {
-  if (arranged.current.length) return null;
-  if (arranged.stopped.length) return "You've marked all your current medicines stopped.";
-  if (split.older.length) return "No current medicines in your records.";
+  // Medicines only the insurer knows about have their own section.
+  var fromRecords = function (entry) { return entry.origin !== "claims"; };
+  if (arranged.current.some(fromRecords)) return null;
+  if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records stopped.";
+  if (split.older.some(fromRecords)) return "No current medicines in your records.";
   return "No medicines in your records.";
+}
+
+// Where a medicine goes when "I stopped this" is undone.
+export function backToList(entry) {
+  return entry.origin === "claims"
+    ? { name: "Filled, not in your records", focusId: "fills-heading" }
+    : { name: "From your records", focusId: "records-heading" };
+}
+
+// A half-typed addition is kept while Brown Bag stays unlocked, so Done,
+// Back or an update doesn't throw it away.
+export function draftStarted(draft) {
+  return Boolean(draft && (draft.name.trim() || draft.dose.choice || draft.often.choice));
+}
+
+export function unsavedText(draft) {
+  return (draft.name.trim() || "The medicine you were adding") + " isn't saved yet. Open My medicines to finish adding it.";
 }
 
 export function makeAddition(input, now) {
