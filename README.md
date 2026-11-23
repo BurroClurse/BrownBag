@@ -14,19 +14,32 @@ account, and Brown Bag reads their prescriptions and listed medicines
 through SMART on FHIR, which US certified health record systems must offer
 to patient apps. It adds pharmacy fills from insurance claims, showing what
 was actually picked up. Today it connects to the SMART Health IT sandbox
-(test patients only), whose claims stand in for an insurer's.
+(test patients only), whose claims stand in for an insurer's. Epic, Aetna
+and Medicare sandboxes are being added (see the table below).
 
-The accounts it is built to work with:
+The accounts it is built to work with: the patient portal of any US
+certified health record system, such as Epic MyChart, Oracle Health
+(Cerner) HealtheLife or MEDITECH's patient portal, at any hospital, clinic
+or practice that uses one; and the patient access of any health plan,
+such as Medicare (Blue Button), Medicare Advantage or Medicaid plans, which
+federal rules (the CMS Patient Access API) require to offer it. Each one
+needs Brown Bag registered with it before real patients can sign in.
 
-| Kind | Examples |
-| --- | --- |
-| Patient portals on the big health record systems | Epic MyChart, Oracle Health (Cerner) HealtheLife, MEDITECH (Patient Portal and MHealth), athenahealth (athenaPatient), eClinicalWorks (healow), NextGen Patient Portal, Veradigm (FollowMyHealth) |
-| Hospital and health systems | Any hospital, clinic or practice on those systems, such as Kaiser Permanente, Mayo Clinic, Cleveland Clinic, or a local hospital's MyChart |
-| Government | The VA (My HealtheVet, through the VA's Lighthouse API) |
-| Insurance claims, for pharmacy fills | Medicare (Blue Button), and Medicare Advantage, Medicaid and other health plans, which must offer patients the same kind of access (the CMS Patient Access API) |
+**Sandboxes.** Each company's own developer documents were read, and each
+test server was checked from Brown Bag's web address to see whether a
+browser page can read its records directly (CORS), since Brown Bag keeps
+the list out of any server.
 
-Each one needs Brown Bag registered with it before real patients can sign
-in; the sandbox is the only one connected so far.
+| Sandbox | Status | Why |
+| --- | --- | --- |
+| SMART Health IT | Connected | The course sandbox. Test patients only. |
+| Epic (open.epic) | Being added | Self-service, no approval wait. Browser reading works. Test patient Camila Lopez has medicines. A browser-only app gets no stay-signed-in pass. |
+| Aetna | Being added | Allows browser apps (PKCE), and records are readable from the browser. Its sign-up questionnaire is reviewed in 2 to 4 business days, even for the sandbox. No stay-signed-in pass. |
+| Medicare (Blue Button) | Being added | Pharmacy fills from Medicare claims. Design: `docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md`. |
+| Oracle Health (Ignite) | Later | Free account, and browser reading works. Patient apps need a code in the app's own domain's DNS settings, which a github.io address can't hold, so it needs a custom domain. |
+| MEDITECH (Greenfield) | Later | Manual sign-up with a license agreement and a call. Three test patients. Each real hospital approves the app separately. |
+| UnitedHealthcare | No | Needs a registered organization, and its server doesn't let a browser read data, so claims would have to pass through a server. No MedicationStatement records either. |
+| Humana | No | Needs a D-U-N-S number and a registered company, which a student project can't have. |
 
 It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox and reads FHIR R4 records.
 It is built to be simple to use: one main screen with no
