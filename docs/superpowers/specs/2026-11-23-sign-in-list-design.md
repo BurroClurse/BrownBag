@@ -1,6 +1,7 @@
 # Sign-in list: short design
 
-Status: waiting for Tyler's approval.
+Status: approved by Tyler, 2026-11-23. Aetna is left out; he may add it later
+("It would be a good resource"), once its terms are settled.
 
 ## Why
 
@@ -33,7 +34,6 @@ Not connected
   Insurance
     Medicare
     Medicaid
-    Aetna (Tyler decides: in or out)
 
 [ Back ]
 
@@ -90,5 +90,5 @@ No owner says anything about "planned" lists. Not legal advice.
   `bluebutton.cms.gov/production-access/`. The Blue Button notice goes in
   only once its API is used.
 - Medicaid: same law; run by states.
-- Aetna: CVS Health's terms ask for written permission to use its marks, and
+- Aetna (left out for now): CVS Health's terms ask for written permission to use its marks, and
   no allowance for plain naming was found. `cvshealth.com/terms-of-use.html`
