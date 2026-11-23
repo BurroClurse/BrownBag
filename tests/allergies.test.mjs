@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -99,15 +99,100 @@ test("the patient's own and a record of the same thing share one card", () => {
   assert.equal(out.count, 1);
   assert.equal(out.cards[0].origin, "records");
   assert.equal(out.cards[0].mine.reaction, "Itching");
-  assert.equal(out.cards[0].mine.id, "o1");
+  assert.deepEqual(out.cards[0].mine.ids, ["o1"]);
   const apart = arrangeAllergies(loaded(items(rec())), data({ allergies: [own("Penicillin")] }));
   assert.deepEqual(apart.cards.map((c) => [c.name, c.origin]), [["Mold", "records"], ["Penicillin", "added"]]);
 });
 
 test("the patient's reaction stays when the record's code changes but not its name", () => {
-  const out = arrangeAllergies(loaded(items(rec())), data({ allergyReactions: { "alg:name:mold": { reaction: "Hives or rash", addedAt: "2026-11-23" } } }));
-  assert.equal(out.cards[0].mine.reaction, "Hives or rash");
-  assert.equal(out.cards[0].mineKey, "alg:name:mold");
+  const d = data();
+  setMyReaction(d, arrangeAllergies(loaded(items(rec())), d).cards[0], "Hives or rash", "2026-11-23");
+  const mine = (list) => arrangeAllergies(loaded(list), d).cards[0].mine;
+  assert.equal(mine(items(rec())).reaction, "Hives or rash");
+  assert.equal(mine(items(coded("999", "Mold"))).reaction, "Hives or rash");
+  assert.equal(mine(items(named("mold"))).reaction, "Hives or rash");
+  // The name changes and the code stays: still theirs.
+  assert.equal(mine(items(rec({ code: { coding: [{ system: SNOMED, code: "84489001", display: "Mould" }] } }))).reaction, "Hives or rash");
+  // After a change of code, Change and Remove still act on the same entry.
+  const changed = arrangeAllergies(loaded(items(coded("999", "Mold"))), d).cards[0];
+  setMyReaction(d, changed, "Itching", "2026-11-24");
+  assert.equal(Object.keys(d.allergyReactions).length, 1);
+  removeMine(d, arrangeAllergies(loaded(items(named("Mold"))), d).cards[0]);
+  assert.deepEqual(d.allergyReactions, {});
+});
+
+test("a reaction under a broad code goes only to the allergy it was added to", () => {
+  const list = items(rec({ id: "1", code: { coding: [{ system: SNOMED, code: "416098002" }], text: "Penicillin" } }), rec({ id: "2", code: { coding: [{ system: SNOMED, code: "416098002" }], text: "Sulfa" } }));
+  assert.deepEqual(list.map((i) => i.name), ["Penicillin", "Sulfa"]);
+  assert.notEqual(list[0].key, list[1].key);
+  const d = data();
+  setMyReaction(d, arrangeAllergies(loaded(list), d).cards[1], "Hives or rash", "2026-11-23");
+  assert.deepEqual(arrangeAllergies(loaded(list), d).cards.map((c) => c.mine && c.mine.reaction), [null, "Hives or rash"]);
+});
+
+test("different allergies that share a placeholder code stay apart", () => {
+  const absent = (text) => rec({ code: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }], text } });
+  assert.deepEqual(items(absent("Penicillin"), absent("Latex")).map((i) => i.name), ["Latex", "Penicillin"]);
+  assert.equal(items(absent("Penicillin"), rec({ id: "9", code: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }] } })).length, 2);
+  // A nameless record of a real code joins the one that has its name.
+  assert.deepEqual(items(rec({ id: "1", code: { coding: [{ system: SNOMED, code: "84489001" }] } }), rec()).map((i) => i.name), ["Mold"]);
+});
+
+test("two of the patient's own with one name keep both reactions", () => {
+  const d = data({ allergies: [own("Penicillin", { id: "a", reaction: "Severe reaction (anaphylaxis)" }), own("penicillin", { id: "b", reaction: "Itching" })] });
+  const out = arrangeAllergies(loaded(), d);
+  assert.equal(out.count, 1);
+  assert.equal(reactionLine(out.cards[0]), "Reaction: Severe reaction (anaphylaxis) · Itching");
+  const removed = removeMine(d, out.cards[0]);
+  assert.equal(d.allergies.length, 0);
+  putBack(d, removed);
+  assert.equal(d.allergies.length, 2);
+});
+
+test("the patient's own and their reaction on the record both show", () => {
+  const d = data({ allergies: [own("Mold", { reaction: "Itching" })] });
+  setMyReaction(data(), arrangeAllergies(loaded(items(rec())), data()).cards[0], "x", "2026-11-23");
+  d.allergyReactions = { "alg:name:mold": { name: "Mold", keys: ["alg:name:mold"], reaction: "Hives or rash", addedAt: "2026-11-23" } };
+  const card = arrangeAllergies(loaded(items(rec())), d).cards[0];
+  assert.equal(reactionLine(card), "Reaction: Hives or rash · Itching (added by me)");
+  const removed = removeMine(d, card);
+  assert.deepEqual([d.allergies.length, Object.keys(d.allergyReactions).length], [0, 0]);
+  putBack(d, removed);
+  assert.deepEqual([d.allergies.length, Object.keys(d.allergyReactions).length], [1, 1]);
+});
+
+test("the patient's own and a record with the same drug code share one card", () => {
+  const RX = "http://www.nlm.nih.gov/research/umls/rxnorm";
+  const out = arrangeAllergies(loaded(items(rec({ code: { coding: [{ system: RX, code: "1191" }], text: "acetylsalicylic acid" } }))), data({ allergies: [own("Aspirin", { rxcui: "1191" })] }));
+  assert.equal(out.count, 1);
+  assert.equal(out.cards[0].mine.reaction, "Itching");
+});
+
+test("a reaction with a code but no words is never lost", () => {
+  assert.deepEqual(items(rec({ reaction: [{ manifestation: [{ coding: [{ system: SNOMED, code: "39579001" }] }], severity: "severe" }] }))[0].reactions, [{ text: "Unnamed reaction", severity: "severe" }]);
+  assert.deepEqual(items(rec({ reaction: [{ severity: "moderate" }] }))[0].reactions, [{ text: "Unnamed reaction", severity: "moderate" }]);
+});
+
+test("joined records keep the worst severity", () => {
+  const r = (severity) => rec({ reaction: [{ manifestation: [{ text: "Hives" }], severity }] });
+  for (const order of [["mild", "severe"], ["severe", "mild"], ["severe", undefined], [undefined, "severe"]]) {
+    assert.deepEqual(items(r(order[0]), r(order[1]))[0].reactions, [{ text: "Hives", severity: "severe" }], order.join());
+  }
+});
+
+test("a Bundle that says something was withheld is a failure, not none", async () => {
+  const says = async (b) => (await readAllergies(async () => b, "p", "S", 500)).status;
+  const outcome = (severity) => ({ resource: { resourceType: "OperationOutcome", issue: [{ severity, code: "forbidden" }] } });
+  assert.equal(await says({ resourceType: "Bundle", entry: [outcome("error")] }), "failed");
+  assert.equal(await says({ resourceType: "Bundle", entry: [outcome("fatal"), { resource: rec() }] }), "failed");
+  assert.equal(await says({ resourceType: "Bundle", total: 3, entry: [] }), "failed");
+  assert.equal(await says({ resourceType: "Bundle", total: 0 }), "loaded");
+  assert.equal(await says({ resourceType: "Bundle", total: 1, entry: [outcome("warning"), { resource: rec() }] }), "loaded");
+});
+
+test("saysNone spots words that mean no allergies", () => {
+  for (const text of ["none", "No known allergies", "no allergies", "NKDA", "no known drug allergies", "No known food allergy", "nka"]) assert.equal(saysNone(text), true, text);
+  for (const text of ["Nona plant", "Non-steroidals", "Nuts", "no-name cream"]) assert.equal(saysNone(text), false, text);
 });
 
 test("no known allergies counts only while nothing is listed", () => {
@@ -202,4 +287,13 @@ test("a half-typed allergy counts once anything is chosen, and is named", () => 
   assert.equal(unsavedAllergyText({ allergen: { choice: "other", other: " Kiwi " }, reaction: none.reaction }, null), "Kiwi isn't saved yet. Open My medicines to finish adding it.");
   assert.equal(unsavedAllergyText({ allergen: none.allergen, reaction: { choice: "Itching" } }, null), "The allergy you were adding isn't saved yet. Open My medicines to finish adding it.");
   assert.equal(unsavedAllergyText({ allergen: none.allergen, reaction: { choice: "Itching" } }, "Mold"), "The reaction to Mold isn't saved yet. Open My medicines to finish adding it.");
+});
+
+test("changing the reaction keeps the patient's own entry, so it outlives the record", () => {
+  const d = data({ allergies: [own("Penicillin"), own("penicillin", { id: "o2", reaction: "Hives or rash" })] });
+  const withRecord = arrangeAllergies(loaded(items(named("Penicillin"))), d).cards[0];
+  setMyReaction(d, withRecord, "Trouble breathing", "2026-11-24");
+  assert.equal(arrangeAllergies(loaded(items(named("Penicillin"))), d).cards[0].mine.reaction, "Trouble breathing");
+  const later = arrangeAllergies(loaded(), d);
+  assert.deepEqual(later.cards.map((c) => [c.name, c.origin, reactionLine(c)]), [["Penicillin", "added", "Reaction: Trouble breathing"]]);
 });

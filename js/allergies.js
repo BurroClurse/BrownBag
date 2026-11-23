@@ -6,6 +6,11 @@
 import { listDate } from "./offline.js";
 
 var SNOMED = "http://snomed.info/sct";
+var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+// Codes that mean "no code", so they never say two records are one allergy.
+var NO_CODE = /data-absent-reason|NullFlavor/i;
+var SEVERITIES = ["mild", "moderate", "severe"];
+var UNNAMED = "Unnamed allergy";
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 var NOT_NOW = ["inactive", "resolved"];
 var NOT_REAL = ["entered-in-error", "refuted"];
@@ -62,11 +67,16 @@ export function statementOf(resource, name) {
   return /^no known (drug|medication|food|environmental) allerg(y|ies)$/i.test(name) ? name : null;
 }
 
+function worst(a, b) {
+  return SEVERITIES.indexOf(b) > SEVERITIES.indexOf(a) ? b : a;
+}
+
 function reactionsOf(resource) {
   var out = [];
   (resource.reaction || []).forEach(function (reaction) {
     var texts = (reaction.manifestation || []).map(words).filter(Boolean);
-    if (!texts.length && reaction.description) texts = [reaction.description];
+    // A reaction with no words is still a reaction.
+    if (!texts.length) texts = [reaction.description || "Unnamed reaction"];
     texts.forEach(function (text) { out.push({ text: text, severity: reaction.severity || null }); });
   });
   return out;
@@ -74,14 +84,15 @@ function reactionsOf(resource) {
 
 function itemFrom(resource, sourceName, index) {
   var name = words(resource.code);
-  var code = codesOf(resource.code)[0];
-  var keys = codesOf(resource.code).map(function (c) { return "alg:" + (c.system || "") + "|" + c.code; });
+  var codes = codesOf(resource.code).filter(function (c) { return !NO_CODE.test(c.system || ""); });
+  var code = codes[0];
+  var keys = codes.map(function (c) { return "alg:" + (c.system || "") + "|" + c.code; });
   if (name) keys.push("alg:name:" + plainName(name));
   if (!keys.length) keys.push("alg:id:" + (resource.id || "none-" + index));
   return {
     key: keys[0],
     otherKeys: keys.slice(1),
-    name: name || "Unnamed allergy",
+    name: name || UNNAMED,
     code: code ? { system: code.system || null, code: code.code } : null,
     reactions: reactionsOf(resource),
     intolerance: resource.type === "intolerance",
@@ -102,16 +113,24 @@ function join(into, item) {
   item.reactions.forEach(function (reaction) {
     var same = into.reactions.filter(function (r) { return r.text.toLowerCase() === reaction.text.toLowerCase(); })[0];
     if (!same) into.reactions.push(reaction);
-    else if (!same.severity) same.severity = reaction.severity;
+    else same.severity = worst(same.severity, reaction.severity);
   });
   into.intolerance = into.intolerance && item.intolerance;
   into.unconfirmed = into.unconfirmed && item.unconfirmed;
   into.highRisk = into.highRisk || item.highRisk;
-  if (into.name === "Unnamed allergy") into.name = item.name;
+  if (into.name === UNNAMED) into.name = item.name;
 }
 
 function byName(a, b) {
   return a.name.localeCompare(b.name);
+}
+
+// The same name is the same allergy. The same code is too, unless the names
+// differ: codes like "Allergy to drug" cover many, and losing one of two
+// names would hide an allergy.
+function sameAllergy(a, b) {
+  if (a.name !== UNNAMED && b.name !== UNNAMED) return plainName(a.name) === plainName(b.name);
+  return allKeys(a).some(function (key) { return allKeys(b).indexOf(key) !== -1; });
 }
 
 export function fromAllergyRecords(resources, sourceName) {
@@ -126,11 +145,9 @@ export function fromAllergyRecords(resources, sourceName) {
       return;
     }
     var item = itemFrom(resource, sourceName, index);
-    // One record can link two allergies already read (the code of one, the
-    // name of the other); then all of them are one.
-    var same = items.filter(function (other) {
-      return allKeys(other).some(function (key) { return allKeys(item).indexOf(key) !== -1; });
-    });
+    // One record can link two already read (a nameless one by its code, a
+    // named one by its name); then all of them are one.
+    var same = items.filter(function (other) { return sameAllergy(other, item); });
     if (!same.length) {
       items.push(item);
       return;
@@ -141,7 +158,16 @@ export function fromAllergyRecords(resources, sourceName) {
       items.splice(items.indexOf(other), 1);
     });
   });
-  return { items: items.sort(byName), statements: statements };
+  items.sort(byName);
+  // A code shared by two different allergies can't be the key of both.
+  var taken = {};
+  items.forEach(function (item) {
+    var free = allKeys(item).filter(function (key) { return !taken[key]; })[0] || item.key + "#" + items.indexOf(item);
+    item.otherKeys = allKeys(item).filter(function (key) { return key !== free; });
+    item.key = free;
+    taken[free] = true;
+  });
+  return { items: items, statements: statements };
 }
 
 // Every page, inside ms, like the claims. "refused" means this sign-in can't
@@ -156,15 +182,23 @@ export async function readAllergies(request, patientId, sourceName, ms) {
   });
   var work = (async function () {
     var found = [];
+    var said = null;
     var url = "AllergyIntolerance?patient=" + encodeURIComponent(patientId);
     while (url) {
       if (Date.now() >= deadline) return nothing("failed");
       var bundle = await request(url);
       if (!bundle || bundle.resourceType !== "Bundle") return nothing("failed");
       (bundle.entry || []).forEach(function (entry) { if (entry && entry.resource) found.push(entry.resource); });
+      if (typeof bundle.total === "number") said = bundle.total;
       var next = (bundle.link || []).filter(function (l) { return l.relation === "next" && l.url; })[0];
       url = next ? next.url : null;
     }
+    // The server left something out, or says there are some and sent none.
+    var withheld = found.some(function (r) {
+      return r.resourceType === "OperationOutcome" && (r.issue || []).some(function (i) { return i.severity === "error" || i.severity === "fatal"; });
+    });
+    var read = found.some(function (r) { return r.resourceType === "AllergyIntolerance"; });
+    if (withheld || (said > 0 && !read)) return nothing("failed");
     return Object.assign({ status: "loaded" }, fromAllergyRecords(found, sourceName));
   })().catch(function (error) {
     var status = error && (error.status || (error.response && error.response.status));
@@ -193,29 +227,47 @@ export function sameAllergen(name, cards) {
   return (cards || []).filter(function (card) { return plain && plainName(card.name) === plain; })[0] || null;
 }
 
+// What the patient said about one card: from their own entries (ids) and
+// from reactions added to a record (keys). Several keep every reaction.
+function addMine(card, entry, reaction, addedAt) {
+  var mine = card.mine || { ids: [], keys: [], reactions: [], reaction: NOT_SURE, addedAt: addedAt };
+  if (entry.id) mine.ids.push(entry.id);
+  else mine.keys.push(entry.key);
+  if (reaction !== NOT_SURE && mine.reactions.indexOf(reaction) === -1) mine.reactions.push(reaction);
+  mine.reaction = mine.reactions.length ? mine.reactions.join(" · ") : NOT_SURE;
+  card.mine = mine;
+}
+
+// The card a saved reaction belongs to. Its name decides; its code only when
+// no name matches and one card alone has that code (records get recoded).
+function cardFor(saved, key, cards) {
+  var byItsName = saved.name ? sameAllergen(saved.name, cards) : null;
+  if (byItsName) return byItsName;
+  var keys = [key].concat(saved.keys || []);
+  var has = cards.filter(function (card) { return allKeys(card).some(function (k) { return keys.indexOf(k) !== -1; }); });
+  return has.length === 1 ? has[0] : null;
+}
+
 // One card per allergy: the record's, with the patient's reaction on it, or
 // the patient's own.
 export function arrangeAllergies(allergies, data) {
   var reactions = (data && data.allergyReactions) || {};
-  var cards = allergies.items.map(function (item) {
-    var mineKey = allKeys(item).filter(function (key) { return Object.prototype.hasOwnProperty.call(reactions, key); })[0] || null;
-    return Object.assign({}, item, {
-      origin: "records",
-      mineKey: mineKey,
-      mine: mineKey ? { id: null, reaction: reactions[mineKey].reaction, addedAt: reactions[mineKey].addedAt } : null
-    });
+  var cards = allergies.items.map(function (item) { return Object.assign({}, item, { origin: "records", mine: null }); });
+  Object.keys(reactions).forEach(function (key) {
+    var card = cardFor(reactions[key], key, cards);
+    if (card) addMine(card, { key: key }, reactions[key].reaction, reactions[key].addedAt);
   });
   ((data && data.allergies) || []).forEach(function (own) {
-    var mine = { id: own.id, reaction: own.reaction, addedAt: own.addedAt };
-    var card = sameAllergen(own.name, cards);
-    if (card) {
-      card.mine = mine;
-      return;
+    var byCode = own.rxcui && cards.filter(function (card) { return allKeys(card).indexOf("alg:" + RXNORM + "|" + own.rxcui) !== -1; });
+    var card = sameAllergen(own.name, cards) || (byCode && byCode.length === 1 ? byCode[0] : null);
+    if (!card) {
+      card = {
+        key: "own:" + own.id, otherKeys: [], name: own.name.trim(), code: null, rxcui: own.rxcui || null, reactions: [],
+        intolerance: false, unconfirmed: false, highRisk: false, source: null, origin: "added", mine: null
+      };
+      cards.push(card);
     }
-    cards.push({
-      key: "own:" + own.id, otherKeys: [], name: own.name.trim(), code: null, rxcui: own.rxcui || null, reactions: [],
-      intolerance: false, unconfirmed: false, highRisk: false, source: null, origin: "added", mineKey: null, mine: mine
-    });
+    addMine(card, { id: own.id }, own.reaction, own.addedAt);
   });
   var none = (data && data.noKnownAllergies) || null;
   return {
@@ -225,6 +277,41 @@ export function arrangeAllergies(allergies, data) {
     canSayNone: !cards.length && !none && (allergies.status === "loaded" || Boolean(allergies.savedAt)),
     count: cards.length
   };
+}
+
+// The patient's reaction to a card from the records (new or changed). One
+// entry is left. When they had added the allergy themselves, that entry
+// stays theirs, so it's still there if the record goes away.
+export function setMyReaction(data, card, reaction, date) {
+  var own = removeMine(data, card).own[0];
+  if (own) {
+    data.allergies.push(Object.assign({}, own, { reaction: reaction }));
+    return;
+  }
+  data.allergyReactions[card.key] = { name: card.name === UNNAMED ? null : card.name, keys: allKeys(card), reaction: reaction, addedAt: date };
+}
+
+// Takes off everything the patient said about a card. Returns it for Undo.
+export function removeMine(data, card) {
+  var removed = { own: [], reactions: {} };
+  if (!card.mine) return removed;
+  removed.own = data.allergies.filter(function (a) { return card.mine.ids.indexOf(a.id) !== -1; });
+  data.allergies = data.allergies.filter(function (a) { return card.mine.ids.indexOf(a.id) === -1; });
+  card.mine.keys.forEach(function (key) {
+    removed.reactions[key] = data.allergyReactions[key];
+    delete data.allergyReactions[key];
+  });
+  return removed;
+}
+
+export function putBack(data, removed) {
+  data.allergies = data.allergies.concat(removed.own);
+  Object.assign(data.allergyReactions, removed.reactions);
+}
+
+// Typed words that mean "I have none", which has its own button.
+export function saysNone(text) {
+  return /^(none|nothing|n\/a|nka|nkda|no|no (known )?((drug|food|medication|medicine|environmental) )?allerg(y|ies))$/i.test(String(text || "").trim());
 }
 
 export function reactionWords(reaction) {

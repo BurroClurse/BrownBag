@@ -193,9 +193,11 @@ function allergyFor(card) {
   if (card.mine && card.mine.reaction === NOT_SURE) {
     notes.push(own ? "Reaction not known" : "Patient says: reaction not known");
   } else if (card.mine) {
-    var mine = { manifestation: [{ text: card.mine.reaction }] };
-    if (!own) mine.note = [{ text: FROM_PATIENT }];
-    reactions.push(mine);
+    (card.mine.reactions || [card.mine.reaction]).forEach(function (text) {
+      var mine = { manifestation: [{ text: text }] };
+      if (!own) mine.note = [{ text: FROM_PATIENT }];
+      reactions.push(mine);
+    });
   }
   if (reactions.length) resource.reaction = reactions;
   if (notes.length) resource.note = notes.map(function (text) { return { text: text }; });
@@ -216,10 +218,15 @@ function allergyTags(tags) {
 function groupAllergy(groups, resource) {
   var name = (resource.code && resource.code.text) || "Unnamed allergy";
   var own = Boolean(resource.asserter);
-  var statement = statementOf(resource, name);
+  // The patient's statement is the coded one only, never words they typed.
+  var saysSo = ((resource.code && resource.code.coding) || []).some(function (c) { return c.system === SNOMED && c.code === noneCode("No known allergy"); });
+  if (own && saysSo) {
+    groups.saidNone = true;
+    return;
+  }
+  var statement = own ? null : statementOf(resource, name);
   if (statement) {
-    if (own) groups.saidNone = true;
-    else groups.statements.push(statement);
+    groups.statements.push(statement);
     return;
   }
   var theirs = [];

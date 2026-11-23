@@ -263,7 +263,7 @@ test("additions saved before this change share as words only", () => {
 });
 
 const CARD = (o) => Object.assign({ key: "k", otherKeys: [], name: "Mold", code: null, reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox", origin: "records", mine: null }, o);
-const OWN = (name, reaction, o) => CARD(Object.assign({ name, source: null, origin: "added", mine: { id: "o", reaction, addedAt: "2026-11-23" } }, o));
+const OWN = (name, reaction, o) => CARD(Object.assign({ name, source: null, origin: "added", mine: { ids: ["o"], keys: [], reaction, addedAt: "2026-11-23" } }, o));
 function withAllergies(cards, { statements = [], saidNone = null, status = "loaded", savedAt = null } = {}) {
   return buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: { cards, statements, saidNone } }, NOW, { allergies: { status, savedAt } });
 }
@@ -272,7 +272,7 @@ const allergyEntries = (bundle) => bundle.entry.map((e) => e.resource).filter((r
 test("an allergy from the records travels as FHIR with its reaction and flags", () => {
   const bundle = withAllergies([CARD({
     code: { system: "http://snomed.info/sct", code: "84489001" }, highRisk: true, intolerance: true, unconfirmed: true,
-    reactions: [{ text: "Hives", severity: "severe" }], mine: { id: null, reaction: "Itching", addedAt: "2026-11-23" }
+    reactions: [{ text: "Hives", severity: "severe" }], mine: { ids: [], keys: ["k"], reaction: "Itching", addedAt: "2026-11-23" }
   })]);
   const [a] = allergyEntries(bundle);
   assert.deepEqual(a.patient, { reference: "resource:0" });
@@ -290,7 +290,7 @@ test("an allergy from the records travels as FHIR with its reaction and flags", 
 });
 
 test("a missing reaction is said, never blank", () => {
-  const groups = groupShareBundle(withAllergies([CARD(), OWN("Latex", "Not sure"), CARD({ name: "Dust", mine: { id: null, reaction: "Not sure" } })])).allergies;
+  const groups = groupShareBundle(withAllergies([CARD(), OWN("Latex", "Not sure"), CARD({ name: "Dust", mine: { ids: [], keys: ["k"], reaction: "Not sure" } })])).allergies;
   assert.equal(groups.fromRecords[0].detail, "Reaction not in the records · From records: SMART sandbox");
   assert.equal(groups.fromPatient[0].detail, "Reaction not known");
   assert.equal(groups.fromRecords[1].detail, "Reaction not in the records · Patient says: reaction not known · From records: SMART sandbox");
@@ -361,4 +361,10 @@ test("eight allergies take little room in the code", async () => {
   const cards = ["Penicillin", "Latex", "Peanuts", "Codeine"].map((n) => OWN(n, "Hives or rash")).concat(["Mold", "Shellfish", "Eggs", "Dust"].map((name, i) => CARD({ name, code: { system: "http://snomed.info/sct", code: String(84489001 + i) } })));
   const packed = await packShare(buildShareBundle({ patient: PATIENT, current: meds, additions: [], stopped: [], allergies: { cards, statements: [], saidNone: null } }, NOW, { allergies: { status: "loaded", savedAt: null } }), BASE);
   assert.ok(fitsInQr(packed.prefix, packed.digits));
+});
+
+test("only the patient's own no known allergies statement reads as one", () => {
+  const typed = groupShareBundle(withAllergies([OWN("No known food allergies", "Not sure"), OWN("Latex", "Itching")])).allergies;
+  assert.equal(typed.saidNone, false);
+  assert.deepEqual(typed.fromPatient.map((a) => a.name), ["No known food allergies", "Latex"]);
 });

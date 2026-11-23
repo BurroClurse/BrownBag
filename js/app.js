@@ -13,7 +13,8 @@ import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLi
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, ALLERGENS, REACTIONS } from "./allergies.js";
+import { recordReader } from "./read.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, ALLERGENS, REACTIONS } from "./allergies.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -40,6 +41,8 @@ var state = {
   patient: null,
   split: { current: [], older: [], failed: false },
   data: emptyData(),
+  // The patient's own part couldn't be opened, so nothing may read as "none".
+  dataFailed: false,
   // The records' allergies; the patient's own are in data (js/allergies.js).
   allergies: keepAllergies(null),
   adding: false,
@@ -260,11 +263,11 @@ async function loadFresh(client, found) {
   var patientId = client.patient.id;
   found.patientId = patientId;
   // So do allergies.
-  var allergies = readAllergies(function (url) { return client.request(url); }, patientId, SOURCE, CLAIMS_WAIT_MS)
+  var allergies = readAllergies(recordReader(client), patientId, SOURCE, CLAIMS_WAIT_MS)
     .then(function (result) { found.allergies = result; });
   // Claims load alongside the medicines under their own time limit, so a
   // slow insurer never holds up the list.
-  var claims = readClaims(function (url) { return client.request(url); }, patientId, ingredientsFor, CLAIMS_WAIT_MS);
+  var claims = readClaims(recordReader(client), patientId, ingredientsFor, CLAIMS_WAIT_MS);
   var split = mergeClaims(await loadMedicines(client, patientId), await claims, new Date());
   await allergies;
   return {
@@ -402,8 +405,10 @@ function useSaved(saved) {
 async function loadAdditions() {
   try {
     state.data = await loadPatientData(localStorage, state.key, state.patientId);
+    state.dataFailed = false;
   } catch (error) {
     state.data = emptyData();
+    state.dataFailed = true;
     state.announce = "Your saved additions couldn't be opened on this phone, so new changes can't be saved over them.";
   }
 }
@@ -631,7 +636,7 @@ function drawAllergies(parent) {
     drawAllergyForm(section, arranged, null);
   } else {
     button(section, "+ Add an allergy", "secondary big", function () { openAllergyForm("new", "allergen"); }).id = "allergy-add-open";
-    if (arranged.canSayNone) {
+    if (arranged.canSayNone && !state.dataFailed) {
       button(section, "I have no known allergies", "secondary big", function () {
         state.data.noKnownAllergies = today();
         allergyChange("none-said", "No known allergies");
@@ -657,40 +662,29 @@ function drawAllergyCard(list, card) {
     button(row, "Change the reaction", "secondary card-action", open, "Change the reaction: " + card.name);
   }
   if (card.mine) {
-    var label = card.origin === "added" ? "Remove" : (card.mine.id ? "Remove mine" : "Remove my reaction");
-    button(row, label, "stop card-action", function () { removeMine(card); }, label + ": " + card.name);
+    var label = card.origin === "added" ? "Remove" : (card.mine.ids.length ? "Remove mine" : "Remove my reaction");
+    button(row, label, "stop card-action", function () { removeMyPart(card); }, label + ": " + card.name);
   }
 }
 
-// The patient's own allergy, or the reaction they added to one from the
-// records.
-function removeMine(card) {
-  if (card.mine.id) {
-    var own = state.data.allergies.filter(function (a) { return a.id === card.mine.id; })[0];
-    state.data.allergies = state.data.allergies.filter(function (a) { return a.id !== card.mine.id; });
-    state.lastRemovedAllergy = { name: card.name, own: own };
-    allergyChange("allergy-removed", card.name);
-  } else {
-    state.lastRemovedAllergy = { name: "your reaction to " + card.name, of: card.name, key: card.mineKey, reaction: state.data.allergyReactions[card.mineKey] };
-    delete state.data.allergyReactions[card.mineKey];
-    allergyChange("reaction-removed", card.name);
-  }
+// Everything the patient said about this allergy: their own entry, or the
+// reaction they added to one from the records.
+function removeMyPart(card) {
+  var removed = removeMine(state.data, card);
+  var whole = removed.own.length > 0;
+  state.lastRemovedAllergy = { name: whole ? card.name : "your reaction to " + card.name, of: card.name, whole: whole, removed: removed };
+  allergyChange(whole ? "allergy-removed" : "reaction-removed", card.name);
   allergySaved("Removed " + state.lastRemovedAllergy.name + ".", "undo-allergy");
 }
 
 function drawAllergyUndo(section) {
-  var removed = state.lastRemovedAllergy;
-  var row = add(section, "p", "Removed " + removed.name + ". ", "med-line");
+  var last = state.lastRemovedAllergy;
+  var row = add(section, "p", "Removed " + last.name + ". ", "med-line");
   button(row, "Undo", "secondary", function () {
-    if (removed.own) {
-      state.data.allergies.push(removed.own);
-      allergyChange("allergy-added", removed.name);
-    } else {
-      state.data.allergyReactions[removed.key] = removed.reaction;
-      allergyChange("reaction-added", removed.of);
-    }
+    putBack(state.data, last.removed);
+    allergyChange(last.whole ? "allergy-added" : "reaction-added", last.of);
     allergySaved("Put back.", "allergies-heading");
-  }, "Undo: put " + removed.name + " back").id = "undo-allergy";
+  }, "Undo: put " + last.name + " back").id = "undo-allergy";
 }
 
 function openAllergyForm(which, focusId) {
@@ -716,12 +710,7 @@ function closeAllergyForm() {
 }
 
 function setReaction(card, reaction) {
-  var own = card.mine && card.mine.id && state.data.allergies.filter(function (a) { return a.id === card.mine.id; })[0];
-  if (own) {
-    own.reaction = reaction;
-  } else {
-    state.data.allergyReactions[card.mineKey || card.key] = { reaction: reaction, addedAt: today() };
-  }
+  setMyReaction(state.data, card, reaction, today());
   allergyChange("reaction-added", card.name);
   closeAllergyForm();
   allergySaved("Reaction to " + card.name + " saved.", "allergies-heading");
@@ -762,6 +751,11 @@ function drawAllergyForm(parent, arranged, card) {
     var happened = reaction.words().trim();
     if (!name) {
       status.textContent = "Choose what you're allergic to.";
+      allergen.focus();
+      return;
+    }
+    if (allergen && saysNone(name)) {
+      status.textContent = "That says you have none. Cancel, then use “I have no known allergies” if it's there.";
       allergen.focus();
       return;
     }
@@ -1240,7 +1234,7 @@ async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   // Staff are told when the records part is an older saved copy, or when a
   // source failed to load, so a partial list never looks complete.
-  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed, allergies: { status: state.allergies.status, savedAt: state.allergies.savedAt } };
+  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed || state.dataFailed, allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt } };
   list.allergies = arrangeAllergies(state.allergies, state.data);
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   var fits = fitsInQr(packed.prefix, packed.digits);
