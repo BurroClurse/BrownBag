@@ -7,7 +7,8 @@ import {
   unpackShare,
   fitsInQr,
   QR_MAX_BYTES,
-  ShareError
+  ShareError,
+  AS_NEEDED_NOTE
 } from "../js/share.js";
 
 var BASE = "https://burroclurse.github.io/BrownBag/";
@@ -256,4 +257,26 @@ test("bedtime and as needed use when and asNeededBoolean", () => {
 
 test("additions saved before this change share as words only", () => {
   assert.deepEqual(addedDosage({ name: "Vitamin D3", rxcui: null, dose: "1 capsule", frequency: "daily" }), [{ text: "1 capsule · daily" }]);
+});
+
+test("an As needed medicine stays active, says so in FHIR, and gets its own staff group", () => {
+  const list = {
+    patient: PATIENT,
+    current: [
+      recordItem("lisinopril 10 MG Oral Tablet", "314076"),
+      Object.assign(recordItem("oxycodone 5 MG Oral Tablet", "1049621"), { asNeededAt: "2026-11-20" })
+    ],
+    additions: [],
+    stopped: []
+  };
+  const bundle = buildShareBundle(list, NOW);
+  const oxy = bundle.entry.map((e) => e.resource).find((r) => r.medicationCodeableConcept && /oxycodone/.test(r.medicationCodeableConcept.text));
+  assert.equal(oxy.status, "active");
+  assert.equal(oxy.dosage[0].asNeededBoolean, true);
+  assert.ok(oxy.note.some((n) => n.text === AS_NEEDED_NOTE));
+  const groups = groupShareBundle(bundle);
+  assert.deepEqual(groups.fromRecords.map((r) => r.name), ["lisinopril 10 MG Oral Tablet"]);
+  assert.deepEqual(groups.patientSaysAsNeeded.map((r) => r.name), ["oxycodone 5 MG Oral Tablet"]);
+  assert.ok(!groups.patientSaysAsNeeded[0].detail.includes(AS_NEEDED_NOTE));
+  assert.ok(groups.patientSaysAsNeeded[0].detail.includes("From records"));
 });

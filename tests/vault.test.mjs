@@ -54,7 +54,7 @@ test("stored text does not contain the medicine name", async () => {
 });
 
 test("nothing stored gives empty patient data", async () => {
-  assert.deepEqual(await loadPatientData(memoryStorage(), await keyA, "p1"), { additions: [], stopped: {} });
+  assert.deepEqual(await loadPatientData(memoryStorage(), await keyA, "p1"), { additions: [], stopped: {}, asNeeded: {} });
 });
 
 test("two patients are stored separately", async () => {
@@ -113,13 +113,14 @@ test("savePatientData won't overwrite saved data it can't open", async () => {
 test("restoring a backup keeps what was added since, and adds what the backup had", async () => {
   const storage = memoryStorage();
   const key = await deriveKeyFromPin("123456", new Uint8Array(16));
-  await savePatientData(storage, key, "p-1", { additions: [{ id: "old", name: "Fish oil" }], stopped: { "rx:1": "2026-10-01" } });
+  await savePatientData(storage, key, "p-1", { additions: [{ id: "old", name: "Fish oil" }], stopped: { "rx:1": "2026-10-01" }, asNeeded: { "rx:5": "2026-10-02" } });
   const backup = await exportBackup(storage, key);
-  await savePatientData(storage, key, "p-1", { additions: [{ id: "new", name: "Vitamin D" }], stopped: { "rx:2": "2026-11-20" } });
+  await savePatientData(storage, key, "p-1", { additions: [{ id: "new", name: "Vitamin D" }], stopped: { "rx:2": "2026-11-20" }, asNeeded: { "rx:6": "2026-11-21" } });
   assert.equal(await importBackup(storage, key, backup), 1);
   const data = await loadPatientData(storage, key, "p-1");
   assert.deepEqual(data.additions.map((a) => a.id).sort(), ["new", "old"]);
   assert.deepEqual(Object.keys(data.stopped).sort(), ["rx:1", "rx:2"]);
+  assert.deepEqual(Object.keys(data.asNeeded).sort(), ["rx:5", "rx:6"]);
 });
 
 test("saved additions don't show the patient id in storage", async () => {

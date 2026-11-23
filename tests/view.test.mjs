@@ -26,6 +26,26 @@ test("arrangeList moves stopped medicines out of the current list", () => {
   assert.deepEqual(arranged.older.map((i) => i.key), ["rx:3"]);
 });
 
+test("arrangeList keeps As needed medicines current and marks them", () => {
+  var arranged = arrangeList(
+    { current: [item("rx:1", "Lisinopril"), item("rx:2", "Oxycodone"), item("rx:3", "Both")], older: [] },
+    { additions: [], stopped: { "rx:3": "2026-11-21" }, asNeeded: { "rx:2": "2026-11-20", "rx:3": "2026-11-19" } }
+  );
+  assert.deepEqual(arranged.current.map((i) => [i.key, i.asNeededAt || null]), [["rx:1", null], ["rx:2", "2026-11-20"]]);
+  // Not taking wins over As needed.
+  assert.deepEqual(arranged.stopped.map((i) => i.key), ["rx:3"]);
+  assert.equal(medicineCount(arranged, []), 2);
+});
+
+test("an As needed mark and its undo cancel out in the change log", () => {
+  var log = logChange([], "as-needed", "Oxycodone");
+  assert.deepEqual(log, [{ kind: "as-needed", name: "Oxycodone" }]);
+  assert.deepEqual(logChange(log, "regular", "Oxycodone"), []);
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  assert.deepEqual(changeAlert(log, at, new Date(2026, 10, 21, 12, 0)).lines, ["Marked Oxycodone As needed"]);
+  assert.deepEqual(changeAlert([{ kind: "regular", name: "Oxycodone" }], at, new Date(2026, 10, 21, 12, 0)).lines, ["Took Oxycodone off As needed"]);
+});
+
 test("arrangeList ignores stopped marks for medicines no longer current", () => {
   var arranged = arrangeList({ current: [], older: [] }, { additions: [], stopped: { "rx:9": "2026-10-01" } });
   assert.equal(arranged.stopped.length, 0);
@@ -126,7 +146,8 @@ test("sourceLine shows an end date when there is one", () => {
 test("emptyRecordsText explains why From your records is empty", () => {
   assert.equal(emptyRecordsText({ current: [], older: [] }, { current: [], stopped: [] }), "No medicines in your records.");
   assert.equal(emptyRecordsText({ current: [], older: [item("rx:2", "y")] }, { current: [], stopped: [] }), "No current medicines in your records.");
-  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [], stopped: [item("rx:1", "x")] }), "You've marked all your current medicines stopped.");
+  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [], stopped: [item("rx:1", "x")] }), "You've marked all your current medicines Not taking.");
+  assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [item("rx:1", "x", { asNeededAt: "2026-11-20" })], stopped: [] }), "Your current medicines are under As needed.");
   assert.equal(emptyRecordsText({ current: [item("rx:1", "x")], older: [] }, { current: [item("rx:1", "x")], stopped: [] }), null);
 });
 
@@ -189,7 +210,7 @@ test("changeAlert says exactly what changed and to get a connection", () => {
   assert.equal(alert.title, "This code isn't fully up to date");
   assert.equal(alert.intro, "It includes the changes you made since your records were last updated on Nov 21:");
   assert.deepEqual(alert.lines, [
-    "Marked Lasix 40mg stopped",
+    "Marked Lasix 40mg Not taking",
     "Added Vitamin D (name not checked)",
     "Removed Fish oil",
     "Put Simvastatin back on your list"

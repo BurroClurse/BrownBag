@@ -19,15 +19,21 @@ export function formatName(patient) {
   return (given + " " + (name.family || "")).trim() || "Name not recorded";
 }
 
-// Current medicines the patient marked stopped move to their own group.
-// A mark for a medicine that is no longer current is ignored.
+// Current medicines the patient marked "Not taking" move to their own group
+// (stoppedAt). Ones they marked "As needed" stay current, with asNeededAt,
+// and show in the As needed group. Not taking wins if both are set. A mark
+// for a medicine that is no longer current is ignored.
 export function arrangeList(split, data) {
   var marks = (data && data.stopped) || {};
+  var needed = (data && data.asNeeded) || {};
+  var has = function (map, key) { return Object.prototype.hasOwnProperty.call(map, key); };
   var current = [];
   var stopped = [];
   split.current.forEach(function (entry) {
-    if (Object.prototype.hasOwnProperty.call(marks, entry.key)) {
+    if (has(marks, entry.key)) {
       stopped.push(Object.assign({}, entry, { stoppedAt: marks[entry.key] }));
+    } else if (has(needed, entry.key)) {
+      current.push(Object.assign({}, entry, { asNeededAt: needed[entry.key] }));
     } else {
       current.push(entry);
     }
@@ -67,8 +73,9 @@ export function countLine(entry) {
 
 // Why "From your records" is empty, or null when it isn't.
 export function emptyRecordsText(split, arranged) {
-  if (arranged.current.length) return null;
-  if (arranged.stopped.length) return "You've marked all your current medicines stopped.";
+  if (arranged.current.some(function (entry) { return !entry.asNeededAt; })) return null;
+  if (arranged.current.length) return "Your current medicines are under As needed.";
+  if (arranged.stopped.length) return "You've marked all your current medicines Not taking.";
   if (split.older.length) return "No current medicines in your records.";
   return "No medicines in your records.";
 }
@@ -128,7 +135,7 @@ function randomId() {
 }
 
 // The number on the home screen's "My medicines" button: what the patient
-// takes now, from records (not marked stopped) and their own additions.
+// takes now, from records (not marked Not taking, As needed included) and their own additions.
 export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
@@ -155,7 +162,7 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, in
 
 // Changes the patient made while the records part was a saved copy (no
 // fresh update since). A change that's undone cancels out.
-var OPPOSITE = { stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added" };
+var OPPOSITE = { stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added", "as-needed": "regular", regular: "as-needed" };
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
   for (var i = list.length - 1; i >= 0; i -= 1) {
@@ -176,8 +183,10 @@ export function changeAlert(changes, savedAt, now) {
   }
   var when = listDate(savedAt, now);
   var lines = changes.map(function (change) {
-    if (change.kind === "stopped") return "Marked " + change.name + " stopped";
+    if (change.kind === "stopped") return "Marked " + change.name + " Not taking";
     if (change.kind === "unstopped") return "Put " + change.name + " back on your list";
+    if (change.kind === "as-needed") return "Marked " + change.name + " As needed";
+    if (change.kind === "regular") return "Took " + change.name + " off As needed";
     if (change.kind === "removed") return "Removed " + change.name;
     return "Added " + change.name + (change.checked === false ? " (name not checked)" : "");
   });

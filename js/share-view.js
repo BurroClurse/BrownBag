@@ -5,7 +5,6 @@
 
 import { unpackShare, groupShareBundle, ShareError } from "./share.js";
 
-var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
 var root = document.getElementById("share");
 var fragment = location.hash.slice(1);
 
@@ -34,11 +33,10 @@ function drawCodeForm(message) {
   clear(root);
   addLogo();
   add(root, "h1", "Shared medicine list");
-  note(root, DISCLAIMER);
-  var form = add(root, "form");
-  var label = add(form, "label", "Enter the 6-digit code the patient gives you");
+  var form = add(root, "form", null, "code-form");
+  var label = add(form, "label", "Patient's 6-digit code");
   label.htmlFor = "share-code";
-  var input = add(form, "input");
+  var input = add(form, "input", null, "code-input");
   input.id = "share-code";
   input.type = "text";
   input.inputMode = "numeric";
@@ -50,7 +48,7 @@ function drawCodeForm(message) {
   var status = add(form, "p", message, "status");
   status.id = "share-status";
   status.setAttribute("role", "status");
-  var open = add(form, "button", "Open the list");
+  var open = add(form, "button", "Open the list", "primary big");
   open.type = "submit";
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -92,13 +90,15 @@ function drawList(groups) {
   if (groups.incomplete) {
     add(root, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
   }
-  note(root, DISCLAIMER);
   group("From records", groups.fromRecords, "No medicines from records.");
   if (groups.fromClaims && groups.fromClaims.length) {
     group("Filled, not in the health record", groups.fromClaims, "");
   }
+  if (groups.patientSaysAsNeeded && groups.patientSaysAsNeeded.length) {
+    group("Patient takes only as needed", groups.patientSaysAsNeeded, "");
+  }
   group("Added by patient", groups.addedByPatient, "Nothing added by the patient.");
-  group("Patient says stopped", groups.patientSaysStopped, "Nothing marked stopped.");
+  group("Patient says not taking", groups.patientSaysStopped, "Nothing marked not taking.");
   title.focus();
 }
 
@@ -128,15 +128,6 @@ function addLogo() {
   var picture = add(root, "img", null, "share-logo");
   picture.src = "icons/logo-trimmed.png";
   picture.alt = "";
-}
-
-// An explanation, set apart from the instructions and buttons around it:
-// "Note:" in bold, in a box with a teal bar down its left side.
-function note(parent, text) {
-  var p = add(parent, "p", null, "note");
-  add(p, "strong", "Note: ", "note-label");
-  p.appendChild(document.createTextNode(text));
-  return p;
 }
 
 function add(parent, tag, text, className) {

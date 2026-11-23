@@ -1,5 +1,5 @@
-// Encrypts what the patient adds (and the medicines they mark stopped)
-// before it goes into browser storage. Uses Web Crypto, so the same file
+// Encrypts what the patient adds (and the medicines they mark Not taking or
+// As needed) before it goes into browser storage. Uses Web Crypto, so the same file
 // runs in the browser and in Node's tests.
 
 var subtle = globalThis.crypto.subtle;
@@ -89,10 +89,10 @@ export async function savePatientData(storage, key, patientId, data) {
 async function loadByName(storage, key, name) {
   var blob = storage.getItem(name);
   if (!blob) {
-    return { additions: [], stopped: {} };
+    return { additions: [], stopped: {}, asNeeded: {} };
   }
   var data = await decryptJSON(key, blob);
-  return { additions: data.additions || [], stopped: data.stopped || {} };
+  return { additions: data.additions || [], stopped: data.stopped || {}, asNeeded: data.asNeeded || {} };
 }
 
 async function saveByName(storage, key, name, data) {
@@ -137,14 +137,16 @@ export async function importBackup(storage, key, text) {
     restored.push([DATA_PREFIX + tag, await decryptJSON(key, entry[1])]);
   }
   // Merge, never replace: anything added on this phone since the backup was
-  // made stays. Additions match by id; a stopped mark on the phone wins.
+  // made stays. Additions match by id; a Not taking or As needed mark on
+  // the phone wins.
   for (var pair of restored) {
     var fromBackup = pair[1] || {};
     var onPhone = await loadByName(storage, key, pair[0]);
     var ids = new Set(onPhone.additions.map(function (a) { return a.id; }));
     var additions = onPhone.additions.concat((fromBackup.additions || []).filter(function (a) { return !ids.has(a.id); }));
     var stopped = Object.assign({}, fromBackup.stopped || {}, onPhone.stopped);
-    await saveByName(storage, key, pair[0], { additions: additions, stopped: stopped });
+    var asNeeded = Object.assign({}, fromBackup.asNeeded || {}, onPhone.asNeeded);
+    await saveByName(storage, key, pair[0], { additions: additions, stopped: stopped, asNeeded: asNeeded });
   }
   return restored.length;
 }

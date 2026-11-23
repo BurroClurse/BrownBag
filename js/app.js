@@ -38,7 +38,7 @@ var state = {
   patientId: null,
   patient: null,
   split: { current: [], older: [], failed: false },
-  data: { additions: [], stopped: {} },
+  data: { additions: [], stopped: {}, asNeeded: {} },
   adding: false,
   qr: null,
   announce: "",
@@ -333,7 +333,7 @@ async function loadAdditions() {
   try {
     state.data = await loadPatientData(localStorage, state.key, state.patientId);
   } catch (error) {
-    state.data = { additions: [], stopped: {} };
+    state.data = { additions: [], stopped: {}, asNeeded: {} };
     state.announce = "Your saved additions couldn't be opened on this phone, so new changes can't be saved over them.";
   }
 }
@@ -472,6 +472,7 @@ function drawMedicines(arranged) {
   note(root, DISCLAIMER);
   drawRecords(arranged);
   drawFillsOnly(arranged);
+  drawAsNeeded(arranged);
   drawAdditions();
   drawStopped(arranged);
 }
@@ -524,8 +525,8 @@ function drawRecords(arranged) {
     note(section, "Your insurance fills couldn't be loaded.");
   }
   var list = add(section, "ul", null, "meds");
-  arranged.current.filter(function (entry) { return entry.origin !== "claims"; }).forEach(function (entry) {
-    stopButton(medRow(list, entry), entry);
+  arranged.current.filter(function (entry) { return entry.origin !== "claims" && !entry.asNeededAt; }).forEach(function (entry) {
+    markButtons(medRow(list, entry), entry);
   });
   if (arranged.older.length) {
     var details = add(section, "details");
@@ -537,8 +538,10 @@ function drawRecords(arranged) {
 
 function drawAdditions() {
   var section = add(root, "section");
-  heading(section, "Added by me", "added-heading");
-  note(section, "Saved on this phone only. Clearing your browser erases these.");
+  helpHeading(section, "Added by me", "added-heading", "About Added by me", function (panel) {
+    add(panel, "p", "Medicines you added yourself, like vitamins and ones bought over the counter. They go in your QR code.");
+    add(panel, "p", "They're saved on this phone only. Clearing your browser erases them, so save a backup in More options.");
+  });
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
@@ -760,7 +763,7 @@ function drawAddCheck(form, result, addition, how) {
   var mine = displayName(addition.name);
   var theirs = displayName(match.name);
   var title;
-  if (result.kind === "stopped") title = theirs + " is on your stopped list";
+  if (result.kind === "stopped") title = theirs + " is under Not taking";
   else if (result.kind === "lookalike") title = "Check the name";
   else title = mine + " is already on your list";
   var h = add(panel, "h3", title);
@@ -775,8 +778,8 @@ function drawAddCheck(form, result, addition, how) {
     add(panel, "p", label + " " + detail + (origin ? " · " + origin : ""), "check-line");
   }
   if (result.kind === "stopped") {
-    add(panel, "p", "You marked " + theirs + " stopped on " + shortDate(match.stoppedAt) + ".");
-    button(panel, "Start it again", "primary big", function () {
+    add(panel, "p", "You marked " + theirs + " Not taking on " + shortDate(match.stoppedAt) + ".");
+    button(panel, "I'm taking it again", "primary big", function () {
       delete state.data.stopped[match.key];
       recordChange("unstopped", match.name);
       state.adding = false;
@@ -854,18 +857,40 @@ function pickList(form, id, labelText, otherText) {
 function drawStopped(arranged) {
   if (!arranged.stopped.length) return;
   var section = add(root, "section");
-  heading(section, "Stopped by me", "stopped-heading");
+  helpHeading(section, "Not taking", "stopped-heading", "About Not taking", function (panel) {
+    add(panel, "p", "Medicines your records list that you aren't taking now, like one you finished after surgery or stopped on your own.");
+    add(panel, "p", "The person checking your medicines sees them in their own group, so they can ask about them. Tap Undo if you start taking one again.");
+  });
   var list = add(section, "ul", null, "meds");
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
-    add(row, "p", "You marked this stopped on " + entry.stoppedAt, "med-line");
+    add(row, "p", "You marked this Not taking on " + entry.stoppedAt, "med-line");
     button(row, "Undo", "secondary card-action", function () {
       delete state.data.stopped[entry.key];
       recordChange("unstopped", entry.name);
       state.announce = entry.name + " moved back to From your records.";
       state.focusId = "records-heading";
       save();
-    }, "Undo: " + entry.name);
+    }, "Undo Not taking: " + entry.name);
+  });
+}
+
+// Medicines from the records or fills that the patient takes only when
+// needed, like pain medicine after surgery. They're still current: they
+// count on home and go in the QR code, marked as needed.
+function drawAsNeeded(arranged) {
+  var asNeeded = arranged.current.filter(function (entry) { return entry.asNeededAt; });
+  if (!asNeeded.length) return;
+  var section = add(root, "section");
+  helpHeading(section, "As needed", "as-needed-heading", "About As needed", function (panel) {
+    add(panel, "p", "Medicines you still take, but only when you need them, like pain medicine after surgery.");
+    add(panel, "p", "They stay on your list and in your QR code, marked as needed. Tap Undo to move one back.");
+  });
+  var list = add(section, "ul", null, "meds");
+  asNeeded.forEach(function (entry) {
+    var row = medRow(list, entry);
+    add(row, "p", "You marked this As needed on " + entry.asNeededAt, "med-line");
+    markButtons(row, entry);
   });
 }
 
@@ -927,7 +952,8 @@ async function buildQr() {
         "Your name and birth date",
         "Your current medicines from your records, with the dose, how often, and who prescribed them",
         "Medicines you added",
-        "Medicines you marked stopped",
+        "Medicines you take only as needed, marked that way",
+        "Medicines you marked Not taking",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
         "When the code was made, and a warning if the list is an older saved copy or some records didn't load"
       ].forEach(function (text) { add(items, "li", text); });
@@ -1118,8 +1144,9 @@ function drawInstall() {
 // key), so it can be opened after the phone's storage is erased.
 function drawBackup() {
   var section = add(root, "section");
-  heading(section, "Backup", "backup-heading");
-  note(section, "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.");
+  helpHeading(section, "Backup", "backup-heading", "About backups", function (panel) {
+    add(panel, "p", "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.");
+  });
   button(section, "Save a backup", "secondary big", saveBackup);
   var picker = add(section, "input");
   picker.type = "file";
@@ -1185,26 +1212,53 @@ function medRow(list, entry) {
   return row;
 }
 
-function stopButton(row, entry) {
-  button(row, "I stopped this", "stop card-action", function () {
+// The two buttons under a current medicine: "As needed" (or Undo, on one
+// already there) and "Not taking". Not taking clears an As needed mark.
+function markButtons(row, entry) {
+  var actions = add(row, "div", null, "card-actions");
+  if (!state.data.asNeeded) state.data.asNeeded = {};
+  if (entry.asNeededAt) {
+    button(actions, "Undo", "secondary", function () {
+      delete state.data.asNeeded[entry.key];
+      recordChange("regular", entry.name);
+      var claims = entry.origin === "claims";
+      state.announce = entry.name + " moved back to " + (claims ? "Filled, not in your records." : "From your records.");
+      state.focusId = claims ? "fills-heading" : "records-heading";
+      save();
+    }, "Undo As needed: " + entry.name);
+  } else {
+    button(actions, "As needed", "secondary", function () {
+      state.data.asNeeded[entry.key] = today();
+      recordChange("as-needed", entry.name);
+      state.announce = entry.name + " moved to As needed.";
+      state.focusId = "as-needed-heading";
+      save();
+    }, "As needed: " + entry.name);
+  }
+  button(actions, "Not taking", "stop", function () {
+    if (state.data.asNeeded[entry.key]) {
+      delete state.data.asNeeded[entry.key];
+      recordChange("regular", entry.name);
+    }
     state.data.stopped[entry.key] = today();
     recordChange("stopped", entry.name);
-    state.announce = entry.name + " moved to Stopped by me.";
+    state.announce = entry.name + " moved to Not taking.";
     state.focusId = "stopped-heading";
     save();
-  }, "I stopped this: " + entry.name);
+  }, "Not taking: " + entry.name);
 }
 
 // Fills the insurer paid for that the health record doesn't list.
 function drawFillsOnly(arranged) {
-  var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims"; });
+  var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims" && !entry.asNeededAt; });
   if (!fillsOnly.length) return;
   var section = add(root, "section");
-  heading(section, "Filled, not in your records", "fills-heading");
-  note(section, "Your insurance paid for these, but your health record doesn't list them. Check with your care team.");
+  helpHeading(section, "Filled, not in your records", "fills-heading", "About Filled, not in your records", function (panel) {
+    add(panel, "p", "Your insurance paid for these, but your health record doesn't list them. Check with your care team.");
+  });
   var list = add(section, "ul", null, "meds");
   fillsOnly.forEach(function (entry) {
-    stopButton(medRow(list, entry), entry);
+    markButtons(medRow(list, entry), entry);
   });
 }
 
@@ -1291,6 +1345,15 @@ function heading(parent, text, id) {
   var h = add(parent, "h2", text);
   h.id = id;
   h.tabIndex = -1;
+  return h;
+}
+
+// A section heading with a "?" beside it. The explanation opens under the
+// heading, so it's there when wanted and out of the way otherwise.
+function helpHeading(parent, text, id, label, fill) {
+  var row = add(parent, "div", null, "help-row section-help");
+  var h = heading(row, text, id);
+  parent.appendChild(helpBubble(row, label, fill));
   return h;
 }
 
