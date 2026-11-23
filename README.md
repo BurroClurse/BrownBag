@@ -14,10 +14,8 @@ must offer to patient apps. It adds pharmacy fills from insurance claims,
 showing what was actually picked up. Today it connects to the SMART Health
 IT sandbox (test patients only), whose claims stand in for an insurer's.
 
-It is a patient-facing SMART on FHIR app, first built for the HL7 Break the
-Code course. It runs as static pages (no server of its own), signs in with
-SMART App Launch against the SMART Health IT R4 sandbox, and reads FHIR R4
-records. It is built to be simple to use: one main screen with no
+It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox, reads FHIR R4 records, and WCAG 2.2 AA support across the board. 
+It is built to be simple to use: one main screen with no
 scrolling, big buttons, plain words, and WCAG 2.2 AA throughout.
 
 **Live:** <https://burroclurse.github.io/BrownBag/launch.html> (sandbox data
