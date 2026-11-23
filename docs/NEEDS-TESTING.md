@@ -80,3 +80,8 @@ pass, when it touches:
 - 2026-11-23, Tyler's iPhone: allergies, opened as Chantell from the README
   link; VoiceOver on the Allergies section and on the "… is already on your
   list" panel. Works.
+- 2026-11-23, sign out for everyone and the allergy standards: the test
+  browser, then both virtual phones on the live site (two people signed out,
+  "You're signed out", the saved list behind the lock, allergies, the QR
+  code, the staff page). Passed. The duplicate panel was checked on Loria's
+  metoprolol, since Avery is gone.
