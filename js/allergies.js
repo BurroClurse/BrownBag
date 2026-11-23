@@ -18,6 +18,11 @@ var NONE_CODES = {
   "428607008": "No known environmental allergy"
 };
 
+// The SNOMED code for a statement, or null.
+export function noneCode(statement) {
+  return Object.keys(NONE_CODES).filter(function (code) { return NONE_CODES[code] === statement; })[0] || null;
+}
+
 // What the add form offers, with "Other…" after. A code is sent only when it
 // has been checked against RxNorm.
 export var ALLERGENS = ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye", "Latex", "Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk", "Bee stings"]
@@ -47,7 +52,7 @@ function hasStatus(concept, list) {
   return codesOf(concept).some(function (c) { return list.indexOf(c.code) !== -1; });
 }
 
-function statementOf(resource, name) {
+export function statementOf(resource, name) {
   var none = codesOf(resource.code).filter(function (c) { return c.system === SNOMED && NONE_CODES[c.code]; })[0];
   if (none) return NONE_CODES[none.code];
   if (/^no known allerg(y|ies)$/i.test(name)) return "No known allergy";
@@ -219,7 +224,7 @@ export function arrangeAllergies(allergies, data) {
   };
 }
 
-function reactionWords(reaction) {
+export function reactionWords(reaction) {
   return reaction.text + (reaction.severity ? " (" + reaction.severity + ")" : "");
 }
 

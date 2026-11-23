@@ -6,6 +6,8 @@ import {
   packShare,
   unpackShare,
   fitsInQr,
+  allergyNotices,
+  allergyEmptyText,
   QR_MAX_BYTES,
   ShareError
 } from "../js/share.js";
@@ -61,7 +63,7 @@ function names(count) {
 test("pack then unpack with the right code gives the same bundle", async () => {
   var bundle = oneOfEach();
   var packed = await packShare(bundle, BASE);
-  assert.equal(packed.prefix, BASE + "share.html#v2.");
+  assert.equal(packed.prefix, BASE + "share.html#v3.");
   assert.match(packed.digits, /^\d+$/);
   assert.equal(packed.url, packed.prefix + packed.digits);
   var fragment = packed.url.split("#")[1];
@@ -169,12 +171,12 @@ test("the bundle has no ids and uses resource references", () => {
 
 test("an odd number of digits throws bad-link", async () => {
   var packed = await packShare(oneOfEach(), BASE);
-  await assert.rejects(unpackShare("v2." + packed.digits.slice(1), packed.code), (error) => error instanceof ShareError && error.code === "bad-link");
+  await assert.rejects(unpackShare("v3." + packed.digits.slice(1), packed.code), (error) => error instanceof ShareError && error.code === "bad-link");
 });
 
 test("a digit pair above 77 throws bad-link", async () => {
   var packed = await packShare(oneOfEach(), BASE);
-  await assert.rejects(unpackShare("v2.99" + packed.digits.slice(2), packed.code), (error) => error instanceof ShareError && error.code === "bad-link");
+  await assert.rejects(unpackShare("v3.99" + packed.digits.slice(2), packed.code), (error) => error instanceof ShareError && error.code === "bad-link");
 });
 
 test("the old v1 link form is refused", async () => {
@@ -258,4 +260,105 @@ test("bedtime and as needed use when and asNeededBoolean", () => {
 
 test("additions saved before this change share as words only", () => {
   assert.deepEqual(addedDosage({ name: "Vitamin D3", rxcui: null, dose: "1 capsule", frequency: "daily" }), [{ text: "1 capsule · daily" }]);
+});
+
+const CARD = (o) => Object.assign({ key: "k", otherKeys: [], name: "Mold", code: null, reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox", origin: "records", mine: null }, o);
+const OWN = (name, reaction, o) => CARD(Object.assign({ name, source: null, origin: "added", mine: { id: "o", reaction, addedAt: "2026-11-23" } }, o));
+function withAllergies(cards, { statements = [], saidNone = null, status = "loaded", savedAt = null } = {}) {
+  return buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: { cards, statements, saidNone } }, NOW, { allergies: { status, savedAt } });
+}
+const allergyEntries = (bundle) => bundle.entry.map((e) => e.resource).filter((r) => r.resourceType === "AllergyIntolerance");
+
+test("an allergy from the records travels as FHIR with its reaction and flags", () => {
+  const bundle = withAllergies([CARD({
+    code: { system: "http://snomed.info/sct", code: "84489001" }, highRisk: true, intolerance: true, unconfirmed: true,
+    reactions: [{ text: "Hives", severity: "severe" }], mine: { id: null, reaction: "Itching", addedAt: "2026-11-23" }
+  })]);
+  const [a] = allergyEntries(bundle);
+  assert.deepEqual(a.patient, { reference: "resource:0" });
+  assert.equal(a.clinicalStatus.coding[0].code, "active");
+  assert.equal(a.verificationStatus.coding[0].code, "unconfirmed");
+  assert.equal(a.criticality, "high");
+  assert.equal(a.type, "intolerance");
+  assert.deepEqual(a.code, { text: "Mold", coding: [{ system: "http://snomed.info/sct", code: "84489001" }] });
+  assert.deepEqual(a.reaction, [{ manifestation: [{ text: "Hives" }], severity: "severe" }, { manifestation: [{ text: "Itching" }], note: [{ text: "From the patient" }] }]);
+  assert.deepEqual(a.note, [{ text: "From records: SMART sandbox" }]);
+  assert.equal(a.asserter, undefined);
+  const groups = groupShareBundle(bundle).allergies;
+  assert.deepEqual(groups.fromRecords, [{ name: "Mold", detail: "Marked high risk · Intolerance · Not confirmed · Reaction: Hives (severe) · Patient says: Itching · From records: SMART sandbox" }]);
+  assert.deepEqual(groups.fromPatient, []);
+});
+
+test("a missing reaction is said, never blank", () => {
+  const groups = groupShareBundle(withAllergies([CARD(), OWN("Latex", "Not sure"), CARD({ name: "Dust", mine: { id: null, reaction: "Not sure" } })])).allergies;
+  assert.equal(groups.fromRecords[0].detail, "Reaction not in the records · From records: SMART sandbox");
+  assert.equal(groups.fromPatient[0].detail, "Reaction not known");
+  assert.equal(groups.fromRecords[1].detail, "Reaction not in the records · Patient says: reaction not known · From records: SMART sandbox");
+});
+
+test("the patient's own allergy says who says so", () => {
+  const bundle = withAllergies([OWN("Penicillin", "Hives or rash", { rxcui: "1" })]);
+  const [a] = allergyEntries(bundle);
+  assert.deepEqual(a.asserter, { reference: "resource:0" });
+  assert.equal(a.verificationStatus.coding[0].code, "unconfirmed");
+  assert.equal(a.code.coding[0].code, "1");
+  assert.deepEqual(groupShareBundle(bundle).allergies.fromPatient, [{ name: "Penicillin", detail: "Reaction: Hives or rash" }]);
+  assert.equal(allergyEntries(withAllergies([OWN("Latex", "Not sure")]))[0].reaction, undefined);
+});
+
+test("no known allergies says whether the patient or the records said it", () => {
+  const said = withAllergies([], { saidNone: "2026-11-23" });
+  assert.equal(allergyEntries(said)[0].code.coding[0].code, "716186003");
+  const g = groupShareBundle(said).allergies;
+  assert.equal(g.saidNone, true);
+  assert.equal(allergyEmptyText(g), "Patient says: no known allergies.");
+  const records = groupShareBundle(withAllergies([], { statements: ["No known drug allergy"] })).allergies;
+  assert.deepEqual(records.statements, ["No known drug allergy"]);
+  assert.equal(records.saidNone, false);
+  assert.equal(allergyEmptyText(records), null);
+  const beside = groupShareBundle(withAllergies([OWN("Penicillin", "Itching")], { statements: ["No known drug allergy"] })).allergies;
+  assert.equal(beside.fromPatient.length, 1);
+  assert.deepEqual(beside.statements, ["No known drug allergy"]);
+});
+
+test("a load that failed is said, even when something is listed", () => {
+  for (const status of ["failed", "refused", "not-loaded"]) {
+    const g = groupShareBundle(withAllergies([OWN("Latex", "Itching")], { status })).allergies;
+    assert.deepEqual(allergyNotices(g), ["Allergies from records couldn't be loaded. Ask the patient."], status);
+    assert.equal(allergyEmptyText(groupShareBundle(withAllergies([], { status })).allergies), null, status);
+    assert.deepEqual(allergyNotices(groupShareBundle(withAllergies([], { status, saidNone: "2026-11-23" })).allergies).length, 1);
+  }
+  assert.deepEqual(allergyNotices(groupShareBundle(withAllergies([])).allergies), []);
+  assert.equal(allergyEmptyText(groupShareBundle(withAllergies([])).allergies), "None in the records. The patient hasn't said.");
+});
+
+test("a saved copy of the allergies says its date", () => {
+  const g = groupShareBundle(withAllergies([CARD()], { status: "failed", savedAt: "2026-11-21T18:00:00Z" })).allergies;
+  const notices = allergyNotices(g);
+  assert.equal(notices.length, 1);
+  assert.match(notices[0], /^Allergies from records are a copy saved on .*2026.*\. They may be out of date\.$/);
+  const empty = groupShareBundle(withAllergies([], { status: "loaded", savedAt: "2026-11-21T18:00:00Z" })).allergies;
+  assert.equal(allergyEmptyText(empty), "None in the records. The patient hasn't said.");
+});
+
+test("a code from before allergies says it doesn't include them", () => {
+  const before = groupShareBundle(oneOfEach()).allergies;
+  assert.equal(before, null);
+  assert.equal(allergyEmptyText(before), "This code doesn't include allergies. Ask the patient.");
+  assert.deepEqual(allergyNotices(before), []);
+});
+
+test("new codes start v3 and old v2 codes still open", async () => {
+  const packed = await packShare(withAllergies([CARD()]), BASE);
+  assert.equal(packed.prefix, BASE + "share.html#v3.");
+  assert.equal(groupShareBundle(await unpackShare("v3." + packed.digits, packed.code)).allergies.fromRecords.length, 1);
+  assert.equal(groupShareBundle(await unpackShare("v2." + packed.digits, packed.code)).allergies.fromRecords.length, 1);
+  await assert.rejects(unpackShare("v4." + packed.digits, packed.code), (error) => error.code === "bad-link");
+});
+
+test("eight allergies take little room in the code", async () => {
+  const meds = names(15).map((name, i) => recordItem(name, String(1000 + i)));
+  const cards = ["Penicillin", "Latex", "Peanuts", "Codeine"].map((n) => OWN(n, "Hives or rash")).concat(["Mold", "Shellfish", "Eggs", "Dust"].map((name, i) => CARD({ name, code: { system: "http://snomed.info/sct", code: String(84489001 + i) } })));
+  const packed = await packShare(buildShareBundle({ patient: PATIENT, current: meds, additions: [], stopped: [], allergies: { cards, statements: [], saidNone: null } }, NOW, { allergies: { status: "loaded", savedAt: null } }), BASE);
+  assert.ok(fitsInQr(packed.prefix, packed.digits));
 });

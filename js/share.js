@@ -6,6 +6,7 @@
 // the packed list is written as digits, which a QR code holds more of.
 
 import { fillNote, completedNote } from "./claims.js";
+import { NOT_SURE, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
 export var QR_MAX_BYTES = 2331;
@@ -13,8 +14,14 @@ export var QR_MAX_BYTES = 2331;
 var SECRET_BYTES = 16;
 var IV_BYTES = 12;
 var TAG_BYTES = 16;
-var PREFIX = "v2.";
+// v3 codes carry allergies. A staff page running older code refuses them,
+// rather than showing a list with the allergies silently missing.
+var PREFIX = "v3.";
+var OLDER_PREFIX = "v2.";
 var SELF = { reference: "resource:0" };
+var SNOMED = "http://snomed.info/sct";
+var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+var FROM_PATIENT = "From the patient";
 var QR_MAX_BITS = 18648; // QR_MAX_BYTES x 8: version 40, level M
 
 export class ShareError extends Error {
@@ -69,6 +76,9 @@ export function buildShareBundle(list, now, warnings = {}) {
     statement.effectivePeriod = { end: item.stoppedAt };
     entries.push({ resource: statement });
   });
+  if (list.allergies) {
+    allergyEntriesFor(list.allergies).forEach(function (resource) { entries.push({ resource: resource }); });
+  }
   entries.forEach(function (entry, index) {
     entry.fullUrl = "resource:" + index;
   });
@@ -79,6 +89,12 @@ export function buildShareBundle(list, now, warnings = {}) {
   }
   if (warnings.incomplete) {
     tags.push({ system: TAGS, code: "records-incomplete" });
+  }
+  if (list.allergies) {
+    tags.push({ system: TAGS, code: "allergies-" + warnings.allergies.status });
+    if (warnings.allergies.savedAt) {
+      tags.push({ system: TAGS, code: "allergies-saved-on", display: warnings.allergies.savedAt });
+    }
   }
   if (tags.length) {
     bundle.meta = { tag: tags };
@@ -97,12 +113,17 @@ export function groupShareBundle(bundle) {
     fromRecords: [],
     fromClaims: [],
     addedByPatient: [],
-    patientSaysStopped: []
+    patientSaysStopped: [],
+    allergies: allergyTags(tags)
   };
   (bundle.entry || []).forEach(function (entry) {
     var resource = entry.resource || {};
     if (resource.resourceType === "Patient") {
       groups.patient = { name: (resource.name && resource.name[0] && resource.name[0].text) || "", birthDate: resource.birthDate || "" };
+      return;
+    }
+    if (resource.resourceType === "AllergyIntolerance" && groups.allergies) {
+      groupAllergy(groups.allergies, resource);
       return;
     }
     if (resource.resourceType !== "MedicationStatement") {
@@ -128,6 +149,128 @@ export function groupShareBundle(bundle) {
   return groups;
 }
 
+// The allergies part of the Bundle (FHIR R4 AllergyIntolerance).
+function allergyEntriesFor(allergies) {
+  var out = allergies.cards.map(allergyFor);
+  allergies.statements.forEach(function (text) {
+    var resource = allergyResource(text, noneCode(text) ? { system: SNOMED, code: noneCode(text) } : null);
+    resource.note = [{ text: "From records" }];
+    out.push(resource);
+  });
+  if (allergies.saidNone) {
+    var none = allergyResource("No known allergy", { system: SNOMED, code: noneCode("No known allergy") });
+    none.asserter = SELF;
+    none.recordedDate = allergies.saidNone;
+    out.push(none);
+  }
+  return out;
+}
+
+function allergyResource(text, coding) {
+  return {
+    resourceType: "AllergyIntolerance",
+    clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", code: "active" }] },
+    code: coding && coding.system ? { text: text, coding: [coding] } : { text: text },
+    patient: SELF
+  };
+}
+
+function unconfirmed() {
+  return { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification", code: "unconfirmed" }] };
+}
+
+function allergyFor(card) {
+  var own = card.origin === "added";
+  var resource = allergyResource(card.name, own ? (card.rxcui ? { system: RXNORM, code: card.rxcui } : null) : card.code);
+  var notes = own ? [] : ["From records: " + card.source];
+  if (own || card.unconfirmed) resource.verificationStatus = unconfirmed();
+  if (card.intolerance) resource.type = "intolerance";
+  if (card.highRisk) resource.criticality = "high";
+  if (own) resource.asserter = SELF;
+  var reactions = card.reactions.map(function (r) {
+    return Object.assign({ manifestation: [{ text: r.text }] }, r.severity ? { severity: r.severity } : {});
+  });
+  if (card.mine && card.mine.reaction === NOT_SURE) {
+    notes.push(own ? "Reaction not known" : "Patient says: reaction not known");
+  } else if (card.mine) {
+    var mine = { manifestation: [{ text: card.mine.reaction }] };
+    if (!own) mine.note = [{ text: FROM_PATIENT }];
+    reactions.push(mine);
+  }
+  if (reactions.length) resource.reaction = reactions;
+  if (notes.length) resource.note = notes.map(function (text) { return { text: text }; });
+  return resource;
+}
+
+// Null when the code was made before Brown Bag had allergies.
+function allergyTags(tags) {
+  var of = function (code) {
+    return tags.filter(function (tag) { return tag.system === TAGS && tag.code === code; })[0];
+  };
+  var status = ["loaded", "failed", "refused", "not-loaded"].filter(function (s) { return of("allergies-" + s); })[0];
+  if (!status) return null;
+  var saved = of("allergies-saved-on");
+  return { status: status, savedAt: saved ? saved.display : null, fromRecords: [], fromPatient: [], statements: [], saidNone: false };
+}
+
+function groupAllergy(groups, resource) {
+  var name = (resource.code && resource.code.text) || "Unnamed allergy";
+  var own = Boolean(resource.asserter);
+  var statement = statementOf(resource, name);
+  if (statement) {
+    if (own) groups.saidNone = true;
+    else groups.statements.push(statement);
+    return;
+  }
+  var theirs = [];
+  var patients = [];
+  (resource.reaction || []).forEach(function (reaction) {
+    var text = reactionWords({ text: (reaction.manifestation && reaction.manifestation[0] && reaction.manifestation[0].text) || "", severity: reaction.severity });
+    var fromPatient = (reaction.note || []).some(function (n) { return n.text === FROM_PATIENT; });
+    (fromPatient ? patients : theirs).push(text);
+  });
+  var notes = (resource.note || []).map(function (n) { return n.text; });
+  if (own) {
+    groups.fromPatient.push({ name: name, detail: joinDetail([theirs.length ? "Reaction: " + theirs.join(" · ") : null].concat(notes)) });
+    return;
+  }
+  var notConfirmed = ((resource.verificationStatus && resource.verificationStatus.coding) || []).some(function (c) { return c.code === "unconfirmed"; });
+  groups.fromRecords.push({
+    name: name,
+    detail: joinDetail([
+      resource.criticality === "high" ? "Marked high risk" : null,
+      resource.type === "intolerance" ? "Intolerance" : null,
+      notConfirmed ? "Not confirmed" : null,
+      theirs.length ? "Reaction: " + theirs.join(" · ") : "Reaction not in the records",
+      patients.length ? "Patient says: " + patients.join(" · ") : null
+    ].concat(notes.filter(function (n) { return n.indexOf("Patient says") === 0; }), notes.filter(function (n) { return n.indexOf("Patient says") !== 0; })))
+  });
+}
+
+// The staff page's allergy wording. A load that failed is said whether or
+// not anything is listed, so a partial list never looks complete.
+export function allergyNotices(allergies) {
+  if (!allergies) return [];
+  if (allergies.savedAt) {
+    return ["Allergies from records are a copy saved on " + longDate(localDay(allergies.savedAt)) + ". They may be out of date."];
+  }
+  return allergies.status === "loaded" ? [] : ["Allergies from records couldn't be loaded. Ask the patient."];
+}
+
+export function allergyEmptyText(allergies) {
+  if (!allergies) return "This code doesn't include allergies. Ask the patient.";
+  if (allergies.fromRecords.length || allergies.fromPatient.length) return null;
+  if (allergies.saidNone) return "Patient says: no known allergies.";
+  if (allergies.statements.length) return null;
+  return allergies.status === "loaded" || allergies.savedAt ? "None in the records. The patient hasn't said." : null;
+}
+
+// The day on the reader's own calendar.
+function localDay(timestamp) {
+  var date = new Date(timestamp);
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+}
+
 export async function packShare(bundle, baseUrl) {
   var code = sixDigitCode();
   var secret = globalThis.crypto.getRandomValues(new Uint8Array(SECRET_BYTES));
@@ -141,7 +284,7 @@ export async function packShare(bundle, baseUrl) {
 }
 
 export async function unpackShare(fragment, code) {
-  if (typeof fragment !== "string" || fragment.indexOf(PREFIX) !== 0) {
+  if (typeof fragment !== "string" || (fragment.indexOf(PREFIX) !== 0 && fragment.indexOf(OLDER_PREFIX) !== 0)) {
     throw new ShareError("bad-link");
   }
   var bytes;
