@@ -139,11 +139,12 @@
   - Never logs; never puts the secret in a response.
 - `netlify.toml`: `[build] publish = "server/public"`, `[functions] directory = "netlify/functions"`. Function URL: `https://<site>.netlify.app/.netlify/functions/medicare-token`.
 
-- [ ] **Step 1: Write the failing tests**: unknown origin 403; OPTIONS preflight; wrong grant type 400; unregistered redirect 400; body over 4 KB 400; a good code swap sends Basic auth with the id and secret and returns the fake token body; the secret never appears in any response body or header.
+- [ ] **Step 1: Write the failing tests**: in `tests/docs.test.mjs`, "once `netlify/functions/medicare-token.mjs` exists, README doesn't say there is no backend server" (fails as soon as the function file is created, until Step 5 below updates the README); and, in `tests/token.test.mjs`, unknown origin 403; OPTIONS preflight; wrong grant type 400; unregistered redirect 400; body over 4 KB 400; a good code swap sends Basic auth with the id and secret and returns the fake token body; the secret never appears in any response body or header.
 - [ ] **Step 2: Run to see them fail.**
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run the suite.**
-- [ ] **Step 5: Commit** and publish: "Small server that swaps Medicare sign ins".
+- [ ] **Step 5: Docs, in the same commit as the server.** README line "runs as static pages with no backend server" becomes: "It's a patient facing SMART on FHIR app that runs as static pages. Its one small server only holds Medicare's sign in secret and swaps and renews its passes; it never sees records, claims or medicines." LEARNING's two lines that say Brown Bag has no server (the QR code limit and signed cards, Steps 5 and 6 area) become "Brown Bag's server never sees the code" / "Brown Bag's server only swaps Medicare passes, so it can't sign cards". `js/app.js`'s "The list is inside the code itself, not on a server" stays (true). Old design documents are history and stay as they are.
+- [ ] **Step 5b: Commit** and publish: "Small server that swaps Medicare sign ins".
 - [ ] **Step 6: Checkpoint, Tyler (stop and ask).** He creates a Netlify site from the GitHub repo `BurroClurse/BrownBag` (branch `main`), and under Site configuration ▸ Environment variables adds `BB_CLIENT_ID` and `BB_CLIENT_SECRET` (secret). He sends the site address and the Client ID. Claude puts both into `js/medicare-config.js`, checks `OPTIONS` and an unknown-origin `POST` against the live function with curl, commits and publishes.
 
 ### Task 6: Connecting and removing Medicare
