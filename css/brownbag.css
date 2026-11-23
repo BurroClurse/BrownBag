@@ -283,6 +283,10 @@ button.secondary.big { border-color: var(--teal); }
    large text the top stays reachable by scrolling instead of cut off. */
 .qr-overlay { justify-content: flex-start; }
 .qr-overlay > :first-child { margin-top: auto; }
+/* Nothing on the code screen squeezes smaller than its own content; on a
+   short screen (iPhone Safari with its toolbars) it scrolls instead, so
+   "Tap to show the code" never slides under Close. */
+.qr-overlay > * { flex-shrink: 0; }
 .qr-overlay > :last-child { margin-bottom: auto; }
 /* The code screen is white in dark mode too, so its outline buttons and
    focus ring use the light-mode colors. */
