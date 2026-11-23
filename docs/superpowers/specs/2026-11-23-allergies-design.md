@@ -49,7 +49,8 @@ the reaction, and medicine allergies, come from the patient.
 
 ## Approaches (Tyler chose A, 2026-11-23: "if it doesnt look right, option B")
 
-- **A. A section at the top of My medicines (chosen).** Home is unchanged.
+- **A. A section at the top of My medicines (chosen).** Home keeps its
+  layout.
 - **B. Its own screen, with a third button on home.** The fallback. Home is
   tight: on the iPhone 15 with two notes showing, it ends 17 points from the
   bottom, so the logo would shrink.
@@ -90,7 +91,12 @@ confirmed" (verification unconfirmed or presumed), "Marked high risk"
 (criticality high), and "Reaction: hives (severe)" with the severity.
 
 When the patient added the reaction: "Reaction: Hives or rash (added by
-me)", with "Change the reaction" and "Remove my reaction".
+me)", with "Change the reaction" and "Remove my reaction". They can only add
+one when the record has none. If the record gains its own later, both show.
+
+**One card per allergy.** When the patient's own allergy and a record name
+the same thing (same code or same plain name), they show as one card, the
+record's, with the patient's reaction marked "added by me" and "Remove mine".
 
 ### No allergies
 
@@ -98,18 +104,26 @@ me)", with "Change the reaction" and "Remove my reaction".
   "+ Add an allergy" and "I have no known allergies".
 - After tapping it: "You said you have no known allergies on Nov 23, 2026."
   with "Undo" and "+ Add an allergy". Adding an allergy clears it.
-- The button only shows when nothing is listed. If the records later bring
+- The button only shows when nothing is listed and the records' allergies
+  loaded (now, or in the saved copy). After a failed or refused load with
+  nothing saved it isn't offered. If the records later bring
   an allergy, the patient's statement is ignored on the phone and left out
   of the QR code, and stays saved.
 - A record that itself says "No known allergy" (SNOMED CT 716186003), "No
   known drug allergy" (409137002), "No known food allergy" (429625007) or
   "No known environmental allergy" (428607008) is a statement, not an
-  allergy: "Your records say: No known drug allergy." It isn't counted.
+  allergy: "Your records say: No known drug allergy." It isn't counted, and
+  it goes in the QR code. Beside a listed allergy, both show, on the phone
+  and to staff. It doesn't hide the patient's own button.
 
 ### Loading problems
 
-- Refused (an older sign-in without the permission): "Sign in again to add
-  your allergies."
+- Refused (an older sign-in without the permission): home shows its usual
+  sign-in note, "Sign in again to add your allergies.", and so does the
+  section. Nobody is signed out. Allergies already saved stay, with "These
+  are from Nov 21."
+- A list saved before this feature: "Your allergies haven't been loaded
+  yet."
 - Failed, with allergies saved on the phone: they stay, with "Your allergies
   couldn't be updated. These are from Nov 21."
 - Failed, with none saved: "Your allergies couldn't be loaded." The "No
@@ -132,8 +146,9 @@ What happened         [ Choose ▾ ]
 - The same native lists as the add-a-medicine form; "Other…" opens a text
   box. Both answers are required; "Not sure" shows "Reaction not known".
 - Same name as one already listed (ignoring case): a panel in the form asks,
-  as for medicines: "Penicillin is already on your list." Don't add it, or
-  Add it anyway.
+  as  for medicines: "Penicillin is already on your list." Go back, or (when it
+  has no patient reaction) Use my reaction for it. There is no Add it anyway,
+  so an allergy never shows twice.
 - A half-typed allergy is kept like a half-typed medicine, and home says it
   isn't saved.
 - "Add the reaction" opens just "What happened" under that allergy.
@@ -158,6 +173,12 @@ What happened         [ Choose ▾ ]
   show once, with all reactions, and keep the highest risk.
 - Each keeps its source name ("SMART sandbox") for later health systems.
 
+- Medicines and allergies refresh on their own: if one fails, the other
+  still updates, and each keeps its own date.
+- A record allergy's key is its code (system and code), else its plain name.
+  A merged allergy keeps its other keys, as insurance-only medicines do, so
+  the patient's reaction stays with it.
+
 ## Saved on the phone
 
 - Records' allergies go in the encrypted records copy with their own date
@@ -169,30 +190,41 @@ What happened         [ Choose ▾ ]
   dropped if either side has an own allergy.
 - **Fix while there:** the loader in `js/vault.js` keeps only additions and
   stopped marks, so the log of offline changes is dropped when Brown Bag
-  reopens and the QR screen's warning disappears. It must keep every field.
+  reopens and the QR screen's warning disappears; restoring a backup drops it
+  too (`loadByName` and `importBackup`). Both must keep every field.
 - Changes made while the list is a saved copy join the QR screen's warning:
-  "Added the allergy Penicillin", and so on.
+  "Added the allergy Penicillin", and so on. Each change belongs to the
+  medicines or the allergies, and is cleared when that part updates.
 
 ## In the QR code and on the staff page
 
 - FHIR R4 AllergyIntolerance entries in the same Bundle:
   - Records: code text (and the record's SNOMED or RxNorm code when it has
-    one), reaction, criticality, type, and the note "From records: SMART
-    sandbox". A reaction the patient added carries the note "Reaction from
-    the patient".
+    one), each reaction with its severity, criticality, type,
+    verificationStatus, and the note "From records: SMART sandbox". A
+    reaction the patient added is its own `reaction` entry with the note
+    "From the patient".
   - Patient's own: `asserter` the patient, verificationStatus
     `unconfirmed`, code text, reaction text.
   - The patient's statement: SNOMED CT 716186003 "No known allergy",
     `asserter` the patient.
-- A Bundle tag says whether the records' allergies were `loaded`, `failed`,
-  `refused` or are `saved-on` a date.
+- Two Bundle tags: the records' allergies status (`loaded`, `failed`,
+  `refused`, `not-loaded`) and, when they are a saved copy, the date.
+- The link's prefix becomes `v3.`; the page still opens `v2.` codes. A staff
+  page running old code then refuses a new code ("This link is damaged")
+  instead of showing a list with the allergies silently missing.
 - Staff page: an "Allergies" section first, under the name, with "From
-  records", "From patient" and the notes. Empty cases:
+  records" and "From patient", reactions with severity, "Not confirmed",
+  "Intolerance" and "Marked high risk". The patient's own aren't labeled
+  "Not confirmed"; "From patient" says it.
+- **The status line shows whether or not anything is listed:** "Allergies
+  from records couldn't be loaded. Ask the patient." (failed, refused,
+  not-loaded) or "Allergies from records are a copy saved on Nov 21. They
+  may be out of date."
+- Nothing listed:
   - "Patient says: no known allergies."
-  - "None in the records. The patient hasn't said." (loaded only)
-  - "Allergies from records couldn't be loaded. Ask the patient."
-  - A code made before this feature: "This code doesn't include allergies.
-    Ask the patient."
+  - "None in the records. The patient hasn't said." (loaded or a saved copy)
+  - A `v2.` code: "This code doesn't include allergies. Ask the patient."
 - "What's in this code?" adds "Your allergies and reactions".
 - The QR budget is unchanged (version 40-M). Too long uses the existing
   screen.
@@ -206,7 +238,7 @@ RxNav during the build; any that can't be checked sends words only.
 ## Constraints
 
 - Static site, no server, no new libraries. WCAG 2.2 AA.
-- Home unchanged (A). Sandbox data only.
+-Home keeps its layout (A). Sandbox data only.
 - Both virtual phones are checked right after the build (sign-in, saved
   list, QR code and staff page all change).
 
@@ -222,6 +254,9 @@ RxNav during the build; any that can't be checked sends words only.
   (Other… for several).
 - The patient's "no known allergies" is ignored when anything is listed.
 - "Not confirmed", "Intolerance" and "Marked high risk" lines.
-- Duplicate check by name only.
+- Duplicate check by name only, and one card per allergy.
+- "I have no known allergies" only after the records' allergies loaded.
+- An older sign-in gets the home note instead of being signed out.
+- New codes don't open on a staff page that is still running old code.
 - A failed load keeps the saved allergies and says their date.
 - Approval of screenshots before `main` (the A or B stop point).
