@@ -1049,6 +1049,25 @@ medicine really goes back to.
 Open Brown Bag, type `history.length` in the Console, and watch it change
 as you open screens.
 
+### Step 19. Names a computer reads too simply (`js/add-check.js`)
+
+The add check compares a drug's **first word**. That works for lisinopril
+and fails for "Vitamin D3" and "Vitamin B12", which share a first word and
+nothing else. A **regular expression** (a pattern for matching text) now
+reads which vitamin it is: the letter, and the number right after it. The
+hard part is what the number means: 12 in "Vitamin B 12" is part of the
+name, 50 in "Vitamin D 50 mcg" is a dose, 5,000 in "Vitamin D3 5,000 IU" has
+a comma in it. Each one is a test.
+
+**When unsure, ask.** "Vitamin A and D" names two, so Brown Bag doesn't
+guess: it asks, as before. Asking once too often is better than missing a
+duplicate.
+
+**Say what's true.** A look-alike the patient stopped says it's on the
+stopped list, not "already on your list".
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
+
 ---
 
 ## Glossary

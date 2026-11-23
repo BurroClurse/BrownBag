@@ -37,6 +37,9 @@ pass, when it touches:
   options, Add to Home Screen, then Done, "I've done this" and Back each go
   back to More options. QR code: tap its blank space (no ring drawn), Close
   still works. Undo on a "Filled, not in your records" medicine.
+- Leftover fixes (2026-11-23): add Vitamin D3, then Vitamin B12 (no
+  question), then Vitamin D 1000 IU (asks). Remove an addition, Done, open
+  My medicines: no Undo row.
 
 ## On a real iPhone (Tyler)
 
