@@ -65,8 +65,9 @@ only, no real patients).
 - **What was actually filled.** Each medicine shows its insurance fills
   ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
-  and a prescription marked completed but filled again since it was
-  written moves back to the current list.
+  and a prescription the record calls finished (completed, stopped or
+  canceled) but filled since it was written moves back to the current
+  list, saying so.
 - **Adding a medicine** uses lists for how much and how often, so the
   QR code carries the dose as numbers other systems can read, and asks
   first when the medicine is already there, was marked stopped, or only
@@ -149,6 +150,7 @@ The list never passes through a server.
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
+| `vendor/` | The two libraries the app uses (fhirclient, qrcode-generator), unchanged copies with their licenses (`vendor/LICENSES.md`). |
 | `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/`, and the see-through logo this README shows. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
 | `tools/` | Local https server and the logo source. |

@@ -389,3 +389,9 @@ test("real medicines are not placeholders, even with a plain name", () => {
   assert.equal(isPlaceholderDrug(coded), false);
   assert.equal(coded.name, "ibuprofen 200 MG Oral Tablet");
 });
+
+test("each item keeps the status the record gave it", () => {
+  const drug = { medicationCodeableConcept: { text: "Warfarin" } };
+  assert.equal(fromMedicationRequest(Object.assign({ status: "stopped" }, drug), "S").recordStatus, "stopped");
+  assert.equal(fromMedicationStatement(Object.assign({ status: "not-taken" }, drug), "S").recordStatus, "not-taken");
+});

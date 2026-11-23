@@ -5,7 +5,7 @@
 // IG): the Bundle is trimmed (no ids, short "resource:N" references), and
 // the packed list is written as digits, which a QR code holds more of.
 
-import { fillNote } from "./claims.js";
+import { fillNote, completedNote } from "./claims.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
 export var QR_MAX_BYTES = 2331;
@@ -54,7 +54,7 @@ export function buildShareBundle(list, now, warnings = {}) {
       statement.note.push({ text: "Prescribed by " + item.prescriber });
     }
     if (item.completedButFilled) {
-      statement.note.push({ text: "Record marked completed, but filled " + item.completedButFilled });
+      statement.note.push({ text: completedNote(item.completedButFilled, item.recordStatus) });
     }
     if (item.fills) {
       statement.note.push({ text: fillNote(item.fills) });

@@ -34,6 +34,7 @@ export function fromMedicationRequest(resource, sourceName, medications = new Ma
     lastDate: resource.authoredOn || null,
     prescriber: (resource.requester && resource.requester.display) || null,
     sourceName: sourceName,
+    recordStatus: resource.status || null,
     current: CURRENT_REQUEST.indexOf(resource.status) !== -1
   });
 }
@@ -51,6 +52,7 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
     lastDate: start,
     prescriber: null,
     sourceName: sourceName,
+    recordStatus: resource.status || null,
     // "unknown" with no end date stays on the main list: hiding it under
     // Older would leave it off the QR code (real sandbox data has these).
     current: CURRENT_STATEMENT.indexOf(resource.status) !== -1 ||
@@ -209,6 +211,7 @@ function makeItem(parts) {
     prescriber: parts.prescriber,
     source: parts.sourceName,
     status: parts.current ? "current" : "older",
+    recordStatus: parts.recordStatus,
     origin: "records",
     lastDate: parts.lastDate,
     firstDate: parts.start,

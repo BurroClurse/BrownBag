@@ -117,7 +117,12 @@ test("claimsLabel names who paid", () => {
 });
 
 test("completedLine says the record and the fill disagree", () => {
-  assert.equal(completedLine("2025-12-24"), "Marked completed in your records, but filled Dec 24, 2025");
+  assert.equal(completedLine("2025-12-24", "completed"), "Marked completed in your records, but filled Dec 24, 2025");
+  assert.equal(completedLine("2025-12-24", "stopped"), "Marked stopped in your records, but filled Dec 24, 2025");
+  assert.equal(completedLine("2025-12-24", "cancelled"), "Marked canceled in your records, but filled Dec 24, 2025");
+  assert.equal(completedLine("2025-12-24", "not-taken"), "Marked not taken in your records, but filled Dec 24, 2025");
+  assert.equal(completedLine("2025-12-24", "draft"), "Not current in your records, but filled Dec 24, 2025");
+  assert.equal(completedLine("2025-12-24"), "Not current in your records, but filled Dec 24, 2025");
 });
 
 test("fillNote is the short line for the QR code", () => {
@@ -197,4 +202,92 @@ test("mergeClaims uses both ingredient lists to match fills", () => {
   const out = mergeClaims(split, result, NOW);
   assert.equal(out.current.length, 1);
   assert.equal(out.current[0].fills.count, 1);
+});
+
+test("claims that were canceled, entered in error, drafts or only asked about are not fills", () => {
+  const withStatus = (extra) => Object.assign(claim("314076", "lisinopril", "2026-09-21"), extra);
+  assert.deepEqual(fillsFromClaims([
+    withStatus({ status: "cancelled" }),
+    withStatus({ status: "entered-in-error" }),
+    withStatus({ status: "draft" }),
+    withStatus({ status: "active", use: "preauthorization" }),
+    withStatus({ status: "active", use: "predetermination" })
+  ]), []);
+  assert.equal(fillsFromClaims([withStatus({ status: "active", use: "claim" })]).length, 1);
+});
+
+test("a fill with no date, or only a month or year, still reads well", () => {
+  assert.equal(fillLine({ count: 1, last: null, insurers: ["Aetna"], cash: false }), "Filled once · date not given · Aetna claims");
+  assert.equal(fillLine({ count: 2, last: null, insurers: ["Aetna"], cash: false }), "Filled 2 times · dates not given · Aetna claims");
+  assert.equal(fillLine({ count: 1, last: "2026-09", insurers: ["Aetna"], cash: false }), "Filled once · Sep 2026 · Aetna claims");
+  assert.equal(fillLine({ count: 1, last: "2026", insurers: ["Aetna"], cash: false }), "Filled once · 2026 · Aetna claims");
+  assert.equal(fillNote({ count: 1, last: null, insurers: ["Aetna"], cash: false }), "Filled, date not given (Aetna claims), 1 fill");
+  assert.equal(fillNote({ count: 2, last: null, insurers: ["Aetna"], cash: false }), "Filled, dates not given (Aetna claims), 2 fills");
+});
+
+test("a fill dated only by month counts as recent", () => {
+  const out = attachFills({ current: [], older: [] }, [{ rxcui: "1", name: "sertraline", date: "2026-10", insurer: "Aetna", cash: false }], new Map(), NOW);
+  assert.equal(out.current.length, 1);
+});
+
+test("an ingredient match goes to the current medicine before a finished one", () => {
+  const split = {
+    current: [item("rx:1", "1", "Metoprolol A", "current", "2020-01-01"), item("rx:4", "4", "Metoprolol C", "current", "2021-01-01")],
+    older: [item("rx:2", "2", "Metoprolol B", "older", "2025-06-01")],
+    failed: false
+  };
+  const same = { rxcui: "6918" };
+  const ingredients = new Map([["1", same], ["2", same], ["3", same], ["4", same]]);
+  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol", "2026-09-21")]), ingredients, NOW);
+  assert.equal(out.current.length, 2);
+  assert.equal(out.current.find((i) => i.key === "rx:4").fills.count, 1);
+  assert.equal(out.older[0].fills.count, 0);
+});
+
+test("a fill with no record joins one card when only the code, case or brand differs", () => {
+  const out = attachFills({ current: [], older: [] }, [
+    { rxcui: "312941", name: "sertraline 50 MG Oral Tablet", date: "2026-08-21", insurer: "Aetna", cash: false },
+    { rxcui: "208149", name: "sertraline 50 MG Oral Tablet [Zoloft]", date: "2026-10-21", insurer: "Aetna", cash: false },
+    { rxcui: null, name: "Sertraline 50 mg  Oral Tablet", date: "2026-09-21", insurer: null, cash: true }
+  ], new Map(), NOW);
+  assert.equal(out.current.length, 1);
+  assert.equal(out.current[0].key, "fill:312941");
+  assert.equal(out.current[0].name, "sertraline 50 MG Oral Tablet [Zoloft]");
+  assert.equal(out.current[0].fills.count, 3);
+  assert.deepEqual(out.current[0].otherKeys.sort(), ["fill:208149", "fill:sertraline 50 mg  oral tablet"]);
+});
+
+test("fills that share a code share a card even when the names differ", () => {
+  const out = attachFills({ current: [], older: [] }, [
+    { rxcui: "312941", name: "sertraline 50 MG Oral Tablet", date: "2026-10-21", insurer: "Aetna", cash: false },
+    { rxcui: "312941", name: "SERTRALINE HCL 50MG TAB", date: "2026-08-21", insurer: "Aetna", cash: false }
+  ], new Map(), NOW);
+  assert.equal(out.current.length, 1);
+  assert.equal(out.current[0].name, "sertraline 50 MG Oral Tablet");
+});
+
+test("the card's key doesn't depend on the order the claims arrive in", () => {
+  const a = { rxcui: "312941", name: "sertraline 50 MG Oral Tablet", date: "2026-08-21", insurer: "Aetna", cash: false };
+  const b = { rxcui: "208149", name: "sertraline 50 MG Oral Tablet [Zoloft]", date: "2026-10-21", insurer: "Aetna", cash: false };
+  const key = (fills) => attachFills({ current: [], older: [] }, fills, new Map(), NOW).current[0].key;
+  assert.equal(key([a, b]), key([b, a]));
+});
+
+test("a fill that links two cards by code and by name joins them into one", () => {
+  const out = attachFills({ current: [], older: [] }, [
+    { rxcui: "1", name: "Alpha 5 MG", date: "2026-08-21", insurer: "Aetna", cash: false },
+    { rxcui: "2", name: "Beta 5 MG", date: "2026-08-22", insurer: "Aetna", cash: false },
+    { rxcui: "1", name: "Beta 5 MG", date: "2026-08-23", insurer: "Aetna", cash: false }
+  ], new Map(), NOW);
+  assert.equal(out.current.length, 1);
+  assert.equal(out.current[0].fills.count, 3);
+});
+
+test("different strengths with no record keep their own cards", () => {
+  const same = { rxcui: "36437" };
+  const out = attachFills({ current: [], older: [] }, [
+    { rxcui: "312941", name: "sertraline 50 MG Oral Tablet", date: "2026-10-21", insurer: "Aetna", cash: false },
+    { rxcui: "312940", name: "sertraline 25 MG Oral Tablet", date: "2026-10-21", insurer: "Aetna", cash: false }
+  ], new Map([["312941", same], ["312940", same]]), NOW);
+  assert.equal(out.current.length, 2);
 });

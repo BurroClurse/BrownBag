@@ -67,8 +67,7 @@ test("the service worker never keeps health data", () => {
   assert.equal(route("https://rxnav.nlm.nih.gov/REST/drugs.json?name=ibuprofen"), "network");
   assert.equal(route("https://burroclurse.github.io/BrownBag/index.html?code=abc&state=def"), "app");
   assert.equal(route("https://burroclurse.github.io/BrownBag/js/app.js"), "app");
-  assert.equal(route("https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"), "library");
-  assert.equal(route("https://cdn.jsdelivr.net/npm/something-else@1.0.0/x.js"), "network");
+  assert.equal(route("https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"), "network");
 });
 
 test("the service worker stops waiting for a stalled network and uses its copy", { timeout: 3000 }, async () => {

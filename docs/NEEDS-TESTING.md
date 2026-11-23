@@ -64,5 +64,13 @@ changed, so these go first:
   medicine; the QR code; the logo with no box. Found and fixed: the logo's
   color profile made a box on Android; Close covered "Tap to show the code"
   in iPhone Safari.
+- 2026-11-23, libraries in the repo: the test browser (sign-in, add form,
+  QR, offline open with no signal), then both virtual phones on the live
+  site (Android Chrome and iPhone Safari: sign-in, home, add form, check
+  panel, QR; no CDN requests). Passed.
 - 2026-11-23, Tyler's iPhone: "Tap to show the code" sits clear of Close;
   Face ID unlock from the Home Screen icon works.
+- 2026-11-23, claims fixes: the test browser with made-up claims (canceled,
+  preauthorized, undated, stopped but filled, brand and generic, stays
+  stopped), then both virtual phones on the live site with Chantell Bartell
+  (fills on the cards, no "undefined", QR code fits). Passed.

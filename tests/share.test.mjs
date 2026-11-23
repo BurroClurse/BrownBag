@@ -207,7 +207,8 @@ test("fills travel in the shared list and land in their own staff group", () => 
     current: [
       { name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", source: "SMART sandbox", fills: fills(3, "2025-07-23") },
       { name: "atorvastatin 20 MG Oral Tablet", rxcui: "617310", source: "SMART sandbox", fills: fills(0, null, []) },
-      { name: "metformin hydrochloride 500 MG Oral Tablet", rxcui: "861007", source: "SMART sandbox", completedButFilled: "2026-09-22", fills: fills(1, "2026-09-22") },
+      { name: "metformin hydrochloride 500 MG Oral Tablet", rxcui: "861007", source: "SMART sandbox", completedButFilled: "2026-09-22", recordStatus: "completed", fills: fills(1, "2026-09-22") },
+      { name: "warfarin 5 MG Oral Tablet", rxcui: "855332", source: "SMART sandbox", completedButFilled: "2026-09-23", recordStatus: "stopped", fills: fills(1, "2026-09-23") },
       { name: "sertraline 50 MG Oral Tablet", rxcui: "312941", origin: "claims", source: "Aetna claims", fills: fills(1, "2026-10-22") }
     ],
     additions: [],
@@ -219,12 +220,13 @@ test("fills travel in the shared list and land in their own staff group", () => 
   assert.ok(notes(statements[0]).includes("Last filled 2025-07-23 (Aetna claims), 3 fills"));
   assert.ok(notes(statements[1]).includes("No fill found in claims"));
   assert.ok(notes(statements[2]).some((t) => /marked completed/i.test(t) && t.includes("2026-09-22")));
-  assert.equal(statements[3].informationSource.display, "Aetna claims");
-  assert.equal(notes(statements[3])[0], "Filled, not in the health record");
-  assert.ok(!notes(statements[3]).some((t) => t.startsWith("From records")));
+  assert.ok(notes(statements[3]).includes("Record marked stopped, but filled 2026-09-23"));
+  assert.equal(statements[4].informationSource.display, "Aetna claims");
+  assert.equal(notes(statements[4])[0], "Filled, not in the health record");
+  assert.ok(!notes(statements[4]).some((t) => t.startsWith("From records")));
   const groups = groupShareBundle(bundle);
   assert.deepEqual(groups.fromClaims.map((r) => r.name), ["sertraline 50 MG Oral Tablet"]);
-  assert.equal(groups.fromRecords.length, 3);
+  assert.equal(groups.fromRecords.length, 4);
   assert.ok(groups.fromRecords[0].detail.includes("Last filled 2025-07-23 (Aetna claims), 3 fills"));
 });
 

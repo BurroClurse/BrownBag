@@ -30,10 +30,15 @@ export function arrangeList(split, data) {
   var current = [];
   var stopped = [];
   split.current.forEach(function (entry) {
-    if (has(marks, entry.key)) {
-      stopped.push(Object.assign({}, entry, { stoppedAt: marks[entry.key] }));
-    } else if (has(needed, entry.key)) {
-      current.push(Object.assign({}, entry, { asNeededAt: needed[entry.key] }));
+    // A fill-only card can answer to several keys (claims.js); a mark saved
+    // under any of them counts.
+    var keys = [entry.key].concat(entry.otherKeys || []);
+    var marked = keys.filter(function (key) { return has(marks, key); })[0];
+    var neededKey = keys.filter(function (key) { return has(needed, key); })[0];
+    if (marked !== undefined) {
+      stopped.push(Object.assign({}, entry, { key: marked, stoppedAt: marks[marked] }));
+    } else if (neededKey !== undefined) {
+      current.push(Object.assign({}, entry, { key: neededKey, asNeededAt: needed[neededKey] }));
     } else {
       current.push(entry);
     }

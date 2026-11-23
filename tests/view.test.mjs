@@ -235,3 +235,20 @@ test("makeAddition keeps picked amounts and schedules, null when typed", () => {
   assert.equal(b.quantity, null);
   assert.equal(b.schedule, null);
 });
+
+test("arrangeList keeps a stopped mark saved under another of the card's keys", () => {
+  const entry = { key: "fill:1", otherKeys: ["fill:2"], name: "Sertraline", status: "current" };
+  const arranged = arrangeList({ current: [entry], older: [] }, { stopped: { "fill:2": "2026-11-01" } });
+  assert.equal(arranged.current.length, 0);
+  assert.equal(arranged.stopped[0].stoppedAt, "2026-11-01");
+  // Put back deletes the mark by this key, so it must be the marked one.
+  assert.equal(arranged.stopped[0].key, "fill:2");
+});
+
+test("an As needed mark under a fill card's other key still counts", () => {
+  var arranged = arrangeList(
+    { current: [item("claims:1", "Sertraline", { origin: "claims", otherKeys: ["rx:312940"] })], older: [] },
+    { additions: [], stopped: {}, asNeeded: { "rx:312940": "2026-11-20" } }
+  );
+  assert.deepEqual(arranged.current.map((i) => [i.key, i.asNeededAt]), [["rx:312940", "2026-11-20"]]);
+});
