@@ -120,6 +120,7 @@ The list never passes through a server.
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
+| `vendor/` | The two libraries the app uses (fhirclient, qrcode-generator), unchanged copies with their licenses (`vendor/LICENSES.md`). |
 | `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/`, and the see-through logo this README shows. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
 | `tools/` | Local https server and the logo source. |

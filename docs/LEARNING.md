@@ -964,6 +964,32 @@ Look at how a medicine's dosage is written in US Core, then compare it
 with what Brown Bag puts in the QR code.
 
 
+### Step 16. The libraries move into the repo (`vendor/`)
+
+Brown Bag uses two libraries it didn't write: **fhirclient** does the SMART
+sign-in, and **qrcode-generator** draws the QR code. They used to load from
+a **CDN** (content delivery network), another company's computers that hand
+out popular files. Now unchanged copies live in `vendor/`.
+
+**Why it matters for a health app.** If the CDN were down, sign-in would
+stop. And every time someone opened Brown Bag, the CDN's computers saw that
+their phone did. Neither involves health data, but both are easy to remove.
+
+**How we know the copies are the real files.** Each script tag carries an
+`integrity` value: a fingerprint (a SHA-384 **hash**) of the exact file.
+The browser refuses a file whose fingerprint doesn't match. Before moving
+them, the files' fingerprints were checked against the ones already on the
+page, and `tests/vendor.test.mjs` checks them every run.
+
+**Their licenses come along.** Brown Bag is all rights reserved, but these
+belong to their authors (Apache 2.0 and MIT), who ask that their notices
+travel with the files. `vendor/LICENSES.md` holds them.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+Open Brown Bag's live site, then the Network tab, and find the two
+`vendor/` files. The whole page should load from one address.
+
+
 ---
 
 ## Glossary
@@ -975,6 +1001,7 @@ with what Brown Bag puts in the QR code.
   tampering.
 - **Branch**: a separate line of work in a repo.
 - **Bundle**: a FHIR package holding several records.
+- **CDN (content delivery network)**: another company's computers that hand out popular files, like a library.
 - **Certificate**: a website's digital ID, used for https.
 - **Commit**: a saved snapshot of changes, with a message.
 - **Compression**: shrinking data, like zipping a file.

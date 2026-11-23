@@ -180,7 +180,7 @@
 - [ ] **Step 2: Run to see them fail.**
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run the suite, the headless checks, `drive/final.mjs full`, then both simulators** against the live site with a CMS test enrollee (test right away: wrong medicines or mixed people).
-- [ ] **Step 5: Docs.** LEARNING "Step 16. A second, separate insurer" (confidential clients and why the server only swaps tokens; PKCE; NDC vs RxNorm; v3; the same-person check) with "Practice in the lab" Go Deeper ▸ "Granular scopes". README: Medicare in the features and the "Records and claims" steps. NEEDS-TESTING: Tyler's real-iPhone checks (Medicare sign-in from the Home Screen app; VoiceOver on the new notes).
+- [ ] **Step 5: Docs.** LEARNING "Step 17. A second, separate insurer" (confidential clients and why the server only swaps tokens; PKCE; NDC vs RxNorm; v3; the same-person check) with "Practice in the lab" Go Deeper ▸ "Granular scopes". README: Medicare in the features and the "Records and claims" steps. NEEDS-TESTING: Tyler's real-iPhone checks (Medicare sign-in from the Home Screen app; VoiceOver on the new notes).
 - [ ] **Step 6: Commit and publish**: "Medicare fills join the list". Then close pull request #1 with a comment that its NDC lookup landed in Task 1 (`gh pr close 1 --comment …`) and delete its branch (Tyler chose this, 2026-11-23).
 
 ### Later, separate (Tyler: "hold off but add it to the plan later")
