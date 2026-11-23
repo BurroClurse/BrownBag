@@ -981,7 +981,7 @@ async function buildQr() {
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
     overlay.appendChild(whatsIn);
-    var alert = changeAlert(state.data.changes, state.savedAt, new Date());
+    var alert = changeAlert(state.data.changes, { medicines: state.savedAt, allergies: null }, new Date());
     if (alert) {
       var warning = add(overlay, "div", null, "qr-alert");
       warning.id = "qr-alert";

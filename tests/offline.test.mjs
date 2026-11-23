@@ -22,6 +22,14 @@ async function key(pin = "246810") {
   return deriveKeyFromPin(pin, new Uint8Array(16));
 }
 
+test("saved allergies round trip with the records", async () => {
+  const storage = memoryStorage();
+  const allergies = { items: [{ key: "alg:name:mold", name: "Mold" }], statements: [], savedAt: "2026-11-23T10:00:00.000Z" };
+  await saveRecords(storage, await key(), Object.assign({}, SAVED, { allergies }));
+  assert.deepEqual((await loadLastRecords(storage, await key())).allergies, allergies);
+  assert.ok(!storage.dump().includes("Mold"));
+});
+
 test("saved records round trip with the right key", async () => {
   const storage = memoryStorage();
   await saveRecords(storage, await key(), SAVED);

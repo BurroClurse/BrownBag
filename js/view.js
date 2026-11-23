@@ -179,7 +179,11 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, in
 
 // Changes the patient made while the records part was a saved copy (no
 // fresh update since). A change that's undone cancels out.
-var OPPOSITE = { stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added" };
+var OPPOSITE = {
+  stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added",
+  "allergy-added": "allergy-removed", "allergy-removed": "allergy-added",
+  "reaction-removed": "reaction-added", "none-said": "none-unsaid", "none-unsaid": "none-said"
+};
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
   for (var i = list.length - 1; i >= 0; i -= 1) {
@@ -188,27 +192,54 @@ export function logChange(changes, kind, name, extra) {
       return list;
     }
   }
-  list.push(Object.assign({ kind: kind, name: name }, extra || {}));
+  // A reaction changed twice is one change.
+  var again = kind === "reaction-added" && list.some(function (c) { return c.kind === kind && c.name === name; });
+  if (!again) list.push(Object.assign({ kind: kind, name: name }, extra || {}));
   return list;
 }
 
+function partOf(change) {
+  return change.part || "medicines";
+}
+
+// The log after one part was updated from the records: that part's changes
+// no longer need a warning.
+export function keepChanges(changes, updatedPart) {
+  return (changes || []).filter(function (change) { return partOf(change) !== updatedPart; });
+}
+
+function changeLine(change) {
+  switch (change.kind) {
+    case "stopped": return "Marked " + change.name + " stopped";
+    case "unstopped": return "Put " + change.name + " back on your list";
+    case "removed": return "Removed " + change.name;
+    case "allergy-added": return "Added the allergy " + change.name;
+    case "allergy-removed": return "Removed the allergy " + change.name;
+    case "reaction-added": return "Added a reaction to " + change.name;
+    case "reaction-removed": return "Removed your reaction to " + change.name;
+    case "none-said": return "Said you have no known allergies";
+    case "none-unsaid": return "Took back that you have no known allergies";
+    default: return "Added " + change.name + (change.checked === false ? " (name not checked)" : "");
+  }
+}
+
 // The alert on the QR screen when the list was changed while it was a saved
-// copy: what changed, and that the records part needs a connection.
-export function changeAlert(changes, savedAt, now) {
-  if (!changes || !changes.length || !savedAt) {
+// copy: what changed, and that the records part needs a connection. Medicines
+// and allergies update on their own, so each has its own saved date (or null
+// when it's fresh).
+export function changeAlert(changes, saved, now) {
+  var shown = (changes || []).filter(function (change) { return saved[partOf(change)]; });
+  if (!shown.length) {
     return null;
   }
-  var when = listDate(savedAt, now);
-  var lines = changes.map(function (change) {
-    if (change.kind === "stopped") return "Marked " + change.name + " stopped";
-    if (change.kind === "unstopped") return "Put " + change.name + " back on your list";
-    if (change.kind === "removed") return "Removed " + change.name;
-    return "Added " + change.name + (change.checked === false ? " (name not checked)" : "");
+  var parts = ["medicines", "allergies"].filter(function (part) {
+    return shown.some(function (change) { return partOf(change) === part; });
   });
+  var when = listDate(parts.map(function (part) { return saved[part]; }).sort()[0], now);
   return {
     title: "This code isn't fully up to date",
     intro: "It includes the changes you made since your records were last updated on " + when + ":",
-    lines: lines,
-    advice: "Your medicines from your records are from " + when + ". Get a connection and open Brown Bag again to update them, then show a new code."
+    lines: shown.map(changeLine),
+    advice: "Your " + parts.join(" and ") + " from your records are from " + when + ". Get a connection and open Brown Bag again to update them, then show a new code."
   };
 }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -185,7 +185,7 @@ test("changeAlert says exactly what changed and to get a connection", () => {
     { kind: "added", name: "Vitamin D", checked: false },
     { kind: "removed", name: "Fish oil" },
     { kind: "unstopped", name: "Simvastatin" }
-  ], at, now);
+  ], { medicines: at, allergies: null }, now);
   assert.equal(alert.title, "This code isn't fully up to date");
   assert.equal(alert.intro, "It includes the changes you made since your records were last updated on Nov 21:");
   assert.deepEqual(alert.lines, [
@@ -200,9 +200,9 @@ test("changeAlert says exactly what changed and to get a connection", () => {
 test("changeAlert says nothing with no changes or a fresh list", () => {
   const now = new Date(2026, 10, 21, 12, 0);
   const at = new Date(2026, 10, 21, 8, 0).toISOString();
-  assert.equal(changeAlert([], at, now), null);
-  assert.equal(changeAlert(undefined, at, now), null);
-  assert.equal(changeAlert([{ kind: "removed", name: "Fish oil" }], null, now), null);
+  assert.equal(changeAlert([], { medicines: at, allergies: null }, now), null);
+  assert.equal(changeAlert(undefined, { medicines: at, allergies: null }, now), null);
+  assert.equal(changeAlert([{ kind: "removed", name: "Fish oil" }], { medicines: null, allergies: null }, now), null);
 });
 
 test("makeAddition keeps picked amounts and schedules, null when typed", () => {
@@ -251,4 +251,43 @@ test("a draft counts as started once anything is typed or chosen", () => {
 test("unsavedText says what isn't saved and where to finish it", () => {
   assert.equal(unsavedText({ name: " zinc ", dose: {}, often: {} }), "zinc isn't saved yet. Open My medicines to finish adding it.");
   assert.equal(unsavedText({ name: "", dose: { choice: "1 tablet" }, often: {} }), "The medicine you were adding isn't saved yet. Open My medicines to finish adding it.");
+});
+
+test("an allergy change and its opposite cancel out", () => {
+  let c = logChange([], "allergy-added", "Penicillin", { part: "allergies" });
+  c = logChange(c, "allergy-removed", "Penicillin", { part: "allergies" });
+  assert.deepEqual(c, []);
+  c = logChange([], "none-said", "No known allergies", { part: "allergies" });
+  assert.deepEqual(logChange(c, "none-unsaid", "No known allergies", { part: "allergies" }), []);
+  // A medicine and an allergy of one name don't cancel each other.
+  c = logChange([], "added", "Aspirin");
+  assert.equal(logChange(c, "allergy-removed", "Aspirin", { part: "allergies" }).length, 2);
+});
+
+test("changeAlert speaks only for the part that is a saved copy", () => {
+  const now = new Date("2026-11-23T12:00:00Z");
+  const changes = [{ kind: "added", name: "Zinc" }, { kind: "allergy-added", name: "Penicillin", part: "allergies" }, { kind: "reaction-added", name: "Mold", part: "allergies" }, { kind: "none-said", name: "x", part: "allergies" }];
+  const onlyAllergies = changeAlert(changes, { medicines: null, allergies: "2026-11-21T18:00:00Z" }, now);
+  assert.deepEqual(onlyAllergies.lines, ["Added the allergy Penicillin", "Added a reaction to Mold", "Said you have no known allergies"]);
+  assert.match(onlyAllergies.intro, /Nov 21/);
+  assert.match(onlyAllergies.advice, /^Your allergies from your records are from Nov 21\./);
+  const both = changeAlert(changes, { medicines: "2026-11-20T18:00:00Z", allergies: "2026-11-21T18:00:00Z" }, now);
+  assert.equal(both.lines.length, 4);
+  assert.match(both.intro, /Nov 20/);
+  assert.match(both.advice, /^Your medicines and allergies from your records are from Nov 20\./);
+  const onlyMeds = changeAlert(changes, { medicines: "2026-11-20T18:00:00Z", allergies: null }, now);
+  assert.deepEqual(onlyMeds.lines, ["Added Zinc"]);
+  assert.equal(changeAlert([changes[1]], { medicines: "2026-11-20T18:00:00Z", allergies: null }, now), null);
+});
+
+test("changing a reaction twice is one line", () => {
+  const c = logChange([], "reaction-added", "Mold", { part: "allergies" });
+  assert.equal(logChange(c, "reaction-added", "Mold", { part: "allergies" }).length, 1);
+});
+
+test("keepChanges drops only the part that was updated", () => {
+  const changes = [{ kind: "added", name: "Zinc" }, { kind: "allergy-added", name: "Penicillin", part: "allergies" }];
+  assert.deepEqual(keepChanges(changes, "medicines"), [changes[1]]);
+  assert.deepEqual(keepChanges(changes, "allergies"), [changes[0]]);
+  assert.deepEqual(keepChanges(undefined, "allergies"), []);
 });
