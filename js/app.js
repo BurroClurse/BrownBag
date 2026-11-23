@@ -14,7 +14,7 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { recordReader } from "./read.js";
-import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, ALLERGENS, REACTIONS } from "./allergies.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, ALLERGENS, REACTIONS } from "./allergies.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -304,8 +304,8 @@ async function allergiesAlone(found) {
 // later open says "haven't been loaded yet", not "none".
 function allergiesToSave() {
   var a = state.allergies;
-  if (a.savedAt) return { items: a.items, statements: a.statements, savedAt: a.savedAt };
-  if (a.status === "loaded") return { items: a.items, statements: a.statements, savedAt: new Date().toISOString() };
+  if (a.savedAt) return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.savedAt };
+  if (a.status === "loaded") return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: new Date().toISOString() };
   return undefined;
 }
 
@@ -626,11 +626,13 @@ function drawAllergies(parent) {
       allergyChange("none-unsaid", "No known allergies");
       allergySaved("Taken back.", "allergies-heading");
     }, "Undo: no known allergies");
-  } else if (!arranged.count && !arranged.statements.length && loaded) {
+  } else if (!arranged.count && !arranged.statements.length && !arranged.unspecified && loaded) {
     add(section, "p", "No allergies in your records.");
   }
   var list = arranged.count ? add(section, "ul", null, "meds") : null;
   arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
+  var unsaid = unspecifiedText(arranged.unspecified, arranged.count);
+  if (unsaid) note(section, unsaid);
   if (state.lastRemovedAllergy) drawAllergyUndo(section);
   if (state.allergyForm === "new") {
     drawAllergyForm(section, arranged, null);

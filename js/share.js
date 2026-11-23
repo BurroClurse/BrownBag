@@ -6,7 +6,7 @@
 // the packed list is written as digits, which a QR code holds more of.
 
 import { fillNote, completedNote } from "./claims.js";
-import { NOT_SURE, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
+import { NOT_SURE, UNSPECIFIED, isUnspecified, unspecifiedSentence, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
 export var QR_MAX_BYTES = 2331;
@@ -157,6 +157,9 @@ function allergyEntriesFor(allergies) {
     resource.note = [{ text: "From records" }];
     out.push(resource);
   });
+  for (var i = 0; i < (allergies.unspecified || 0); i += 1) {
+    out.push(allergyResource("Allergic disposition", UNSPECIFIED));
+  }
   if (allergies.saidNone) {
     var none = allergyResource("No known allergy", { system: SNOMED, code: noneCode("No known allergy") });
     none.asserter = SELF;
@@ -212,7 +215,7 @@ function allergyTags(tags) {
   var status = ["loaded", "failed", "refused", "not-loaded"].filter(function (s) { return of("allergies-" + s); })[0];
   if (!status) return null;
   var saved = of("allergies-saved-on");
-  return { status: status, savedAt: saved ? saved.display : null, fromRecords: [], fromPatient: [], statements: [], saidNone: false };
+  return { status: status, savedAt: saved ? saved.display : null, fromRecords: [], fromPatient: [], statements: [], unspecified: 0, saidNone: false };
 }
 
 function groupAllergy(groups, resource) {
@@ -222,6 +225,10 @@ function groupAllergy(groups, resource) {
   var saysSo = ((resource.code && resource.code.coding) || []).some(function (c) { return c.system === SNOMED && c.code === noneCode("No known allergy"); });
   if (own && saysSo) {
     groups.saidNone = true;
+    return;
+  }
+  if (!own && isUnspecified(resource)) {
+    groups.unspecified += 1;
     return;
   }
   var statement = own ? null : statementOf(resource, name);
@@ -258,17 +265,21 @@ function groupAllergy(groups, resource) {
 // not anything is listed, so a partial list never looks complete.
 export function allergyNotices(allergies) {
   if (!allergies) return [];
+  var out = [];
   if (allergies.savedAt) {
-    return ["Allergies from records are a copy saved on " + longDate(localDay(allergies.savedAt)) + ". They may be out of date."];
+    out.push("Allergies from records are a copy saved on " + longDate(localDay(allergies.savedAt)) + ". They may be out of date.");
+  } else if (allergies.status !== "loaded") {
+    out.push("Allergies from records couldn't be loaded. Ask the patient.");
   }
-  return allergies.status === "loaded" ? [] : ["Allergies from records couldn't be loaded. Ask the patient."];
+  var listed = allergies.fromRecords.length + allergies.fromPatient.length;
+  return out.concat(unspecifiedSentence(allergies.unspecified, listed, "Records", "Ask the patient.") || []);
 }
 
 export function allergyEmptyText(allergies) {
   if (!allergies) return "This code doesn't include allergies. Ask the patient.";
   if (allergies.fromRecords.length || allergies.fromPatient.length) return null;
   if (allergies.saidNone) return "Patient says: no known allergies.";
-  if (allergies.statements.length) return null;
+  if (allergies.statements.length || allergies.unspecified) return null;
   return allergies.status === "loaded" || allergies.savedAt ? "None in the records. The patient hasn't said." : null;
 }
 

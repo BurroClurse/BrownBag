@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -90,7 +90,7 @@ test("detailLines shows only what the record says", () => {
   assert.deepEqual(detailLines(card({ origin: "added", mine: { addedAt: "2026-11-23" } })), ["Added by me · Nov 23, 2026"]);
 });
 
-const loaded = (list = [], statements = []) => ({ status: "loaded", items: list, statements, savedAt: null });
+const loaded = (list = [], statements = [], unspecified = 0) => ({ status: "loaded", items: list, statements, unspecified, savedAt: null });
 const own = (name, o = {}) => Object.assign({ id: "o1", name, rxcui: null, reaction: "Itching", addedAt: "2026-11-23" }, o);
 const data = (o = {}) => Object.assign({ allergies: [], allergyReactions: {}, noKnownAllergies: null }, o);
 
@@ -214,13 +214,13 @@ test("no known allergies is offered only after the records' allergies loaded", (
 });
 
 test("a failed load keeps the saved allergies and their date", () => {
-  const saved = { items: items(rec()), statements: ["x"], savedAt: "2026-11-21T10:00:00Z" };
-  assert.deepEqual(keepAllergies({ status: "failed", items: [], statements: [] }, saved), { status: "failed", items: saved.items, statements: ["x"], savedAt: "2026-11-21T10:00:00Z" });
+  const saved = { items: items(rec()), statements: ["x"], unspecified: 2, savedAt: "2026-11-21T10:00:00Z" };
+  assert.deepEqual(keepAllergies({ status: "failed", items: [], statements: [] }, saved), { status: "failed", items: saved.items, statements: ["x"], unspecified: 2, savedAt: "2026-11-21T10:00:00Z" });
   assert.equal(keepAllergies({ status: "refused", items: [], statements: [] }, saved).items.length, 1);
-  assert.deepEqual(keepAllergies({ status: "failed", items: [], statements: [] }, undefined), { status: "failed", items: [], statements: [], savedAt: null });
+  assert.deepEqual(keepAllergies({ status: "failed", items: [], statements: [] }, undefined), { status: "failed", items: [], statements: [], unspecified: 0, savedAt: null });
   assert.deepEqual(keepAllergies({ status: "loaded", items: [], statements: [] }, saved), loaded());
   assert.equal(keepAllergies(null, undefined).status, "not-loaded");
-  assert.deepEqual(keepAllergies(null, saved), { status: "loaded", items: saved.items, statements: ["x"], savedAt: saved.savedAt });
+  assert.deepEqual(keepAllergies(null, saved), { status: "loaded", items: saved.items, statements: ["x"], unspecified: 2, savedAt: saved.savedAt });
 });
 
 const bundle = (list, next) => ({ resourceType: "Bundle", entry: list.map((resource) => ({ resource })), link: next ? [{ relation: "next", url: next }] : [] });
@@ -236,7 +236,7 @@ test("readAllergies joins pages, and says refused or failed instead of throwing"
   assert.equal(await fails(500), "failed");
   const start = Date.now();
   const stalled = await readAllergies((url) => url === "p2" ? new Promise(() => {}) : Promise.resolve(bundle([rec()], "p2")), "p", "S", 60);
-  assert.deepEqual(stalled, { status: "failed", items: [], statements: [] });
+  assert.deepEqual(stalled, { status: "failed", items: [], statements: [], unspecified: 0 });
   assert.ok(Date.now() - start < 400);
 });
 
@@ -296,4 +296,24 @@ test("changing the reaction keeps the patient's own entry, so it outlives the re
   assert.equal(arrangeAllergies(loaded(items(named("Penicillin"))), d).cards[0].mine.reaction, "Trouble breathing");
   const later = arrangeAllergies(loaded(), d);
   assert.deepEqual(later.cards.map((c) => [c.name, c.origin, reactionLine(c)]), [["Penicillin", "added", "Reaction: Trouble breathing"]]);
+});
+
+const tendency = (o = {}) => rec(Object.assign({ id: "t", code: { coding: [{ system: SNOMED, code: "609328004", display: "Allergic disposition (finding)" }], text: "Allergic disposition (finding)" } }, o));
+test("an entry that doesn't say what it's to is counted apart, not listed", () => {
+  const out = fromAllergyRecords([tendency(), rec()], "S");
+  assert.deepEqual(out.items.map((i) => i.name), ["Mold"]);
+  assert.equal(out.unspecified, 1);
+  assert.equal(fromAllergyRecords([rec({ code: { text: "Allergic disposition" } })], "S").unspecified, 1);
+  assert.equal(fromAllergyRecords([tendency({ clinicalStatus: { coding: [{ code: "resolved" }] } })], "S").unspecified, 0);
+  // One that has a reaction stays a card, so the reaction isn't lost.
+  const kept = fromAllergyRecords([tendency({ reaction: [{ manifestation: [{ text: "Hives" }] }] })], "S");
+  assert.deepEqual([kept.items.length, kept.unspecified], [1, 0]);
+  assert.equal(arrangeAllergies(loaded([], [], 1), data()).unspecified, 1);
+});
+
+test("unspecifiedText says it, and never beside 'none'", () => {
+  assert.equal(unspecifiedText(0, 3), null);
+  assert.equal(unspecifiedText(1, 1), "Your records also have an allergy entry that doesn't say what it's to. Ask your care team.");
+  assert.equal(unspecifiedText(1, 0), "Your records have an allergy entry that doesn't say what it's to. Ask your care team.");
+  assert.equal(unspecifiedText(2, 1), "Your records also have 2 allergy entries that don't say what they're to. Ask your care team.");
 });

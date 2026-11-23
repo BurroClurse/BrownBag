@@ -38,6 +38,9 @@ pass, when it touches:
 - VoiceOver on the "… is already on your list" panel: it reads the heading
   first, and every button can be reached.
 
+- VoiceOver on the Allergies section of My medicines: it reads the heading
+  first, each allergy with its reaction, and every button.
+
 ## Tested
 
 - 2026-11-23, Android emulator and iPhone simulator, live site, Loria

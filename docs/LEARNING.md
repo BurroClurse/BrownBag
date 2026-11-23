@@ -1085,6 +1085,41 @@ test, and a browser check closes and reopens Brown Bag with no signal.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
 
+### Step 21. Allergies: never let "I couldn't check" look like "none" (`js/allergies.js`)
+
+Allergies are the FHIR **AllergyIntolerance** resource. The hard part isn't
+showing them. It's the empty list. "No allergies" can mean four things:
+
+1. The records loaded and have none.
+2. The patient says they have none.
+3. The records couldn't be loaded.
+4. This QR code was made before Brown Bag had allergies.
+
+Only 1 and 2 are safe to call "none", so each has its own words on the phone
+and the staff page. Even a Bundle can lie: a server can answer "here is your
+list" and tuck "some were forbidden" inside (an **OperationOutcome**). Brown
+Bag treats that as a failure.
+
+**Statuses.** `verificationStatus` says how sure the clinic is (confirmed,
+unconfirmed, refuted) and `clinicalStatus` whether it's current. Refuted and
+resolved ones are left out; unconfirmed ones say "Not confirmed".
+
+**Who says so.** FHIR's `asserter` is the person who stated it. The patient's
+own allergies name the patient, so staff see "From patient".
+
+**Codes.** Two records with one code aren't always one allergy. "Allergy to
+drug" covers many, so different names stay apart.
+
+### Step 22. A second reader finds what the first can't
+
+All the tests passed before the review, and it still found that a patient's
+reaction could vanish. The test for it had put the data in by hand, under a
+key the app never uses. **A good test sets things up the way the app does,**
+then changes the world: add the reaction, change the record's code, look.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core" lists
+AllergyIntolerance among the required resources.
+
 ---
 
 ## Glossary
@@ -1100,6 +1135,8 @@ test, and a browser check closes and reopens Brown Bag with no signal.
 - **Certificate**: a website's digital ID, used for https.
 - **Commit**: a saved snapshot of changes, with a message.
 - **Compression**: shrinking data, like zipping a file.
+- **AllergyIntolerance**: the FHIR record of an allergy or intolerance, with its reactions.
+- **OperationOutcome**: a FHIR message about what went wrong, or was left out.
 - **ExplanationOfBenefit (EOB)**: the FHIR record of an insurance claim; a pharmacy one shows a fill.
 - **FHIR**: the standard format for health records data.
 - **Fork**: your own copy of someone else's repo.

@@ -343,8 +343,8 @@ TLS is already there. Two-factor sign-in belongs to each health system.
   operation; the Inferno test kit only checks cards. Provider cards hold
   vaccines, labs and insurance, not medication lists. Moved to Later by
   Tyler, 2026-11-20.
-- Allergies with the reaction, health history, implanted devices, emergency
-  contact.
+- Health history, implanted devices, emergency contact. (Allergies with the
+  reaction: built 2026-11-23, see `2026-11-23-allergies-design.md`.)
 - Staff screen (Med History Helper).
 - Native iPhone and Android apps, Apple Wallet and Google Wallet.
 - Staying signed in with refresh tokens.

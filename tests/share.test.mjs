@@ -264,8 +264,8 @@ test("additions saved before this change share as words only", () => {
 
 const CARD = (o) => Object.assign({ key: "k", otherKeys: [], name: "Mold", code: null, reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox", origin: "records", mine: null }, o);
 const OWN = (name, reaction, o) => CARD(Object.assign({ name, source: null, origin: "added", mine: { ids: ["o"], keys: [], reaction, addedAt: "2026-11-23" } }, o));
-function withAllergies(cards, { statements = [], saidNone = null, status = "loaded", savedAt = null } = {}) {
-  return buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: { cards, statements, saidNone } }, NOW, { allergies: { status, savedAt } });
+function withAllergies(cards, { statements = [], saidNone = null, status = "loaded", savedAt = null, unspecified = 0 } = {}) {
+  return buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: { cards, statements, saidNone, unspecified } }, NOW, { allergies: { status, savedAt } });
 }
 const allergyEntries = (bundle) => bundle.entry.map((e) => e.resource).filter((r) => r.resourceType === "AllergyIntolerance");
 
@@ -367,4 +367,18 @@ test("only the patient's own no known allergies statement reads as one", () => {
   const typed = groupShareBundle(withAllergies([OWN("No known food allergies", "Not sure"), OWN("Latex", "Itching")])).allergies;
   assert.equal(typed.saidNone, false);
   assert.deepEqual(typed.fromPatient.map((a) => a.name), ["No known food allergies", "Latex"]);
+});
+
+test("staff hear about an entry that doesn't say what it's to", () => {
+  const g = groupShareBundle(withAllergies([CARD()], { unspecified: 1 })).allergies;
+  assert.equal(g.unspecified, 1);
+  assert.deepEqual(g.fromRecords.map((a) => a.name), ["Mold"]);
+  assert.deepEqual(allergyNotices(g), ["Records also have an allergy entry that doesn't say what it's to. Ask the patient."]);
+  const alone = groupShareBundle(withAllergies([], { unspecified: 2 })).allergies;
+  assert.equal(allergyEmptyText(alone), null);
+  assert.deepEqual(allergyNotices(alone), ["Records have 2 allergy entries that don't say what they're to. Ask the patient."]);
+  const said = groupShareBundle(withAllergies([], { unspecified: 1, saidNone: "2026-11-23" })).allergies;
+  assert.equal(allergyEmptyText(said), "Patient says: no known allergies.");
+  assert.equal(allergyNotices(said).length, 1);
+  assert.equal(allergyNotices(groupShareBundle(withAllergies([], { unspecified: 1, status: "failed" })).allergies).length, 2);
 });

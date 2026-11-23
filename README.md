@@ -33,6 +33,10 @@ only, no real patients).
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
   (checked against RxNorm), and ones they marked stopped.
+- **Allergies** come first on My medicines: the ones in their records and
+  their own, each with the reaction and who says so. They can add an
+  allergy, add a reaction to one from their records, or say they have no
+  known allergies. A load that failed says so, and never looks like "none".
 - **What was actually filled.** Each medicine shows its insurance fills
   ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
@@ -83,7 +87,9 @@ Every resource scope is read-only. `offline_access` asks for a refresh token
    alongside steps 3 and 4 with its own 6-second limit, and asks for no
    more pages once that is up, so a slow insurer never holds up the
    medicines.
-6. RxNav ingredient lookups, to group strengths of the same drug and match
+6. `GET AllergyIntolerance?patient={id}`, all pages, alongside, with its own
+   6-second limit. Mistaken, ruled-out and past entries are left out.
+7. RxNav ingredient lookups, to group strengths of the same drug and match
    fills to medicines.
 
 Nothing is written to the health record. Nothing runs on a schedule.
@@ -113,6 +119,8 @@ The list never passes through a server.
 | `share.html` | The page staff see after scanning. |
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
 | `js/meds.js` | FHIR records into one deduplicated list. |
+| `js/allergies.js` | Allergy records and the patient's own, one card each. |
+| `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/rxnorm.js` | Drug name search and ingredient lookup through RxNav. |
 | `js/pass.js` | The encrypted refresh token ("the pass"). |
 | `js/vault.js`, `js/lock.js`, `js/lock-screen.js` | Encryption, the passkey or PIN lock, backups. |

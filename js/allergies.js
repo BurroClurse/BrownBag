@@ -25,6 +25,26 @@ var NONE_CODES = {
   "428607008": "No known environmental allergy"
 };
 
+// "Allergic disposition": someone tends to have allergies, but not to what.
+export var UNSPECIFIED = { system: SNOMED, code: "609328004" };
+var UNSPECIFIED_NAME = "Allergic disposition";
+
+export function isUnspecified(resource) {
+  var coded = codesOf(resource.code).some(function (c) { return c.system === SNOMED && c.code === UNSPECIFIED.code; });
+  return (coded || words(resource.code).toLowerCase() === UNSPECIFIED_NAME.toLowerCase()) && !(resource.reaction || []).length;
+}
+
+// The sentence both screens use: whose records, and who to ask.
+export function unspecifiedSentence(count, listed, records, ask) {
+  if (!count) return null;
+  var what = count === 1 ? "an allergy entry that doesn't say what it's to" : count + " allergy entries that don't say what they're to";
+  return records + (listed ? " also" : "") + " have " + what + ". " + ask;
+}
+
+export function unspecifiedText(count, listed) {
+  return unspecifiedSentence(count, listed, "Your records", "Ask your care team.");
+}
+
 // The SNOMED code for a statement, or null.
 export function noneCode(statement) {
   return Object.keys(NONE_CODES).filter(function (code) { return NONE_CODES[code] === statement; })[0] || null;
@@ -136,12 +156,17 @@ function sameAllergy(a, b) {
 export function fromAllergyRecords(resources, sourceName) {
   var items = [];
   var statements = [];
+  var unspecified = 0;
   (resources || []).forEach(function (resource, index) {
     if (!resource || resource.resourceType !== "AllergyIntolerance") return;
     if (hasStatus(resource.verificationStatus, NOT_REAL) || hasStatus(resource.clinicalStatus, NOT_NOW)) return;
     var statement = statementOf(resource, words(resource.code));
     if (statement) {
       if (statements.indexOf(statement) === -1) statements.push(statement);
+      return;
+    }
+    if (isUnspecified(resource)) {
+      unspecified += 1;
       return;
     }
     var item = itemFrom(resource, sourceName, index);
@@ -167,7 +192,7 @@ export function fromAllergyRecords(resources, sourceName) {
     item.key = free;
     taken[free] = true;
   });
-  return { items: items, statements: statements };
+  return { items: items, statements: statements, unspecified: unspecified };
 }
 
 // Every page, inside ms, like the claims. "refused" means this sign-in can't
@@ -176,7 +201,7 @@ export function fromAllergyRecords(resources, sourceName) {
 export async function readAllergies(request, patientId, sourceName, ms) {
   var deadline = Date.now() + ms;
   var timer;
-  var nothing = function (status) { return { status: status, items: [], statements: [] }; };
+  var nothing = function (status) { return { status: status, items: [], statements: [], unspecified: 0 }; };
   var late = new Promise(function (resolve) {
     timer = setTimeout(function () { resolve(nothing("failed")); }, ms);
   });
@@ -212,12 +237,13 @@ export async function readAllergies(request, patientId, sourceName, ms) {
 // list); no saved copy then means it was made before Brown Bag had allergies.
 export function keepAllergies(result, saved) {
   if (result && result.status === "loaded") {
-    return { status: "loaded", items: result.items, statements: result.statements, savedAt: null };
+    return { status: "loaded", items: result.items, statements: result.statements, unspecified: result.unspecified || 0, savedAt: null };
   }
   return {
     status: result ? result.status : (saved ? "loaded" : "not-loaded"),
     items: saved ? saved.items : [],
     statements: saved ? saved.statements : [],
+    unspecified: (saved && saved.unspecified) || 0,
     savedAt: saved ? saved.savedAt : null
   };
 }
@@ -273,6 +299,7 @@ export function arrangeAllergies(allergies, data) {
   return {
     cards: cards.sort(byName),
     statements: allergies.statements,
+    unspecified: allergies.unspecified || 0,
     saidNone: cards.length ? null : none,
     canSayNone: !cards.length && !none && (allergies.status === "loaded" || Boolean(allergies.savedAt)),
     count: cards.length

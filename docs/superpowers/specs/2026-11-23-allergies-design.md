@@ -258,3 +258,20 @@ RxNav during the build; any that can't be checked sends words only.
 - New codes don't open on a staff page that is still running old code.
 - A failed load keeps the saved allergies and says their date.
 - Approval of screenshots before `main` (the A or B stop point).
+
+## Settled while building (2026-11-23)
+
+- Tyler chose A from the screenshots.
+- "Allergic disposition" (SNOMED 609328004), which names no allergen, isn't a
+  card or counted. The section and the staff page say the records have an
+  entry that doesn't say what it's to (Tyler). One that has a reaction stays
+  a card.
+- Records that share a code but have different names stay apart: codes like
+  "Allergy to drug" cover many. Placeholder codes never join records.
+- A patient's reaction follows the allergy's name, then its code.
+- Typed words that mean "none" aren't taken as an allergy or a statement.
+- A server that withholds entries, or says there are some and sends none,
+  counts as a failed load.
+- Claims and allergies are read outside the SMART library (`js/read.js`), so
+  a 401 on either can't drop the medicines or the pass.
+- If the patient's own saved part can't be opened, staff are told to ask.
