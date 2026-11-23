@@ -14,7 +14,8 @@ change, and moves it to "Tested" with the date when the pass is done.
    the simulators can't do. Listed under "On a real iPhone".
 
 Test patient: Loria Jenkins (`e7de504a-311d-49be-b2bc-566a328bcc72`), a
-built-in sandbox patient. The demo patient Avery Brownbag is wiped by the
+built-in sandbox patient, or Chantell Bartell (claims and an allergy). The
+README has a link that signs in as each. The demo patient Avery Brownbag is wiped by the
 sandbox every night.
 
 ## Test right away, not in the batch

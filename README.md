@@ -6,7 +6,7 @@
 
 Brown Bag helps patients give every healthcare worker an accurate medication
 list. It gathers their medicines from their health records, adds what they
-take over the counter, and shares the whole list with one QR code.
+take over the counter and their allergies, and shares the whole list with one QR code.
 
 The records come from the patient's own health system, the hospital or
 clinic whose patient portal (such as MyChart) they already use. They sign in
@@ -21,7 +21,8 @@ It is built to be simple to use: one main screen with no
 scrolling, big buttons, plain words, and WCAG 2.2 AA throughout.
 
 **Live:** <https://burroclurse.github.io/BrownBag/launch.html> (sandbox data
-only, no real patients).
+only, no real patients). To open it as a certain patient, see
+[Test patients](#test-patients).
 
 ## What the patient sees
 
@@ -56,7 +57,10 @@ only, no real patients).
   change, and the QR screen lists exactly what changed since the records
   were last updated and says to get a connection to update them.
 - **No signal?** The last list is saved, encrypted, on the phone, and the QR
-  code still works.
+  code still works. On a slow connection, a file that doesn't arrive is
+  tried once more, and then Brown Bag says what to do.
+- **Interrupted while adding?** A half-typed medicine or allergy is kept until
+  Brown Bag locks or closes, and home says it isn't saved.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the
   app. The health record connection ends after 30 days without opening it.
 
@@ -96,15 +100,16 @@ Nothing is written to the health record. Nothing runs on a schedule.
 
 Records whose medicine is only a placeholder word, such as "Medication",
 with no drug code, are left out of the list and the QR code; a note on My
-medicines says how many there were.
+medicines says how many there were. An allergy entry that doesn't say what
+it's to gets a note the same way.
 
 **The refresh token** is stored encrypted (AES-GCM) with a key that comes
 from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
 never put in a backup file. It is deleted on Sign out, when the token server
 refuses it, or after 30 days unused.
 
-**The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient` and
-`MedicationStatement` resources, compressed, encrypted with a key made from
+**The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient`,
+`MedicationStatement` and `AllergyIntolerance` resources, compressed, encrypted with a key made from
 the 6-digit code, and written after the `#` of a `share.html` link (browsers
 never send that part to a server). The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
@@ -119,9 +124,11 @@ The list never passes through a server.
 | `share.html` | The page staff see after scanning. |
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
 | `js/meds.js` | FHIR records into one deduplicated list. |
+| `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/allergies.js` | Allergy records and the patient's own, one card each. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/rxnorm.js` | Drug name search and ingredient lookup through RxNav. |
+| `js/add-choices.js`, `js/add-check.js` | The add form's lists, and the check for medicines already there. |
 | `js/pass.js` | The encrypted refresh token ("the pass"). |
 | `js/vault.js`, `js/lock.js`, `js/lock-screen.js` | Encryption, the passkey or PIN lock, backups. |
 | `js/idle.js` | When the app locks itself. |
@@ -132,14 +139,29 @@ The list never passes through a server.
 | `vendor/` | The two libraries the app uses (fhirclient, qrcode-generator), unchanged copies with their licenses (`vendor/LICENSES.md`). |
 | `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/`, and the see-through logo this README shows. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
-| `tools/` | Local https server and the logo source. |
-| `docs/` | Designs, build plans and the learning log. |
+| `tools/` | Local https server, the demo patient script and the logo source. |
+| `docs/` | Designs, build plans, the learning log, the limits on keeping the list current, and what's waiting for a phone test. |
+| `health.html` | From the course starter; not part of Brown Bag. |
 
 ## Test patients
 
-- **Avery Brownbag** (`brownbag-demo-patient`), made-up, shows every fill
-  case. `node tools/demo-patient.mjs` puts her on the public sandbox (it
-  replaces, never duplicates).
+The sandbox is public and shared. Its sign-in page lists only the first ten
+patients on it, and anyone can add patients, so the list changes and the one
+you want may not be there. These links sign in as one patient directly, with
+no list and no password:
+
+| Patient | What it shows | Link |
+| --- | --- | --- |
+| Chantell Bartell `e89af71d-4aa4-2237-e71d-6fa8e4b5af09` | Insurance fills, one allergy, and an allergy entry that doesn't say what it's to. | [Open as Chantell](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU4OWFmNzFkLTRhYTQtMjIzNy1lNzFkLTZmYThlNGI1YWYwOSIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
+| Loria Jenkins `e7de504a-311d-49be-b2bc-566a328bcc72` | Four current medicines, no insurance claims and no allergies. | [Open as Loria](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU3ZGU1MDRhLTMxMWQtNDliZS1iMmJjLTU2NmEzMjhiY2M3MiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
+
+Both are made-up patients that come with the sandbox. Nothing is sent back
+to it; what you add stays on your phone.
+
+**Avery Brownbag** (`brownbag-demo-patient`) is made up too, and shows every
+fill case. `node tools/demo-patient.mjs` puts Avery on the sandbox (it
+replaces, never duplicates). The sandbox is reset every night, so Avery is
+there only until then.
 
 ## Run the tests
 
@@ -164,8 +186,8 @@ can read how it works. Reading it is welcome. Copying it, using it, changing
 it or sharing it requires written permission. See [`LICENSE`](LICENSE).
 
 The course starter it grew from is
-[samoanGuy7/Smart-App](https://github.com/samoanGuy7/Smart-App). Libraries
-loaded from jsDelivr keep their own licenses: fhirclient (Apache 2.0) and
+[samoanGuy7/Smart-App](https://github.com/samoanGuy7/Smart-App). The libraries
+in `vendor/` keep their own licenses: fhirclient (Apache 2.0) and
 qrcode-generator (MIT).
 
 This list is what the patient and their records say. Their care team
