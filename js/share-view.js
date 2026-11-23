@@ -5,6 +5,10 @@
 
 import { unpackShare, groupShareBundle, allergyNotices, allergyEmptyText, ShareError } from "./share.js";
 
+// The page's own watcher (in the HTML) stops once the app has started.
+window.brownBagStarted = true;
+try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
+
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
 var root = document.getElementById("share");
 var fragment = location.hash.slice(1);

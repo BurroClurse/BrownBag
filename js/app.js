@@ -19,6 +19,10 @@ import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 
+// The page's own watcher (in the HTML) stops once the app has started.
+window.brownBagStarted = true;
+try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
+
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
 var TAGLINE = "Every pill bottle, without the bag.";

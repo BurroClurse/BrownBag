@@ -1120,6 +1120,24 @@ then changes the world: add the reaction, change the record's code, look.
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core" lists
 AllergyIntolerance among the required resources.
 
+### Step 23. When a file arrives late (`sw.js`, `index.html`)
+
+The Android phone check got stuck on "Loading Brown Bag…". The **service
+worker** waits 3 seconds for each file, then uses the phone's copy. A file
+that is new in this version has no copy, and the fallback handed over the
+start page instead: a web page where a script should be. One missing script
+stops all of them, because **modules** import each other.
+
+Now a file with no copy keeps waiting. And if any script still fails, the
+page tries once more by itself, then says "Part of Brown Bag didn't arrive."
+The "tried once" mark stops it from reloading forever.
+
+**The lesson:** test the update, not just the new version. The phones that
+passed had the new files already.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+In the Network tab, set the speed to Slow 3G and open Brown Bag.
+
 ---
 
 ## Glossary

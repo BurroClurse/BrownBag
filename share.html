@@ -11,6 +11,31 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="theme-color" content="#6b3f1d">
   <link rel="stylesheet" href="css/brownbag.css">
+  <script>
+    // A slow connection can lose one of the files below. Then this page
+    // tries once more by itself, and after that says what to do. The app
+    // sets brownBagStarted as its first step.
+    window.addEventListener("error", function (event) {
+      var file = event.target && event.target.tagName === "SCRIPT";
+      if (window.brownBagStarted || (!file && !(event instanceof ErrorEvent))) return;
+      try {
+        if (!sessionStorage.getItem("brownbag:retried")) {
+          sessionStorage.setItem("brownbag:retried", "yes");
+          location.reload();
+          return;
+        }
+        sessionStorage.removeItem("brownbag:retried");
+      } catch (error) {
+        // No session storage: say what to do instead of trying forever.
+      }
+      document.addEventListener("DOMContentLoaded", say);
+      if (document.readyState !== "loading") say();
+      function say() {
+        var main = document.querySelector("main");
+        main.textContent = "Part of Brown Bag didn't arrive. Check your connection, then open it again.";
+      }
+    }, true);
+  </script>
   <script type="module" src="js/share-view.js"></script>
 </head>
 <body>

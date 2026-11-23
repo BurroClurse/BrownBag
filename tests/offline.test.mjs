@@ -121,3 +121,54 @@ test("loadRecordsFor opens one patient's saved list, not just the last one's", a
   assert.equal(await loadRecordsFor(storage, await key(), "nobody"), null);
   assert.equal(await loadRecordsFor(storage, await key("111111"), SAVED.patientId), null);
 });
+
+const APP = "https://burroclurse.github.io/BrownBag/";
+function cachesWith(saved) {
+  const put = [];
+  return {
+    put,
+    match: async (url) => (saved[url] ? { from: "phone", url } : undefined),
+    open: async () => ({ put: (url) => { put.push(url); } })
+  };
+}
+const ok = (url) => ({ ok: true, from: "network", url, clone() { return this; } });
+
+test("a file with no saved copy waits for a slow network, and never gets the wrong page", { timeout: 3000 }, async () => {
+  let calls = 0;
+  const slow = (request) => { calls += 1; return new Promise((resolve) => setTimeout(() => resolve(ok(request.url)), 120)); };
+  const worker = loadWorker({ caches: cachesWith({ [APP + "index.html"]: true }), fetch: slow });
+  const answer = await worker.answerFor({ url: APP + "js/read.js", mode: "cors" }, 30);
+  assert.deepEqual([answer.from, answer.url], ["network", APP + "js/read.js"]);
+  assert.ok(calls >= 1);
+});
+
+test("a file with no saved copy and no network is an error, not a page", async () => {
+  const worker = loadWorker({ caches: cachesWith({ [APP + "index.html"]: true }), fetch: () => Promise.reject(new Error("offline")) });
+  await assert.rejects(worker.answerFor({ url: APP + "js/read.js", mode: "cors" }, 30));
+});
+
+test("a saved copy is used when the network is slow, and a page falls back to the start page", async () => {
+  const never = () => new Promise(() => {});
+  const worker = loadWorker({ caches: cachesWith({ [APP + "js/app.js"]: true, [APP + "index.html"]: true }), fetch: never });
+  assert.equal((await worker.answerFor({ url: APP + "js/app.js", mode: "cors" }, 30)).from, "phone");
+  const page = await worker.answerFor({ url: APP + "index.html?code=1", mode: "navigate" }, 30);
+  assert.equal(page.url, APP + "index.html");
+  const other = await worker.answerFor({ url: APP + "nothing-here.html", mode: "navigate" }, 30);
+  assert.equal(other.url, APP + "index.html");
+});
+
+test("what arrives in time is kept without the sign-in code in its address", async () => {
+  const caches = cachesWith({});
+  const worker = loadWorker({ caches, fetch: (request) => Promise.resolve(ok(request.url)) });
+  await worker.answerFor({ url: APP + "index.html?code=secret", mode: "navigate" }, 500);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.deepEqual(caches.put, [APP + "index.html"]);
+});
+
+test("both pages try once more by themselves when a file doesn't arrive", () => {
+  for (const [page, script] of [["index.html", "js/app.js"], ["share.html", "js/share-view.js"]]) {
+    const html = readFileSync(new URL("../" + page, import.meta.url), "utf8");
+    assert.ok(html.indexOf("brownbag:retried") !== -1 && html.indexOf("brownbag:retried") < html.indexOf(script), page + " watches before its script");
+    assert.match(readFileSync(new URL("../" + script, import.meta.url), "utf8"), /window\.brownBagStarted = true/);
+  }
+});
