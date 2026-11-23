@@ -2,7 +2,7 @@
 
 **Every pill bottle, without the bag.**
 
-![Brown Bag logo](assets/BrownBagLogo.png)
+<img src="assets/BrownBagLogoReadme.png" alt="Brown Bag logo" width="320">
 
 Brown Bag helps patients give every healthcare worker an accurate medication
 list. It gathers their medicines from their health records, adds what they
@@ -16,7 +16,7 @@ must offer to patient apps. It adds pharmacy fills from insurance claims,
 showing what was actually picked up. Today it connects to the SMART Health
 IT sandbox (test patients only), whose claims stand in for an insurer's.
 
-It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox, reads FHIR R4 records, and WCAG 2.2 AA support across the board. 
+It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox and reads FHIR R4 records.
 It is built to be simple to use: one main screen with no
 scrolling, big buttons, plain words, and WCAG 2.2 AA throughout.
 
@@ -120,7 +120,7 @@ The list never passes through a server.
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
-| `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/` and this README. |
+| `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/`, and the see-through logo this README shows. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
 | `tools/` | Local https server and the logo source. |
 | `docs/` | Designs, build plans and the learning log. |
