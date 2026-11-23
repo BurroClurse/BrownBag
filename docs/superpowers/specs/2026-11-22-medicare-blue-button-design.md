@@ -66,6 +66,14 @@ service for other insurers later; both use this same small server.
 
 ## Facts this rests on (checked 2026-11-21)
 
+- Use Blue Button **v3** (`/v3/` paths), announced in the sandbox on
+  2026-11-23. CMS took v1 and v2 out of active maintenance on June 30, 2026
+  and turns them off on July 30, 2027. Same endpoints as v2. Differences
+  that matter here: v3 refuses a sign-in that doesn't list its scopes (we
+  always list them); a new sign-in revokes the patient's earlier pass, so
+  only the newest saved pass works; and a patient can withhold substance
+  use claims, which v3 respects. Source: CMS v3 Migration Guide.
+
 - Blue Button accepts confidential clients only: authorization code
   with PKCE (S256), and the client secret is sent at `/token`
   (HTTP basic). The secret can't be in a web page, so a server sends it.
