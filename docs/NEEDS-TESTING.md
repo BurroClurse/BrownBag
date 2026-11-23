@@ -72,3 +72,8 @@ pass, when it touches:
   the live site (saved data, backup and restore). Passed. One Android run
   missed a Back press on the Home Screen steps; the same step then worked 7
   of 7 times, so it's treated as a lost key press. Watch it next time.
+- 2026-11-23, allergies, on the live site with Chantell Bartell: both virtual
+  phones (the records' allergy and the note, add, reaction, QR code, staff
+  page), after both passed on unpublished code. Android first stuck on
+  "Loading" on a slow start; fixed the same day, then passed. Repeat runs on
+  Android find the earlier run's allergies still saved, as they should.
