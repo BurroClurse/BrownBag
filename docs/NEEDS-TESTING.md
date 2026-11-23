@@ -64,3 +64,8 @@ pass, when it touches:
   "Filled, not in your records" medicine only in the test browser: no
   built-in patient has one. Scripts that tap through code must mark it as a
   real tap on Android, or Chrome's Back skips Brown Bag's steps.
+- 2026-11-23, the offline warning kept after Brown Bag closes: the test
+  browser (closed and reopened with no signal), then both virtual phones on
+  the live site (saved data, backup and restore). Passed. One Android run
+  missed a Back press on the Home Screen steps; the same step then worked 7
+  of 7 times, so it's treated as a lost key press. Watch it next time.
