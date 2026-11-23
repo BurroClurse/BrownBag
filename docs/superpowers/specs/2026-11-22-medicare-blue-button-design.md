@@ -1,6 +1,6 @@
 # Brown Bag: Medicare fills through Blue Button 2.0
 
-Status: draft, 2026-11-22. Builder check pending, then Tyler.
+Status: approved by Tyler, 2026-11-23.
 
 ## Why
 
