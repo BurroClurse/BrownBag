@@ -116,7 +116,11 @@ SMART configuration offers a `revocation_endpoint` is told to end its side
 **The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient`,
 `MedicationStatement` and `AllergyIntolerance` resources, compressed, encrypted with a key made from
 the 6-digit code, and written after the `#` of a `share.html` link (browsers
-never send that part to a server). The packing borrows the trimming rules and
+never send that part to a server). The allergies keep the FHIR R4 rules and follow
+[US Core AllergyIntolerance](https://hl7.org/fhir/us/core/StructureDefinition-us-core-allergyintolerance.html)
+where the data allows: the records' codes and coded reactions, who said it,
+RxNorm codes for drug ingredients, and "no known allergies" as a confirmed
+statement. The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.
 

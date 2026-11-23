@@ -6,7 +6,7 @@
 // the packed list is written as digits, which a QR code holds more of.
 
 import { fillNote, completedNote } from "./claims.js";
-import { NOT_SURE, UNSPECIFIED, isUnspecified, unspecifiedSentence, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
+import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
 export var QR_MAX_BYTES = 2331;
@@ -21,6 +21,7 @@ var OLDER_PREFIX = "v2.";
 var SELF = { reference: "resource:0" };
 var SNOMED = "http://snomed.info/sct";
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+var DATA_ABSENT = { system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" };
 var FROM_PATIENT = "From the patient";
 var QR_MAX_BITS = 18648; // QR_MAX_BYTES x 8: version 40, level M
 
@@ -162,6 +163,9 @@ function allergyEntriesFor(allergies) {
   }
   if (allergies.saidNone) {
     var none = allergyResource("No known allergy", [{ system: SNOMED, code: noneCode("No known allergy") }]);
+    // US Core: the patient was asked and has none, so it's confirmed.
+    none.verificationStatus = verified("confirmed");
+    none.recorder = SELF;
     none.asserter = SELF;
     none.recordedDate = allergies.saidNone;
     out.push(none);
@@ -180,26 +184,57 @@ function allergyResource(text, codings, clinical) {
   };
 }
 
-function unconfirmed() {
-  return { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification", code: "unconfirmed" }] };
+function verified(code) {
+  return { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification", code: code }] };
+}
+
+function manifestation(text, codes) {
+  var coding = (codes || []).filter(function (c) { return c.system; });
+  return coding.length ? { text: text, coding: coding } : { text: text };
+}
+
+// The patient's own allergy: they said it and they recorded it. Nobody at a
+// clinic has confirmed it.
+function ownAllergy(card) {
+  var known = allergenNamed(card.name);
+  var rxcui = card.rxcui || (known && known.rxcui);
+  var resource = allergyResource(card.name, rxcui ? [{ system: RXNORM, code: rxcui }] : null);
+  resource.verificationStatus = verified("unconfirmed");
+  if (known) resource.category = [known.category];
+  if (card.mine && card.mine.addedAt) resource.recordedDate = card.mine.addedAt;
+  resource.recorder = SELF;
+  resource.asserter = SELF;
+  return resource;
+}
+
+// One from the records, with everything the record said. A list saved before
+// that was kept has only the parts the screen shows.
+function recordAllergy(card) {
+  var codes = card.codes || [card.code];
+  // FHIR's own words for "we don't know what it's called".
+  if (card.name === UNNAMED && !codes.filter(Boolean).length) codes = [DATA_ABSENT];
+  var resource = allergyResource(card.name, codes, card.clinical);
+  var said = card.fhir || { verification: card.unconfirmed ? "unconfirmed" : null, type: card.intolerance ? "intolerance" : null, category: [], criticality: card.highRisk ? "high" : null, recordedDate: null };
+  if (said.verification) resource.verificationStatus = verified(said.verification);
+  if (said.type) resource.type = said.type;
+  if (said.category.length) resource.category = said.category;
+  if (said.criticality) resource.criticality = said.criticality;
+  if (said.recordedDate) resource.recordedDate = said.recordedDate;
+  return resource;
 }
 
 function allergyFor(card) {
   var own = card.origin === "added";
-  var resource = allergyResource(card.name, own ? (card.rxcui ? [{ system: RXNORM, code: card.rxcui }] : null) : (card.codes || [card.code]), card.clinical);
+  var resource = own ? ownAllergy(card) : recordAllergy(card);
   var notes = own ? [] : ["From records: " + card.source];
-  if (own || card.unconfirmed) resource.verificationStatus = unconfirmed();
-  if (card.intolerance) resource.type = "intolerance";
-  if (card.highRisk) resource.criticality = "high";
-  if (own) resource.asserter = SELF;
   var reactions = card.reactions.map(function (r) {
-    return Object.assign({ manifestation: [{ text: r.text }] }, r.severity ? { severity: r.severity } : {});
+    return Object.assign({ manifestation: [manifestation(r.text, r.codes)] }, r.severity ? { severity: r.severity } : {});
   });
   if (card.mine && card.mine.reaction === NOT_SURE) {
     notes.push(own ? "Reaction not known" : "Patient says: reaction not known");
   } else if (card.mine) {
     (card.mine.reactions || [card.mine.reaction]).forEach(function (text) {
-      var mine = { manifestation: [{ text: text }] };
+      var mine = { manifestation: [manifestation(text)] };
       if (!own) mine.note = [{ text: FROM_PATIENT }];
       reactions.push(mine);
     });

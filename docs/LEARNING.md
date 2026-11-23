@@ -1176,6 +1176,30 @@ someone has signed out.
 
 **Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens).
 
+### Step 26. Interoperable means another system can use it (`js/share.js`)
+
+Words are for people. Codes are for systems. "Hives" means nothing to a
+computer until it carries a code from a list both sides know.
+
+**Keep what you're given.** The records' reactions came with codes, and Brown
+Bag kept only the words. Passing them on costs nothing and loses nothing.
+
+**Required, extensible, preferred.** FHIR ties each field to a list of codes
+(a **binding**). A required list allows nothing else, so a value outside it
+makes the whole record invalid. The new test reads every allergy Brown Bag
+sends and checks it against those lists.
+
+**Profiles.** US Core narrows FHIR for the US. For "no known allergies" it
+says the status is *confirmed*: the patient was asked and has none.
+
+**One idea, one code.** "Nausea or vomiting" has a code that means both. So
+the list now offers each on its own.
+
+**Codes can have owners.** RxNorm's are free. SNOMED CT is free in the US too,
+but asks for a license first.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
+
 ---
 
 ## Glossary
@@ -1192,6 +1216,7 @@ someone has signed out.
 - **Commit**: a saved snapshot of changes, with a message.
 - **Compression**: shrinking data, like zipping a file.
 - **AllergyIntolerance**: the FHIR record of an allergy or intolerance, with its reactions.
+- **Binding**: which list of codes a FHIR field must or should use.
 - **OperationOutcome**: a FHIR message about what went wrong, or was left out.
 - **ExplanationOfBenefit (EOB)**: the FHIR record of an insurance claim; a pharmacy one shows a fill.
 - **FHIR**: the standard format for health records data.

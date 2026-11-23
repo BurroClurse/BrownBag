@@ -1,4 +1,5 @@
 import test from "node:test";
+import { fromAllergyRecords, arrangeAllergies } from "../js/allergies.js";
 import assert from "node:assert/strict";
 import {
   buildShareBundle,
@@ -309,6 +310,8 @@ test("the patient's own allergy says who says so", () => {
 test("no known allergies says whether the patient or the records said it", () => {
   const said = withAllergies([], { saidNone: "2026-11-23" });
   assert.equal(allergyEntries(said)[0].code.coding[0].code, "716186003");
+  // US Core: asked and none is confirmed.
+  assert.equal(allergyEntries(said)[0].verificationStatus.coding[0].code, "confirmed");
   const g = groupShareBundle(said).allergies;
   assert.equal(g.saidNone, true);
   assert.equal(allergyEmptyText(g), "Patient says: no known allergies.");
@@ -390,4 +393,84 @@ test("every code and the record's own status travel", () => {
   // A list saved before this has one code and no status.
   const [b] = allergyEntries(withAllergies([CARD({ code: { system: "http://snomed.info/sct", code: "1" } })]));
   assert.deepEqual([b.code.coding[0].code, b.clinicalStatus.coding[0].code], ["1", "active"]);
+});
+
+// The R4 rules for AllergyIntolerance that a Brown Bag code must keep:
+// required elements, the required code lists, ait-1 and ait-2.
+const CLINICAL = "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical";
+const VERIFICATION = "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification";
+function problems(a) {
+  const out = [];
+  const one = (concept, system, allowed, name) => {
+    const c = concept && concept.coding && concept.coding[0];
+    if (!c || c.system !== system || !allowed.includes(c.code)) out.push(name + " " + JSON.stringify(concept));
+  };
+  one(a.clinicalStatus, CLINICAL, ["active", "recurrence", "relapse", "inactive", "resolved", "remission"], "clinicalStatus");
+  if (a.verificationStatus) one(a.verificationStatus, VERIFICATION, ["unconfirmed", "confirmed"], "verificationStatus");
+  if (!a.patient || a.patient.reference !== "resource:0") out.push("patient");
+  if (!a.code || !(a.code.text || (a.code.coding || []).length)) out.push("code");
+  (a.code.coding || []).forEach((c) => { if (!/^(https?:|urn:)/.test(c.system || "") || !c.code) out.push("coding " + JSON.stringify(c)); });
+  if (a.type && !["allergy", "intolerance"].includes(a.type)) out.push("type");
+  (a.category || []).forEach((c) => { if (!["food", "medication", "environment", "biologic"].includes(c)) out.push("category " + c); });
+  if (a.criticality && !["low", "high", "unable-to-assess"].includes(a.criticality)) out.push("criticality");
+  if (a.recordedDate && !/^\d{4}(-\d\d(-\d\d)?)?/.test(a.recordedDate)) out.push("recordedDate");
+  (a.reaction || []).forEach((r) => {
+    if (!(r.manifestation || []).length) out.push("reaction without manifestation");
+    if (r.severity && !["mild", "moderate", "severe"].includes(r.severity)) out.push("severity");
+  });
+  Object.keys(a).forEach((k) => { if (Array.isArray(a[k]) && !a[k].length) out.push("empty " + k); });
+  return out;
+}
+
+const RECORD = {
+  resourceType: "AllergyIntolerance", id: "9", type: "allergy", category: ["food"], criticality: "low", recordedDate: "2019-04-02T10:00:00Z",
+  clinicalStatus: { coding: [{ system: CLINICAL, code: "active" }] }, verificationStatus: { coding: [{ system: VERIFICATION, code: "confirmed" }] },
+  code: { text: "Peanut", coding: [{ system: "http://snomed.info/sct", code: "762952008", display: "Peanut" }] },
+  reaction: [{ severity: "moderate", manifestation: [{ text: "Hives", coding: [{ system: "http://snomed.info/sct", code: "126485001", display: "Urticaria" }] }] }]
+};
+
+test("a coded record keeps its codes, status, category, risk, date and coded reaction", () => {
+  const items = fromAllergyRecords([RECORD], "SMART sandbox");
+  const arranged = arrangeAllergies({ status: "loaded", items: items.items, statements: [], savedAt: null }, { allergies: [], allergyReactions: {} });
+  const bundle = buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: arranged }, NOW, { allergies: { status: "loaded", savedAt: null } });
+  const [a] = allergyEntries(bundle);
+  assert.equal(a.verificationStatus.coding[0].code, "confirmed");
+  assert.deepEqual([a.type, a.category, a.criticality, a.recordedDate], ["allergy", ["food"], "low", "2019-04-02"]);
+  assert.deepEqual(a.reaction[0].manifestation[0], { text: "Hives", coding: [{ system: "http://snomed.info/sct", code: "126485001" }] });
+  assert.equal(a.reaction[0].severity, "moderate");
+  assert.deepEqual(problems(a), []);
+  // Staff see a low risk or a plain allergy as nothing special.
+  assert.equal(groupShareBundle(bundle).allergies.fromRecords[0].detail, "Reaction: Hives (moderate) · From records: SMART sandbox");
+});
+
+test("the patient's own says who said it, who recorded it and when", () => {
+  const [pen, kiwi, bee] = allergyEntries(withAllergies([OWN("Penicillin", "Hives"), OWN("Kiwi", "Not sure"), OWN("Bee stings", "Itching")]));
+  assert.deepEqual([pen.asserter, pen.recorder], [{ reference: "resource:0" }, { reference: "resource:0" }]);
+  assert.equal(pen.recordedDate, "2026-11-23");
+  assert.deepEqual(pen.category, ["medication"]);
+  assert.equal(kiwi.category, undefined);
+  assert.deepEqual(bee.category, ["environment"]);
+  for (const a of [pen, kiwi, bee]) assert.deepEqual(problems(a), []);
+});
+
+test("every allergy Brown Bag sends keeps the R4 rules", () => {
+  const odd = fromAllergyRecords([
+    RECORD,
+    { resourceType: "AllergyIntolerance", id: "a" },
+    { resourceType: "AllergyIntolerance", id: "b", code: { coding: [{ code: "x" }] }, verificationStatus: { coding: [{ code: "presumed" }] }, type: "weird", category: ["other"], criticality: "extreme", recordedDate: "soon", reaction: [{ severity: "awful" }] },
+    { resourceType: "AllergyIntolerance", id: "c", code: { text: "Latex", coding: [{ system: "", code: "1" }] }, clinicalStatus: { coding: [{ code: "recurrence" }] } },
+    { resourceType: "AllergyIntolerance", id: "d", code: { text: "Dust" }, clinicalStatus: { coding: [{ code: "odd" }] } }
+  ], "S").items;
+  const arranged = arrangeAllergies({ status: "loaded", items: odd, statements: ["No known drug allergy"], unspecified: 1, savedAt: null }, { allergies: [{ id: "1", name: "Eggs", reaction: "Not sure", addedAt: "2026-11-23" }], allergyReactions: {} });
+  const list = allergyEntries(buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: arranged }, NOW, { allergies: { status: "loaded", savedAt: null } }));
+  assert.ok(list.length >= 7);
+  for (const a of list) assert.deepEqual(problems(a), [], JSON.stringify(a));
+  for (const a of allergyEntries(withAllergies([], { saidNone: "2026-11-23" }))) assert.deepEqual(problems(a), []);
+});
+
+test("an allergy with no name says the name is unknown, in the standard's own words", () => {
+  const items = fromAllergyRecords([{ resourceType: "AllergyIntolerance", id: "a" }], "S").items;
+  const arranged = arrangeAllergies({ status: "loaded", items, statements: [], savedAt: null }, {});
+  const [a] = allergyEntries(buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: arranged }, NOW, { allergies: { status: "loaded", savedAt: null } }));
+  assert.deepEqual(a.code, { text: "Unnamed allergy", coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }] });
 });

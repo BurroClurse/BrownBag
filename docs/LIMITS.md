@@ -65,3 +65,7 @@ an idea becomes a plan only after its own design.
     failed load, and an entry that doesn't say what it's to are all said.
   - Ideas: Epic's sandbox; warnings against medicines are left to the care
     team.
+- [ ] **12. Most allergens and reactions the patient picks go as words.** Only
+  drug ingredients (and bee venom) have a code, from RxNorm.
+  - Ideas: SNOMED CT codes, once there is a UMLS license; they are checked
+    and listed in the allergies design.

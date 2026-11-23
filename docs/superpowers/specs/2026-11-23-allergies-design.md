@@ -282,3 +282,45 @@ RxNav during the build; any that can't be checked sends words only.
   as active, as it's shown (FHIR requires a status).
 - Chrome's offer to save the PIN stays (Tyler): WCAG 2.2 (3.3.8) counts
   password managers as help.
+
+## Standards (2026-11-23; Tyler: the most interoperable, FHIR R4 and what's recommended)
+
+Read that day: FHIR R4 AllergyIntolerance, US Core 9.0.0 (and 6.1.0, the one
+ONC's (g)(10) names), IPS 2.0.1, SMART Health Cards and Links 1.0.0, CMS Kill
+the Clipboard.
+
+Done:
+- What's shared keeps the R4 rules, with a test that checks every allergy:
+  required elements, the required code lists, ait-1 and ait-2. Values R4
+  doesn't have ("presumed", an unknown type or severity) are mapped or left
+  out.
+- A record's codes, coded reactions, verificationStatus, type, category,
+  criticality and recordedDate all travel. Before, the reactions' codes and
+  most of the rest were dropped.
+- The patient's own: recorder and asserter are the patient, recordedDate,
+  category, verificationStatus `unconfirmed` (R4 has no status for
+  "patient-reported"; our reading), RxNorm ingredient codes where there is
+  one (amoxicillin 723, aspirin 1191, ibuprofen 5640, codeine 2670, honey
+  bee venom 124427; checked against RxNav).
+- "No known allergies": SNOMED 716186003 with verificationStatus `confirmed`
+  (US Core).
+- No name and no code: data-absent-reason `unknown`.
+- Reactions are one thing each (Hives, Rash, Nausea, Vomiting), so each can
+  carry one code. Older answers still show as they were.
+
+Waiting on a SNOMED CT license (free in the US through a UMLS account, which
+Tyler would sign up for): codes for the other allergens and for reactions.
+Checked on tx.fhir.org against US Core's value set 1267.43 and clinical
+findings: Penicillin-containing product 890458001, Sulfonamide-containing
+product 763875007, Iodinated contrast media-containing product 1144611009,
+Latex 111088007, Peanut 762952008, Tree nut 442571000124108 (US extension),
+Shellfish 735029006, Eggs (edible) 102263004, Cow's milk 3718001; Urticaria
+126485001, Eruption 271807003, Itching 418290006, Angioedema 41291007,
+Dyspnea 267036007, Anaphylaxis 39579001, Nausea 422587007, Vomiting
+422400008. The license asks for a notice to NLM before distributing, a short
+yearly report, a credit with the version, and the SNOMED CT notice.
+
+Not done: SMART v2 scopes (`.rs`; the sandbox and older systems take v1
+`.read`), Provenance, a US Core Patient (Brown Bag shares only the name and
+birth date), and an IPS document or SMART Health Link (Later list; a link
+needs a server).

@@ -19,7 +19,8 @@ const items = (...list) => fromAllergyRecords(list, "SMART sandbox").items;
 test("a record becomes one allergy with a plain name and a key from its code", () => {
   assert.deepEqual(items(rec()), [{
     key: "alg:http://snomed.info/sct|84489001", otherKeys: ["alg:name:mold"], name: "Mold",
-    codes: [{ system: SNOMED, code: "84489001" }], clinical: "active", reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox"
+    codes: [{ system: SNOMED, code: "84489001" }], clinical: "active", reactions: [], intolerance: false, unconfirmed: false, highRisk: false,
+    fhir: { verification: "confirmed", type: null, category: [], criticality: null, recordedDate: null }, source: "SMART sandbox"
   }]);
   assert.equal(items(named("Latex"))[0].key, "alg:name:latex");
   assert.equal(items(named("Penicillin (class of drug)"))[0].name, "Penicillin (class of drug)");
@@ -169,7 +170,7 @@ test("the patient's own and a record with the same drug code share one card", ()
 });
 
 test("a reaction with a code but no words is never lost", () => {
-  assert.deepEqual(items(rec({ reaction: [{ manifestation: [{ coding: [{ system: SNOMED, code: "39579001" }] }], severity: "severe" }] }))[0].reactions, [{ text: "Unnamed reaction", severity: "severe" }]);
+  assert.deepEqual(items(rec({ reaction: [{ manifestation: [{ coding: [{ system: SNOMED, code: "39579001" }] }], severity: "severe" }] }))[0].reactions, [{ text: "Unnamed reaction", severity: "severe", codes: [{ system: SNOMED, code: "39579001" }] }]);
   assert.deepEqual(items(rec({ reaction: [{ severity: "moderate" }] }))[0].reactions, [{ text: "Unnamed reaction", severity: "moderate" }]);
 });
 
@@ -253,11 +254,11 @@ test("sameAllergen ignores case, spacing and the SNOMED ending", () => {
 
 test("the pick lists hold the approved choices", () => {
   assert.deepEqual(ALLERGENS.map((a) => a.label), ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye", "Latex", "Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk", "Bee stings"]);
-  assert.deepEqual(REACTIONS.map((a) => a.label), ["Hives or rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea or vomiting", "Not sure"]);
+  assert.deepEqual(REACTIONS.map((a) => a.label), ["Hives", "Rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea", "Vomiting", "Not sure"]);
 });
 
 test("the drug ingredients on the list carry their RxNorm code, and nothing else does", () => {
-  assert.deepEqual(ALLERGENS.filter((a) => a.rxcui).map((a) => a.label + " " + a.rxcui), ["Amoxicillin 723", "Aspirin 1191", "Ibuprofen 5640", "Codeine 2670"]);
+  assert.deepEqual(ALLERGENS.filter((a) => a.rxcui).map((a) => a.label + " " + a.rxcui), ["Amoxicillin 723", "Aspirin 1191", "Ibuprofen 5640", "Codeine 2670", "Bee stings 124427"]);
 });
 
 test("the allergies module is kept for offline use", () => {
@@ -345,4 +346,11 @@ test("a half-typed new allergy survives opening a reaction form, and goes when i
   assert.equal(startedDraft({ new: empty }), null);
   assert.equal(startedDraft({ "alg:mold": onMold, new: started }, "new"), "new");
   assert.equal(startedDraft({ "alg:mold": onMold }, "new"), "alg:mold");
+});
+
+test("each choice on the list has the FHIR category it belongs to", () => {
+  const by = (c) => ALLERGENS.filter((a) => a.category === c).map((a) => a.label);
+  assert.deepEqual(by("medication"), ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye"]);
+  assert.deepEqual(by("food"), ["Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk"]);
+  assert.deepEqual(by("environment"), ["Latex", "Bee stings"]);
 });

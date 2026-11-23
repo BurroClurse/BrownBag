@@ -10,7 +10,7 @@ var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 // Codes that mean "no code", so they never say two records are one allergy.
 var NO_CODE = /data-absent-reason|NullFlavor/i;
 var SEVERITIES = ["mild", "moderate", "severe"];
-var UNNAMED = "Unnamed allergy";
+export var UNNAMED = "Unnamed allergy";
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 var NOT_NOW = ["inactive", "resolved"];
 var NOT_REAL = ["entered-in-error", "refuted"];
@@ -52,11 +52,22 @@ export function noneCode(statement) {
 
 // What the add form offers, with "Other…" after. The codes are RxNorm
 // ingredients, checked against RxNav on 2026-11-23; the others are words.
-var RXCUI = { Amoxicillin: "723", Aspirin: "1191", Ibuprofen: "5640", Codeine: "2670" };
-export var ALLERGENS = ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye", "Latex", "Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk", "Bee stings"]
-  .map(function (label) { return RXCUI[label] ? { label: label, rxcui: RXCUI[label] } : { label: label }; });
-export var REACTIONS = ["Hives or rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea or vomiting", NOT_SURE]
+var RXCUI = { Amoxicillin: "723", Aspirin: "1191", Ibuprofen: "5640", Codeine: "2670", "Bee stings": "124427" };
+function choices(category, labels) {
+  return labels.map(function (label) {
+    return Object.assign({ label: label, category: category }, RXCUI[label] ? { rxcui: RXCUI[label] } : {});
+  });
+}
+// The category is FHIR's own (AllergyIntolerance.category).
+export var ALLERGENS = choices("medication", ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye"])
+  .concat(choices("environment", ["Latex"]), choices("food", ["Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk"]), choices("environment", ["Bee stings"]));
+// One thing each: a code for "nausea or vomiting" would say both happened.
+export var REACTIONS = ["Hives", "Rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea", "Vomiting", NOT_SURE]
   .map(function (label) { return { label: label }; });
+
+export function allergenNamed(name) {
+  return ALLERGENS.filter(function (choice) { return plainName(choice.label) === plainName(name); })[0] || null;
+}
 
 // SNOMED names end in what kind of thing they are: "Mold (organism)".
 function withoutKind(text) {
@@ -91,15 +102,57 @@ function worst(a, b) {
   return SEVERITIES.indexOf(b) > SEVERITIES.indexOf(a) ? b : a;
 }
 
+function bare(coding) {
+  return { system: coding.system || null, code: coding.code };
+}
+
 function reactionsOf(resource) {
   var out = [];
   (resource.reaction || []).forEach(function (reaction) {
-    var texts = (reaction.manifestation || []).map(words).filter(Boolean);
+    var severity = SEVERITIES.indexOf(reaction.severity) === -1 ? null : reaction.severity;
+    var found = (reaction.manifestation || []).filter(function (m) { return words(m) || codesOf(m).length; });
     // A reaction with no words is still a reaction.
-    if (!texts.length) texts = [reaction.description || "Unnamed reaction"];
-    texts.forEach(function (text) { out.push({ text: text, severity: reaction.severity || null }); });
+    if (!found.length) found = [{ text: reaction.description || "Unnamed reaction" }];
+    found.forEach(function (m) {
+      var codes = codesOf(m).map(bare);
+      out.push(Object.assign({ text: words(m) || "Unnamed reaction", severity: severity }, codes.length ? { codes: codes } : {}));
+    });
   });
   return out;
+}
+
+// The values FHIR R4 allows, so what's shared is valid whatever came in.
+// ("presumed" is a newer version's word for less than confirmed.)
+var CLINICAL = ["active", "recurrence", "relapse"];
+var VERIFICATION = { confirmed: "confirmed", unconfirmed: "unconfirmed", presumed: "unconfirmed" };
+var TYPES = ["allergy", "intolerance"];
+var CATEGORIES = ["food", "medication", "environment", "biologic"];
+var CRITICALITIES = ["unable-to-assess", "low", "high"];
+
+function oneOf(value, allowed) {
+  return allowed.indexOf(value) === -1 ? null : value;
+}
+
+function fhirOf(resource) {
+  var verification = codesOf(resource.verificationStatus)[0];
+  var date = /^\d{4}(-\d\d(-\d\d)?)?/.exec(resource.recordedDate || "");
+  return {
+    verification: (verification && VERIFICATION[verification.code]) || null,
+    type: oneOf(resource.type, TYPES),
+    category: (resource.category || []).filter(function (c) { return CATEGORIES.indexOf(c) !== -1; }),
+    criticality: oneOf(resource.criticality, CRITICALITIES),
+    recordedDate: date ? date[0] : null
+  };
+}
+
+function joinFhir(a, b) {
+  return {
+    verification: a.verification === "confirmed" || b.verification === "confirmed" ? "confirmed" : a.verification || b.verification,
+    type: a.type === b.type ? a.type : null,
+    category: a.category.concat(b.category.filter(function (c) { return a.category.indexOf(c) === -1; })),
+    criticality: CRITICALITIES.indexOf(b.criticality) > CRITICALITIES.indexOf(a.criticality) ? b.criticality : a.criticality,
+    recordedDate: [a.recordedDate, b.recordedDate].filter(Boolean).sort()[0] || null
+  };
 }
 
 function itemFrom(resource, sourceName) {
@@ -113,13 +166,14 @@ function itemFrom(resource, sourceName) {
     key: keys[0],
     otherKeys: keys.slice(1),
     name: name || UNNAMED,
-    codes: codes.map(function (c) { return { system: c.system || null, code: c.code }; }),
+    codes: codes.map(bare),
     // Only current ones get here; with no status it's taken as active.
-    clinical: (codesOf(resource.clinicalStatus)[0] || { code: "active" }).code,
+    clinical: oneOf((codesOf(resource.clinicalStatus)[0] || {}).code, CLINICAL) || "active",
     reactions: reactionsOf(resource),
     intolerance: resource.type === "intolerance",
     unconfirmed: hasStatus(resource.verificationStatus, UNCONFIRMED),
     highRisk: resource.criticality === "high",
+    fhir: fhirOf(resource),
     source: sourceName
   };
 }
@@ -139,11 +193,15 @@ function join(into, item) {
   item.reactions.forEach(function (reaction) {
     var same = into.reactions.filter(function (r) { return r.text.toLowerCase() === reaction.text.toLowerCase(); })[0];
     if (!same) into.reactions.push(reaction);
-    else same.severity = worst(same.severity, reaction.severity);
+    else {
+      same.severity = worst(same.severity, reaction.severity);
+      if (!same.codes && reaction.codes) same.codes = reaction.codes;
+    }
   });
   into.intolerance = into.intolerance && item.intolerance;
   into.unconfirmed = into.unconfirmed && item.unconfirmed;
   into.highRisk = into.highRisk || item.highRisk;
+  into.fhir = joinFhir(into.fhir, item.fhir);
   if (into.name === UNNAMED) into.name = item.name;
 }
 
@@ -294,7 +352,7 @@ export function arrangeAllergies(allergies, data) {
     var card = sameAllergen(own.name, cards) || (byCode && byCode.length === 1 ? byCode[0] : null);
     if (!card) {
       card = {
-        key: "own:" + own.id, otherKeys: [], name: own.name.trim(), codes: [], clinical: "active", rxcui: own.rxcui || null, reactions: [],
+        key: "own:" + own.id, otherKeys: [], name: own.name.trim(), codes: [], clinical: "active", rxcui: own.rxcui || (allergenNamed(own.name) || {}).rxcui || null, reactions: [],
         intolerance: false, unconfirmed: false, highRisk: false, source: null, origin: "added", mine: null
       };
       cards.push(card);
