@@ -36,9 +36,6 @@ pass, when it touches:
 
 - See what's inside on Android: the phone's own Back button, TalkBack, and
   whether a camera reads the slightly smaller code on a short screen.
-- What didn't load, said to patient and staff, and the quiet log: both virtual
-  phones (staff page, QR code, sign-in). The failure states need made-up
-  answers, so the test browser covers those.
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 
@@ -46,6 +43,8 @@ pass, when it touches:
 
 - See what's inside and the two blocks, with VoiceOver; a second phone reading
   the code from Safari.
+- What didn't load, with VoiceOver: the new lines on home, My medicines and the
+  staff page. They only show when something fails.
 
 ## Tested
 
@@ -109,3 +108,9 @@ pass, when it touches:
   1440) and the iPhone simulator. Passed. Android only as Chrome on the Mac.
 - 2026-11-23, the note when insurance fills don't load, before publishing: the
   test browser and the iPhone simulator. Passed.
+- 2026-11-23, what didn't load and the quiet log, on unpublished code with a
+  made-up health system: the test browser (first use, unlock, offline, the
+  staff page, each failure, missing files, 320 to 1440 wide, 200 percent
+  text), then both virtual phones (sign-in, home, My medicines, the QR code,
+  See what's inside, the staff page). Passed. Run again after it was combined
+  with the dates and the fills note: passed. Not yet on the live site.
