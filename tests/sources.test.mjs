@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SOURCES, TRADEMARKS, recordsStatus, leavingText, needsFreshPage, notConnected, signInLink, startFor } from "../js/sources.js";
+import { SOURCES, TRADEMARKS, chosen, recordsStatus, leavingText, notConnected, signInLink, startFor } from "../js/sources.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -16,19 +16,30 @@ test("the others show in order, by kind, in their owners' spelling", () => {
   ]);
 });
 
-test("Sign in opens the list, and a named source or a link's own server goes straight in", () => {
-  for (const search of ["", "?", "?code=1", "?source=", "?source=epic", "?source=medicare", "?source=nope", "?source=__proto__", "?source=constructor", "?iss="]) assert.equal(startFor(search), "list", search);
-  assert.equal(startFor("?source=smart-sandbox"), "sign-in");
+const ONE = "e7de504a-311d-49be-b2bc-566a328bcc72";
+test("Sign in opens the list; the sandbox opens its patients; a choice or a link's own server signs in", () => {
+  for (const search of ["", "?", "?code=1", "?source=", "?source=epic", "?source=medicare", "?source=nope", "?source=__proto__", "?source=constructor", "?iss=", "?as=" + ONE, "?source=epic&as=" + ONE]) assert.equal(startFor(search), "list", search);
+  for (const search of ["?source=smart-sandbox", "?source=smart-sandbox&as=", "?source=smart-sandbox&as=nope", "?source=smart-sandbox&as=__proto__"]) assert.equal(startFor(search), "patients", search);
+  assert.equal(startFor("?source=smart-sandbox&as=" + ONE), "sign-in");
+  assert.equal(startFor("?source=smart-sandbox&as=list"), "sign-in");
   assert.equal(startFor("?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Ffhir"), "sign-in");
   assert.equal(startFor("?launch=x&iss=https%3A%2F%2Fexample.test%2Ffhir"), "sign-in");
-  assert.equal(startFor(new URL(signInLink(), "https://example.test/").search), "sign-in");
+  assert.equal(chosen("?source=smart-sandbox&as=" + ONE), ONE);
+  assert.equal(chosen("?source=smart-sandbox&as=nope"), null);
+});
+
+test("signing in again goes back to the same person when it can", () => {
+  const search = (link) => new URL(link, "https://example.test/").search;
+  assert.equal(startFor(search(signInLink())), "patients");
+  assert.equal(chosen(search(signInLink(ONE))), ONE);
+  for (const id of [null, undefined, "someone-else"]) assert.equal(startFor(search(signInLink(id))), "patients", String(id));
 });
 
 test("Sign in after the lock goes straight in; signed out, it opens the list", () => {
   const app = read("js/app.js");
   // The two notes, and Health records (the link, and Update
   // now with no pass).
-  assert.equal(app.match(/signInLink\(\)/g).length, 4);
+  assert.equal(app.match(/signInLink\(state\.patientId\)/g).length, 4);
   assert.equal(app.match(/href = "\.\/launch\.html"/g).length, 2);
 });
 
@@ -93,11 +104,14 @@ test("the list works with no signal, and a file that doesn't arrive is said", ()
   assert.match(read("js/launch.js"), /window\.brownBagStarted = true/);
 });
 
+// The sign-in library reads the address (a server left in it would win over the
+// choice) and keeps an earlier try's answers, so a choice is a fresh page.
 test("a choice on the list never carries another sign-in's address or failure", () => {
-  assert.equal(needsFreshPage("", 0), false);
-  assert.equal(needsFreshPage("?iss=https%3A%2F%2Fexample.test", 0), true);
-  assert.equal(needsFreshPage("?launch=abc", 0), true);
-  assert.equal(needsFreshPage("", 1), true);
+  const launch = read("js/launch.js");
+  assert.match(launch, /location\.href = signInLink\(\)/);
+  assert.match(launch, /location\.href = signInLink\(patient\.id\)/);
+  assert.equal(launch.match(/signIn\(\)/g).length, 2);
+  for (const name of ["iss", "launch", "patientId", "clientId", "fhirServiceUrl"]) assert.equal(new URL(signInLink(ONE), "https://example.test/").searchParams.get(name), null, name);
 });
 
 test("sign-in has a time limit and never redirects on its own", () => {
@@ -108,6 +122,8 @@ test("sign-in has a time limit and never redirects on its own", () => {
 test("a link to another server isn't called the sandbox", () => {
   assert.match(leavingText("?source=smart-sandbox"), /the SMART sandbox/);
   assert.match(leavingText(""), /the SMART sandbox/);
+  assert.match(leavingText("?source=smart-sandbox&as=" + ONE), /Approve Brown Bag there/);
+  assert.match(leavingText("?source=smart-sandbox&as=list"), /Sign in there as the patient/);
   assert.doesNotMatch(leavingText("?iss=https%3A%2F%2Fexample.test%2Ffhir"), /sandbox/);
   assert.match(leavingText("?iss=https%3A%2F%2Fexample.test%2Ffhir"), /your health system's sign-in page/);
 });

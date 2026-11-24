@@ -43,25 +43,10 @@
   </main>
   <noscript><p>Brown Bag needs JavaScript turned on.</p></noscript>
   <script>
-    // js/launch.js shows the list of sources and calls this when the patient
-    // chooses the sandbox, or right away for a link that names its server.
-    function startSignIn() {
-      // Patient standalone against the SMART Health IT R4 sandbox.
-      // The sandbox reads the "/sim/..." segment and shows a patient login
-      // because the launch type is patient-standalone (the 3 below).
-      // A different iss on the query string wins, so the SMART Launcher can
-      // still start this same page.
-      var launchOptions = [
-        3, "", "", "AUTO",
-        0, 0, 0,
-        "", "", "", "", "", "", "",
-        0, 1, ""
-      ];
-
-      var sandboxIss = "https://launch.smarthealthit.org/v/r4/sim/"
-        + btoa(JSON.stringify(launchOptions)).replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_")
-        + "/fhir";
-
+    // js/launch.js shows the lists and calls this with the sandbox's address for
+    // the chosen patient. A different iss on the query string wins, so the SMART
+    // Launcher can still start this same page.
+    function startSignIn(server) {
       // authorize() answers with the sign-in page's address.
       return Promise.resolve().then(function () {
         return FHIR.oauth2.authorize({
@@ -74,7 +59,7 @@
           // Must be this app's index.html. fhir-client turns the relative URL
           // into the full GitHub Pages URL before sending it.
           redirectUri: "index.html",
-          iss: sandboxIss,
+          iss: server,
           // js/launch.js goes there, unless the patient has moved on.
           noRedirect: true
         });

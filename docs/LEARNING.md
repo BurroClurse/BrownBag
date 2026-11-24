@@ -1613,6 +1613,20 @@ same one hospitals use.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 51. Our own list of test patients (`js/test-patients.js`)
+
+**What changed.** Sign in, then the sandbox, opens a scrolling list of 20 made-up
+patients, grouped by what they show.
+
+**Read the other side's code.** The sandbox's sign-in page showed ten names and no
+more. Its code is public: it asks for `_count=10`. So the limit wasn't ours.
+
+**The launch address carries choices.** The sandbox reads options from its own
+address: the patient, and whether to skip its sign-in page. We skip that page and
+keep its approval page, so you still see what Brown Bag asks for.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

@@ -307,7 +307,7 @@ async function updateNow() {
   var pass = await loadPass(localStorage, state.key, state.patientId).catch(function () { return null; });
   if (!pass || passExpired(pass, Date.now())) {
     state.updating = false;
-    location.href = signInLink();
+    location.href = signInLink(state.patientId);
     return;
   }
   await updateWithPass(pass);
@@ -761,7 +761,7 @@ function drawAllergies(parent) {
   notes.forEach(function (text) {
     add(section, "p", text.text, "notice");
     if (text.signIn) {
-      add(section, "a", "Sign in", "button secondary").href = signInLink();
+      add(section, "a", "Sign in", "button secondary").href = signInLink(state.patientId);
     }
   });
   arranged.statements.forEach(function (text) { add(section, "p", "Your records say: " + text + "."); });
@@ -1769,7 +1769,7 @@ function drawNotices() {
     if (note.kind === "sign-in") {
       var update = add(row, "a", "Sign in", "button secondary");
       update.id = "notice-sign-in";
-      update.href = signInLink();
+      update.href = signInLink(state.patientId);
     }
     if (note.kind === "install") {
       var actions = add(row, "div", null, "notice-actions");
@@ -1836,7 +1836,7 @@ function drawRecordsFrom() {
   }
   var again = add(card, "a", "Sign in again", "button big " + (status.signIn ? "primary" : "secondary"));
   again.id = "sign-in-again";
-  again.href = signInLink();
+  again.href = signInLink(state.patientId);
   drawNotConnected(root);
 }
 

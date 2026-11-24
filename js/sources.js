@@ -3,6 +3,8 @@
 // turn one on, build its sign-in, then change its line here. No DOM here, so
 // Node's test runner can check it.
 
+import { OWN_LIST, knownPatient } from "./test-patients.js";
+
 // Aetna may join the list later (Tyler, 2026-11-23), once its terms about
 // using its name are settled.
 export const SOURCES = [
@@ -32,9 +34,22 @@ export function notConnected() {
   return groups;
 }
 
-// Straight to the source the patient already uses.
-export function signInLink() {
-  return "./launch.html?source=" + connected()[0].id;
+// To the source the patient already uses: straight in as the same person when
+// they're on its list, else its list.
+export function signInLink(patientId) {
+  return "./launch.html?source=" + connected()[0].id + (patientId === OWN_LIST || knownPatient(patientId) ? "&as=" + patientId : "");
+}
+
+// The test patient an address asks for ("list" for the sandbox's own page), or
+// null.
+export function chosen(search) {
+  var params = new URLSearchParams(search);
+  var id = params.get("as");
+  return connectedId(params.get("source")) && (id === OWN_LIST || knownPatient(id)) ? id : null;
+}
+
+function connectedId(id) {
+  return connected().some(function (source) { return source.id === id; });
 }
 
 // What the screen under More options says about the connected source. A date
@@ -64,23 +79,21 @@ export function recordsStatus(state, format) {
 }
 
 // What launch.html does. A link that names its own server (the README's test
-// patients, the SMART Launcher) or a connected source signs in; anything else
-// shows the list, so an odd address never starts a sign-in.
+// patients, the SMART Launcher) or a chosen patient signs in. A connected source
+// shows its patients; anything else the sources, so an odd address never starts
+// a sign-in.
 export function startFor(search) {
   var params = new URLSearchParams(search);
   if (params.get("iss")) return "sign-in";
-  var id = params.get("source");
-  return connected().some(function (source) { return source.id === id; }) ? "sign-in" : "list";
-}
-
-// Whether a choice on the list needs a fresh page: the sign-in library reads
-// the address (a server left in it would win over the choice), and keeps the
-// address and the answers of an earlier try.
-export function needsFreshPage(search, tries) {
-  return Boolean(search) || tries > 0;
+  if (chosen(search)) return "sign-in";
+  return connectedId(params.get("source")) ? "patients" : "list";
 }
 
 export function leavingText(search) {
+  var id = chosen(search);
+  if (id && id !== OWN_LIST && startFor(search) === "sign-in" && !new URLSearchParams(search).get("iss")) {
+    return "You are leaving this page for the SMART sandbox. Approve Brown Bag there, then the sandbox sends you back here.";
+  }
   return new URLSearchParams(search).get("iss")
     ? "You are leaving this page for your health system's sign-in page. After you sign in, it sends you back here."
     : "You are leaving this page for the SMART sandbox. Sign in there as the patient, then the sandbox sends you back here.";

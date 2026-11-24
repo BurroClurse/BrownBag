@@ -98,3 +98,12 @@ No owner says anything about "planned" lists. Not legal advice.
 - Signed in, the list is also under More options, "Where my records come from",
   with the dates and Update now.
 - The names sit in one card. The trademark words open under "About these names".
+
+## Changed 2026-11-24 (Tyler)
+
+- The SMART Health IT sandbox opens "Choose a test patient": 20 made-up
+  patients in groups, plus "Someone else" for the sandbox's own list. That list
+  stops at ten (the sandbox's limit) and changes, because the server is public.
+- Choosing a patient skips the sandbox's login page. Its approval page stays.
+- Signing in again goes straight to the same patient. The list is kept in
+  `js/test-patients.js`.

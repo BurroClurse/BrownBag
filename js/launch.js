@@ -1,7 +1,8 @@
 // launch.html's screen: the list of sources, then sign-in. startSignIn() is
 // in launch.html, with the SMART settings.
 
-import { connected, leavingText, needsFreshPage, signInLink, startFor } from "./sources.js";
+import { chosen, connected, leavingText, signInLink, startFor } from "./sources.js";
+import { GROUPS, OWN_LIST, sandboxServer } from "./test-patients.js";
 import { drawNotConnected } from "./source-list.js";
 import { withTimeout } from "./pass.js";
 
@@ -38,7 +39,8 @@ function showList() {
     // The space keeps the two lines apart for a screen reader.
     button.appendChild(document.createTextNode(" "));
     add(button, "span", source.note, "source-note");
-    button.addEventListener("click", choose);
+    // Its own address, so Back comes here.
+    button.addEventListener("click", function () { location.href = signInLink(); });
   });
   drawNotConnected(root);
   add(root, "a", "Privacy", "quiet-link").href = "./privacy.html";
@@ -51,9 +53,36 @@ function showList() {
 var tries = 0;
 var SIGN_IN_WAIT_MS = 12000;
 
-function choose() {
-  if (needsFreshPage(location.search, tries)) location.replace(signInLink());
-  else signIn();
+// The sandbox's test patients. Each choice is a fresh page: the sign-in library
+// reads the address, and keeps an earlier try's answers.
+function showPatients() {
+  root.textContent = "";
+  var top = add(root, "div", null, "screen-top");
+  add(top, "a", "Back", "button secondary big").href = "./launch.html";
+  var h = title("Choose a test patient");
+  add(root, "p", "All of them are made up.");
+  GROUPS.forEach(function (group) {
+    var section = add(root, "section", null, "option-group");
+    add(section, "h2", group.title, "option-title");
+    var card = add(section, "div", null, "option-card");
+    group.patients.forEach(function (patient) {
+      patientButton(card, patient.name, "Born " + patient.born + ". " + patient.about + ".", function () { location.href = signInLink(patient.id); });
+    });
+  });
+  var other = add(add(root, "section", null, "option-group"), "div", null, "option-card");
+  patientButton(other, "Someone else", "The sandbox's own list. It shows ten.", function () { location.href = signInLink(OWN_LIST); });
+  h.focus();
+}
+
+function patientButton(card, name, detail, go) {
+  var button = add(card, "button", null, "option");
+  button.type = "button";
+  var words = add(button, "span", null, "option-words");
+  add(words, "span", name, "option-name");
+  // The space keeps the two lines apart for a screen reader.
+  words.appendChild(document.createTextNode(" "));
+  add(words, "span", detail, "option-detail");
+  button.addEventListener("click", go);
 }
 
 function signIn() {
@@ -63,10 +92,10 @@ function signIn() {
   title("Starting sign-in…").focus();
   add(root, "p", leavingText(location.search));
   back("secondary big");
-  withTimeout(window.startSignIn(), SIGN_IN_WAIT_MS).then(function (url) {
+  withTimeout(window.startSignIn(sandboxServer(chosen(location.search) || OWN_LIST)), SIGN_IN_WAIT_MS).then(function (url) {
     if (mine !== tries) return;
     // Back then comes to the list, and never starts the sign-in again.
-    history.replaceState(null, "", "./launch.html");
+    history.replaceState(null, "", chosen(location.search) ? signInLink() : "./launch.html");
     location.href = url;
   }).catch(function (error) {
     if (mine !== tries) return;
@@ -95,8 +124,13 @@ function showFailed() {
 window.addEventListener("pagehide", function () { tries += 1; });
 // Back can bring this page as it was left, mid "Starting".
 window.addEventListener("pageshow", function (event) {
-  if (event.persisted) showList();
+  if (event.persisted) showChoices();
 });
 
+function showChoices() {
+  if (startFor(location.search) === "patients" || chosen(location.search)) showPatients();
+  else showList();
+}
+
 if (startFor(location.search) === "sign-in") signIn();
-else showList();
+else showChoices();

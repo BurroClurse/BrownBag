@@ -238,3 +238,7 @@ Decided for later, so nothing to test until they're picked up:
   downloaded, incomplete, a made-up link; the QR code read back) and both virtual
   phones (the popup, the file, the QR screen). Passed. The share sheet was a
   stand-in.
+- 2026-11-24, the list of test patients at sign-in, before publishing: the test
+  browser (320 to 1440 wide, 200 percent text) and both virtual phones (the list,
+  scrolling, Back, and choosing Delbert Jaskolski as far as the real sandbox's
+  approval page and back). Passed. Approve was not pressed there.

@@ -33,7 +33,7 @@ only, no real patients). To open it as a certain patient, see
 ## What the patient sees
 
 - **Choose where the records are.** Sign in opens a list. The SMART sandbox
-  works today; the health systems and insurers Brown Bag may add later show
+  works today, and opens a list of test patients; the health systems and insurers Brown Bag may add later show
   in grey, under "Not connected". Signed in, the same list is under More
   options, **Health records**, with the dates and **Update now**.
 - **Sign in once.** The first time, the patient signs in at their health
@@ -107,8 +107,8 @@ only, no real patients). To open it as a certain patient, see
 
 ## How it uses SMART and FHIR
 
-**Launch.** `launch.html` lists the sources. Choosing the sandbox (or a link
-that names its server with `iss`, or a connected source with `source`) starts a patient standalone launch with
+**Launch.** `launch.html` lists the sources. Choosing the sandbox, then a test patient (or a link
+that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
 
@@ -199,6 +199,7 @@ The list never passes through a server.
 | `js/share-list.js` | The shared list on the staff page. |
 | `js/ips.js`, `js/fhir-file.js` | Save as FHIR file: the International Patient Summary, and its button and warning. |
 | `privacy.html` | The privacy page: what Brown Bag keeps, who is contacted, and the limits of the locks. |
+| `js/test-patients.js` | The sandbox's test patients, and the sandbox address that signs in as one. |
 | `js/options.js` | What More options offers, in groups. |
 | `js/edit.js` | Changing a medicine the patient added. |
 | `js/sort.js` | The order of My medicines, and the short name on home. |
@@ -216,10 +217,14 @@ The list never passes through a server.
 
 ## Test patients
 
-The sandbox is public and shared. Its sign-in page lists only the first ten
-patients on it, and anyone can add patients, so the list changes and the one
-you want may not be there. These links sign in as one patient directly, with
-no list and no password:
+The sandbox is public and shared. Its own sign-in page lists only the first ten
+patients on it, and anyone can add patients, so that list changes. Brown Bag
+has its own list instead: Sign in, then SMART Health IT sandbox, shows 20
+made-up patients grouped by what they show. A choice goes to the sandbox's
+approval page. **Someone else** opens the sandbox's own list.
+
+These links sign in as one patient directly, with no list, no approval and no
+password:
 
 | Patient | What it shows | Link |
 | --- | --- | --- |
