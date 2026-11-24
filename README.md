@@ -58,7 +58,7 @@ only, no real patients). To open it as a certain patient, see
   allergy, add a reaction to one from their records, or say they have no
   known allergies. A load that failed says so, and never looks like "none".
 - **What was actually filled.** Each medicine shows its insurance fills
-  ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
+  ("Filled 2 times · last Sep 22, 2026 · Insurance claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
   and a prescription the record calls finished (completed, stopped or
   canceled) but filled since it was written moves back to the current
