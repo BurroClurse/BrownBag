@@ -360,6 +360,12 @@ export function allergyEmptyText(allergies) {
   return allergies.status === "loaded" || allergies.savedAt ? "None in the records. The patient hasn't said." : null;
 }
 
+// Whether staff see a calm box: the patient said none, nothing is listed, and
+// there's no warning to read.
+export function staffSaysNone(allergies) {
+  return Boolean(allergies && allergies.saidNone) && !allergies.fromRecords.length && !allergies.fromPatient.length && !allergyNotices(allergies).length;
+}
+
 // The day on the reader's own calendar.
 function localDay(timestamp) {
   var date = new Date(timestamp);

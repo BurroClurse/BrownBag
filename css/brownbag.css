@@ -535,6 +535,8 @@ button.help-button {
 .screen-launch > p { text-align: center; text-wrap: balance; }
 .screen-launch button.source { margin-top: 0; }
 .screen-launch .quiet-link + .big { margin-top: 0.25rem; }
+/* Less blank space at the end, so the list fits iPhone Safari with its toolbars. */
+main.screen-launch { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
 button.source span { display: block; }
 button.source .source-note { font-size: 1rem; font-weight: 400; }
 /* One card for the connected source, one for the rest. */
@@ -578,6 +580,7 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .allergy-none-known { background: #E2EEEE; border: 2px solid #7FA3A8; }
 .allergy-none-known > .block-title, .screen-medicines .allergy-none-known > .block-title { color: var(--teal); margin-bottom: 0.4rem; }
 .none-known { font-weight: 800; font-size: 1.5rem; line-height: 1.25; margin: 0; overflow-wrap: anywhere; }
+.who + .none-known { margin-top: 0.5rem; }
 /* What happened, with Undo at the right; below it when there's no room. */
 .undo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; margin: 0.35rem 0 0.5rem; }
 .undo-row p { flex: 1 1 9rem; min-width: 0; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }

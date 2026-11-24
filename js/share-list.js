@@ -2,7 +2,7 @@
 // (design 2026-11-23). "See what's inside" is the same list as short text
 // (js/inside.js); a test checks nothing staff see is left out of it.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, staffSaysNone, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 import { drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
@@ -62,8 +62,14 @@ function drawAllergies(parent, allergies, level, dated) {
   var symbol = !allergies || showsSymbol(count, allergies.unspecified, allergies.status);
   var section = allergyBox(parent, count ? "Allergies (" + count + ")" : "Allergies", symbol, level).section;
   if (dated) add(section, "p", dated, "who");
+  var saysNone = staffSaysNone(allergies);
+  if (saysNone) {
+    section.classList.add("allergy-none-known");
+    add(section, "p", "No known allergies", "none-known");
+    add(section, "p", "The patient says this.");
+  }
   notices.forEach(function (text) { add(section, "p", text, "notice"); });
-  var empty = allergyEmptyText(allergies);
+  var empty = saysNone ? null : allergyEmptyText(allergies);
   if (empty) add(section, "p", empty, allergies ? "med-line" : "notice");
   if (!allergies) return;
   allergies.statements.forEach(function (text) { add(section, "p", "Records say: " + text + ".", "med-line"); });

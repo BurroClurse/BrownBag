@@ -107,6 +107,9 @@ record's, with the patient's reaction marked "added by me" and "Remove mine".
   The box is soft teal instead of red (Tyler, 2026-11-24), unless the
   allergies didn't load or an entry doesn't say what it's to: then it stays
   red. Adding an allergy clears it.
+- The staff page matches (Tyler, 2026-11-24): soft teal, "No known allergies"
+  big, "The patient says this." It stays red when there's any allergy warning,
+  a saved copy included. Only the page's look; the QR code is unchanged.
 - The button only shows when nothing is listed and the records' allergies
   loaded (now, or in the saved copy). After a failed or refused load with
   nothing saved it isn't offered. If the records later bring

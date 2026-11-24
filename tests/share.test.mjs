@@ -7,7 +7,7 @@ import {
   packShare,
   unpackShare,
   fitsInQr,
-  allergyNotices,
+  allergyNotices, staffSaysNone,
   allergyEmptyText,
   QR_MAX_BYTES,
   ShareError,
@@ -585,4 +585,23 @@ test("the app tells the code about the fills, and the page draws the note", asyn
   assert.match(file("js/app.js"), /warnings = shareWarnings\(state\)/);
   assert.match(file("js/view.js"), /claims: state\.split\.claims,/);
   assert.match(file("js/share-list.js"), /fillsNote\(groups\)/);
+});
+
+// The staff page's box is red unless the patient said none and nothing else
+// is in doubt, a saved copy that may be out of date included.
+test("staff see a calm allergies box only when the patient said none and nothing is in doubt", () => {
+  const of = (o) => groupShareBundle(withAllergies([], Object.assign({ saidNone: "2026-11-24" }, o))).allergies;
+  assert.equal(staffSaysNone(of()), true);
+  assert.equal(staffSaysNone(of({ statements: ["No known drug allergy"] })), true);
+  for (const status of ["failed", "refused", "not-loaded"]) assert.equal(staffSaysNone(of({ status })), false, status);
+  assert.equal(staffSaysNone(of({ unspecified: 1 })), false);
+  assert.equal(staffSaysNone(of({ savedAt: "2026-11-21T18:00:00Z" })), false);
+  assert.equal(staffSaysNone(of({ saidNone: null })), false);
+  assert.equal(staffSaysNone(null), false);
+  assert.equal(staffSaysNone(groupShareBundle(withAllergies([CARD()], { saidNone: "2026-11-24" })).allergies), false);
+});
+
+// How it looks is drawn by the page. What's in the code doesn't change.
+test("no color or layout is in the QR code", () => {
+  assert.doesNotMatch(JSON.stringify(withAllergies([], { saidNone: "2026-11-24" })), /color|class|style|none-known/i);
 });

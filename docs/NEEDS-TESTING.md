@@ -64,21 +64,6 @@ The staff page changed, so it goes first:
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 
-**Privacy page** (2026-11-24). Checked only in the test browser (320 to 1440 wide,
-200 percent text, no signal, Back from both places), not on a virtual phone:
-
-- More options ▸ Privacy opens the page. Back returns to More options, or to the
-  lock and then home if the phone dropped the page.
-- The Privacy link under the sign-in list, and Back.
-- The sign-in list still fits one screen. More options now scrolls on a short
-  screen (667 px); Sign out is last.
-
-**No known allergies** (2026-11-24). Checked only in the test browser:
-
-- My medicines ▸ I have no known allergies: the box is soft teal, the big line,
-  Undo at the right. Undo makes it red again. Adding an allergy does too.
-- Remove an allergy you added: its Undo is at the right.
-
 ## Not done yet
 
 Decided for later, so nothing to test until they're picked up:
@@ -234,3 +219,8 @@ Decided for later, so nothing to test until they're picked up:
   browser (signal going and coming back, a refused sign-in, signed in again, 320
   to 1440 wide, 200 percent text) and both virtual phones. Passed. On the phones
   the lost signal was a stand-in, not airplane mode.
+- 2026-11-24, the Privacy page, No known allergies on My medicines and the staff
+  page: the test browser (320 to 1440 wide, 200 percent text, no signal, records
+  failing) and both virtual phones. Passed. Back from Privacy goes to More options
+  on the iPhone and to the lock on Android. The sign-in list's blank end was
+  trimmed so it fits iPhone Safari.
