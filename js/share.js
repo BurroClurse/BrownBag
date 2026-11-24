@@ -8,7 +8,7 @@
 import { fillNote, completedNote } from "./claims.js";
 import { holdText } from "./meds.js";
 import { dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
-import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
+import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
 export var QR_MAX_BYTES = 2331;
@@ -325,28 +325,49 @@ function groupAllergy(groups, resource) {
     groups.statements.push(statement);
     return;
   }
-  var theirs = [];
-  var patients = [];
-  (resource.reaction || []).forEach(function (reaction) {
-    var text = reactionWords({ text: (reaction.manifestation && reaction.manifestation[0] && reaction.manifestation[0].text) || "", severity: reaction.severity });
+  var reactions = (resource.reaction || []).map(function (reaction) {
     var fromPatient = (reaction.note || []).some(function (n) { return n.text === FROM_PATIENT; });
-    (fromPatient ? patients : theirs).push(text);
+    var text = (reaction.manifestation && reaction.manifestation[0] && reaction.manifestation[0].text) || "Unnamed reaction";
+    if (reaction.severity) text += ", " + reaction.severity;
+    return own ? text : text + (fromPatient ? " (patient)" : " (records)");
   });
-  var notes = (resource.note || []).map(function (n) { return n.text; });
+  var source = null;
+  var lines = [];
+  (resource.note || []).forEach(function (n) {
+    var found = own ? null : /^From records: (.+)$/.exec(n.text);
+    if (found && !source) source = found[1];
+    else if (n.text === (own ? "Reaction not known" : "Patient says: reaction not known")) reactions.push(own ? "not known" : "not known (patient)");
+    else if (n.text) lines.push(n.text);
+  });
+  lines.unshift("Reaction: " + (reactions.join(" · ") || "not listed"));
   if (own) {
-    groups.fromPatient.push({ name: name, detail: joinDetail([theirs.length ? "Reaction: " + theirs.join(" · ") : null].concat(notes)) });
+    groups.fromPatient.push({ name: name, source: null, lines: lines });
     return;
   }
   var notConfirmed = ((resource.verificationStatus && resource.verificationStatus.coding) || []).some(function (c) { return c.code === "unconfirmed"; });
-  groups.fromRecords.push({
-    name: name,
-    detail: joinDetail([
-      resource.criticality === "high" ? "Marked high risk" : null,
-      resource.type === "intolerance" ? "Intolerance" : null,
-      notConfirmed ? "Not confirmed" : null,
-      theirs.length ? "Reaction: " + theirs.join(" · ") : "Reaction not in the records",
-      patients.length ? "Patient says: " + patients.join(" · ") : null
-    ].concat(notes.filter(function (n) { return n.indexOf("Patient says") === 0; }), notes.filter(function (n) { return n.indexOf("Patient says") !== 0; })))
+  var marks = joinDetail([
+    resource.criticality === "high" ? "Marked high risk" : null,
+    resource.type === "intolerance" ? "Intolerance" : null,
+    notConfirmed ? "Not confirmed" : null
+  ]);
+  groups.fromRecords.push({ name: name, source: source, lines: (marks ? [marks] : []).concat(lines) });
+}
+
+// The allergies as staff read them: a title and rows of a name and its lines.
+// Where the records are from is in the title when it's the same for all of them.
+export function allergyParts(allergies) {
+  var first = allergies.fromRecords.length ? allergies.fromRecords[0].source : null;
+  var same = Boolean(first) && allergies.fromRecords.every(function (row) { return row.source === first; });
+  return [
+    { title: same ? "From records (" + first + ")" : "From records", rows: allergies.fromRecords },
+    { title: "From patient", rows: allergies.fromPatient }
+  ].filter(function (part) { return part.rows.length; }).map(function (part) {
+    return {
+      title: part.title,
+      rows: part.rows.map(function (row) {
+        return { name: row.name, lines: row.lines.concat(row.source && !same ? "Source: " + row.source : []) };
+      })
+    };
   });
 }
 

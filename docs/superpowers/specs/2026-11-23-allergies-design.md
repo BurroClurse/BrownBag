@@ -330,3 +330,14 @@ Not done: SMART v2 scopes (`.rs`; the sandbox and older systems take v1
 `.read`), Provenance, a US Core Patient (Brown Bag shares only the name and
 birth date), and an IPS document or SMART Health Link (Later list; a link
 needs a server).
+
+## Changed 2026-11-24 (Tyler): shorter reactions
+
+- For staff, See what's inside and the FHIR file's readable text: "Reaction:
+  Hives, severe (records) · Vomiting (patient)". "Reaction: not listed" when
+  nobody gave one, "not known (patient)" when the patient isn't sure. Never
+  "none" or "null".
+- "Marked high risk", "Intolerance" and "Not confirmed" have their own line first.
+- The source is in the heading, "From records (SMART sandbox)", when every record
+  has the same one. Otherwise each says "Source: ...".
+- The QR code's data didn't change.

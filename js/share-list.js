@@ -2,7 +2,7 @@
 // (design 2026-11-23). "See what's inside" is the same list as short text
 // (js/inside.js); a test checks nothing staff see is left out of it.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, staffSaysNone, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, staffSaysNone, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 import { drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
@@ -73,10 +73,9 @@ function drawAllergies(parent, allergies, level, dated) {
   if (empty) add(section, "p", empty, allergies ? "med-line" : "notice");
   if (!allergies) return;
   allergies.statements.forEach(function (text) { add(section, "p", "Records say: " + text + ".", "med-line"); });
-  [["From records", allergies.fromRecords], ["From patient", allergies.fromPatient]].forEach(function (one) {
-    if (!one[1].length) return;
-    add(section, "h" + (level + 1), one[0], "part-title");
-    rowsInto(section, one[1]);
+  allergyParts(allergies).forEach(function (one) {
+    add(section, "h" + (level + 1), one.title, "part-title");
+    rowsInto(section, one.rows);
   });
 }
 
@@ -101,7 +100,7 @@ function rowsInto(section, rows) {
     }
     // An allergy.
     add(item, "p", row.name, "med-name");
-    if (row.detail) add(item, "p", row.detail, "med-line");
+    row.lines.forEach(function (text) { add(item, "p", text, "med-line"); });
   });
 }
 

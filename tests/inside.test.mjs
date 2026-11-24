@@ -49,7 +49,13 @@ test("everything the staff page says about each medicine and allergy is there", 
     }
   }
   assert.ok(checked > 20);
-  for (const row of groups.allergies.fromRecords) { assert.ok(text.includes(row.name)); assert.ok(text.includes(row.detail), row.detail); }
+  for (const row of groups.allergies.fromRecords) { assert.ok(text.includes(row.name)); for (const line of row.lines) assert.ok(text.includes(line), line); }
+  // Allergies read the same in both places, word for word.
+  const heads = (root) => all(root, "h3").map((h) => h.textContent).filter((t) => t.startsWith("From records (SMART"));
+  assert.deepEqual(heads(draw(drawInside, groups)), ["From records (SMART sandbox)"]);
+  assert.deepEqual(heads(draw(drawShareList, groups, 1)), ["From records (SMART sandbox)"]);
+  assert.ok(text.includes("Reaction: Hives, severe (records)"));
+  assert.ok(!text.includes("From records: "));
   for (const piece of ["Avery Brownbag", "1950-03-14", "Meds last updated: ", "QR code made: ", "Medicines (5)", "RxNorm: 314076"]) assert.ok(text.includes(piece), piece);
 });
 

@@ -95,7 +95,7 @@ Decided for later, so nothing to test until they're picked up:
   "About these names" opening.
 - A long list's QR code scanned with a second phone: it's denser than before.
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
-  and the popup with VoiceOver.
+  and the popup with VoiceOver. The same under See what's inside on the first phone.
 - The Privacy page in the Home Screen app: More options ▸ Privacy ▸ Back. With
   VoiceOver: each heading, the list, and the GitHub link (it opens a browser).
 - The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
@@ -242,3 +242,7 @@ Decided for later, so nothing to test until they're picked up:
   browser (320 to 1440 wide, 200 percent text) and both virtual phones (the list,
   scrolling, Back, and choosing Delbert Jaskolski as far as the real sandbox's
   approval page and back). Passed. Approve was not pressed there.
+- 2026-11-24, shorter allergy reactions and Save as FHIR file under See what's
+  inside, before publishing: the test browser (320 to 1440 wide, 200 percent text)
+  and both virtual phones (See what's inside, the popup, the saved file, the staff
+  page). Passed. The share sheet was a stand-in.

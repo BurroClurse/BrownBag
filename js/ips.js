@@ -3,7 +3,7 @@
 // a valid link, so every part is read, checked and written again; nothing is
 // copied whole, and anything unexpected means no file. No DOM here.
 
-import { AS_NEEDED_NOTE, allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, groupShareBundle, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, staffSaysNone, timeText } from "./share.js";
+import { AS_NEEDED_NOTE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, fillsNote, groupShareBundle, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, staffSaysNone, timeText } from "./share.js";
 import { localDate } from "./view.js";
 import { isUnspecified, noneCode, statementOf } from "./allergies.js";
 
@@ -143,8 +143,7 @@ function allergyWords(groups) {
   if (staffSaysNone(allergies)) words.push(["p", "No known allergies. The patient says this."]);
   else if (allergyEmptyText(allergies)) words.push(["p", allergyEmptyText(allergies)]);
   allergies.statements.forEach(function (text) { words.push(["p", "Records say: " + text + "."]); });
-  list(words, "From records", allergies.fromRecords);
-  list(words, "From patient", allergies.fromPatient);
+  allergyParts(allergies).forEach(function (one) { list(words, one.title, one.rows); });
   return words;
 }
 
@@ -156,7 +155,7 @@ function list(words, title, rows) {
   if (!rows || !rows.length) return;
   words.push(["p", title]);
   words.push(["ul", rows.map(function (row) {
-    if (!row.take) return [row.name, row.detail].filter(Boolean).join(". ");
+    if (!row.take) return [row.name].concat(row.lines).join(". ");
     var pairs = row.take.concat(row.facts).map(function (pair) { return pair[0] + ": " + String(pair[1]).trim(); });
     return [row.name].concat(row.flags, pairs).join(". ");
   })]);

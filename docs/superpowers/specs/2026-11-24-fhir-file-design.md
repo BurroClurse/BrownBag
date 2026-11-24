@@ -194,3 +194,12 @@ Found while designing. The file would carry these into a hospital system:
 - "As needed" from the patient: the file has no schedule, and its words end
   "Patient says: takes only when needed".
 - A "no known allergy" code beside words that name an allergy is an allergy.
+
+## Changed 2026-11-24 (Tyler): on the patient's phone too
+
+At the end of See what's inside (and See my list, when the list is too long for a
+QR code): the same button, file and checks, so a file can be handed over when
+nobody can scan. The warning is in the patient's words: "Anyone who opens this
+file can read your name, birth date, allergies and medicines. Give it only to
+people you trust, and delete it when you're done." The privacy page says they can
+save it.

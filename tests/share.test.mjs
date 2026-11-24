@@ -2,6 +2,7 @@ import test from "node:test";
 import { fromAllergyRecords, arrangeAllergies } from "../js/allergies.js";
 import assert from "node:assert/strict";
 import {
+  allergyParts,
   buildShareBundle,
   groupShareBundle,
   packShare,
@@ -310,15 +311,41 @@ test("an allergy from the records travels as FHIR with its reaction and flags", 
   assert.deepEqual(a.note, [{ text: "From records: SMART sandbox" }]);
   assert.equal(a.asserter, undefined);
   const groups = groupShareBundle(bundle).allergies;
-  assert.deepEqual(groups.fromRecords, [{ name: "Mold", detail: "Marked high risk · Intolerance · Not confirmed · Reaction: Hives (severe) · Patient says: Itching · From records: SMART sandbox" }]);
+  assert.deepEqual(groups.fromRecords, [{ name: "Mold", source: "SMART sandbox", lines: ["Marked high risk · Intolerance · Not confirmed", "Reaction: Hives, severe (records) · Itching (patient)"] }]);
   assert.deepEqual(groups.fromPatient, []);
 });
 
 test("a missing reaction is said, never blank", () => {
   const groups = groupShareBundle(withAllergies([CARD(), OWN("Latex", "Not sure"), CARD({ name: "Dust", mine: { ids: [], keys: ["k"], reaction: "Not sure" } })])).allergies;
-  assert.equal(groups.fromRecords[0].detail, "Reaction not in the records · From records: SMART sandbox");
-  assert.equal(groups.fromPatient[0].detail, "Reaction not known");
-  assert.equal(groups.fromRecords[1].detail, "Reaction not in the records · Patient says: reaction not known · From records: SMART sandbox");
+  assert.deepEqual(groups.fromRecords[0].lines, ["Reaction: not listed"]);
+  assert.deepEqual(groups.fromPatient[0].lines, ["Reaction: not known"]);
+  assert.deepEqual(groups.fromRecords[1].lines, ["Reaction: not known (patient)"]);
+  const both = groupShareBundle(withAllergies([CARD({ reactions: [{ text: "Hives", severity: null }, { text: "Rash", severity: "mild" }], mine: { ids: [], keys: ["k"], reaction: "Not sure" } })])).allergies;
+  assert.deepEqual(both.fromRecords[0].lines, ["Reaction: Hives (records) · Rash, mild (records) · not known (patient)"]);
+});
+
+// The source is said once, over the list. If this broke, staff couldn't tell
+// where an allergy came from.
+test("allergies say where they're from: once when it's one place, else each", () => {
+  const parts = (cards) => allergyParts(groupShareBundle(withAllergies(cards)).allergies);
+  const one = parts([CARD(), CARD({ name: "Dust" }), OWN("Latex", "Hives")]);
+  assert.deepEqual(one.map((p) => p.title), ["From records (SMART sandbox)", "From patient"]);
+  assert.deepEqual(one[0].rows.map((r) => r.lines), [["Reaction: not listed"], ["Reaction: not listed"]]);
+  assert.deepEqual(one[1].rows, [{ name: "Latex", lines: ["Reaction: Hives"] }]);
+  const two = parts([CARD(), CARD({ name: "Dust", source: "Other Clinic" })]);
+  assert.deepEqual(two.map((p) => p.title), ["From records"]);
+  assert.deepEqual(two[0].rows.map((r) => r.lines[1]), ["Source: SMART sandbox", "Source: Other Clinic"]);
+  assert.deepEqual(parts([]), []);
+});
+
+// Anyone can make a code; a note Brown Bag doesn't know is still read by staff.
+test("an allergy's other notes are kept, and a missing source is never filled in", () => {
+  const bundle = withAllergies([CARD(), CARD({ name: "Dust" })]);
+  const entries = allergyEntries(bundle);
+  entries[0].note = [{ text: "Carries an EpiPen" }];
+  const part = allergyParts(groupShareBundle(bundle).allergies)[0];
+  assert.equal(part.title, "From records");
+  assert.deepEqual(part.rows.map((r) => r.lines), [["Reaction: not listed", "Carries an EpiPen"], ["Reaction: not listed", "Source: SMART sandbox"]]);
 });
 
 test("the patient's own allergy says who says so", () => {
@@ -327,7 +354,7 @@ test("the patient's own allergy says who says so", () => {
   assert.deepEqual(a.asserter, { reference: "resource:0" });
   assert.equal(a.verificationStatus.coding[0].code, "unconfirmed");
   assert.equal(a.code.coding[0].code, "1");
-  assert.deepEqual(groupShareBundle(bundle).allergies.fromPatient, [{ name: "Penicillin", detail: "Reaction: Hives or rash" }]);
+  assert.deepEqual(groupShareBundle(bundle).allergies.fromPatient, [{ name: "Penicillin", source: null, lines: ["Reaction: Hives or rash"] }]);
   assert.equal(allergyEntries(withAllergies([OWN("Latex", "Not sure")]))[0].reaction, undefined);
 });
 
@@ -464,7 +491,7 @@ test("a coded record keeps its codes, status, category, risk, date and coded rea
   assert.equal(a.reaction[0].severity, "moderate");
   assert.deepEqual(problems(a), []);
   // Staff see a low risk or a plain allergy as nothing special.
-  assert.equal(groupShareBundle(bundle).allergies.fromRecords[0].detail, "Reaction: Hives (moderate) · From records: SMART sandbox");
+  assert.deepEqual(groupShareBundle(bundle).allergies.fromRecords[0].lines, ["Reaction: Hives, moderate (records)"]);
 });
 
 test("the patient's own says who said it, who recorded it and when", () => {

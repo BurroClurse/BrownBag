@@ -2,7 +2,7 @@
 // boxes or extra words (Tyler, 2026-11-23). It reads what comes out of the
 // code, the same as the staff page does.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 
 // Draws into parent, starting with the patient's name. Returns that heading.
 // made: what was made, when it isn't a QR code.
@@ -34,11 +34,10 @@ function drawAllergies(parent, groups) {
   var said = allergies ? allergies.statements.map(function (text) { return "Records say: " + text + "."; }) : [];
   lines(parent, [dated, empty].filter(Boolean).concat(said));
   if (!allergies) return;
-  items(parent, "From records", allergies.fromRecords);
-  items(parent, "From patient", allergies.fromPatient);
+  allergyParts(allergies).forEach(function (one) { items(parent, one.title, one.rows); });
 }
 
-// One bullet each: the name, then its facts, joined.
+// One bullet each: the name, then its lines.
 function items(parent, text, rows) {
   if (!rows || !rows.length) return;
   add(parent, "h3", text);
@@ -46,7 +45,7 @@ function items(parent, text, rows) {
   rows.forEach(function (row) {
     var item = add(list, "li");
     add(item, "strong", row.name);
-    (row.take ? [joined(row.take)].concat(row.flags, joined(row.facts.concat(row.rxnorm ? [["RxNorm", row.rxnorm]] : []))) : [row.detail])
+    (row.take ? [joined(row.take)].concat(row.flags, joined(row.facts.concat(row.rxnorm ? [["RxNorm", row.rxnorm]] : []))) : row.lines)
       .filter(Boolean)
       .forEach(function (line) { add(item, "div", line); });
   });

@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { NOT_SAVED, saveResult } from "../js/fhir-file.js";
+import { NOT_SAVED, UNLOCKED, saveResult } from "../js/fhir-file.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 const flat = (file) => read(file).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
@@ -28,6 +28,16 @@ test("the patient is told the list can be saved unlocked", () => {
   const line = "The person who opens it can save it as a file that isn't locked.";
   assert.ok(flat("privacy.html").includes(line));
   assert.ok(read("js/app.js").includes(line));
+});
+
+// The patient can hand over a file when nobody can scan. If this broke, they'd
+// save their list unlocked without being told, or not be able to.
+test("the patient can save it too, from See what's inside, after a warning in their words", () => {
+  assert.match(UNLOCKED.patient, /your name, birth date, allergies and medicines/);
+  assert.match(UNLOCKED.staff, /the patient's name, birth date, allergies and medicines/);
+  assert.match(read("js/app.js"), /if \(groups\) drawSaveFile\(page, opened, UNLOCKED\.patient\)/);
+  assert.match(read("js/share-view.js"), /drawSaveFile\(root, bundle, UNLOCKED\.staff\)/);
+  assert.ok(flat("privacy.html").includes("You can save that file too."));
 });
 
 test("it works with no signal, and the code owners are credited", () => {

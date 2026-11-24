@@ -6,7 +6,7 @@
 
 import { unpackShare, groupShareBundle, ShareError } from "./share.js";
 import { drawShareList } from "./share-list.js";
-import { drawSaveFile } from "./fhir-file.js";
+import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
 window.brownBagStarted = true;
@@ -87,7 +87,7 @@ function drawList(groups, bundle) {
   clear(root);
   addLogo();
   var title = drawShareList(root, groups, 1);
-  drawSaveFile(root, bundle);
+  drawSaveFile(root, bundle, UNLOCKED.staff);
   title.focus();
 }
 

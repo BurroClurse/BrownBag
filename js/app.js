@@ -24,6 +24,7 @@ import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
+import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
@@ -1612,7 +1613,7 @@ async function buildQr() {
 }
 
 // What's in the code, on the patient's own phone: so they can trust it, and
-// so it can be read when nobody can scan. Brown Bag opens the code itself, the
+// so it can be read, or saved as a file, when nobody can scan. Brown Bag opens the code itself, the
 // way the staff page does, and shows what comes out as short text. Read-only.
 var insideBusy = false;
 async function openInside(packed, opener, fits) {
@@ -1622,8 +1623,10 @@ async function openInside(packed, opener, fits) {
   opener.textContent = "Opening…";
   opener.setAttribute("aria-busy", "true");
   var groups = null;
+  var opened = null;
   try {
-    groups = groupShareBundle(await unpackShare(packed.prefix.split("#")[1] + packed.digits, packed.code));
+    opened = await unpackShare(packed.prefix.split("#")[1] + packed.digits, packed.code);
+    groups = groupShareBundle(opened);
   } catch (error) {
     console.error("Couldn't open the code", error);
   } finally {
@@ -1649,6 +1652,8 @@ async function openInside(packed, opener, fits) {
     : add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");
   title.id = "inside-heading";
   title.tabIndex = -1;
+  // For when nobody can scan: the same file staff can save.
+  if (groups) drawSaveFile(page, opened, UNLOCKED.patient);
   overlay.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
     event.preventDefault();

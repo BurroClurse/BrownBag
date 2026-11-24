@@ -1,5 +1,6 @@
-// "Save as FHIR file" on the staff page: a warning first, then the file, made on
-// this device (js/ips.js). Nothing is sent.
+// "Save as FHIR file" on the staff page, and on the patient's phone under See
+// what's inside: a warning first, then the file, made on this device (js/ips.js).
+// Nothing is sent.
 
 import { openPopup, popupButton, popupLine } from "./popup.js";
 import { patientSummary, summaryFileName, whyNotSaved } from "./ips.js";
@@ -9,12 +10,18 @@ export var NOT_SAVED = {
   odd: "This list can't be saved as a file."
 };
 
+// The warning, for whoever is saving.
+export var UNLOCKED = {
+  staff: "Anyone who opens this file can read the patient's name, birth date, allergies and medicines. Save it only where you keep patient records.",
+  patient: "Anyone who opens this file can read your name, birth date, allergies and medicines. Give it only to people you trust, and delete it when you're done."
+};
+
 export function saveResult(error) {
   if (!error) return "Saved.";
   return error.name === "AbortError" ? "Not saved." : "Couldn't save the file.";
 }
 
-export function drawSaveFile(parent, bundle) {
+export function drawSaveFile(parent, bundle, warning) {
   var section = add(parent, "section", null, "save-file");
   var why = whyNotSaved(bundle);
   if (why) {
@@ -29,7 +36,7 @@ export function drawSaveFile(parent, bundle) {
   status.setAttribute("role", "status");
   button.addEventListener("click", function () {
     status.textContent = "";
-    ask(button, async function () {
+    ask(button, warning, async function () {
       var error = null;
       try {
         await saveFile(bundle);
@@ -41,9 +48,9 @@ export function drawSaveFile(parent, bundle) {
   });
 }
 
-function ask(opener, save) {
+function ask(opener, warning, save) {
   var popup = openPopup(document.body, "Save an unlocked file?", opener);
-  popupLine(popup.inner, "Anyone who opens this file can read the patient's name, birth date, allergies and medicines. Save it only where you keep patient records.");
+  popupLine(popup.inner, warning);
   var cancel = popupButton(popup.inner, "Cancel", "secondary");
   cancel.addEventListener("click", popup.close);
   popupButton(popup.inner, "Save the file", "primary").addEventListener("click", function () {

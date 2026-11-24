@@ -87,7 +87,8 @@ only, no real patients). To open it as a certain patient, see
 - **Save as FHIR file.** Staff can save the list as an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1). A
   warning says the file isn't locked. A list where something didn't load can't
-  be saved.
+  be saved. The patient can save the same file under See what's inside, for when
+  nobody can scan.
 - **Directions are said in full.** A record with several shows them all, in its
   order. A schedule Brown Bag can't put in words says "See the record for how
   often". A medicine the records have on hold says so, on the phone and to staff.

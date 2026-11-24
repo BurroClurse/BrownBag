@@ -1627,6 +1627,26 @@ keep its approval page, so you still see what Brown Bag asks for.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 52. Say where a thing came from once (`js/share.js`)
+
+**What changed.** Each allergy now takes two lines: its name, and the reaction
+with who said it, "(records)" or "(patient)". The records' source moved to the
+heading. The patient can also save the FHIR file, under See what's inside.
+
+**Words and data are separate.** The QR code still carries FHIR
+AllergyIntolerance records, with each reaction in `reaction` and the source in
+`note`. Only the words drawn from them changed, so older codes read the new way
+too.
+
+**One place makes the words.** `allergyParts` makes the headings and lines. The
+staff page, See what's inside and the file's readable text all use it, so they
+can't disagree.
+
+**Careful with "none".** "Reaction: none" could mean the patient doesn't react.
+"Not listed" says only that nobody wrote one down.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary
