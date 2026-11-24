@@ -43,7 +43,7 @@ only, no real patients). To open it as a certain patient, see
 - **Sign in once.** The first time, the patient signs in at their health
   system and approves access. After that, Face ID (or a 6-digit PIN) opens
   Brown Bag and the list updates by itself.
-- **One screen.** Their name, the Brown Bag logo, **Show my QR code**,
+- **One screen.** Their first name and last initial, the Brown Bag logo, **Show my QR code**,
   **My medicines (N)**, and **More options**.
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
@@ -63,6 +63,8 @@ only, no real patients). To open it as a certain patient, see
   and a prescription the record calls finished (completed, stopped or
   canceled) but filled since it was written moves back to the current
   list, saying so.
+- **Sort** puts each part of My medicines in order: A to Z, newest first, or by
+  who prescribed it. The phone remembers the choice. Staff see A to Z.
 - **Adding a medicine** starts from a button at the top of the list that stays
   on screen while the list scrolls. It uses lists for how much and how often, so the
   QR code carries the dose as numbers other systems can read, and asks
@@ -178,6 +180,7 @@ The list never passes through a server.
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
+| `js/sort.js` | The order of My medicines, and the short name on home. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |

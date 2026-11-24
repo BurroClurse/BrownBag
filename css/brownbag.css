@@ -488,6 +488,9 @@ button.help-button {
 .add-bar { position: sticky; top: 0; z-index: 5; background: var(--paper); margin: 0 -1rem; padding: min(0.5rem, 8px) 1rem; }
 .add-bar button { display: block; margin: 0; width: 100%; min-height: 48px; padding: min(0.4rem, 8px) 0.5rem; border-radius: 12px; font-size: 1.2rem; line-height: 1.2; }
 .medicines-block > form { margin-top: 0.75rem; }
+.sort-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin-top: 0.4rem; }
+.sort-row label { margin: 0; }
+.sort-row select { flex: 1 1 9rem; width: auto; min-width: 0; }
 .medicines-block > .block-title, .screen-medicines .medicines-block > .block-title { margin: 2.25rem 0 0; padding-bottom: 0.3rem; border-bottom: 3px solid var(--ink); font-size: 1.6rem; }
 .block-title, .part-title, .share-name { overflow-wrap: anywhere; }
 .inside-overlay:focus { outline: none; }

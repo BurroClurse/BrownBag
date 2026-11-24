@@ -87,8 +87,8 @@ Decided for later, so nothing to test until they're picked up:
 - What didn't load, with VoiceOver: the new lines on home, My medicines and the
   staff page. They only show when something fails.
 - See what's inside as short text, with VoiceOver.
-- "+ Add a medicine" at the top of the list: it stays there while scrolling, and
-  VoiceOver reaches it before the medicines.
+- "+ Add a medicine" with VoiceOver: it comes before the medicines.
+- Sort on My medicines, with VoiceOver: the picker, then "Sorted: …".
 
 ## Tested
 
@@ -170,3 +170,7 @@ Decided for later, so nothing to test until they're picked up:
 - 2026-11-23, "+ Add a medicine" at the top of the list, before publishing: the
   test browser (320 to 1440 wide, sideways, 200 percent text, focus, Cancel, a
   medicine added) and both virtual phones. Passed.
+- 2026-11-23, Tyler's iPhone: "+ Add a medicine" stays at the top while
+  scrolling, and See what's inside as short text. Works.
+- 2026-11-23, the short name on home and Sort, before publishing: the test
+  browser and both virtual phones. Passed.

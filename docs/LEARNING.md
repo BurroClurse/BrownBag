@@ -1358,6 +1358,23 @@ measures the bar, because large text makes it taller.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 34. Sorting, and a shorter name (`js/sort.js`)
+
+**What changed.** My medicines can be sorted A to Z, newest first, or by who
+prescribed it. Home shows "Avery B." instead of the full name.
+
+**Sort a copy.** JavaScript's `sort()` changes the list it's given. The QR code
+uses the same list, so `slice()` makes a copy first, and a test checks the real
+list never changes.
+
+**Unknown goes last.** A medicine with no date or no prescriber isn't dropped
+and isn't first. It goes at the end.
+
+**Show only what's needed.** A full name in big type on home can be read by
+anyone nearby. Staff do need it, so the QR code keeps it.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

@@ -16,6 +16,7 @@ import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
 import { drawCard, patientCard } from "./card.js";
+import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { signInLink } from "./sources.js";
 import { drawInside } from "./inside.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
@@ -70,6 +71,7 @@ var state = {
   // When the records last loaded, while they aren't a saved copy.
   updatedAt: null,
   screen: "home",
+  olderOpen: false,
   // The notes at the top of home: updating with the pass, no connection,
   // or the pass ended (or there is none) and the list is a saved copy.
   updating: false,
@@ -573,6 +575,7 @@ function go(screen, focusId) {
 
 // Half-typed forms stay, and home says they aren't saved. Empty ones close.
 function leaveMedicines() {
+  state.olderOpen = false;
   state.lastRemoved = null;
   state.lastRemovedAllergy = null;
   var unsaved = [];
@@ -594,7 +597,7 @@ function leaveMedicines() {
 
 function drawHome(arranged) {
   drawNotices();
-  add(root, "h1", state.patient.name, "home-name");
+  add(root, "h1", shortName(state.patient.name), "home-name");
   var bag = add(root, "button", null, "home-bag");
   bag.type = "button";
   bag.id = "home-bag";
@@ -626,10 +629,15 @@ function drawMedicines(arranged) {
   // No number when some didn't load: it would read as the whole.
   var block = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
   drawAdd(block);
+  // Only the order on this screen; the QR code has its own.
+  var sorted = sortArranged(arranged, state.data.additions, savedSort(localStorage));
+  arranged = sorted.arranged;
+  // Not while adding: drawing the screen again would close its questions.
+  if (!state.adding && arranged.current.length + arranged.stopped.length + arranged.older.length + sorted.additions.length > 1) drawSort(block);
   drawRecords(block, arranged);
   drawFillsOnly(block, arranged);
   drawAsNeeded(block, arranged);
-  drawAdditions(block);
+  drawAdditions(block, sorted.additions);
   drawStopped(block, arranged);
 }
 
@@ -927,6 +935,9 @@ function drawRecords(parent, arranged) {
   if (arranged.older.length) {
     var details = add(section, "details");
     add(details, "summary", "Older prescriptions (" + arranged.older.length + ")");
+    // Stays open when the screen is drawn again, as sorting does.
+    details.open = state.olderOpen;
+    details.addEventListener("toggle", function () { if (details.isConnected) state.olderOpen = details.open; });
     var older = add(details, "ul", null, "meds");
     arranged.older.forEach(function (entry) { medRow(older, entry); });
   }
@@ -954,7 +965,22 @@ function drawAdd(parent) {
   barWatcher.observe(bar);
 }
 
-function drawAdditions(parent) {
+function drawSort(parent) {
+  var row = add(parent, "div", null, "sort-row");
+  add(row, "label", "Sort").htmlFor = "sort-list";
+  var list = add(row, "select");
+  list.id = "sort-list";
+  SORTS.forEach(function (sort) { add(list, "option", sort.text).value = sort.id; });
+  list.value = savedSort(localStorage);
+  list.addEventListener("change", function () {
+    saveSort(localStorage, list.value);
+    state.announce = "Sorted: " + list.options[list.selectedIndex].text + ".";
+    state.focusId = "sort-list";
+    render();
+  });
+}
+
+function drawAdditions(parent, additions) {
   var section = add(parent, "section");
   helpHeading(section, "Added by me", "added-heading", "About Added by me", function (panel) {
     add(panel, "p", "Medicines you added yourself, like vitamins and ones bought over the counter. They go in your QR code.");
@@ -962,7 +988,7 @@ function drawAdditions(parent) {
   }, partHeading);
   if (state.dataFailed) add(section, "p", "What you added or marked couldn't be opened.", "notice");
   var list = add(section, "ul", null, "meds");
-  state.data.additions.forEach(function (addition) {
+  additions.forEach(function (addition) {
     var row = add(list, "li");
     row.id = "added-" + addition.id;
     row.tabIndex = -1;
