@@ -93,8 +93,8 @@ export function lockRecordFrom(backupText) {
   }
 }
 
-// What Start over says: what's erased, and how to save a backup first. A
-// backup is locked the same way as this phone, so it says that too.
+// What Start over says: what's erased, and how to save a backup first, and
+// what that backup needs to open.
 export function startOverText(method) {
   return {
     lines: [
@@ -103,7 +103,7 @@ export function startOverText(method) {
     ],
     title: "To back up first",
     steps: ["Tap Keep my lock, then unlock.", "Tap More options, then Save a backup."],
-    note: "The backup opens only with this same " + (method === "pin" ? "PIN." : "Face ID or fingerprint lock."),
+    note: method === "pin" ? "You'll choose a password that opens the backup." : "The backup opens only with this same Face ID or fingerprint lock.",
     confirm: {
       title: "Erase everything?",
       line: "This can't be undone. Without a backup, what you added or marked is gone.",
@@ -111,4 +111,22 @@ export function startOverText(method) {
       no: "Cancel"
     }
   };
+}
+
+// A backup password is what keeps a lost file closed, so length is what counts
+// (NIST SP 800-63B: 15 or more, no required symbols).
+var PASSWORD_LENGTH = 15;
+export var PASSWORD_HINT = "At least 15 characters. Four or five random words work well.";
+export function passwordProblem(password, again) {
+  var letters = Array.from(password.normalize("NFKC"));
+  if (letters.length < PASSWORD_LENGTH) return "Use at least " + PASSWORD_LENGTH + " characters.";
+  if (new Set(letters).size < 5) return "Use more different characters.";
+  if (password.normalize("NFKC") !== again.normalize("NFKC")) return "The two passwords don't match.";
+  return null;
+}
+
+export function restoreProblem(code) {
+  if (code === "locked") return "That backup was made with a different lock. To use it, close and reopen Brown Bag, choose Start over on the lock screen, then Restore from a backup.";
+  if (code === "wrong-person") return "That backup was changed after it was made, so nothing was restored.";
+  return "That file isn't a Brown Bag backup.";
 }

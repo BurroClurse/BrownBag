@@ -95,15 +95,15 @@ test("Start over says what's erased and how to back up first, in the app's own w
 // PIN would count on a file they can't open.
 test("Start over says what the backup needs to open", async () => {
   const { startOverText } = await import("../js/install.js");
-  assert.equal(startOverText("pin").note, "The backup opens only with this same PIN.");
+  assert.equal(startOverText("pin").note, "You'll choose a password that opens the backup.");
   assert.equal(startOverText("passkey").note, "The backup opens only with this same Face ID or fingerprint lock.");
 });
 
-// Someone choosing a PIN must not count on a backup they couldn't open.
-test("choosing a PIN says backups won't open without it", async () => {
+// Someone choosing a PIN must know what opens a backup if they forget it.
+test("choosing a PIN says what a forgotten PIN means for backups", async () => {
   const { readFileSync } = await import("node:fs");
   const screen = readFileSync(new URL("../js/lock-screen.js", import.meta.url), "utf8");
-  assert.ok(screen.includes("If you forget it, you'll have to start over, and your backups won't open."));
+  assert.ok(screen.includes("If you forget it, you'll have to start over. A backup opens with its own password."));
   assert.ok(!/a backup brings your additions back/.test(screen));
 });
 

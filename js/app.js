@@ -3,9 +3,11 @@
 // patient typed goes into the page with textContent, never innerHTML.
 
 import { showLockScreen, restoreBackupText } from "./lock-screen.js";
-import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
-import { LOCK_KEY, hasLock } from "./lock.js";
-import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
+import { loadPatientData, savePatientData, exportBackup, exportPasswordBackup, importBackup, importOpened, isPasswordBackup } from "./vault.js";
+import { openWithPassword, saveWithPassword } from "./backup-popups.js";
+import { closePopups } from "./popup.js";
+import { LOCK_KEY, hasLock, lockMethod } from "./lock.js";
+import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
@@ -574,6 +576,7 @@ function render() {
 // instead of leaving Brown Bag. Done and Close take that same step back.
 var BACK_FOCUS = { medicines: "open-medicines", more: "open-more", install: "show-qr", records: "open-more" };
 window.addEventListener("popstate", function () {
+  closePopups();
   if (document.getElementById("inside-overlay")) {
     closeInside(true);
   } else if (document.getElementById("qr-overlay")) {
@@ -1831,28 +1834,53 @@ function backupPicker() {
   picker.addEventListener("change", async function () {
     var file = picker.files && picker.files[0];
     if (!file) return;
+    var said;
     try {
-      var count = await importBackup(localStorage, state.key, await file.text());
+      var text = await file.text();
+      // The same file can be picked again.
+      picker.value = "";
+      var count;
+      if (isPasswordBackup(text)) {
+        var opened = await openWithPassword(text, document.getElementById("restore-backup"));
+        if (!opened) return;
+        count = await importOpened(localStorage, state.key, opened);
+      } else {
+        count = await importBackup(localStorage, state.key, text);
+      }
       state.data = await loadPatientData(localStorage, state.key, state.patientId);
       state.dataFailed = false;
-      state.announce = restoreMessage(count) + " Nothing on this phone was replaced.";
+      said = restoreMessage(count) + " Nothing on this phone was replaced.";
     } catch (error) {
-      state.announce = error && error.code === "locked"
-        ? "That backup was made with a different lock. To use it, close and reopen Brown Bag, choose Start over on the lock screen, then Restore from a backup."
-        : "That file isn't a Brown Bag backup.";
+      said = restoreProblem(error && error.code);
     }
-    state.focusId = "backup-heading";
-    render();
+    afterBackup(said);
   });
   return picker;
 }
 
-async function saveBackup() {
+// With a PIN, the file gets its own password (js/backup-popups.js). Face ID
+// and a fingerprint can't be guessed, so they lock the file as they are.
+async function saveBackup(opener) {
+  if (lockMethod() === "pin") {
+    saveWithPassword(opener, function (password) {
+      return exportPasswordBackup(localStorage, state.key, password);
+    }, shareBackup);
+    return;
+  }
   try {
-    var text = withLockRecord(await exportBackup(localStorage, state.key), localStorage.getItem(LOCK_KEY));
+    await shareBackup(withLockRecord(await exportBackup(localStorage, state.key), localStorage.getItem(LOCK_KEY)));
+  } catch (error) {
+    afterBackup("Couldn't save the backup.");
+  }
+}
+
+async function shareBackup(text) {
+  var said;
+  try {
     var file = new File([text], backupFileName(new Date()), { type: "application/json" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Brown Bag backup" });
+      // Only the file: an iPhone saves a title as a second file.
+      await navigator.share({ files: [file] });
     } else {
       var link = document.createElement("a");
       link.href = URL.createObjectURL(file);
@@ -1862,10 +1890,16 @@ async function saveBackup() {
       link.remove();
       setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
     }
-    state.announce = "Backup saved as " + file.name + ".";
+    said = "Backup saved as " + file.name + ".";
   } catch (error) {
-    state.announce = error && error.name === "AbortError" ? "Backup cancelled." : "Couldn't save the backup.";
+    said = error && error.name === "AbortError" ? "Backup cancelled." : "Couldn't save the backup.";
   }
+  afterBackup(said);
+}
+
+function afterBackup(said) {
+  state.announce = said;
+  if (state.screen !== "more") return;
   state.focusId = "backup-heading";
   render();
 }
@@ -1977,12 +2011,16 @@ function drawRestoreFromSignIn() {
   picker.type = "file";
   picker.accept = ".json,application/json";
   picker.hidden = true;
-  button(root, "Restore from a backup", "secondary big", function () { picker.click(); });
+  var restore = button(root, "Restore from a backup", "secondary big", function () { picker.click(); });
   picker.addEventListener("change", async function () {
     var file = picker.files && picker.files[0];
     if (!file) return;
     try {
-      var key = await restoreBackupText(root, await file.text());
+      var text = await file.text();
+      picker.value = "";
+      var key = await restoreBackupText(root, text, restore);
+      // The password was cancelled: the screen is still here.
+      if (key === false) return;
       if (!key) {
         drawSignedOut(null);
         return;

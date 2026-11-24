@@ -4,7 +4,9 @@
 // All text goes in with textContent.
 
 import { hasLock, lockMethod, setupLock, unlock, LockError, LOCK_KEY, eraseBrownBag } from "./lock.js";
-import { importBackup } from "./vault.js";
+import { importBackup, importOpened, isPasswordBackup } from "./vault.js";
+import { openPopup, popupButton, popupLine } from "./popup.js";
+import { openWithPassword } from "./backup-popups.js";
 import { lockRecordFrom, startOverText } from "./install.js";
 
 export function showLockScreen(root) {
@@ -27,9 +29,11 @@ function drawLockStart(root, done) {
   }
 }
 
-function drawSetup(root, done) {
+// opened: what a password backup held. It's saved under the new lock.
+function drawSetup(root, done, opened, onBack) {
   clear(root);
   var box = panel(root, "Set up your lock");
+  if (opened) para(box, "Your backup is open. Choose a lock for this phone, and it's restored.");
   para(box, "Brown Bag keeps your list locked on this phone. Only you can open it.");
   var message = status(box);
   var button = action(box, "Use Face ID or fingerprint");
@@ -37,11 +41,11 @@ function drawSetup(root, done) {
     button.disabled = true;
     say(message, "");
     try {
-      done(await setupLock());
+      await done(await setupLock());
     } catch (error) {
       button.disabled = false;
       if (error instanceof LockError && error.code === "needs-pin") {
-        drawPinSetup(root, done);
+        drawPinSetup(root, done, opened, onBack);
       } else if (error instanceof LockError && error.code === "cancelled") {
         say(message, "Set-up was cancelled. Try again when you're ready.");
       } else {
@@ -51,9 +55,10 @@ function drawSetup(root, done) {
   });
   var pinLink = action(box, "Use a 6-digit PIN instead", "secondary");
   pinLink.addEventListener("click", function () {
-    drawPinSetup(root, done);
+    drawPinSetup(root, done, opened, onBack);
   });
-  drawRestoreOption(root, box, done, message);
+  if (opened) action(box, "Back", "secondary").addEventListener("click", onBack);
+  else drawRestoreOption(root, box, done, message);
   button.focus();
 }
 
@@ -72,7 +77,16 @@ function drawRestoreOption(root, box, done, message) {
   picker.addEventListener("change", async function () {
     var file = picker.files && picker.files[0];
     if (!file) return;
-    if (!startRestore(root, await file.text(), done, function () { drawSetup(root, done); })) {
+    var text = await file.text();
+    picker.value = "";
+    var again = function () { drawSetup(root, done); };
+    if (isPasswordBackup(text)) {
+      try {
+        await startPasswordRestore(root, text, done, again, restore);
+      } catch (error) {
+        say(message, "That file isn't a Brown Bag backup.");
+      }
+    } else if (!startRestore(root, text, done, again)) {
       say(message, "That file isn't a Brown Bag backup.");
     }
   });
@@ -105,15 +119,33 @@ function startRestore(root, text, done, onBack) {
   return true;
 }
 
+// A password backup: its password, then a lock for this phone, then it's
+// restored under that lock. False if the patient cancels the password.
+async function startPasswordRestore(root, text, done, onBack, opener) {
+  var opened = await openWithPassword(text, opener);
+  if (!opened) return false;
+  var restoreThenDone = async function (key) {
+    await importOpened(localStorage, key, opened);
+    done(key);
+  };
+  drawSetup(root, restoreThenDone, opened, onBack);
+  return true;
+}
+
 // For the sign-in screen on a phone with no lock yet (a new phone, or the
 // Home Screen app): restore a backup straight from a file's text. Resolves
-// with the key, or null if the patient goes Back. Rejects if the file isn't
-// a backup.
-export function restoreBackupText(root, text) {
+// with the key, null if the patient goes Back, or false if they cancel the
+// password (the screen is as it was). Rejects if the file isn't a backup.
+export function restoreBackupText(root, text, opener) {
   return new Promise(function (resolve, reject) {
     function done(key) {
       clear(root);
       resolve(key);
+    }
+    if (isPasswordBackup(text)) {
+      startPasswordRestore(root, text, done, function () { resolve(null); }, opener)
+        .then(function (started) { if (!started) resolve(false); }, reject);
+      return;
     }
     if (!startRestore(root, text, done, function () { resolve(null); })) {
       reject(new LockError("bad-backup"));
@@ -121,10 +153,10 @@ export function restoreBackupText(root, text) {
   });
 }
 
-function drawPinSetup(root, done) {
+function drawPinSetup(root, done, opened, onBack) {
   clear(root);
   var box = panel(root, "Choose a 6-digit PIN");
-  para(box, "You'll type this PIN each time you open Brown Bag. Write it down somewhere safe. If you forget it, you'll have to start over, and your backups won't open.");
+  para(box, "You'll type this PIN each time you open Brown Bag. Write it down somewhere safe. If you forget it, you'll have to start over. A backup opens with its own password.");
   var form = document.createElement("form");
   box.appendChild(form);
   var first = pinField(form, "pin-new", "New PIN", "new-password");
@@ -148,12 +180,13 @@ function drawPinSetup(root, done) {
     save.disabled = true;
     say(message, "Saving…");
     try {
-      done(await setupLock({ pin: first.value }));
+      await done(await setupLock({ pin: first.value }));
     } catch (error) {
       save.disabled = false;
       say(message, "Couldn't save the PIN. Try again.");
     }
   });
+  if (opened) action(form, "Back", "secondary").addEventListener("click", onBack);
   first.focus();
 }
 
@@ -262,38 +295,15 @@ function drawStartOver(root, done) {
 // focus, and Escape, Back or a tap outside cancels too. The browser keeps
 // everything behind it out of reach.
 function confirmErase(box, ask, opener, then) {
-  var popup = document.createElement("dialog");
-  popup.className = "popup";
-  popup.setAttribute("aria-labelledby", "popup-title");
-  popup.setAttribute("aria-describedby", "popup-line");
-  var inner = document.createElement("div");
-  inner.className = "popup-inner";
-  popup.appendChild(inner);
-  var title = document.createElement("h2");
-  title.id = "popup-title";
-  title.textContent = ask.title;
-  inner.appendChild(title);
-  para(inner, ask.line).id = "popup-line";
-  var yes = action(inner, ask.yes);
-  yes.className = "button stop big";
-  yes.addEventListener("click", function () {
+  var popup = openPopup(box, ask.title, opener, { danger: true });
+  popupLine(popup.inner, ask.line);
+  popupButton(popup.inner, ask.yes, "stop").addEventListener("click", function () {
     popup.close();
     eraseBrownBag();
     then();
   });
-  var no = action(inner, ask.no, "secondary");
-  no.addEventListener("click", function () { popup.close(); });
-  // The popup's own area outside the card.
-  popup.addEventListener("click", function (event) {
-    if (event.target === popup) popup.close();
-  });
-  popup.addEventListener("close", function () {
-    popup.remove();
-    // iPhone Safari doesn't give a tapped button focus, so it isn't put back.
-    if (opener.isConnected) opener.focus({ preventScroll: true });
-  });
-  box.appendChild(popup);
-  popup.showModal();
+  var no = popupButton(popup.inner, ask.no, "secondary");
+  no.addEventListener("click", popup.close);
   no.focus();
 }
 

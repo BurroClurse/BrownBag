@@ -46,6 +46,9 @@ only, no real patients). To open it as a certain patient, see
   Brown Bag and the list updates by itself.
 - **One screen.** Their first name and last initial, the Brown Bag logo, **Show my QR code**,
   **My medicines (N)**, and **More options**.
+- **Backups** hold what the patient added or marked, never a sign-in, and each
+  person's part is sealed to that person. Face ID or a fingerprint locks the
+  file; with a PIN, the patient chooses a long password for it.
 - **More options** is short groups, each option with one line saying what it
   does: health records, backups, the Home Screen, and Sign out last.
 - **My medicines.** Medicines from their records (repeats merged, strengths of
@@ -181,6 +184,7 @@ The list never passes through a server.
 | `js/add-choices.js`, `js/add-check.js` | The add form's lists, and the check for medicines already there. |
 | `js/pass.js` | The encrypted refresh token ("the pass"). |
 | `js/vault.js`, `js/lock.js`, `js/lock-screen.js` | Encryption, the passkey or PIN lock, backups. |
+| `js/popup.js`, `js/backup-popups.js` | Popups in the app's look, and the backup password's. |
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |

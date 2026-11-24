@@ -95,6 +95,9 @@ Decided for later, so nothing to test until they're picked up:
   "About these names" opening.
 - The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
   the popup, and starts on Cancel.
+- Save a backup on a real iPhone: only the .json file is saved, with Face ID and
+  with a PIN. With a PIN: the password popup with VoiceOver, the keyboard up, and
+  whether the phone's offer to save the password gets in the way.
 - Start over from the Face ID lock screen: it says "this same Face ID or fingerprint
   lock", and VoiceOver reads the steps.
 - The QR screen: See what's inside above the code, the title centered, and the
@@ -203,3 +206,8 @@ Decided for later, so nothing to test until they're picked up:
 - 2026-11-23, the "Erase everything?" popup and home's raised buttons: the test
   browser (Escape, Cancel, a tap outside, erasing, 320 to 1440 wide, 200 percent
   text) and both virtual phones (the popup and Cancel; home fits). Passed.
+- 2026-11-23, sealed backups, the backup password and one file when saving: the
+  test browser (PIN and a virtual passkey; save, restore in the app, on the lock
+  screen and on the sign-in screen, Cancel, Back, wrong password, an edited file;
+  320 to 1440 wide, 200 percent text), then both virtual phones (make, save,
+  wrong password, restore; the share sheet replaced by a stand-in). Passed.

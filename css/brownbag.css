@@ -168,17 +168,27 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
   max-width: none;
   max-height: 94dvh;
   padding: 0;
-  border: 2px solid var(--stop);
+  border: 2px solid var(--teal);
   border-radius: 18px;
   background: var(--card);
   color: var(--ink);
   overflow-y: auto;
 }
+.popup-danger { border-color: var(--stop); }
 .popup::backdrop { background: rgba(40, 25, 12, 0.55); }
 .popup-inner { padding: 1.1rem min(1.1rem, 5vw) 1.2rem; text-align: center; overflow-wrap: anywhere; }
 .popup .big { padding-left: min(1rem, 3vw); padding-right: min(1rem, 3vw); }
 .popup h2 { border: none; margin: 0; padding: 0; font-size: 1.5rem; }
 .popup p { margin: 0.5rem 0 0.9rem; text-wrap: balance; }
+.popup form { text-align: left; position: relative; }
+.popup form input.visually-hidden { width: 1px; min-width: 0; height: 1px; min-height: 0; padding: 0; border: 0; left: 0; top: 0; margin: 0; }
+.popup form label { margin-top: 0.6rem; }
+.popup input[type="password"], .popup input[type="text"]:not(.visually-hidden) { width: 100%; }
+.popup p.popup-hint { margin: 0.25rem 0 0; font-size: 1rem; color: var(--muted); text-wrap: wrap; }
+.popup p.status { margin: 0.4rem 0 0; font-weight: 600; text-wrap: wrap; }
+.popup p.status:empty { display: none; }
+.popup label.popup-show { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; margin-top: 0.4rem; font-weight: 400; }
+.popup-show input { width: 24px; height: 24px; margin: 0; flex: none; }
 /* On Start over: how to save a backup before erasing. */
 .backup-first { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.75rem 1rem; margin: 0.9rem 0; }
 .backup-first h2 { border: none; margin: 0; padding: 0; font-size: 1.2rem; }

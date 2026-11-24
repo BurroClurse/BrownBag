@@ -86,9 +86,25 @@ export async function savePatientData(storage, key, patientId, data) {
   await saveByName(storage, key, await nameFor(storage, patientId), data);
 }
 
+// Opens saved data, and refuses it if it was sealed for someone else: a file
+// or the phone's storage edited so one person's list sits under another's
+// name. Data saved before sealing has no seal.
+async function openFor(key, tag, blob) {
+  var data = await decryptJSON(key, blob);
+  if (data && data.sealedFor && data.sealedFor !== tag) {
+    throw new VaultError("wrong-person", "That data belongs to someone else.");
+  }
+  return Object.assign({}, data);
+}
+
+function tagOf(name) {
+  return name.slice(DATA_PREFIX.length);
+}
+
 async function loadByName(storage, key, name) {
   var blob = storage.getItem(name);
-  var data = blob ? await decryptJSON(key, blob) : {};
+  var data = blob ? await openFor(key, tagOf(name), blob) : {};
+  delete data.sealedFor;
   // Everything saved comes back (the log of changes made without signal too).
   return Object.assign({}, data, {
     additions: data.additions || [],
@@ -103,47 +119,109 @@ async function loadByName(storage, key, name) {
 async function saveByName(storage, key, name, data) {
   var existing = storage.getItem(name);
   if (existing) {
-    await decryptJSON(key, existing);
+    await openFor(key, tagOf(name), existing);
   }
-  storage.setItem(name, await encryptJSON(key, data));
+  storage.setItem(name, await encryptJSON(key, Object.assign({}, data, { sealedFor: tagOf(name) })));
 }
 
-// Backups stay encrypted. Restoring needs the same unlock as the phone that
-// made them, so a lost backup file doesn't expose anything. Version 2 files
-// list patients by tag; version 1 files (plain ids) still restore.
-export async function exportBackup(storage, key) {
-  var data = {};
+// Everyone's data on this phone, opened, by tag, each sealed for its person.
+async function everyone(storage, key) {
+  var out = {};
   for (var i = 0; i < storage.length; i += 1) {
     var name = storage.key(i);
     if (name && name.indexOf(DATA_PREFIX) === 0) {
-      var blob = storage.getItem(name);
-      await decryptJSON(key, blob);
-      var suffix = name.slice(DATA_PREFIX.length);
-      data[TAG_PATTERN.test(suffix) ? suffix : await idTag(suffix)] = blob;
+      var suffix = tagOf(name);
+      var tag = TAG_PATTERN.test(suffix) ? suffix : await idTag(suffix);
+      out[tag] = Object.assign(await openFor(key, tag, storage.getItem(name)), { sealedFor: tag });
     }
+  }
+  return out;
+}
+
+// Backups stay encrypted. With Face ID or a fingerprint, restoring needs the
+// same passkey, so a lost backup file doesn't expose anything. Version 2 files
+// list patients by tag; version 1 files (plain ids) still restore.
+export async function exportBackup(storage, key) {
+  var data = {};
+  for (var entry of Object.entries(await everyone(storage, key))) {
+    data[entry[0]] = await encryptJSON(key, entry[1]);
   }
   return JSON.stringify({ app: "brownbag", version: 2, data: data });
 }
 
-export async function importBackup(storage, key, text) {
-  var backup;
+// Version 3, for a PIN lock: a file locked with a PIN could be opened by
+// trying every PIN, so it's locked with its own long password instead. It
+// holds no lock settings, and opens on any phone with any lock.
+export async function exportPasswordBackup(storage, key, password) {
+  var salt = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  var sealed = await encryptJSON(await keyFromPassword(password, salt), await everyone(storage, key));
+  return JSON.stringify({ app: "brownbag", version: 3, salt: toBase64Url(salt), sealed: sealed });
+}
+
+// Accented letters can be typed as one character or two; both count as one.
+function keyFromPassword(password, salt) {
+  return deriveKeyFromPin(String(password).normalize("NFKC"), salt);
+}
+
+function parseBackup(text) {
   try {
-    backup = JSON.parse(text);
+    var backup = JSON.parse(text);
+    return backup && backup.app === "brownbag" ? backup : null;
   } catch (error) {
+    return null;
+  }
+}
+
+export function isPasswordBackup(text) {
+  var backup = parseBackup(text);
+  return Boolean(backup && backup.version === 3);
+}
+
+// What's in a password backup, by tag, for importOpened.
+export async function openPasswordBackup(text, password) {
+  var backup = parseBackup(text);
+  if (!backup || backup.version !== 3 || typeof backup.salt !== "string" || typeof backup.sealed !== "string") {
     throw new VaultError("bad-backup", "That file isn't a Brown Bag backup.");
   }
-  if (!backup || backup.app !== "brownbag" || (backup.version !== 1 && backup.version !== 2) || typeof backup.data !== "object" || backup.data === null) {
+  try {
+    return await decryptJSON(await keyFromPassword(password, fromBase64Url(backup.salt)), backup.sealed);
+  } catch (error) {
+    throw new VaultError("wrong-password", "That password doesn't open it.");
+  }
+}
+
+export async function importOpened(storage, key, opened) {
+  var restored = [];
+  for (var entry of Object.entries(opened || {})) {
+    if (!TAG_PATTERN.test(entry[0])) {
+      throw new VaultError("bad-backup", "That file isn't a Brown Bag backup.");
+    }
+    if (entry[1] && entry[1].sealedFor && entry[1].sealedFor !== entry[0]) {
+      throw new VaultError("wrong-person", "That data belongs to someone else.");
+    }
+    restored.push([DATA_PREFIX + entry[0], entry[1]]);
+  }
+  return merge(storage, key, restored);
+}
+
+export async function importBackup(storage, key, text) {
+  var backup = parseBackup(text);
+  if (!backup || (backup.version !== 1 && backup.version !== 2) || typeof backup.data !== "object" || backup.data === null) {
     throw new VaultError("bad-backup", "That file isn't a Brown Bag backup.");
   }
   var entries = Object.entries(backup.data);
   var restored = [];
   for (var entry of entries) {
     var tag = backup.version === 1 ? await idTag(entry[0]) : entry[0];
-    restored.push([DATA_PREFIX + tag, await decryptJSON(key, entry[1])]);
+    restored.push([DATA_PREFIX + tag, await openFor(key, tag, entry[1])]);
   }
-  // Merge, never replace: anything added on this phone since the backup was
-  // made stays. Additions match by id; a Not taking or As needed mark on
-  // the phone wins.
+  return merge(storage, key, restored);
+}
+
+// Merge, never replace: anything added on this phone since the backup was
+// made stays. Additions match by id; a Not taking or As needed mark on
+// the phone wins.
+async function merge(storage, key, restored) {
   for (var pair of restored) {
     var fromBackup = pair[1] || {};
     var onPhone = await loadByName(storage, key, pair[0]);

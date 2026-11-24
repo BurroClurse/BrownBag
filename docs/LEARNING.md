@@ -1512,6 +1512,26 @@ it does. "OK" wouldn't.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 45. Safer backups (`js/vault.js`, `js/backup-popups.js`)
+
+**What changed.** Each person's part of a backup is sealed to that person. With a
+PIN lock, a backup gets its own long password. Saving gives one file, not two.
+
+**Attack it yourself.** We swapped two people's labels in a test file, and one
+person's medicine showed in the other's list. The labels sat outside the
+encryption. Now the label is inside too, and the two must match.
+
+**Encryption is as strong as its key.** A PIN has a million choices, and a
+computer can try them all in hours. Face ID gives a random key nobody can guess.
+So PIN backups need a long password, and the file leaves out the lock settings.
+
+**Length beats symbols.** The US standard (NIST SP 800-63B) asks for 15 or more
+characters and no required symbols.
+
+**All or nothing.** Every part is checked before anything is written.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

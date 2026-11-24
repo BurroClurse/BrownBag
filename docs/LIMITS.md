@@ -69,3 +69,9 @@ an idea becomes a plan only after its own design.
   drug ingredients (and bee venom) have a code, from RxNorm.
   - Ideas: SNOMED CT codes, once there is a UMLS license; they are checked
     and listed in the allergies design.
+- [ ] **13. Backups made before backups were sealed (2026-11-23) aren't
+  protected.** They can be relabeled, and ones made with a PIN can be opened by
+  trying every PIN.
+  - Now: new backups are sealed to each person, and PIN backups have a long
+    password.
+  - Ideas: stop opening the old kind once nobody needs them.
