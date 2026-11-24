@@ -78,6 +78,12 @@ A note, not a warning, under Medicines: they couldn't be loaded, that doesn't
 make the list wrong, and a medicine only insurance knows about may not be
 listed. The number stays. Not shown when the records themselves didn't load.
 
+## See what's inside as short text (Tyler, 2026-11-23)
+
+Replaces "drawn like the staff page": bare bones and condensed, with everything
+in the code, no title and no explanation. Empty parts aren't listed; what didn't
+load always is.
+
 ## Left to the builder
 
 Exact colors (4.5 to 1 text, 3 to 1 border), sizes, and sharing the staff

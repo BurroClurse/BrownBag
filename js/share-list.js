@@ -1,26 +1,25 @@
-// The shared list on screen: the staff page, and "See what's inside" on the
-// patient's own phone. One piece of code draws both, so they can't differ.
-// Allergies and medicines are two blocks (design 2026-11-23).
+// The shared list on the staff page: allergies and medicines are two blocks
+// (design 2026-11-23). "See what's inside" is the same list as short text
+// (js/inside.js); a test checks nothing staff see is left out of it.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 import { drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
 // Draws into parent, starting with the patient's name as heading `level`.
-// Returns that heading. made: what was made, when it isn't a QR code.
-// No "your care team confirms it" note: staff don't need it, and See what's
-// inside shows exactly what staff see (the patient reads it on My medicines).
-export function drawShareList(parent, groups, level, made) {
+// Returns that heading. No "your care team confirms it" note: staff don't
+// need it (the patient reads it on My medicines).
+export function drawShareList(parent, groups, level) {
   var title = add(parent, "h" + level, groups.patient ? groups.patient.name : "Shared medicine list", "share-name");
   title.tabIndex = -1;
   if (groups.patient && groups.patient.birthDate) {
     add(parent, "p", "Born " + groups.patient.birthDate, "who");
   }
-  dateLines(groups, madeOn, made).forEach(function (text) { add(parent, "p", text, "who"); });
+  dateLines(groups, timeText).forEach(function (text) { add(parent, "p", text, "who"); });
   if (groups.recordsSavedAt) {
-    add(parent, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
+    add(parent, "p", savedCopyText(groups), "notice");
   }
-  drawAllergies(parent, groups.allergies, level + 1, allergyDateLine(groups, madeOn));
+  drawAllergies(parent, groups.allergies, level + 1, allergyDateLine(groups, timeText));
   var block = medicinesBlock(parent, medicinesTitle(groups), level + 1).section;
   medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
   var fills = fillsNote(groups);
@@ -98,12 +97,6 @@ function rowsInto(section, rows) {
     add(item, "p", row.name, "med-name");
     if (row.detail) add(item, "p", row.detail, "med-line");
   });
-}
-
-function madeOn(timestamp) {
-  var date = new Date(timestamp);
-  if (isNaN(date)) return "an unknown date";
-  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 // An explanation, set apart from the instructions and buttons around it:

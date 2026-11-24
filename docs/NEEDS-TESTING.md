@@ -86,6 +86,7 @@ Decided for later, so nothing to test until they're picked up:
   the code from Safari.
 - What didn't load, with VoiceOver: the new lines on home, My medicines and the
   staff page. They only show when something fails.
+- See what's inside as short text, with VoiceOver.
 
 ## Tested
 
@@ -162,3 +163,5 @@ Decided for later, so nothing to test until they're picked up:
 - 2026-11-23, the labelled medicine cards, before publishing: the test browser
   (320 to 1440 wide, 200 percent text, every failure), then both virtual phones
   (My medicines, See what's inside, the staff page). Passed.
+- 2026-11-23, See what's inside as short text, before publishing: the test
+  browser and both virtual phones. Passed.

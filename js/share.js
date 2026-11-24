@@ -170,6 +170,8 @@ export function groupShareBundle(bundle) {
     var asNeeded = (resource.note || []).some(function (note) { return note.text === AS_NEEDED_NOTE; });
     var stopped = resource.status === "stopped";
     var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped));
+    var coded = ((resource.medicationCodeableConcept && resource.medicationCodeableConcept.coding) || []).filter(function (c) { return c.system === RXNORM && c.code; })[0];
+    if (coded) row.rxnorm = String(coded.code);
     if (stopped) {
       var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
       if (stoppedOn) row.facts.unshift(["Not taking since", dateText(stoppedOn)]);
@@ -589,6 +591,16 @@ export function emptyPartText(groups, part) {
 // would read as the whole.
 export function medicinesTitle(groups) {
   return groups.incomplete || (recordsPartial(groups) && !(groups.patientSaysAsNeeded || []).length) ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
+}
+
+export function timeText(timestamp) {
+  var date = new Date(timestamp);
+  if (isNaN(date)) return "an unknown date";
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+export function savedCopyText(groups) {
+  return "The From records part is a copy saved on " + timeText(groups.recordsSavedAt) + ". It may be out of date.";
 }
 
 // How old the list is: when the records last loaded into Brown Bag, then when

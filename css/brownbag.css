@@ -478,7 +478,7 @@ button.help-button {
 .not-connected ul { margin: 0; padding-left: 1.25rem; }
 .fine-print { font-size: 0.85rem; color: var(--muted); margin-top: 1.25rem; }
 
-/* Two blocks, on My medicines, the staff page and "See what's inside":
+/* Two blocks, on My medicines and the staff page:
    allergies in a box nobody can miss, then medicines. */
 .allergy-box { background: #FBE4DF; border: 3px solid var(--error-ink); border-radius: 16px; padding: 0.75rem 0.9rem 1rem; margin: 1.5rem 0 0; }
 .allergy-box > .block-title, .screen-medicines .allergy-box > .block-title { margin: 0 0 0.6rem; padding: 0; border: none; color: var(--error-ink); font-size: 1.6rem; }
@@ -493,6 +493,17 @@ button.help-button {
 .share-name { font-size: 1.75rem; margin: 0.5rem 0 0.25rem; border: none; padding: 0; }
 .inside-overlay { position: fixed; inset: 0; z-index: 20; overflow-y: auto; background: var(--paper); }
 .inside-page { max-width: 40rem; margin: 0 auto; padding: max(1rem, env(safe-area-inset-top)) 1rem max(2rem, env(safe-area-inset-bottom)); }
+/* See what's inside: just text, close together. */
+.inside-page { font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.inside-top { position: sticky; top: 0; background: var(--paper); padding: 0.25rem 0 0.5rem; }
+.inside-top button { margin: 0; }
+.inside-page h1 { font-size: 1.25rem; margin: 0.25rem 0; }
+.inside-page h2 { font-size: 1.1rem; margin: 1rem 0 0.25rem; border: none; padding: 0; }
+.inside-page h3 { font-size: 1rem; margin: 0.5rem 0 0.15rem; color: var(--muted); }
+.inside-page p { margin: 0.1rem 0; }
+.inside-page ul { margin: 0; padding-left: 1.1rem; }
+.inside-page li { margin: 0 0 0.45rem; }
+.inside-page .inside-warning { color: var(--error-ink); font-weight: 600; }
 /* A short screen (iPhone Safari with its toolbars): tighter, so the title, the
    code, the digits and both buttons fit without scrolling. */
 @media (max-height: 720px) {

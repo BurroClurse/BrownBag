@@ -72,8 +72,9 @@ only, no real patients). To open it as a certain patient, see
   told to that person after they scan; they type it on `share.html` to see
   the list. Two "?" buttons explain what's in the code and why the digits
   matter. **See what's inside** opens the code on the patient's own phone,
-  read-only and drawn like the staff page, for when nobody can scan it. Both
-  say when the records were last updated and when the QR code was made.
+  read-only, as one short text with everything in it, for when nobody can scan
+  it. Both it and the staff page say when the records were last updated and
+  when the QR code was made.
   A note says when insurance fills couldn't be loaded.
 - **Changed the list with no signal?** The QR code still includes the
   change, and the QR screen lists exactly what changed since the records
@@ -175,7 +176,8 @@ The list never passes through a server.
 | `js/vault.js`, `js/lock.js`, `js/lock-screen.js` | Encryption, the passkey or PIN lock, backups. |
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
-| `js/share-list.js` | The shared list on screen, for the staff page and See what's inside. |
+| `js/share-list.js` | The shared list on the staff page. |
+| `js/inside.js` | See what's inside: everything in the code as one short text. |
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |

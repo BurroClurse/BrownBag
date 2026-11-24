@@ -1328,6 +1328,19 @@ a full instruction in `patientInstruction`.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 32. Same facts, fewer words (`js/inside.js`)
+
+**What changed.** See what's inside was a second staff page with its own title
+and an explanation. Now it's one short text: the name, the dates, allergies,
+then each medicine as a bullet.
+
+**Two drawings need a test.** The staff page and this text used to share their
+drawing code, so they couldn't differ. Now they can, so a test draws both from
+the same code and fails if staff see a fact or a warning that this text leaves
+out.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

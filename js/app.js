@@ -17,7 +17,8 @@ import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
 import { drawCard, patientCard } from "./card.js";
 import { signInLink } from "./sources.js";
-import { allergyBox, drawShareList, medicinesBlock } from "./share-list.js";
+import { drawInside } from "./inside.js";
+import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -1436,7 +1437,7 @@ async function buildQr() {
 
 // What's in the code, on the patient's own phone: so they can trust it, and
 // so it can be read when nobody can scan. Brown Bag opens the code itself, the
-// way the staff page does, and shows what comes out. Read-only.
+// way the staff page does, and shows what comes out as short text. Read-only.
 var insideBusy = false;
 async function openInside(packed, opener, fits) {
   if (insideBusy || document.getElementById("inside-overlay")) return;
@@ -1466,18 +1467,12 @@ async function openInside(packed, opener, fits) {
   // A tap on its text lands on it, so Escape still reaches it.
   overlay.tabIndex = -1;
   var page = add(overlay, "div", null, "inside-page");
-  var backWords = fits ? "Back to the code" : "Back";
-  button(page, backWords, "secondary big", function () { closeInside(); });
-  var title = add(page, "h1", fits ? "What's in your code" : "Your list");
+  button(add(page, "div", null, "inside-top"), fits ? "Back to the code" : "Back", "secondary", function () { closeInside(); });
+  var title = groups
+    ? drawInside(page, groups, fits ? null : "List made")
+    : add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");
   title.id = "inside-heading";
   title.tabIndex = -1;
-  if (groups) {
-    add(page, "p", fits ? "This is what opens when your code is scanned." : "This is the list that was too long for one code.");
-    drawShareList(page, groups, 2, fits ? null : "List made");
-    button(page, backWords, "secondary big", function () { closeInside(); });
-  } else {
-    add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");
-  }
   overlay.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
     event.preventDefault();

@@ -511,15 +511,6 @@ test("the medicines block counts what the home button counts", async () => {
   assert.equal(shareMedicineCount(groups), 3);
 });
 
-test("the staff page and See what's inside are drawn by the same code", async () => {
-  const { readFileSync } = await import("node:fs");
-  const file = (f) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
-  for (const f of ["js/app.js", "js/share-view.js"]) assert.match(file(f), /import \{ [^}]*drawShareList[^}]* \} from "\.\/share-list\.js"/, f);
-  assert.ok(file("sw.js").includes('"./js/share-list.js"'));
-  // What's shown is what comes out of the code itself.
-  assert.match(file("js/app.js"), /unpackShare\(packed\./);
-});
-
 test("a partial list never gets a definite total", async () => {
   const { medicinesTitle } = await import("../js/share.js");
   const groups = { fromRecords: [], fromClaims: [], addedByPatient: [{}], incomplete: false };
