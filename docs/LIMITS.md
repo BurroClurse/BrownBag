@@ -78,11 +78,11 @@ an idea becomes a plan only after its own design.
   - Now: new backups are sealed to each person, and PIN backups have a long
     password.
   - Ideas: stop opening the old kind once nobody needs them.
-- [ ] **14. Signed out, on Wi-Fi that doesn't reach the internet, the saved
+- [x] **14. Signed out, on Wi-Fi that doesn't reach the internet, the saved
   list can't be opened.** The phone says it has a connection, so only Sign in
   shows. The same goes for a health system that's down.
-  - Now: airplane mode with Wi-Fi off shows Open my saved list.
-  - Ideas: offer it after a sign-in that couldn't start.
+  - Now (2026-11-24): a sign-in that couldn't start offers Open my saved list,
+    behind the lock. With no signal, the signed-out screen offers it.
 - [ ] **15. A QR code never expires, and its 6 digits can be guessed.** Someone
   with a picture of it could try all million codes on a computer.
   - Now: the privacy page says so; a new code is made each time.

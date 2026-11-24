@@ -12,7 +12,7 @@ import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredie
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
 import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText } from "./view.js";
-import { mayOpenSaved, signedOutLine } from "./signed-out.js";
+import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
@@ -46,9 +46,6 @@ var RECORDS_WAIT_MS = 12000;
 // And for the insurance claims inside that step, so a slow insurer never
 // holds up the medicines.
 var CLAIMS_WAIT_MS = 6000;
-
-// Set by Sign out, until someone signs in again.
-var SIGNED_OUT_KEY = "brownbag:signed-out";
 
 var root = document.getElementById("app");
 var params = new URLSearchParams(location.search);
@@ -88,7 +85,7 @@ var state = {
   needsSignIn: false,
   // Sign out was tapped: nothing may save a pass after this.
   signedOut: false,
-  // Signed out with no signal, and Open my saved list was tapped.
+  // Signed out, and Open my saved list was tapped.
   askedForSaved: false
 };
 
@@ -159,9 +156,10 @@ async function start() {
     drawSignedOut(null);
     return;
   }
-  // Signed out: say so. With no signal, they can open the list they saved.
+  // Signed out: say so. With no signal, or after a sign-in that couldn't start,
+  // they can open the list they saved.
   if (!cameBackFromAuth && localStorage.getItem(SIGNED_OUT_KEY)) {
-    await savedListAsked();
+    if (!wantsSaved(location.search)) await savedListAsked();
     state.askedForSaved = true;
   }
   state.key = await showLockScreen(root);
@@ -169,6 +167,11 @@ async function start() {
   // One unlock: with a saved list and a pass, show the list now and update
   // it in place, with no sign-in page.
   if (!cameBackFromAuth && await openWithPass()) {
+    return;
+  }
+  // Signed out, so there's no sign-in to look for.
+  if (state.askedForSaved) {
+    await signInUnavailable(null);
     return;
   }
   var client;

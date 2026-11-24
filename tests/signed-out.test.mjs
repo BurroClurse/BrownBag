@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { mayOpenSaved, signedOutLine } from "../js/signed-out.js";
+import { mayOpenSaved, offerSaved, signedOutLine, wantsSaved } from "../js/signed-out.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -36,4 +36,26 @@ test("the screen follows the signal, and the file works with none", () => {
     assert.match(body, new RegExp('removeEventListener\\("' + event + '"'));
   }
   assert.ok(read("sw.js").includes('"./js/signed-out.js"'));
+});
+
+// Hospital Wi-Fi often says it's connected before its own sign-in page is done.
+test("a sign-in that couldn't start offers the saved list, only when signed out with one", () => {
+  assert.equal(offerSaved({ signedOut: true, saved: true }), true);
+  assert.equal(offerSaved({ signedOut: true, saved: false }), false);
+  // Not signed out: Back opens the list anyway.
+  assert.equal(offerSaved({ signedOut: false, saved: true }), false);
+});
+
+test("it opens by an address only the button uses, behind the lock", () => {
+  assert.equal(wantsSaved("?open=saved"), true);
+  for (const other of ["", "?open=other", "?code=1&state=2"]) assert.equal(wantsSaved(other), false);
+  const launch = read("js/launch.js");
+  const failed = launch.slice(launch.indexOf("function showFailed")).split("\n}\n")[0];
+  assert.match(failed, /offerSaved\(/);
+  assert.match(failed, /"\.\/\?open=saved"/);
+  const app = read("js/app.js");
+  const start = app.slice(app.indexOf("async function start()")).split("\n}\n")[0];
+  // The lock always comes before the list.
+  assert.ok(start.indexOf("wantsSaved(") < start.indexOf("showLockScreen("));
+  assert.ok(start.indexOf("showLockScreen(") < start.indexOf("signInUnavailable("));
 });

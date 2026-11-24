@@ -100,12 +100,16 @@ only, no real patients). To open it as a certain patient, see
   Brown Bag locks or closes, and home says it isn't saved.
 - **Sign out** signs out everyone on the phone. Saved lists stay, locked: the
   next open says "You're signed out", with Sign in. With no signal, it also
-  has Open my saved list.
+  has Open my saved list, and so does a sign-in that couldn't start (hospital
+  Wi-Fi, or a health system that's down).
 - **Privacy** says what Brown Bag keeps and who can see it, in plain words:
   <https://burroclurse.github.io/BrownBag/privacy.html>, under More options and
   under the sign-in list.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the
   app. The health record connection ends after 30 days without opening it.
+- **Talks only to the sandbox and the drug name service.** Each page's content
+  security policy names the servers it may contact, so a link that names another
+  server doesn't work. The staff page can send nothing.
 
 ## How it uses SMART and FHIR
 

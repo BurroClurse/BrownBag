@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- Which servers this page may contact, and which scripts may run (tests/csp.test.mjs). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-ESLifGE1d31XFw4IRDCb1D0kNwXpgTkYxOtzZWKdcgU='; style-src 'self'; img-src 'self' data:; connect-src 'self' https://launch.smarthealthit.org https://rxnav.nlm.nih.gov; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brown Bag</title>
   <link rel="icon" href="data:,">

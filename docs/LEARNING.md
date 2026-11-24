@@ -1667,6 +1667,30 @@ isn't repeated until the signal changes or they come back.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 54. Guest Wi-Fi, and who a page may talk to (`js/launch.js`, the pages)
+
+**What changed.** After a sign-in that couldn't start, someone signed out can open
+their saved list, behind the lock. And each page now names the servers it may
+contact.
+
+**"Online" doesn't mean the internet.** `navigator.onLine` says the phone has a
+network. Hospital Wi-Fi has one before its own sign-in page is done. Only trying
+something tells you, so the offer comes after the try fails.
+
+**Content Security Policy.** A line at the top of each page tells the browser what
+is allowed: `default-src 'none'` allows nothing, and the rest adds back only what's
+needed. If bad code ever got in, it couldn't send the list to another server. The
+staff page's `connect-src 'none'` means it can send nothing at all.
+
+**A hash instead of "unsafe-inline".** The few scripts written in the pages are
+allowed by their fingerprint (`sha256-…`). Change one letter and the browser
+refuses it, so `tests/csp.test.mjs` works out each fingerprint again.
+
+**Adding a source later** means adding its server to `connect-src`, and the privacy
+page.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

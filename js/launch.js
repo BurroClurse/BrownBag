@@ -5,6 +5,8 @@ import { chosen, connected, leavingText, signInLink, startFor } from "./sources.
 import { GROUPS, OWN_LIST, sandboxServer } from "./test-patients.js";
 import { drawNotConnected } from "./source-list.js";
 import { withTimeout } from "./pass.js";
+import { hasSavedList } from "./offline.js";
+import { SIGNED_OUT_KEY, offerSaved } from "./signed-out.js";
 
 window.brownBagStarted = true;
 try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
@@ -117,6 +119,10 @@ function showFailed() {
     if (startFor(location.search) === "sign-in") location.reload();
     else location.replace(signInLink());
   });
+  if (offerSaved({ signedOut: localStorage.getItem(SIGNED_OUT_KEY), saved: hasSavedList(localStorage) })) {
+    add(root, "p", "You can still open the list saved on this phone.");
+    add(root, "a", "Open my saved list", "button secondary big").href = "./?open=saved";
+  }
   back("secondary big");
 }
 

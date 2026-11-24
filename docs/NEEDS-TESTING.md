@@ -83,6 +83,7 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
   and the popup starting on Cancel.
+- Face ID unlock after the content security policy (the simulators have no Face ID).
 - Airplane mode off with a saved list open: signed in, it updates by itself; signed
   out, "Sign in again to update it." The virtual phones used a stand-in signal.
 
@@ -230,3 +231,8 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   test browser and both virtual phones (signed in, signed out, a half-typed
   medicine, the password popup, the QR screen, More options, a server that fails).
   Passed. Tyler's iPhone: Start over from the Face ID lock screen reads right.
+- 2026-11-24, the content security policy and the saved list after a sign-in that
+  couldn't start, before publishing: the test browser and both virtual phones, with
+  the real sandbox (Chantell Bartell, Bret Hayes) and RxNav: sign-in, fills, name
+  search, update with the pass, QR code, the staff page, the saved file, backups.
+  Other servers, inline scripts and eval were blocked. Passed.
