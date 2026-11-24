@@ -34,28 +34,48 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-Checked only in headless Chromium here (sandbox sign-in, PIN, Loria
-Jenkins), not yet on the simulators or a phone. The staff page and QR code
-changed, so these go first:
+**As needed, Not taking, the staff code box and the "?" headings** (PR #3,
+merged and live 2026-11-24). Checked only in headless Chromium (sandbox
+sign-in, PIN, Loria Jenkins), not yet on a virtual phone or Tyler's iPhone.
+The staff page changed, so it goes first:
 
-- Staff page: the shorter "Patient's 6-digit code" box, big digits, the
-  full-width Open button; no patient disclaimer on it or on See what's inside (the two match); the new "Patient
-  takes only as needed" group and "Patient says not taking" wording.
+- Staff page: the short "Patient's 6-digit code" box, big digits that fit
+  at the largest text size, the full-width Open button; no "Your care team
+  confirms it" note on it or on See what's inside (the two match; Tyler,
+  2026-11-24); the "Patient takes only as needed" and "Patient says not
+  taking" groups; Medicines (N) on the staff page equals My medicines (N)
+  on home, As needed included.
+- A QR code made before this change still opens on the staff page.
 - My medicines: "As needed" and "Not taking" side by side on each card,
-  stacking at the largest text size; the As needed group and its Undo;
-  Not taking on an As needed medicine; the count on home (As needed still
-  counts).
+  stacking at the largest text size; the As needed part and its Undo;
+  Not taking on an As needed medicine; As needed on a "Filled, not in your
+  records" medicine, and its Undo going back there.
 - The "?" beside As needed, Added by me, Filled, not in your records, Not
   taking, and Backup: VoiceOver and TalkBack read the heading, then "About
   …, collapsed"; the explanation opens under the heading.
-- "… is under Not taking" panel when adding a medicine marked Not taking,
-  and its "I'm taking it again" button.
+- The "… is under Not taking" panel when adding a medicine marked Not
+  taking, and its "I'm taking it again" button.
+- With no signal: mark one As needed, then open the QR code. The "isn't
+  fully up to date" alert says "Marked … As needed".
 - A backup made before this change still restores (it has no As needed
-  marks).
+  marks), and one made after it brings the As needed marks back.
 - See what's inside on Android: the phone's own Back button, TalkBack, and
   whether a camera reads the slightly smaller code on a short screen.
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
+
+## Not done yet
+
+Decided for later, so nothing to test until they're picked up:
+
+- A logo on the QR code: left as it is (Tyler, 2026-11-24). A logo inside
+  the code made these dense codes fail far more often in a simulated
+  camera test, even at error-correction level H. If it comes back, try the
+  bag beside the code instead, and check it fits short iPhone screens.
+- Medicines the patient adds with How often "As needed" stay under Added by
+  me, not in the As needed part. Tyler hasn't said whether to move them.
+- Epic and Aetna: later; Medicare: being designed. See
+  [`SANDBOXES.md`](SANDBOXES.md).
 
 ## On a real iPhone (Tyler)
 

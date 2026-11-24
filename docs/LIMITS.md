@@ -14,8 +14,8 @@ an idea becomes a plan only after its own design.
 - [ ] **2. Health records are only as current as the last visit.**
   "Completed" and "stopped" can be wrong for months.
   - Now: a completed prescription filled again after it was written moves
-    back to current; "I stopped this" and added medicines are the
-    patient's own.
+    back to current; "Not taking", "As needed" and added medicines are
+    the patient's own.
   - Ideas: show "last updated by your clinic" per medicine; send changes
     back to the clinic (FHIR write, needs the clinic's permission).
 - [ ] **3. Claims arrive late.** Medicare Part D: five times a week in Blue
