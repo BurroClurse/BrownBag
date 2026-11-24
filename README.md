@@ -78,8 +78,8 @@ only, no real patients). To open it as a certain patient, see
   the list. Two "?" buttons explain what's in the code and why the digits
   matter. **See what's inside** opens the code on the patient's own phone,
   read-only, as one short text with everything in it, for when nobody can scan
-  it. Both it and the staff page say when the medicines were last updated
-  and when the QR code was made.
+  it. Both it and the staff page say when the medicines and allergies were
+  last updated and when the QR code was made.
   A note says when insurance fills couldn't be loaded.
 - **Changed the list with no signal?** The QR code still includes the
   change, and the QR screen lists exactly what changed since the records

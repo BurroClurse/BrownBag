@@ -1544,7 +1544,7 @@ async function buildQr() {
         "Medicines you take only as needed, marked that way",
         "Medicines you marked Not taking",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
-        "When your medicines were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
+        "When your medicines and allergies were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
       ].forEach(function (text) { add(items, "li", text); });
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });

@@ -1413,6 +1413,17 @@ is now a copy with a date, and the staff page says so.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 37. The allergies' own date (`js/share.js`)
+
+**What changed.** See what's inside and the staff page always say "Allergies
+last updated".
+
+**A label and what it covers change together.** "Records last updated" covered
+both parts. Once it became "Meds last updated", allergies needed their own date.
+If they didn't load, there's no date, so a date never vouches for nothing.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

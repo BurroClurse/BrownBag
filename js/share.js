@@ -614,15 +614,12 @@ export function dateLines(groups, format, made) {
   return out.concat((made || "QR code made") + ": " + format(groups.madeAt));
 }
 
-// The allergies' own date, when they didn't load along with the rest. A saved
-// copy's notice already says its date.
-var SAME_UPDATE_MS = 5 * 60 * 1000;
+// The allergies' own date (Tyler, 2026-11-23: always). None when they didn't
+// load, or in a code made before it was included.
 export function allergyDateLine(groups, format) {
   var allergies = groups.allergies;
-  if (!allergies || allergies.status !== "loaded" || allergies.savedAt || !allergies.updatedAt) return null;
-  var records = groups.incomplete ? null : groups.recordsUpdatedAt || groups.recordsSavedAt;
-  if (records && Math.abs(new Date(allergies.updatedAt) - new Date(records)) <= SAME_UPDATE_MS) return null;
-  return "Allergies last updated: " + format(allergies.updatedAt);
+  var date = allergies && (allergies.savedAt || (allergies.status === "loaded" && allergies.updatedAt));
+  return date ? "Allergies last updated: " + format(date) : null;
 }
 
 // Insurance fills are extra: without them the list still stands, so this is a

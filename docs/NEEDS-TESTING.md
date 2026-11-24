@@ -187,3 +187,5 @@ Decided for later, so nothing to test until they're picked up:
   records failing, an ended pass, Back) and both virtual phones. Passed. One
   Android run right after a cold start missed the insurance fills; the next
   three showed them. Cause not proven; watch it next time.
+- 2026-11-23, "Allergies last updated" always shown, before publishing: the test
+  browser and both virtual phones (See what's inside, the staff page). Passed.
