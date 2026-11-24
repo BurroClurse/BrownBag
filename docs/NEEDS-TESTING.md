@@ -64,9 +64,6 @@ The staff page changed, so it goes first:
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 
-- Home's buttons raised from the bottom edge (2026-11-23): both virtual phones.
-  Checked only in the test browser.
-
 ## Not done yet
 
 Decided for later, so nothing to test until they're picked up:
@@ -96,6 +93,8 @@ Decided for later, so nothing to test until they're picked up:
 - More options with VoiceOver: each option reads its name, then its line. Then
   Health records: Update now, and
   "About these names" opening.
+- The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
+  the popup, and starts on Cancel.
 - Start over from the Face ID lock screen: it says "this same Face ID or fingerprint
   lock", and VoiceOver reads the steps.
 - The QR screen: See what's inside above the code, the title centered, and the
@@ -201,3 +200,6 @@ Decided for later, so nothing to test until they're picked up:
 - 2026-11-23, the backup steps on Start over, the bigger text on More options and
   the bigger Show my QR code button: the test browser and both virtual phones.
   Passed. Start over with a PIN only; Face ID wording is checked by a test.
+- 2026-11-23, the "Erase everything?" popup and home's raised buttons: the test
+  browser (Escape, Cancel, a tap outside, erasing, 320 to 1440 wide, 200 percent
+  text) and both virtual phones (the popup and Cancel; home fits). Passed.

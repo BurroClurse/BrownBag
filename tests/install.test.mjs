@@ -106,3 +106,18 @@ test("choosing a PIN says backups won't open without it", async () => {
   assert.ok(screen.includes("If you forget it, you'll have to start over, and your backups won't open."));
   assert.ok(!/a backup brings your additions back/.test(screen));
 });
+
+// One tap must never erase everything.
+test("erasing asks first, says it can't be undone, and offers a way out", async () => {
+  const { startOverText } = await import("../js/install.js");
+  const { readFileSync } = await import("node:fs");
+  const ask = startOverText("pin").confirm;
+  assert.equal(ask.title, "Erase everything?");
+  assert.match(ask.line, /can't be undone/);
+  assert.match(ask.line, /Without a backup/);
+  assert.deepEqual([ask.yes, ask.no], ["Erase everything", "Cancel"]);
+  const screen = readFileSync(new URL("../js/lock-screen.js", import.meta.url), "utf8");
+  // The only place that erases is the popup's own button.
+  assert.equal(screen.match(/eraseBrownBag\(\)/g).length, 1);
+  assert.match(screen, /function confirmErase[\s\S]*eraseBrownBag\(\)/);
+});

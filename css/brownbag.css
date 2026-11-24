@@ -162,6 +162,23 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
 }
 
 .lock { margin-top: 1rem; }
+/* A popup that asks before something that can't be undone. */
+.popup {
+  width: min(92vw, 26rem);
+  max-width: none;
+  max-height: 94dvh;
+  padding: 0;
+  border: 2px solid var(--stop);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--ink);
+  overflow-y: auto;
+}
+.popup::backdrop { background: rgba(40, 25, 12, 0.55); }
+.popup-inner { padding: 1.1rem min(1.1rem, 5vw) 1.2rem; text-align: center; overflow-wrap: anywhere; }
+.popup .big { padding-left: min(1rem, 3vw); padding-right: min(1rem, 3vw); }
+.popup h2 { border: none; margin: 0; padding: 0; font-size: 1.5rem; }
+.popup p { margin: 0.5rem 0 0.9rem; text-wrap: balance; }
 /* On Start over: how to save a backup before erasing. */
 .backup-first { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.75rem 1rem; margin: 0.9rem 0; }
 .backup-first h2 { border: none; margin: 0; padding: 0; font-size: 1.2rem; }

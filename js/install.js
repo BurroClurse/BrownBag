@@ -103,6 +103,12 @@ export function startOverText(method) {
     ],
     title: "To back up first",
     steps: ["Tap Keep my lock, then unlock.", "Tap More options, then Save a backup."],
-    note: "The backup opens only with this same " + (method === "pin" ? "PIN." : "Face ID or fingerprint lock.")
+    note: "The backup opens only with this same " + (method === "pin" ? "PIN." : "Face ID or fingerprint lock."),
+    confirm: {
+      title: "Erase everything?",
+      line: "This can't be undone. Without a backup, what you added or marked is gone.",
+      yes: "Erase everything",
+      no: "Cancel"
+    }
   };
 }

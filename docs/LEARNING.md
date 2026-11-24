@@ -1498,6 +1498,20 @@ need checking against what the code really does.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 44. A popup before erasing (`js/lock-screen.js`)
+
+**What changed.** Erase and start over asks "Erase everything?" first, in a popup
+that looks like the app.
+
+**The `<dialog>` element.** The browser can make a popup itself: `showModal()`
+dims the page, keeps taps and the keyboard inside, and closes on Escape. We only
+style it.
+
+**The safe answer has focus.** Cancel is focused, and the red button names what
+it does. "OK" wouldn't.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

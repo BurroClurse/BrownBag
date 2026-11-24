@@ -215,7 +215,7 @@ function drawPasskeyUnlock(root, done, options) {
 }
 
 // Restoring: "Back" to set-up. Otherwise: "Start over", which explains what
-// is lost and asks again before erasing anything.
+// is lost and asks again, in a popup, before erasing anything.
 function exitOption(root, box, done, options, label) {
   if (options.onBack) {
     action(box, "Back", "secondary").addEventListener("click", options.onBack);
@@ -248,8 +248,7 @@ function drawStartOver(root, done) {
   para(card, text.note);
   var erase = action(box, "Erase and start over");
   erase.addEventListener("click", function () {
-    eraseBrownBag();
-    drawSetup(root, done);
+    confirmErase(box, text.confirm, erase, function () { drawSetup(root, done); });
   });
   var keep = action(box, "Keep my lock", "secondary");
   keep.addEventListener("click", function () {
@@ -257,6 +256,45 @@ function drawStartOver(root, done) {
   });
   // The top shows first, even on a short screen.
   keep.focus({ preventScroll: true });
+}
+
+// The last question before erasing: a popup in the app's own look. Cancel has
+// focus, and Escape, Back or a tap outside cancels too. The browser keeps
+// everything behind it out of reach.
+function confirmErase(box, ask, opener, then) {
+  var popup = document.createElement("dialog");
+  popup.className = "popup";
+  popup.setAttribute("aria-labelledby", "popup-title");
+  popup.setAttribute("aria-describedby", "popup-line");
+  var inner = document.createElement("div");
+  inner.className = "popup-inner";
+  popup.appendChild(inner);
+  var title = document.createElement("h2");
+  title.id = "popup-title";
+  title.textContent = ask.title;
+  inner.appendChild(title);
+  para(inner, ask.line).id = "popup-line";
+  var yes = action(inner, ask.yes);
+  yes.className = "button stop big";
+  yes.addEventListener("click", function () {
+    popup.close();
+    eraseBrownBag();
+    then();
+  });
+  var no = action(inner, ask.no, "secondary");
+  no.addEventListener("click", function () { popup.close(); });
+  // The popup's own area outside the card.
+  popup.addEventListener("click", function (event) {
+    if (event.target === popup) popup.close();
+  });
+  popup.addEventListener("close", function () {
+    popup.remove();
+    // iPhone Safari doesn't give a tapped button focus, so it isn't put back.
+    if (opener.isConnected) opener.focus({ preventScroll: true });
+  });
+  box.appendChild(popup);
+  popup.showModal();
+  no.focus();
 }
 
 // heading null: the bag itself is the heading, read as "Brown Bag", for the
