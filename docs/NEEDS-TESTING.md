@@ -131,4 +131,8 @@ changed, so these go first:
   staff page, each failure, missing files, 320 to 1440 wide, 200 percent
   text), then both virtual phones (sign-in, home, My medicines, the QR code,
   See what's inside, the staff page). Passed. Run again after it was combined
-  with the dates and the fills note: passed. Not yet on the live site.
+  with the dates and the fills note: passed. Published the same
+  day. On the live site only the first screen was checked.
+- 2026-11-23, no number when every record has no medicine name, before
+  publishing: the test browser, then both virtual phones (home, My medicines,
+  See what's inside, the staff page). Passed.

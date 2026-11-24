@@ -164,9 +164,13 @@ export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
 
-// Some of the medicines didn't load: no number anywhere, which would read as
-// the whole.
+// Some of the medicines didn't load, or no record has a medicine name: no
+// number anywhere, which would read as the whole.
 export function medicinesPartial(state) {
+  return someMissing(state) || Boolean(state.split.placeholders && !arrangeList(state.split, state.data).current.some(function (entry) { return entry.origin !== "claims" || entry.asNeededAt; }));
+}
+
+function someMissing(state) {
   return Boolean(state.split.failed || state.split.heldBack || state.dataFailed);
 }
 
@@ -177,7 +181,7 @@ export function shareWarnings(state) {
     recordsSavedAt: state.savedAt,
     recordsUpdatedAt: state.updatedAt,
     claims: state.split.claims,
-    incomplete: medicinesPartial(state),
+    incomplete: someMissing(state),
     ownMissing: state.dataFailed,
     unnamed: state.split.placeholders || 0,
     allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt }

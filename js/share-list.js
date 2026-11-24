@@ -2,7 +2,7 @@
 // patient's own phone. One piece of code draws both, so they can't differ.
 // Allergies and medicines are two blocks (design 2026-11-23).
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial } from "./share.js";
 import { showsSymbol } from "./allergies.js";
 
 // Draws into parent, starting with the patient's name as heading `level`.
@@ -24,7 +24,7 @@ export function drawShareList(parent, groups, level, made) {
   medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
   var fills = fillsNote(groups);
   if (fills) note(block, fills);
-  part(block, "From records", groups.fromRecords, emptyPartText(groups, "records"), level + 2, groups.incomplete);
+  part(block, "From records", groups.fromRecords, emptyPartText(groups, "records"), level + 2, recordsPartial(groups));
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
   }

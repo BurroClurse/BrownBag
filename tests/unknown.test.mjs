@@ -144,3 +144,40 @@ test("a part that didn't load gets no number on the staff page", () => {
   assert.deepEqual(headings(state(split({ failed: true }))), ["From records", "Added by patient (0)", "Patient says not taking (0)"]);
   assert.deepEqual(headings(state({ dataFailed: true })), ["From records", "Added by patient", "Patient says not taking"]);
 });
+
+// Without this, "My medicines (0)" and "Medicines (0)" read as "takes
+// nothing", when the records have entries nobody can name.
+test("no number when every record has no medicine name", () => {
+  const fill = Object.assign({}, ITEM, { origin: "claims", source: "Aetna claims" });
+  const added = { id: "1", name: "Vitamin D", rxcui: null };
+  for (const [current, additions] of [[[], []], [[fill], []], [[], [added]]]) {
+    const s = state(split({ placeholders: 2, current }));
+    assert.equal(medicinesPartial(s), true);
+    const lines = staffLines(s, { current, additions });
+    assert.ok(lines.includes("Medicines"), lines.join("|"));
+    assert.ok(lines.includes("From records"), lines.join("|"));
+    assert.ok(!says(lines, "couldn't be loaded"), "nothing failed to load");
+  }
+  // Every named one marked stopped: home and staff agree, with no number.
+  const stopped = Object.assign(state(split({ placeholders: 2, current: [Object.assign({ key: "rx:314076" }, ITEM)] })), { data: { stopped: { "rx:314076": "2026-11-01" } } });
+  assert.equal(medicinesPartial(stopped), true);
+  const one = state(split({ placeholders: 2, current: [ITEM] }));
+  assert.equal(medicinesPartial(one), false);
+  assert.ok(staffLines(one, { current: [ITEM] }).includes("Medicines (1)"));
+  assert.equal(medicinesPartial(state()), false);
+  assert.ok(staffLines(state()).includes("Medicines (0)"), "really none keeps its 0");
+});
+
+// Without this, a named medicine marked As needed (its own group) loses the
+// number for staff while home still shows one, and reads as having no name.
+test("a named medicine marked As needed still counts, the same for patient and staff", () => {
+  const item = Object.assign({ key: "rx:314076" }, ITEM);
+  const s = Object.assign(state(split({ placeholders: 2, current: [item] })), { data: { asNeeded: { "rx:314076": "2026-11-01" } } });
+  assert.equal(medicinesPartial(s), false);
+  const lines = staffLines(s, { current: [Object.assign({ asNeededAt: "2026-11-01" }, item)] });
+  assert.ok(lines.includes("Medicines (1)"), lines.join("|"));
+  assert.ok(lines.includes("From records"), "still no (0)");
+  assert.ok(lines.includes("No others with a medicine name."), lines.join("|"));
+  const fill = Object.assign({}, item, { origin: "claims", source: "Aetna claims" });
+  assert.equal(medicinesPartial(Object.assign(state(split({ placeholders: 2, current: [fill] })), { data: { asNeeded: { "rx:314076": "2026-11-01" } } })), false);
+});

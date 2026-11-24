@@ -518,19 +518,25 @@ export function medicineNotices(groups) {
   return out;
 }
 
+export function recordsPartial(groups) {
+  return Boolean(groups.incomplete || (groups.unnamed && !groups.fromRecords.length));
+}
+
 // What an empty part says. "None" only when that much is known.
 export function emptyPartText(groups, part) {
   if (part === "records") {
     if (groups.incomplete) return "None loaded.";
-    return groups.unnamed ? "None with a medicine name." : "No medicines from records.";
+    if (!groups.unnamed) return "No medicines from records.";
+    return (groups.patientSaysAsNeeded || []).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
   }
   if (groups.ownMissing) return "Couldn't be opened.";
   return part === "added" ? "Nothing added by the patient." : "Nothing marked not taking.";
 }
 
-// Some of it didn't load: no number, which would read as the whole.
+// Some of it didn't load, or no record has a medicine name: no number, which
+// would read as the whole.
 export function medicinesTitle(groups) {
-  return groups.incomplete ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
+  return groups.incomplete || (recordsPartial(groups) && !(groups.patientSaysAsNeeded || []).length) ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
 }
 
 // How old the list is: when the records last loaded into Brown Bag, then when

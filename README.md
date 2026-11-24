@@ -132,7 +132,8 @@ that doesn't say what it's to gets a note the same way.
 patient's own additions couldn't be loaded, or the server says it left
 something out, My medicines and the staff page say so and no empty part says
 "none". Home and the Medicines heading leave the number off when the
-medicines or the patient's own part didn't load.
+medicines or the patient's own part didn't load, or no record has a medicine
+name.
 
 **The refresh token** is stored encrypted (AES-GCM) with a key that comes
 from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
