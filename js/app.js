@@ -17,7 +17,7 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
-import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, ALLERGENS, REACTIONS } from "./allergies.js";
 import { drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
@@ -756,6 +756,7 @@ function drawAllergies(parent) {
   box.heading.id = "allergies-heading";
   box.heading.tabIndex = -1;
   var section = box.section;
+  if (saysNoneKnown(arranged, state.dataFailed ? "failed" : state.allergies.status)) section.classList.add("allergy-none-known");
   if (state.dataFailed) add(section, "p", "Allergies you added couldn't be opened.", "notice");
   notes.forEach(function (text) {
     add(section, "p", text.text, "notice");
@@ -766,7 +767,9 @@ function drawAllergies(parent) {
   arranged.statements.forEach(function (text) { add(section, "p", "Your records say: " + text + "."); });
   var loaded = state.allergies.status === "loaded" || state.allergies.savedAt;
   if (arranged.saidNone) {
-    var said = add(section, "p", "You said you have no known allergies on " + longDate(arranged.saidNone) + ".");
+    add(section, "p", "No known allergies", "none-known");
+    var said = add(section, "div", null, "undo-row");
+    add(said, "p", "You said this on " + longDate(arranged.saidNone) + ".");
     button(said, "Undo", "secondary", function () {
       state.data.noKnownAllergies = null;
       allergyChange("none-unsaid", "No known allergies");
@@ -829,7 +832,8 @@ function removeMyPart(card) {
 
 function drawAllergyUndo(section) {
   var last = state.lastRemovedAllergy;
-  var row = add(section, "p", "Removed " + last.name + ". ", "med-line");
+  var row = add(section, "div", null, "undo-row");
+  add(row, "p", "Removed " + last.name + ".", "med-line");
   button(row, "Undo", "secondary", function () {
     putBack(state.data, last.removed);
     allergyChange(last.whole ? "allergy-added" : "reaction-restored", last.of);

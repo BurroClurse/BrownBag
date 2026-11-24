@@ -1563,6 +1563,20 @@ the page names it.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 48. Red means look here (`js/allergies.js`)
+
+**What changed.** After "I have no known allergies", the Allergies box turns soft
+teal, with "No known allergies" big on its own line and Undo at the right.
+
+**A warning color should mean a warning.** Red on "none" teaches people to ignore
+red.
+
+**Calm only when it's sure.** If the records didn't load, or one entry doesn't
+say what it's to, the box stays red. The words carry the meaning too, since some
+people can't see the color.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

@@ -73,6 +73,12 @@ The staff page changed, so it goes first:
 - The sign-in list still fits one screen. More options now scrolls on a short
   screen (667 px); Sign out is last.
 
+**No known allergies** (2026-11-24). Checked only in the test browser:
+
+- My medicines ▸ I have no known allergies: the box is soft teal, the big line,
+  Undo at the right. Undo makes it red again. Adding an allergy does too.
+- Remove an allergy you added: its Undo is at the right.
+
 ## Not done yet
 
 Decided for later, so nothing to test until they're picked up:

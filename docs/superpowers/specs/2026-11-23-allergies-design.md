@@ -102,8 +102,11 @@ record's, with the patient's reaction marked "added by me" and "Remove mine".
 
 - None anywhere, patient hasn't said: "No allergies in your records." with
   "+ Add an allergy" and "I have no known allergies".
-- After tapping it: "You said you have no known allergies on Nov 23, 2026."
-  with "Undo" and "+ Add an allergy". Adding an allergy clears it.
+- After tapping it: "No known allergies", big and on its own line, then "You
+  said this on Nov 23, 2026." with "Undo" at the right, and "+ Add an allergy".
+  The box is soft teal instead of red (Tyler, 2026-11-24), unless the
+  allergies didn't load or an entry doesn't say what it's to: then it stays
+  red. Adding an allergy clears it.
 - The button only shows when nothing is listed and the records' allergies
   loaded (now, or in the saved copy). After a failed or refused load with
   nothing saved it isn't offered. If the records later bring

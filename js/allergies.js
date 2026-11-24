@@ -482,3 +482,9 @@ export function unsavedAllergyText(draft, reactionTo) {
 export function showsSymbol(count, unspecified, status) {
   return count > 0 || unspecified > 0 || status !== "loaded";
 }
+
+// Whether the box can stop being red: the patient said none, and nothing is
+// in doubt (a list that didn't load, an entry with no name).
+export function saysNoneKnown(arranged, status) {
+  return Boolean(arranged.saidNone) && !showsSymbol(arranged.count, arranged.unspecified, status);
+}

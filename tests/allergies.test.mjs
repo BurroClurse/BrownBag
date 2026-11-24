@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, startedDraft, keepDrafts, showsSymbol } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, startedDraft, keepDrafts, showsSymbol, saysNoneKnown } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -372,4 +372,16 @@ test("allergies that just loaded carry the time, and a saved copy doesn't get a 
   assert.equal(keepAllergies({ status: "failed", items: [], statements: [] }, saved, now).updatedAt, undefined);
   assert.equal(keepAllergies(null, saved, now).updatedAt, undefined);
   assert.equal(keepAllergies(null, saved, now).savedAt, "2026-11-19T10:00:00.000Z");
+});
+
+// The red box means "look here". It goes only when the patient said none and
+// nothing else is open: a list that didn't load, or an entry with no name,
+// could still be an allergy.
+test("the box stops being red only when the patient said none and nothing is in doubt", () => {
+  const said = (over) => Object.assign({ saidNone: "2026-11-24", count: 0, unspecified: 0 }, over);
+  assert.equal(saysNoneKnown(said(), "loaded"), true);
+  for (const status of ["failed", "refused", "not-loaded", undefined]) assert.equal(saysNoneKnown(said(), status), false, status);
+  assert.equal(saysNoneKnown(said({ unspecified: 1 }), "loaded"), false);
+  assert.equal(saysNoneKnown(said({ count: 1 }), "loaded"), false);
+  assert.equal(saysNoneKnown(said({ saidNone: null }), "loaded"), false);
 });
