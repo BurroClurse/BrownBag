@@ -606,7 +606,7 @@ button.option:focus-visible { outline-offset: -4px; border-radius: 14px; }
 .option-words { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .option-words > span { display: block; line-height: 1.35; }
 /* The size of the big buttons, and of the text on the other screens. */
-.option-name { font-weight: 600; font-size: 1.4rem; }
+.option-name { font-weight: 600; font-size: 1.5rem; }
 .option-detail { font-weight: 400; font-size: 1.125rem; color: var(--muted); margin-top: 0.1rem; }
 .option-stop .option-icon { background: #F6E3DE; color: var(--stop); }
 .option-stop .option-name { color: var(--stop); }
