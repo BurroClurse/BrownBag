@@ -427,10 +427,10 @@ test("staff hear about an entry that doesn't say what it's to", () => {
   const g = groupShareBundle(withAllergies([CARD()], { unspecified: 1 })).allergies;
   assert.equal(g.unspecified, 1);
   assert.deepEqual(g.fromRecords.map((a) => a.name), ["Mold"]);
-  assert.deepEqual(allergyNotices(g), ["Records also have an allergy entry that doesn't say what it's to. Ask the patient."]);
+  assert.deepEqual(allergyNotices(g), ["Records also have an unnamed allergy. Ask the patient."]);
   const alone = groupShareBundle(withAllergies([], { unspecified: 2 })).allergies;
   assert.equal(allergyEmptyText(alone), null);
-  assert.deepEqual(allergyNotices(alone), ["Records have 2 allergy entries that don't say what they're to. Ask the patient."]);
+  assert.deepEqual(allergyNotices(alone), ["Records have 2 unnamed allergies. Ask the patient."]);
   const said = groupShareBundle(withAllergies([], { unspecified: 1, saidNone: "2026-11-23" })).allergies;
   assert.equal(allergyEmptyText(said), "Patient says: no known allergies.");
   assert.equal(allergyNotices(said).length, 1);

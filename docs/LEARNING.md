@@ -1709,6 +1709,21 @@ directions beside it. The patient chooses what they take now.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 56. What an unnamed allergy does say (`js/allergies.js`)
+
+**What changed.** A record like "Allergic disposition" names no allergen. Its note now
+has everything else it says: the type, dates, who recorded it, notes, and which named
+allergies were recorded the same day.
+
+**A clue isn't an answer.** "Same day as Mold" helps someone remember. It never says
+the two are the same, because the record doesn't. "Low risk" is left out: nobody
+knows what it is.
+
+**FHIR fields used.** `category`, `type`, `criticality` (high only), `onset[x]`,
+`lastOccurrence`, `recordedDate`, `recorder`, `asserter`, `encounter`, `note`.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

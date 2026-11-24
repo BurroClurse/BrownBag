@@ -314,9 +314,9 @@ test("an entry that doesn't say what it's to is counted apart, not listed", () =
 
 test("unspecifiedText says it, and never beside 'none'", () => {
   assert.equal(unspecifiedText(0, 3), null);
-  assert.equal(unspecifiedText(1, 1), "Your records also have an allergy entry that doesn't say what it's to. Ask your care team.");
-  assert.equal(unspecifiedText(1, 0), "Your records have an allergy entry that doesn't say what it's to. Ask your care team.");
-  assert.equal(unspecifiedText(2, 1), "Your records also have 2 allergy entries that don't say what they're to. Ask your care team.");
+  assert.equal(unspecifiedText(1, 1), "Your records also have an unnamed allergy. Ask your care team.");
+  assert.equal(unspecifiedText(1, 0), "Your records have an unnamed allergy. Ask your care team.");
+  assert.equal(unspecifiedText(2, 1), "Your records also have 2 unnamed allergies. Ask your care team.");
 });
 
 test("every code of a record is kept, and its own clinical status", () => {

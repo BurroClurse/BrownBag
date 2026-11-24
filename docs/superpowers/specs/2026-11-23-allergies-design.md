@@ -341,3 +341,11 @@ needs a server).
 - The source is in the heading, "From records (SMART sandbox)", when every record
   has the same one. Otherwise each says "Source: ...".
 - The QR code's data didn't change.
+
+## Changed 2026-11-24 (Tyler): what an unnamed allergy does say
+
+One short note with all the record has: "Your records also have an unnamed allergy:
+environment, recorded Feb 28, 1979 (same day as Mold). Ask your care team." Two are
+numbered. At most 300 characters each. Low risk is never said. Staff read the same
+facts. The QR code's record carries the type, category, criticality, verification
+and date, and a "Details: ..." note.

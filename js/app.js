@@ -17,7 +17,7 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
-import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, ALLERGENS, REACTIONS } from "./allergies.js";
+import { readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, ALLERGENS, REACTIONS } from "./allergies.js";
 import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
@@ -414,8 +414,8 @@ async function allergiesAlone(found) {
 // later open says "haven't been loaded yet", not "none".
 function allergiesToSave() {
   var a = state.allergies;
-  if (a.savedAt) return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.savedAt };
-  if (a.status === "loaded") return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.updatedAt };
+  if (a.savedAt) return Object.assign({ items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.savedAt }, unnamedOf(a));
+  if (a.status === "loaded") return Object.assign({ items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.updatedAt }, unnamedOf(a));
   return undefined;
 }
 
@@ -820,7 +820,7 @@ function drawAllergies(parent) {
   }
   var list = arranged.count ? add(section, "ul", null, "meds") : null;
   arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
-  var unsaid = unspecifiedText(arranged.unspecified, arranged.count);
+  var unsaid = unspecifiedText(arranged.unspecified, arranged.count, arranged.unnamed);
   if (unsaid) note(section, unsaid);
   if (state.lastRemovedAllergy) drawAllergyUndo(section);
   if (state.allergyForm === "new") {

@@ -151,7 +151,7 @@ Nothing is written to the health record. Nothing runs on a schedule.
 Records whose medicine is only a placeholder word, such as "Medication",
 with no drug code, are left out of the list and the QR code; a note on My
 medicines and on the staff page says how many there were. An allergy entry
-that doesn't say what it's to gets a note the same way.
+that doesn't say what it's to gets a note the same way, with everything else it says.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the
 patient's own additions couldn't be loaded, or the server says it left

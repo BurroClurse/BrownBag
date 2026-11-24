@@ -3,6 +3,7 @@
 // failed read never turns into "no allergies". No DOM here, so Node's test
 // runner can check it.
 
+import { dateText } from "./card.js";
 import { listDate } from "./offline.js";
 import { heldBack } from "./read.js";
 
@@ -36,14 +37,60 @@ export function isUnspecified(resource) {
 }
 
 // The sentence both screens use: whose records, and who to ask.
-export function unspecifiedSentence(count, listed, records, ask) {
+// unnamed: what else each entry says (unnamedDetails), in the same order.
+export function unspecifiedSentence(count, listed, records, ask, unnamed) {
   if (!count) return null;
-  var what = count === 1 ? "an allergy entry that doesn't say what it's to" : count + " allergy entries that don't say what they're to";
-  return records + (listed ? " also" : "") + " have " + what + ". " + ask;
+  var said = (unnamed || []).slice(0, count);
+  var details = "";
+  if (said.some(Boolean)) details = ": " + (count === 1 ? said[0] : Array.from({ length: count }, function (_, i) { return "(" + (i + 1) + ") " + (said[i] || "no details"); }).join("; "));
+  return records + (listed ? " also" : "") + " have " + (count === 1 ? "an unnamed allergy" : count + " unnamed allergies") + details + ". " + ask;
 }
 
-export function unspecifiedText(count, listed) {
-  return unspecifiedSentence(count, listed, "Your records", "Ask your care team.");
+export function unspecifiedText(count, listed, unnamed) {
+  return unspecifiedSentence(count, listed, "Your records", "Ask your care team.", unnamed);
+}
+
+// Everything an entry with no allergen does say, to help them remember. Not low
+// risk: nobody knows what it is. named: the records of current, named allergies.
+var DETAILS_LENGTH = 300;
+export function unnamedDetails(resource, named) {
+  var fhir = fhirOf(resource);
+  var display = function (reference) { return tidy(reference && reference.display); };
+  var dated = function (value) { return /^\d{4}/.test(value || "") ? dateText(value) : tidy(value); };
+  var age = resource.onsetAge || {};
+  var onset = dated(resource.onsetDateTime) || (age.value !== undefined ? tidy("at " + age.value + " " + (age.unit || "")) : "") || dated((resource.onsetPeriod || {}).start) || tidy(resource.onsetString);
+  var day = /^\d{4}-\d\d-\d\d$/.test(fhir.recordedDate || "") ? fhir.recordedDate : null;
+  var sameDay = named.filter(function (other) { return day && fhirOf(other).recordedDate === day; }).map(function (other) { return words(other.code); })
+    .filter(function (name, i, all) { return name && all.indexOf(name) === i; });
+  var say = function (label, text) { return text ? label + text : null; };
+  var out = [
+    fhir.category.join(" and "),
+    fhir.type === "intolerance" ? "intolerance" : null,
+    fhir.criticality === "high" ? "marked high risk" : null,
+    fhir.verification === "unconfirmed" ? "not confirmed" : null,
+    say("began ", onset),
+    say("last reaction ", dated(resource.lastOccurrence)),
+    fhir.recordedDate ? "recorded " + dateText(fhir.recordedDate) + (sameDay.length ? " (same day as " + andList(sameDay) + ")" : "") : null,
+    say("by ", display(resource.recorder)),
+    say("reported by ", display(resource.asserter)),
+    say("at ", display(resource.encounter)),
+    say("note: ", tidy((resource.note || []).map(function (n) { return n && n.text; }).filter(Boolean).join(" ")))
+  ].filter(Boolean).join(", ");
+  return out.length > DETAILS_LENGTH ? out.slice(0, DETAILS_LENGTH) + "…" : out;
+}
+
+function tidy(text) {
+  return String(text || "").replace(/\s+/g, " ").trim().replace(/\.$/, "");
+}
+
+function andList(names) {
+  return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+}
+
+// The fields for other systems, beside the words.
+export function unnamedFields(resource) {
+  var fhir = fhirOf(resource);
+  return { verification: fhir.verification, type: fhir.type, category: fhir.category, criticality: fhir.criticality, recordedDate: fhir.recordedDate };
 }
 
 // The SNOMED code for a statement, or null.
@@ -226,7 +273,8 @@ function sameAllergy(a, b) {
 export function fromAllergyRecords(resources, sourceName) {
   var items = [];
   var statements = [];
-  var unspecified = 0;
+  var blank = [];
+  var named = [];
   (resources || []).forEach(function (resource) {
     if (!resource || resource.resourceType !== "AllergyIntolerance") return;
     if (hasStatus(resource.verificationStatus, NOT_REAL) || hasStatus(resource.clinicalStatus, NOT_NOW)) return;
@@ -236,9 +284,10 @@ export function fromAllergyRecords(resources, sourceName) {
       return;
     }
     if (isUnspecified(resource)) {
-      unspecified += 1;
+      blank.push(resource);
       return;
     }
+    named.push(resource);
     var item = itemFrom(resource, sourceName);
     // One record can link two already read (a nameless one by its code, a
     // named one by its name); then all of them are one.
@@ -262,7 +311,10 @@ export function fromAllergyRecords(resources, sourceName) {
     item.key = free;
     taken[free] = true;
   });
-  return { items: items, statements: statements, unspecified: unspecified };
+  return Object.assign({ items: items, statements: statements, unspecified: blank.length }, blank.length ? {
+    unnamed: blank.map(function (resource) { return unnamedDetails(resource, named); }),
+    unnamedFhir: blank.map(unnamedFields)
+  } : {});
 }
 
 // Every page, inside ms, like the claims. "refused" means this sign-in can't
@@ -304,15 +356,20 @@ export async function readAllergies(request, patientId, sourceName, ms) {
 // list); no saved copy then means it was made before Brown Bag had allergies.
 export function keepAllergies(result, saved, now) {
   if (result && result.status === "loaded") {
-    return { status: "loaded", items: result.items, statements: result.statements, unspecified: result.unspecified || 0, savedAt: null, updatedAt: (now || new Date()).toISOString() };
+    return Object.assign({ status: "loaded", items: result.items, statements: result.statements, unspecified: result.unspecified || 0, savedAt: null, updatedAt: (now || new Date()).toISOString() }, unnamedOf(result));
   }
-  return {
+  return Object.assign({
     status: result ? result.status : (saved ? "loaded" : "not-loaded"),
     items: saved ? saved.items : [],
     statements: saved ? saved.statements : [],
     unspecified: (saved && saved.unspecified) || 0,
     savedAt: saved ? saved.savedAt : null
-  };
+  }, unnamedOf(saved));
+}
+
+// None in a list saved before these were kept.
+export function unnamedOf(from) {
+  return from && from.unnamed ? { unnamed: from.unnamed, unnamedFhir: from.unnamedFhir || [] } : {};
 }
 
 export function sameAllergen(name, cards) {
@@ -367,6 +424,8 @@ export function arrangeAllergies(allergies, data) {
     cards: cards.sort(byName),
     statements: allergies.statements,
     unspecified: allergies.unspecified || 0,
+    unnamed: allergies.unnamed || [],
+    unnamedFhir: allergies.unnamedFhir || [],
     saidNone: cards.length ? null : none,
     canSayNone: !cards.length && !none && (allergies.status === "loaded" || Boolean(allergies.savedAt)),
     count: cards.length

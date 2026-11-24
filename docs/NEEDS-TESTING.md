@@ -238,3 +238,6 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   test browser and both virtual phones (the As needed part, Not taking and back, the
   popup, the form, interrupted and edited, See what's inside, the file). Passed.
   Staff page grouping by tests.
+- 2026-11-24, what an unnamed allergy does say, before publishing: the test browser
+  and both virtual phones with the real sandbox (Chantell Bartell: My medicines, See
+  what's inside, the staff page with made-up allergies). Passed.

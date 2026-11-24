@@ -225,7 +225,11 @@ function allergyEntriesFor(allergies) {
     out.push(resource);
   });
   for (var i = 0; i < (allergies.unspecified || 0); i += 1) {
-    out.push(allergyResource("Allergic disposition", [UNSPECIFIED]));
+    var blank = allergyResource("Allergic disposition", [UNSPECIFIED]);
+    addSaid(blank, (allergies.unnamedFhir || [])[i]);
+    var details = (allergies.unnamed || [])[i];
+    if (details) blank.note = [{ text: DETAILS + details }];
+    out.push(blank);
   }
   if (allergies.saidNone) {
     var none = allergyResource("No known allergy", [{ system: SNOMED, code: noneCode("No known allergy") }]);
@@ -281,13 +285,22 @@ function recordAllergy(card) {
   if (card.name === UNNAMED && !codes.filter(Boolean).length) codes = [DATA_ABSENT];
   var resource = allergyResource(card.name, codes, card.clinical);
   var said = card.fhir || { verification: card.unconfirmed ? "unconfirmed" : null, type: card.intolerance ? "intolerance" : null, category: [], criticality: card.highRisk ? "high" : null, recordedDate: null };
+  addSaid(resource, said);
+  return resource;
+}
+
+// What the record said in codes.
+function addSaid(resource, said) {
+  if (!said) return;
   if (said.verification) resource.verificationStatus = verified(said.verification);
   if (said.type) resource.type = said.type;
   if (said.category.length) resource.category = said.category;
   if (said.criticality) resource.criticality = said.criticality;
   if (said.recordedDate) resource.recordedDate = said.recordedDate;
-  return resource;
 }
+
+// What else an allergy with no allergen says.
+var DETAILS = "Details: ";
 
 function allergyFor(card) {
   var own = card.origin === "added";
@@ -319,7 +332,7 @@ function allergyTags(tags) {
   if (!status) return null;
   var saved = of("allergies-saved-on");
   var updated = of("allergies-updated-on");
-  return { status: status, savedAt: saved ? saved.display : null, updatedAt: updated ? updated.display : null, fromRecords: [], fromPatient: [], statements: [], unspecified: 0, saidNone: false };
+  return { status: status, savedAt: saved ? saved.display : null, updatedAt: updated ? updated.display : null, fromRecords: [], fromPatient: [], statements: [], unspecified: 0, unnamed: [], saidNone: false };
 }
 
 function groupAllergy(groups, resource) {
@@ -333,6 +346,8 @@ function groupAllergy(groups, resource) {
   }
   if (!own && isUnspecified(resource)) {
     groups.unspecified += 1;
+    var said = String(((resource.note || [])[0] || {}).text || "");
+    groups.unnamed.push(said.indexOf(DETAILS) === 0 ? said.slice(DETAILS.length) : "");
     return;
   }
   var statement = own ? null : statementOf(resource, name);
@@ -397,7 +412,7 @@ export function allergyNotices(allergies) {
     out.push("Allergies from records couldn't be loaded. Ask the patient.");
   }
   var listed = allergies.fromRecords.length + allergies.fromPatient.length;
-  return out.concat(unspecifiedSentence(allergies.unspecified, listed, "Records", "Ask the patient.") || []);
+  return out.concat(unspecifiedSentence(allergies.unspecified, listed, "Records", "Ask the patient.", allergies.unnamed) || []);
 }
 
 export function allergyEmptyText(allergies) {
