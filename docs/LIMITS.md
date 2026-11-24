@@ -94,5 +94,6 @@ an idea becomes a plan only after its own design.
   - Now: both show, so nothing is hidden. The NDC goes in the QR code when it fits.
   - Careful: joining two cards joins their marks. If the patient marked one copy
     Not taking to tidy the list, the one they take must not go with it.
+  - When (Tyler, 2026-11-24): with Medicare, its fills first, then joining cards.
   - Ideas: look up the NDC in RxNav by the record's date (Medicare plan, Task 1),
     join only cards with no marks, and make a mark on the joined card cover all.
