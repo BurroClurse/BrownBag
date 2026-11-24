@@ -49,7 +49,7 @@
 - No date: use every history record, and the top `rxcui`.
 - Exactly one product left: use it. None, a blank one, or two different ones: leave the NDC out, and it's shown as it is today.
 - Extra test: two products in different years give each fill its own; two in the same month give neither.
-- This replaces "the newest history rxcui" below and in the pull request (closed, branch `claude/brownbag-rxnorm-interop-o0f0cz` kept).
+- This replaces "the newest history rxcui" below and in the pull request (closed; get its code with `git fetch origin refs/pull/1/head`).
 - Fills only. Joining health record cards by NDC is limit 16 in `docs/LIMITS.md`.
 
 - [ ] **Step 1: Write the failing tests** (adapt the pull request's tests to the current `ingredientsFor` signature, which takes `{ timeoutMs }`):
