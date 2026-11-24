@@ -243,3 +243,5 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   what's inside, the staff page with made-up allergies). Passed.
 - 2026-11-24, the brown bands on My medicines and the reaction line, before publishing:
   the test browser (320 to 1440 wide, 200 percent text) and both virtual phones. Passed.
+- 2026-11-24, the folder tabs on My medicines (in place of the bands): the test browser
+  (320 to 1440 wide, 200 percent text) and both virtual phones. Passed.

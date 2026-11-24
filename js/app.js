@@ -1014,7 +1014,8 @@ function drawAllergyCheck(form, match, reaction, hide, back) {
 
 function drawRecords(parent, arranged) {
   var section = add(parent, "section");
-  partHeading(section, "From your records", "records-heading");
+  // In a row like the others, with no "?".
+  partHeading(add(section, "div", null, "help-row section-help"), "From your records", "records-heading");
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
