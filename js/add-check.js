@@ -15,8 +15,30 @@ function firstWord(name) {
   return "";
 }
 
+// Which vitamin a name says: { letter: "b", number: "12" } for "Vitamin
+// B12", "vitamin b-12" and "Vitamin B 12". The number is only read right
+// after the letter, so the 50 in "Vitamin D 50 mcg" stays a dose. Null when
+// it names more than one ("Vitamin A and D", "Vitamin D3 K2") or none.
+function vitamin(name) {
+  if (/\b(?:and|with|plus)\b|[&+]|\bvitamin\s+[a-k]\d*(?:\s+|\s*[\/,]\s*)[a-k]\d*\b/i.test(String(name || ""))) return null;
+  var match = /\bvitamin\s+([a-k])(?:-?(\d{1,2})(?!\d)|\s(1|2|3|5|6|7|9|12)\b(?!\s*(?:mg|mcg|iu|unt|g)\b))?(?![a-z])/i.exec(String(name || ""));
+  return match ? { letter: match[1].toLowerCase(), number: match[2] || match[3] || "" } : null;
+}
+
+// Vitamin D, D2 and D3 count as one; B vitamins are told apart by number.
+// A name that doesn't say which vitamin could be any of them, so it asks.
+function differentVitamins(a, b) {
+  var first = vitamin(a);
+  var second = vitamin(b);
+  if (!first || !second) return false;
+  if (first.letter !== second.letter) return true;
+  return first.letter === "b" && Boolean(first.number && second.number && first.number !== second.number);
+}
+
 // "Lisinopril" for "lisinopril 10 MG Oral Tablet": how the panel names it.
 export function displayName(name) {
+  var which = vitamin(name);
+  if (which && firstWord(name) === "vitamin") return "Vitamin " + which.letter.toUpperCase() + which.number;
   var first = firstWord(name);
   return first ? first.charAt(0).toUpperCase() + first.slice(1) : String(name || "").trim();
 }
@@ -35,6 +57,7 @@ function sameMedicine(candidate, entry, ingredientOf) {
     // lookup) fall back to the drug's name, as for typed names.
     if (a && b) return a === b;
   }
+  if (differentVitamins(candidate.name, entry.name)) return false;
   return firstWord(candidate.name) !== "" && firstWord(candidate.name) === firstWord(entry.name);
 }
 
@@ -47,12 +70,32 @@ function words(text) {
     .replace(/[^a-z0-9.]+/g, " ").trim() + " ";
 }
 
+// Doses: the same words, or the same number when the record gives no unit
+// and the drug comes in that form ("1" for a tablet is 1 tablet).
+function sameDose(dose, theirs, names) {
+  var mine = words(dose);
+  var other = words(theirs);
+  if (mine === other) return true;
+  var bare = /^ (\d+(?:\.\d+)?) $/.exec(other);
+  var counted = /^ (\d+(?:\.\d+)?) ([a-z]+) $/.exec(mine);
+  return Boolean(bare && counted && bare[1] === counted[1] && words(names).indexOf(" " + counted[2] + " ") !== -1);
+}
+
+function asNeeded(text) {
+  return /\b(as needed|prn)\b/i.test(String(text || ""));
+}
+
 function sameDoseAndSchedule(candidate, entry) {
   if (!candidate.dose || !candidate.frequency) return false;
   // Two products of one drug (10 MG and 20 MG) are never a duplicate.
   if (candidate.rxcui && entry.rxcui && candidate.rxcui !== entry.rxcui) return false;
-  var theirs = words([entry.dose, entry.frequency].filter(Boolean).join(" "));
-  return theirs.indexOf(words(candidate.dose)) !== -1 && theirs.indexOf(words(candidate.frequency)) !== -1;
+  if (asNeeded(candidate.frequency) !== asNeeded(entry.frequency)) return false;
+  var schedule = words(entry.frequency);
+  // With no dose of its own, the record has it in the schedule's words.
+  var dose = entry.dose
+    ? sameDose(candidate.dose, entry.dose, candidate.name + " " + entry.name)
+    : schedule.indexOf(words(candidate.dose)) !== -1;
+  return dose && schedule.indexOf(words(candidate.frequency)) !== -1;
 }
 
 function distance(a, b) {
@@ -93,6 +136,13 @@ export function checkAddition(candidate, list, ingredientOf) {
   var duplicate = active.filter(function (entry) { return sameDoseAndSchedule(candidate, entry); })[0];
   if (duplicate) return { kind: "duplicate", match: duplicate };
   if (active.length) return { kind: "different", match: active[0] };
-  var alike = (list || []).filter(function (entry) { return looksAlike(candidate, entry); })[0];
-  return alike ? { kind: "lookalike", match: alike } : null;
+  var alike = (list || []).filter(function (entry) { return looksAlike(candidate, entry); });
+  var closest = alike.filter(function (entry) { return !entry.stoppedAt; })[0] || alike[0];
+  return closest ? { kind: "lookalike", match: closest } : null;
+}
+
+export function lookalikeText(name, match) {
+  return name + " looks like " + displayName(match.name) + ", which is " +
+    (match.stoppedAt ? "on your stopped list" : "already on your list") +
+    ". They're different medicines. Check the bottle.";
 }

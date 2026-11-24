@@ -4,6 +4,11 @@
 // and shows it. Nothing is saved, and no request leaves after the page loads.
 
 import { unpackShare, groupShareBundle, ShareError } from "./share.js";
+import { drawShareList } from "./share-list.js";
+
+// The page's own watcher (in the HTML) stops once the app has started.
+window.brownBagStarted = true;
+try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
 
 var root = document.getElementById("share");
 var fragment = location.hash.slice(1);
@@ -78,49 +83,7 @@ function drawCodeForm(message) {
 function drawList(groups) {
   clear(root);
   addLogo();
-  var title = add(root, "h1", groups.patient ? groups.patient.name : "Shared medicine list");
-  title.tabIndex = -1;
-  if (groups.patient && groups.patient.birthDate) {
-    add(root, "p", "Born " + groups.patient.birthDate, "who");
-  }
-  add(root, "p", "Made on " + madeOn(groups.madeAt), "who");
-  if (groups.recordsSavedAt) {
-    add(root, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
-  }
-  if (groups.incomplete) {
-    add(root, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
-  }
-  group("From records", groups.fromRecords, "No medicines from records.");
-  if (groups.fromClaims && groups.fromClaims.length) {
-    group("Filled, not in the health record", groups.fromClaims, "");
-  }
-  if (groups.patientSaysAsNeeded && groups.patientSaysAsNeeded.length) {
-    group("Patient takes only as needed", groups.patientSaysAsNeeded, "");
-  }
-  group("Added by patient", groups.addedByPatient, "Nothing added by the patient.");
-  group("Patient says not taking", groups.patientSaysStopped, "Nothing marked not taking.");
-  title.focus();
-}
-
-function group(heading, rows, empty) {
-  var section = add(root, "section");
-  add(section, "h2", heading + " (" + rows.length + ")");
-  if (!rows.length) {
-    add(section, "p", empty, "med-line");
-    return;
-  }
-  var list = add(section, "ul", null, "meds");
-  rows.forEach(function (row) {
-    var item = add(list, "li");
-    add(item, "p", row.name, "med-name");
-    if (row.detail) add(item, "p", row.detail, "med-line");
-  });
-}
-
-function madeOn(timestamp) {
-  var date = new Date(timestamp);
-  if (isNaN(date)) return "an unknown date";
-  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  drawShareList(root, groups, 1).focus();
 }
 
 // The bag, small, at the top of the staff page. Decoration only.

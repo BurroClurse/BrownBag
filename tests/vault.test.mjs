@@ -54,7 +54,7 @@ test("stored text does not contain the medicine name", async () => {
 });
 
 test("nothing stored gives empty patient data", async () => {
-  assert.deepEqual(await loadPatientData(memoryStorage(), await keyA, "p1"), { additions: [], stopped: {}, asNeeded: {} });
+  assert.deepEqual(await loadPatientData(memoryStorage(), await keyA, "p1"), { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, noKnownAllergies: null });
 });
 
 test("two patients are stored separately", async () => {
@@ -149,4 +149,59 @@ test("a backup made the old way still restores", async () => {
   const old = JSON.stringify({ app: "brownbag", version: 1, data: { "p-old": await encryptJSON(key, { additions: [{ id: "a" }], stopped: {} }) } });
   assert.equal(await importBackup(storage, key, old), 1);
   assert.deepEqual((await loadPatientData(storage, key, "p-old")).additions, [{ id: "a" }]);
+});
+
+test("the log of changes made without signal is kept when Brown Bag reopens", async () => {
+  const storage = memoryStorage();
+  const key = await keyA;
+  const changes = [{ kind: "added", name: "Zinc", checked: false }];
+  await savePatientData(storage, key, "p1", { additions: [], stopped: {}, changes });
+  assert.deepEqual((await loadPatientData(storage, key, "p1")).changes, changes);
+});
+
+test("restoring a backup keeps the change log, joined without repeats", async () => {
+  const key = await keyA;
+  const there = memoryStorage();
+  await savePatientData(there, key, "p1", { additions: [], stopped: {}, changes: [{ kind: "added", name: "Zinc", checked: false }, { kind: "stopped", name: "Aspirin" }] });
+  const backup = await exportBackup(there, key);
+  const here = memoryStorage();
+  await savePatientData(here, key, "p1", { additions: [], stopped: {}, changes: [{ kind: "stopped", name: "Aspirin" }] });
+  await importBackup(here, key, backup);
+  assert.deepEqual((await loadPatientData(here, key, "p1")).changes, [{ kind: "stopped", name: "Aspirin" }, { kind: "added", name: "Zinc", checked: false }]);
+  const empty = memoryStorage();
+  await importBackup(empty, key, backup);
+  assert.equal((await loadPatientData(empty, key, "p1")).changes.length, 2);
+});
+
+test("saved data from before allergies loads with the allergy fields empty", async () => {
+  const storage = memoryStorage();
+  await savePatientData(storage, await keyA, "p1", { additions: [], stopped: {} });
+  const data = await loadPatientData(storage, await keyA, "p1");
+  assert.deepEqual([data.allergies, data.allergyReactions, data.noKnownAllergies], [[], {}, null]);
+  assert.deepEqual((await loadPatientData(memoryStorage(), await keyA, "p2")).allergies, []);
+});
+
+test("restoring a backup joins allergies and the phone's reaction wins", async () => {
+  const key = await keyA;
+  const there = memoryStorage();
+  await savePatientData(there, key, "p1", { additions: [], stopped: {}, allergies: [{ id: "a", name: "Latex" }, { id: "b", name: "Eggs" }], allergyReactions: { k1: { reaction: "Old" }, k2: { reaction: "Rash" } }, noKnownAllergies: null });
+  const backup = await exportBackup(there, key);
+  const here = memoryStorage();
+  await savePatientData(here, key, "p1", { additions: [], stopped: {}, allergies: [{ id: "a", name: "Latex" }], allergyReactions: { k1: { reaction: "New" } }, noKnownAllergies: "2026-11-23" });
+  await importBackup(here, key, backup);
+  const data = await loadPatientData(here, key, "p1");
+  assert.deepEqual(data.allergies.map((a) => a.id), ["a", "b"]);
+  assert.equal(data.allergyReactions.k1.reaction, "New");
+  assert.equal(data.allergyReactions.k2.reaction, "Rash");
+  assert.equal(data.noKnownAllergies, null);
+});
+
+test("restoring a backup keeps a no known allergies statement when neither side has one listed", async () => {
+  const key = await keyA;
+  const there = memoryStorage();
+  await savePatientData(there, key, "p1", { additions: [], stopped: {}, noKnownAllergies: "2026-11-20" });
+  const backup = await exportBackup(there, key);
+  const here = memoryStorage();
+  await importBackup(here, key, backup);
+  assert.equal((await loadPatientData(here, key, "p1")).noKnownAllergies, "2026-11-20");
 });

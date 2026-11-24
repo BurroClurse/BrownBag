@@ -78,11 +78,30 @@ export function countLine(entry) {
 
 // Why "From your records" is empty, or null when it isn't.
 export function emptyRecordsText(split, arranged) {
-  if (arranged.current.some(function (entry) { return !entry.asNeededAt; })) return null;
-  if (arranged.current.length) return "Your current medicines are under As needed.";
-  if (arranged.stopped.length) return "You've marked all your current medicines Not taking.";
-  if (split.older.length) return "No current medicines in your records.";
+  // Medicines only the insurer knows about have their own section.
+  var fromRecords = function (entry) { return entry.origin !== "claims"; };
+  if (arranged.current.some(function (entry) { return fromRecords(entry) && !entry.asNeededAt; })) return null;
+  if (arranged.current.some(fromRecords)) return "Your current medicines are under As needed.";
+  if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records Not taking.";
+  if (split.older.some(fromRecords)) return "No current medicines in your records.";
   return "No medicines in your records.";
+}
+
+// Where a medicine goes when "I stopped this" is undone.
+export function backToList(entry) {
+  return entry.origin === "claims"
+    ? { name: "Filled, not in your records", focusId: "fills-heading" }
+    : { name: "From your records", focusId: "records-heading" };
+}
+
+// A half-typed addition is kept while Brown Bag stays unlocked, so Done,
+// Back or an update doesn't throw it away.
+export function draftStarted(draft) {
+  return Boolean(draft && (draft.name.trim() || draft.dose.choice || draft.often.choice));
+}
+
+export function unsavedText(draft) {
+  return (draft.name.trim() || "The medicine you were adding") + " isn't saved yet. Open My medicines to finish adding it.";
 }
 
 export function makeAddition(input, now) {
@@ -145,13 +164,33 @@ export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
 
-export function medicinesButtonText(count) {
-  return "My medicines (" + count + ")";
+// Some of the medicines didn't load: no number anywhere, which would read as
+// the whole.
+export function medicinesPartial(state) {
+  return Boolean(state.split.failed || state.split.heldBack || state.dataFailed);
+}
+
+// What the QR code tells staff about what's missing, so a partial list never
+// looks complete.
+export function shareWarnings(state) {
+  return {
+    recordsSavedAt: state.savedAt,
+    recordsUpdatedAt: state.updatedAt,
+    claims: state.split.claims,
+    incomplete: medicinesPartial(state),
+    ownMissing: state.dataFailed,
+    unnamed: state.split.placeholders || 0,
+    allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt }
+  };
+}
+
+export function medicinesButtonText(count, partial) {
+  return partial ? "My medicines" : "My medicines (" + count + ")";
 }
 
 // The notes at the top of the home screen, one short line each, only when
 // needed, in order. While the list is updating, its date line waits.
-export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, installTip, now }) {
+export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, dataFailed, allergiesRefused, installTip, now }) {
   var out = [];
   if (updating) {
     out.push({ kind: "updating", text: "Updating your list…" });
@@ -159,17 +198,26 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, in
     out.push({ kind: "offline", text: "No connection. List from " + listDate(savedAt, now) + "." });
   } else if (savedAt && needsSignIn) {
     out.push({ kind: "sign-in", text: "List from " + listDate(savedAt, now) + ". Sign in again to update it." });
+  } else if (allergiesRefused) {
+    out.push({ kind: "sign-in", text: "Sign in again to add your allergies." });
   }
   if (failed) out.push({ kind: "failed", text: "Some records didn't load." });
+  if (dataFailed) out.push({ kind: "failed", text: "What you added couldn't be opened." });
   if (installTip) out.push({ kind: "install", text: installTip });
   return out;
 }
 
 // Changes the patient made while the records part was a saved copy (no
 // fresh update since). A change that's undone cancels out.
-var OPPOSITE = { stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added", "as-needed": "regular", regular: "as-needed" };
+var OPPOSITE = {
+  stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added",
+  "as-needed": "regular", regular: "as-needed",
+  "allergy-added": "allergy-removed", "allergy-removed": "allergy-added",
+  "none-said": "none-unsaid", "none-unsaid": "none-said"
+};
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
+  if (kind.indexOf("reaction-") === 0) return logReaction(list, kind, name, extra);
   for (var i = list.length - 1; i >= 0; i -= 1) {
     if (list[i].name === name && list[i].kind === OPPOSITE[kind]) {
       list.splice(i, 1);
@@ -180,25 +228,97 @@ export function logChange(changes, kind, name, extra) {
   return list;
 }
 
+// One line per reaction, saying what changed since the records were updated:
+// added, changed or removed. "reaction-restored" is Undo after a removal.
+function logReaction(list, kind, name, extra) {
+  var at = function (k) { return list.findIndex(function (c) { return c.kind === k && c.name === name; }); };
+  var entry = function (k, more) { return Object.assign({ kind: k, name: name }, extra || {}, more || {}); };
+  var added = at("reaction-added");
+  var changed = at("reaction-changed");
+  var removed = at("reaction-removed");
+  if (kind === "reaction-restored") {
+    if (removed === -1) return list.concat(entry("reaction-added"));
+    var was = list[removed].was;
+    list.splice(removed, 1);
+    return was ? list.concat(entry(was)) : list;
+  }
+  if (kind === "reaction-removed") {
+    if (added !== -1) {
+      list.splice(added, 1);
+      return list;
+    }
+    if (changed !== -1) {
+      list.splice(changed, 1);
+      return list.concat(entry(kind, { was: "reaction-changed" }));
+    }
+    return removed === -1 ? list.concat(entry(kind)) : list;
+  }
+  if (kind === "reaction-changed" && (added !== -1 || changed !== -1)) return list;
+  return added === -1 ? list.concat(entry(kind)) : list;
+}
+
+// Said when an update ends with nothing else to say.
+export function updateDoneText(allergyStatus) {
+  return allergyStatus === "failed"
+    ? "Your medicines are up to date. Your allergies couldn't be updated."
+    : "Your list is up to date.";
+}
+
+function partOf(change) {
+  return change.part || "medicines";
+}
+
+// The log after one part was updated from the records: that part's changes
+// no longer need a warning.
+export function keepChanges(changes, updatedPart) {
+  return (changes || []).filter(function (change) { return partOf(change) !== updatedPart; });
+}
+
+function changeLine(change) {
+  switch (change.kind) {
+    case "stopped": return "Marked " + change.name + " Not taking";
+    case "unstopped": return "Put " + change.name + " back on your list";
+    case "as-needed": return "Marked " + change.name + " As needed";
+    case "regular": return "Took " + change.name + " off As needed";
+    case "removed": return "Removed " + change.name;
+    case "allergy-added": return "Added the allergy " + change.name;
+    case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;
+    case "reaction-added": return "Added a reaction to " + change.name;
+    case "reaction-changed": return "Changed your reaction to " + change.name;
+    case "reaction-removed": return "Removed your reaction to " + change.name;
+    case "none-said": return "Said you have no known allergies";
+    case "none-unsaid": return "Took back that you have no known allergies";
+    default: return "Added " + change.name + (change.checked === false ? " (name not checked)" : "");
+  }
+}
+
 // The alert on the QR screen when the list was changed while it was a saved
-// copy: what changed, and that the records part needs a connection.
-export function changeAlert(changes, savedAt, now) {
-  if (!changes || !changes.length || !savedAt) {
+// copy: what changed, and that the records part needs a connection. Medicines
+// and allergies update on their own, so each has its own saved date (or null
+// when it's fresh).
+export function changeAlert(changes, saved, now) {
+  var shown = (changes || []).filter(function (change) { return saved[partOf(change)]; });
+  if (!shown.length) {
     return null;
   }
-  var when = listDate(savedAt, now);
-  var lines = changes.map(function (change) {
-    if (change.kind === "stopped") return "Marked " + change.name + " Not taking";
-    if (change.kind === "unstopped") return "Put " + change.name + " back on your list";
-    if (change.kind === "as-needed") return "Marked " + change.name + " As needed";
-    if (change.kind === "regular") return "Took " + change.name + " off As needed";
-    if (change.kind === "removed") return "Removed " + change.name;
-    return "Added " + change.name + (change.checked === false ? " (name not checked)" : "");
+  var parts = ["medicines", "allergies"].filter(function (part) {
+    return shown.some(function (change) { return partOf(change) === part; });
   });
+  var when = listDate(parts.map(function (part) { return saved[part]; }).sort()[0], now);
   return {
     title: "This code isn't fully up to date",
     intro: "It includes the changes you made since your records were last updated on " + when + ":",
-    lines: lines,
-    advice: "Your medicines from your records are from " + when + ". Get a connection and open Brown Bag again to update them, then show a new code."
+    lines: shown.map(changeLine),
+    advice: "Your " + parts.join(" and ") + " from your records are from " + when + ". Get a connection and open Brown Bag again to update them, then show a new code."
+  };
+}
+
+// Where the QR code comes out from: the bag, measured from the middle of the
+// screen, and never past its edge (home can be scrolled with large text).
+export function swooshFrom(bag, width, height) {
+  var within = function (value, most) { return Math.max(-most, Math.min(most, value)); };
+  return {
+    x: within(bag.left + bag.width / 2 - width / 2, width / 2),
+    y: within(bag.top + bag.height * 0.35 - height / 2, height / 2)
   };
 }

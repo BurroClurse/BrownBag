@@ -1020,6 +1020,294 @@ card's key still counts, so a stopped medicine doesn't come back.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
 
+### Step 18. Screens that remember where you were (`js/app.js`, `js/view.js`)
+
+Brown Bag draws each screen from scratch from one object called `state`.
+Anything not in `state` is gone at the next draw. That caused most of these
+five rough edges.
+
+**The half-typed medicine** lived only in the boxes on the page. Now every
+keystroke copies it into `state.draft`, and the form fills itself back in.
+Home says "isn't saved yet", because a medicine that isn't saved isn't in
+the QR code. The draft stays in memory only: locking or closing Brown Bag
+forgets it, so nothing unencrypted is stored.
+
+**Back goes back.** The browser keeps a history of steps, and each Brown
+Bag screen adds one (`history.pushState`). The Home Screen steps opened
+from More options didn't add theirs, so Back skipped to home. Now they do.
+
+**Escape on the QR code.** Key presses go to whatever has **focus**. A tap
+on blank space moved focus off the code screen, so it never heard Escape.
+Giving the code screen `tabIndex = -1` lets a tap land on it, without adding
+a stop for the Tab key.
+
+**Say the right list.** "From your records" now says why it's empty when
+only insurance-only medicines are current, and Undo names the list the
+medicine really goes back to.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+Open Brown Bag, type `history.length` in the Console, and watch it change
+as you open screens.
+
+### Step 19. Names a computer reads too simply (`js/add-check.js`)
+
+The add check compares a drug's **first word**. That works for lisinopril
+and fails for "Vitamin D3" and "Vitamin B12", which share a first word and
+nothing else. A **regular expression** (a pattern for matching text) now
+reads which vitamin it is: the letter, and the number right after it. The
+hard part is what the number means: 12 in "Vitamin B 12" is part of the
+name, 50 in "Vitamin D 50 mcg" is a dose, 5,000 in "Vitamin D3 5,000 IU" has
+a comma in it. Each one is a test.
+
+**When unsure, ask.** "Vitamin A and D" names two, so Brown Bag doesn't
+guess: it asks, as before. Asking once too often is better than missing a
+duplicate.
+
+**Say what's true.** A look-alike the patient stopped says it's on the
+stopped list, not "already on your list".
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
+
+### Step 20. Read back everything you wrote (`js/vault.js`)
+
+Brown Bag keeps a small log of changes made without signal, so the QR screen
+can warn "This code isn't fully up to date". The log was saved, but the code
+that loads it named only two fields, the additions and the stopped marks. So
+the log vanished when Brown Bag reopened, and the warning with it.
+
+**The lesson:** code that lists fields by name silently drops any field added
+later. The loader now starts from everything saved. Restoring a backup joins
+both logs without repeats.
+
+**Why no test caught it:** the tests checked the log in memory, and checked
+saving, but never saved, reopened and looked. That **round trip** is now a
+test, and a browser check closes and reopens Brown Bag with no signal.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+
+### Step 21. Allergies: never let "I couldn't check" look like "none" (`js/allergies.js`)
+
+Allergies are the FHIR **AllergyIntolerance** resource. The hard part isn't
+showing them. It's the empty list. "No allergies" can mean four things:
+
+1. The records loaded and have none.
+2. The patient says they have none.
+3. The records couldn't be loaded.
+4. This QR code was made before Brown Bag had allergies.
+
+Only 1 and 2 are safe to call "none", so each has its own words on the phone
+and the staff page. Even a Bundle can lie: a server can answer "here is your
+list" and tuck "some were forbidden" inside (an **OperationOutcome**). Brown
+Bag treats that as a failure.
+
+**Statuses.** `verificationStatus` says how sure the clinic is (confirmed,
+unconfirmed, refuted) and `clinicalStatus` whether it's current. Refuted and
+resolved ones are left out; unconfirmed ones say "Not confirmed".
+
+**Who says so.** FHIR's `asserter` is the person who stated it. The patient's
+own allergies name the patient, so staff see "From patient".
+
+**Codes.** Two records with one code aren't always one allergy. "Allergy to
+drug" covers many, so different names stay apart.
+
+### Step 22. A second reader finds what the first can't
+
+All the tests passed before the review, and it still found that a patient's
+reaction could vanish. The test for it had put the data in by hand, under a
+key the app never uses. **A good test sets things up the way the app does,**
+then changes the world: add the reaction, change the record's code, look.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core" lists
+AllergyIntolerance among the required resources.
+
+### Step 23. When a file arrives late (`sw.js`, `index.html`)
+
+The Android phone check got stuck on "Loading Brown Bag…". The **service
+worker** waits 3 seconds for each file, then uses the phone's copy. A file
+that is new in this version has no copy, and the fallback handed over the
+start page instead: a web page where a script should be. One missing script
+stops all of them, because **modules** import each other.
+
+Now a file with no copy keeps waiting. And if any script still fails, the
+page tries once more by itself, then says "Part of Brown Bag didn't arrive."
+The "tried once" mark stops it from reloading forever.
+
+**The lesson:** test the update, not just the new version. The phones that
+passed had the new files already.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Debug with browser DevTools".
+In the Network tab, set the speed to Slow 3G and open Brown Bag.
+
+### Step 24. Budgets, logs and telling fields apart
+
+Three ideas from the last allergy fixes:
+
+**A time budget.** The medicines get 12 seconds. Allergies and claims used to
+get 6 of their own, whatever had been spent. If reading the patient took 7,
+the total passed 12 and the medicines were thrown away. Now they get only
+what's left.
+
+**A log should say what's true now, not everything that happened.** Change a
+reaction, remove it, undo: the truth is "changed". Each rule is one test.
+
+**Tie a message to its field.** `aria-invalid` marks the field that's wrong
+and `aria-describedby` points at the message, so VoiceOver reads the two
+together. Before, it read the message with no hint of which field.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "Error scenarios and fixes".
+
+### Step 25. What signing out really means (`js/pass.js`, `js/app.js`)
+
+Sign out used to delete one person's refresh token. A second person who had
+signed in on the same phone stayed connected. Now it's for everyone.
+
+**Order matters.** The tokens leave the phone first. Then each health system
+that offers it is asked to end its side (**token revocation**, RFC 7009). If
+there's no signal, the phone is still signed out.
+
+**Never send a token to the wrong place.** The address to revoke it at comes
+from the server's SMART configuration, and Brown Bag uses it only if it's on
+the same server the token came from.
+
+**Late answers.** A server may swap the refresh token each time it's used. If
+its answer came after Brown Bag stopped waiting, the new token was lost and
+the old one no longer worked. It's kept now whenever it arrives, unless
+someone has signed out.
+
+**Practice in the lab:** [Tokens](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#tokens).
+
+### Step 26. Interoperable means another system can use it (`js/share.js`)
+
+Words are for people. Codes are for systems. "Hives" means nothing to a
+computer until it carries a code from a list both sides know.
+
+**Keep what you're given.** The records' reactions came with codes, and Brown
+Bag kept only the words. Passing them on costs nothing and loses nothing.
+
+**Required, extensible, preferred.** FHIR ties each field to a list of codes
+(a **binding**). A required list allows nothing else, so a value outside it
+makes the whole record invalid. The new test reads every allergy Brown Bag
+sends and checks it against those lists.
+
+**Profiles.** US Core narrows FHIR for the US. For "no known allergies" it
+says the status is *confirmed*: the patient was asked and has none.
+
+**One idea, one code.** "Nausea or vomiting" has a code that means both. So
+the list now offers each on its own.
+
+**Codes can have owners.** RxNorm's are free. SNOMED CT is free in the US too,
+but asks for a license first.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper) ▸ "USCDI and US Core".
+
+### Step 27. Choosing where the records are (`launch.html`, `js/sources.js`, `js/launch.js`)
+
+Real apps start by asking which health system you use, because every one of
+them is its own FHIR server with its own sign-in. Now Brown Bag asks too.
+
+**Data first, screen second.** The list is a few lines of data: a name, a
+kind, and whether it's connected. The screen draws whatever is there. Turning
+on a new source later means building its sign-in, then changing one line.
+
+**Only known answers sign in.** The address can say `?source=smart-sandbox`.
+Anything else, even a name on the list, just shows the list. A link that
+brings its own server (`iss`) still works, because that's how SMART launches
+from a portal.
+
+**Greyed out, but readable.** The grey names aren't disabled buttons. They're
+text, so there's nothing to tap and VoiceOver doesn't offer a button that does
+nothing. The grey still passes 4.5 to 1.
+
+**Names have rules.** Each company says how its name may be used. A name of a
+government program has a law: nothing may suggest a connection that isn't
+there. So the heading says "Not connected", not "Coming soon".
+
+**A library can remember a failure.** After one failed try, Try again failed
+too, with the signal back: the sign-in library keeps its first answer. A fresh
+page forgets it. The test browser found this, not reading the code.
+
+**Back is an input too.** A page left mid sign-in can come back exactly as it
+was. So the address is cleaned before leaving, a late answer is ignored, and
+every screen has its own way back (the Home Screen app has no Back button).
+
+**Practice in the lab:** [Watch the Flow](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#watch-the-flow).
+
+### Step 28. Show the real thing (`js/share-list.js`, `js/app.js`)
+
+Not everyone can scan a code. Now the patient can open their own, on their own
+phone, and hand it over.
+
+**Trust comes from the same path.** It would have been easy to draw the list
+the app already has. Instead Brown Bag unlocks the code on the screen, the way
+the staff page does, and draws what comes out. A test checks that both screens
+use the same drawing code. If the two could differ, the button would be worth
+nothing.
+
+**Read-only is a safety feature.** This screen has no Remove and no "I stopped
+this", so a slip of the thumb while showing it can't change the list.
+
+**A total is a promise.** "Medicines (3)" says there are three. When some
+records didn't load, the number is left off and the warning sits right under
+the heading. The fresh review caught that.
+
+**A failure is never an empty list.** If the code can't be unlocked, the screen
+says so. An empty list would read as "takes nothing".
+
+**Two blocks.** Allergies and medicines looked alike. Now a box with a thick
+border and a symbol holds one, and a big heading starts the other. Shape, words
+and color all say it, so no one needs the color.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
+### Step 29. Two dates, two meanings (`js/share.js`, `js/share-list.js`)
+
+"Made on" said when the code was created. A code made today can hold records
+from last week, so it looked newer than it was. Now there are two lines:
+**Records last updated**, when they last loaded into Brown Bag, and **QR code
+made**.
+
+**A date vouches for what's under it.** When some records didn't load, there is
+no date, only "Records: some didn't load". Allergies that loaded at another
+time carry their own.
+
+**What it can't say.** "Last updated" isn't when the clinic changed the record.
+FHIR has that too (`meta.lastUpdated`, `recorded`), but only as good as what the
+clinic entered.
+
+**Say what's missing without scaring anyone.** When insurance fills don't load,
+staff see a note, not a warning: the list still stands, and a medicine only
+insurance knows about may not be listed. A missing extra isn't a wrong list.
+
+**The date goes in the code.** It's a tag on the Bundle (`meta.tag`), where FHIR
+lets an app add its own labels. A code made before this simply doesn't have it.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
+### Step 30. Saying what didn't load (`js/share.js`, `js/view.js`, `js/quiet.js`)
+
+**What changed for staff.** The staff page now says when what the patient added
+couldn't be opened, and when the records have entries with no medicine name.
+Before, those parts looked empty.
+
+**Unknown is not none.** "Nothing added by the patient" is a claim. If the
+phone couldn't open that part, nobody knows. The page now says "Couldn't be
+opened." The same goes for the home button: no number is better than a wrong 0.
+
+**A polite answer can still leave things out.** A FHIR server can answer "OK"
+and put an OperationOutcome inside the Bundle that says some records were held
+back. The allergies check looked for it. The medicines and claims checks now
+do too, with one shared function.
+
+**Logs leak.** The browser keeps a log that anyone holding the phone or
+computer can open. The sign-in library wrote sign-in passes and patient ids in
+it. `js/quiet.js` drops those lines. The library's own file stays unchanged,
+because its hash is checked.
+
+**Test what people read.** The staff tests draw the real page code into a tiny
+stand-in page and read the words. The log test runs the real library and reads
+what it logged. It failed first, which proved the leak.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
 ---
 
@@ -1036,6 +1324,9 @@ card's key still counts, so a stopped medicine doesn't come back.
 - **Certificate**: a website's digital ID, used for https.
 - **Commit**: a saved snapshot of changes, with a message.
 - **Compression**: shrinking data, like zipping a file.
+- **AllergyIntolerance**: the FHIR record of an allergy or intolerance, with its reactions.
+- **Binding**: which list of codes a FHIR field must or should use.
+- **OperationOutcome**: a FHIR message about what went wrong, or was left out.
 - **ExplanationOfBenefit (EOB)**: the FHIR record of an insurance claim; a pharmacy one shows a fill.
 - **FHIR**: the standard format for health records data.
 - **Fork**: your own copy of someone else's repo.

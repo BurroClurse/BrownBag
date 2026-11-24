@@ -162,3 +162,16 @@ uses the codes and names only, and says nothing about it.
 - "How often" list, nine choices.
 - Changing the medicine resets "How much" only.
 - The order of the four checks, and "Start it again" for a stopped one.
+
+## Fixes added 2026-11-23
+
+- Vitamins are told apart by letter, and B vitamins by number. Vitamin D, D2
+  and D3 count as one; a name that doesn't say which, or says two ("Vitamin
+  A and D"), still asks (Claude's call).
+- A look-alike that's stopped says "which is on your stopped list", and one
+  still on the list is shown first.
+- A half-typed addition is kept until Save or Cancel, or until Brown Bag
+  locks or closes. Home says it isn't saved.
+- Doses are compared with the record's dose, not with words in its schedule;
+  a dose with no unit matches the same number of the drug's own form; "as
+  needed" never matches a fixed schedule.

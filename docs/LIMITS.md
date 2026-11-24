@@ -57,3 +57,15 @@ an idea becomes a plan only after its own design.
   patients (Avery Brownbag) disappear.
   - Ideas: the SMART team adds Avery to the built-in data (Tyler holds the
     request).
+- [ ] **11. Allergies are only what the records and the patient say.** The
+  SMART sandbox has no reactions and none marked as medicine allergies
+  (2026-11-23: 372 in all, 369 food, 3 environment), so in a demo those come
+  from the patient.
+  - Now: the patient adds allergies and reactions; a missing reaction, a
+    failed load, and an entry that doesn't say what it's to are all said.
+  - Ideas: Epic's sandbox; warnings against medicines are left to the care
+    team.
+- [ ] **12. Most allergens and reactions the patient picks go as words.** Only
+  drug ingredients (and bee venom) have a code, from RxNorm.
+  - Ideas: SNOMED CT codes, once there is a UMLS license; they are checked
+    and listed in the allergies design.

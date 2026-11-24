@@ -3,7 +3,7 @@
 // It never keeps health data. Records (FHIR), the sign-in server and RxNav
 // always go straight to the network and are never cached.
 
-var CACHE = "brownbag-v19";
+var CACHE = "brownbag-v33";
 // On weak Wi-Fi, stop waiting after this long and use the phone's copy.
 var NETWORK_WAIT_MS = 3000;
 
@@ -11,14 +11,17 @@ var APP_FILES = [
   "./",
   "./index.html",
   "./share.html",
+  "./launch.html",
   "./manifest.webmanifest",
   "./css/brownbag.css",
+  "./js/quiet.js",
   "./js/app.js",
   "./js/view.js",
   "./js/meds.js",
   "./js/rxnorm.js",
   "./js/share.js",
   "./js/share-view.js",
+  "./js/share-list.js",
   "./js/vault.js",
   "./js/lock.js",
   "./js/lock-screen.js",
@@ -29,6 +32,10 @@ var APP_FILES = [
   "./js/claims.js",
   "./js/add-choices.js",
   "./js/add-check.js",
+  "./js/allergies.js",
+  "./js/read.js",
+  "./js/sources.js",
+  "./js/launch.js",
   "./vendor/fhir-client-3.0.1.js",
   "./vendor/qrcode-generator-1.4.4.js",
   "./icons/logo-trimmed.png",
@@ -67,6 +74,31 @@ self.fetchWithin = function (request, ms) {
   });
 };
 
+// Network first. Slow or no network: the phone's copy. A file with no copy
+// (new in this version) keeps waiting for the network: handing it the start
+// page instead left Brown Bag stuck on "Loading".
+self.answerFor = async function (request, ms) {
+  // Stored without the query string, so a sign-in code in the address never
+  // ends up in the cache.
+  var parsed = new URL(request.url);
+  var plain = parsed.origin + parsed.pathname;
+  var asked = self.fetchWithin(request, ms);
+  try {
+    var response = await asked;
+    if (response.ok) {
+      var copy = response.clone();
+      caches.open(CACHE).then(function (cache) { cache.put(plain, copy); });
+    }
+    return response;
+  } catch (error) {
+    var saved = await caches.match(plain);
+    if (!saved && request.mode === "navigate") {
+      saved = await caches.match(new URL("./index.html", self.registration.scope).href);
+    }
+    return saved || fetch(request);
+  }
+};
+
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE).then(function (cache) {
     return cache.addAll(APP_FILES.map(function (url) { return new Request(url, { cache: "reload" }); }));
@@ -92,20 +124,6 @@ self.addEventListener("fetch", function (event) {
   if (request.method !== "GET") return;
   var route = self.routeFor(request.url);
   if (route === "app") {
-    // Stored without the query string, so a sign-in code in the address
-    // never ends up in the cache.
-    var parsed = new URL(request.url);
-    var plain = parsed.origin + parsed.pathname;
-    event.respondWith(self.fetchWithin(request, NETWORK_WAIT_MS).then(function (response) {
-      if (response.ok) {
-        var copy = response.clone();
-        caches.open(CACHE).then(function (cache) { cache.put(plain, copy); });
-      }
-      return response;
-    }).catch(function () {
-      return caches.match(plain).then(function (hit) {
-        return hit || caches.match(new URL("./index.html", self.location.href).href);
-      });
-    }));
+    event.respondWith(self.answerFor(request, NETWORK_WAIT_MS));
   }
 });

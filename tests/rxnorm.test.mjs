@@ -154,3 +154,15 @@ test("the generic comes before a brand, even a shorter brand name", async () => 
   });
   assert.deepEqual((await searchDrugs("ibuprofen", fetchFn)).map((r) => r.rxcui), ["8", "9"]);
 });
+
+test("ingredientsFor says which codes have no ingredient, and not which failed", async () => {
+  const none = new Set();
+  const fetchFn = async (url) => {
+    if (url.includes("/1/")) return { ok: true, json: async () => ({ relatedGroup: { conceptGroup: [{ tty: "IN" }] } }) };
+    if (url.includes("/2/")) throw new Error("offline");
+    return { ok: true, json: async () => ({ relatedGroup: { conceptGroup: [{ tty: "IN", conceptProperties: [{ rxcui: "29046", name: "lisinopril" }] }] } }) };
+  };
+  const map = await ingredientsFor(["1", "2", "3"], fetchFn, { none });
+  assert.deepEqual([...none], ["1"]);
+  assert.deepEqual([...map.keys()], ["3"]);
+});

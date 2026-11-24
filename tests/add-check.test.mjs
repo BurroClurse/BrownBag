@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { checkAddition, displayName } from "../js/add-check.js";
+import { checkAddition, displayName, lookalikeText } from "../js/add-check.js";
 
 const rec = (o) => Object.assign({ key: "rx:314076", name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", dose: "1 tablet", frequency: "1 by mouth once a day", origin: "records" }, o);
 
@@ -64,4 +64,59 @@ test("displayName is the drug's first word, capitalized, past any 24 HR", () => 
   assert.equal(displayName("24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"), "Metformin");
   assert.equal(displayName("lisinopril 10 MG Oral Tablet"), "Lisinopril");
   assert.equal(displayName("Lisinoprill"), "Lisinoprill");
+});
+
+const typed = (name, extra = {}) => Object.assign({ key: "t:" + name, name, rxcui: null, dose: null, frequency: null, origin: "added" }, extra);
+
+test("different vitamins are different medicines", () => {
+  for (const [a, b] of [["Vitamin D3", "Vitamin B12"], ["vitamin c 500 mg", "Vitamin D 1000 IU"], ["Vitamin B6", "Vitamin B12"], ["Vitamin D3 5,000 IU", "Vitamin B12"], ["Vitamin C 500 mg/day", "Vitamin E"], ["Vitamin B 6", "vitamin B-12"], ["Vitamin E", "vitamin K2"]]) {
+    assert.equal(checkAddition(typed(a), [typed(b)], new Map()), null, a + " / " + b);
+  }
+});
+
+test("one vitamin written several ways is the same medicine", () => {
+  for (const [a, b] of [["Vitamin D3", "vitamin D 1000 IU"], ["Vitamin B12", "vitamin b-12"], ["Vitamin B 12", "vitamin B12 500 mcg"], ["Vitamin C", "VITAMIN C 500 MG"], ["Vitamin B complex", "Vitamin B12"], ["vitamin", "Vitamin D"], ["Vitamin D 50 mcg", "Vitamin D3"], ["Vitamin A and D", "Vitamin D"], ["Vitamin A & D", "vitamin D"], ["Vitamin D3 K2", "Vitamin K"], ["Vitamin D3/K2", "Vitamin K"]]) {
+    const result = checkAddition(typed(a), [typed(b)], new Map());
+    assert.ok(result && result.kind !== "lookalike", a + " / " + b);
+  }
+});
+
+test("displayName says which vitamin", () => {
+  assert.equal(displayName("vitamin d3 1000 IU"), "Vitamin D3");
+  assert.equal(displayName("Vitamin B 12"), "Vitamin B12");
+  assert.equal(displayName("vitamin D 50 mcg"), "Vitamin D");
+  assert.equal(displayName("Vitamin C 500 MG"), "Vitamin C");
+  assert.equal(displayName("vitamin"), "Vitamin");
+  assert.equal(displayName("Vitamin A and D"), "Vitamin");
+});
+
+test("a look-alike on the list comes before a look-alike that's stopped", () => {
+  const list = [typed("Hydralazine", { key: "a", stoppedAt: "2026-11-01" }), typed("Hydralazine HCL", { key: "b" })];
+  assert.equal(checkAddition(typed("Hydroxyzine"), list, new Map()).match.key, "b");
+});
+
+test("lookalikeText says where the look-alike is", () => {
+  assert.equal(lookalikeText("Hydroxyzine", { name: "hydralazine 25 MG Oral Tablet" }), "Hydroxyzine looks like Hydralazine, which is already on your list. They're different medicines. Check the bottle.");
+  assert.equal(lookalikeText("Hydroxyzine", { name: "hydralazine 25 MG Oral Tablet", stoppedAt: "2026-11-01" }), "Hydroxyzine looks like Hydralazine, which is on your stopped list. They're different medicines. Check the bottle.");
+});
+
+const rx = (dose, frequency, o = {}) => Object.assign({ key: "rx:1", name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", dose, frequency, origin: "records" }, o);
+const kind = (dose, frequency, entry) => { const r = checkAddition({ name: "lisinopril 10 MG Oral Tablet", rxcui: "314076", dose, frequency }, [entry], new Map()); return r && r.kind; };
+
+test("a dose is compared with the dose, not with words in the schedule", () => {
+  assert.equal(kind("2 tablets", "Once a day", rx("1 tablet", "2 tablets on Sunday, once a day otherwise")), "different");
+  assert.equal(kind("1 tablet", "Once a day", rx("1 tablet", "once a day")), "duplicate");
+  // Records often put it all in the schedule.
+  assert.equal(kind("1 tablet", "Once a day", rx(null, "Take 1 tablet by mouth once a day")), "duplicate");
+});
+
+test("a dose with no unit matches the same number of the drug's own form", () => {
+  assert.equal(kind("1 tablet", "Once a day", rx("1", "once a day")), "duplicate");
+  assert.equal(kind("2 tablets", "Once a day", rx("1", "once a day")), "different");
+  assert.equal(kind("1 mL", "Once a day", rx("1", "once a day")), "different");
+});
+
+test("as needed isn't the same as every day", () => {
+  assert.equal(kind("1 tablet", "Once a day", rx("1 tablet", "once a day, as needed")), "different");
+  assert.equal(kind("1 tablet", "As needed", rx("1 tablet", "as needed")), "duplicate");
 });

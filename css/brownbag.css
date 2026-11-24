@@ -291,6 +291,8 @@ button.secondary.big { border-color: var(--teal); }
    short screen (iPhone Safari with its toolbars) it scrolls instead, so
    "Tap to show the code" never slides under Close. */
 .qr-overlay > * { flex-shrink: 0; }
+/* Focused only by a tap on its blank space; its buttons show their own ring. */
+.qr-overlay:focus { outline: none; }
 .qr-overlay > :last-child { margin-bottom: auto; }
 /* The code screen is white in dark mode too, so its outline buttons and
    focus ring use the light-mode colors. */
@@ -397,8 +399,8 @@ button.help-button {
 .qr-overlay .help-row .qr-say { margin: 0; }
 /* A section heading with its "?" at the end of the line. */
 .help-row.section-help { justify-content: space-between; margin: 2rem 0 0.5rem; }
-.help-row.section-help h2 { flex: 1 1 auto; }
-.screen-medicines .help-row.section-help { margin: 1.5rem 0 0.6rem; }
+.help-row.section-help h2, .help-row.section-help h3 { flex: 1 1 auto; margin: 0; }
+.screen-medicines .help-row.section-help { margin: 1.25rem 0 0.6rem; }
 .section-help + .help-panel { margin-top: 0; }
 
 /* The 6 digits on the QR screen: blurred until tapped. */
@@ -449,10 +451,46 @@ button.help-button {
 
 /* The question asked before adding a medicine that is already there. */
 .add-check { background: var(--warn-bg); color: var(--warn-ink); border: 2px solid var(--warn-ink); border-radius: 14px; padding: 1rem; margin-top: 1rem; }
-.add-check h3 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.add-check h3, .add-check h4 { margin: 0 0 0.5rem; font-size: 1.2rem; }
 .add-check .check-line { margin: 0.25rem 0; font-weight: 600; }
 .add-check .big { font-size: 1.25rem; overflow-wrap: anywhere; }
 .other-box { margin-top: 0.25rem; }
+
+/* The sign-in list: the one that works is a button; the rest is grey text
+   (not dimmed below 4.5 to 1), and nothing in it can be tapped. */
+.screen-launch .button.big, .screen-launch button.big { display: block; width: 100%; text-align: center; margin-right: 0; }
+.source-note { margin-top: 0.25rem; }
+.not-connected, .not-connected h2 { color: #5c5650; }
+.not-connected h2 { margin-top: 1.75rem; }
+.not-connected h3 { margin: 0.9rem 0 0.2rem; font-size: 1.05rem; }
+.not-connected ul { margin: 0; padding-left: 1.25rem; }
+.fine-print { font-size: 0.85rem; color: var(--muted); margin-top: 1.25rem; }
+
+/* Two blocks, on My medicines, the staff page and "See what's inside":
+   allergies in a box nobody can miss, then medicines. */
+.allergy-box { background: #FBE4DF; border: 3px solid var(--error-ink); border-radius: 16px; padding: 0.75rem 0.9rem 1rem; margin: 1.5rem 0 0; }
+.allergy-box > .block-title, .screen-medicines .allergy-box > .block-title { margin: 0 0 0.6rem; padding: 0; border: none; color: var(--error-ink); font-size: 1.6rem; }
+.allergy-sign { display: inline-block; margin-right: 0.45rem; vertical-align: -0.1em; }
+.allergy-sign svg { display: block; width: 1em; height: 0.92em; }
+.allergy-box ul.meds > li:last-child { margin-bottom: 0; }
+.medicines-block > .block-title, .screen-medicines .medicines-block > .block-title { margin: 2.25rem 0 0; padding-bottom: 0.3rem; border-bottom: 3px solid var(--ink); font-size: 1.6rem; }
+.block-title, .part-title, .share-name { overflow-wrap: anywhere; }
+.inside-overlay:focus { outline: none; }
+.part-title { margin: 1.25rem 0 0.6rem; font-size: 1.25rem; }
+.allergy-box .part-title { margin-top: 0.75rem; font-size: 1.1rem; }
+.share-name { font-size: 1.75rem; margin: 0.5rem 0 0.25rem; border: none; padding: 0; }
+.inside-overlay { position: fixed; inset: 0; z-index: 20; overflow-y: auto; background: var(--paper); }
+.inside-page { max-width: 40rem; margin: 0 auto; padding: max(1rem, env(safe-area-inset-top)) 1rem max(2rem, env(safe-area-inset-bottom)); }
+/* A short screen (iPhone Safari with its toolbars): tighter, so the title, the
+   code, the digits and both buttons fit without scrolling. */
+@media (max-height: 720px) {
+  .qr-overlay { padding-top: max(0.6rem, env(safe-area-inset-top)); padding-bottom: max(0.6rem, env(safe-area-inset-bottom)); }
+  .qr-overlay h2 { font-size: 1.15rem; margin-bottom: 0.35rem; }
+  .qr-overlay .qr-say { font-size: 1.15rem; margin-top: 0.4rem; }
+  .qr-overlay .share-code { font-size: min(2.4rem, 12vw); }
+  .qr-overlay .qr canvas { width: min(88vw, 45dvh); }
+  .qr-overlay > button.big { min-height: 48px; padding: 0.35rem 1rem; margin-top: 0.4rem; font-size: 1.15rem; }
+}
 
 /* The staff page's code form: a short label, one big box for the digits,
    and a full-width button. */

@@ -88,11 +88,16 @@ export async function savePatientData(storage, key, patientId, data) {
 
 async function loadByName(storage, key, name) {
   var blob = storage.getItem(name);
-  if (!blob) {
-    return { additions: [], stopped: {}, asNeeded: {} };
-  }
-  var data = await decryptJSON(key, blob);
-  return { additions: data.additions || [], stopped: data.stopped || {}, asNeeded: data.asNeeded || {} };
+  var data = blob ? await decryptJSON(key, blob) : {};
+  // Everything saved comes back (the log of changes made without signal too).
+  return Object.assign({}, data, {
+    additions: data.additions || [],
+    stopped: data.stopped || {},
+    asNeeded: data.asNeeded || {},
+    allergies: data.allergies || [],
+    allergyReactions: data.allergyReactions || {},
+    noKnownAllergies: data.noKnownAllergies || null
+  });
 }
 
 async function saveByName(storage, key, name, data) {
@@ -142,13 +147,37 @@ export async function importBackup(storage, key, text) {
   for (var pair of restored) {
     var fromBackup = pair[1] || {};
     var onPhone = await loadByName(storage, key, pair[0]);
-    var ids = new Set(onPhone.additions.map(function (a) { return a.id; }));
-    var additions = onPhone.additions.concat((fromBackup.additions || []).filter(function (a) { return !ids.has(a.id); }));
+    var additions = joinById(onPhone.additions, fromBackup.additions);
+    var allergies = joinById(onPhone.allergies, fromBackup.allergies);
     var stopped = Object.assign({}, fromBackup.stopped || {}, onPhone.stopped);
-    var asNeeded = Object.assign({}, fromBackup.asNeeded || {}, onPhone.asNeeded);
-    await saveByName(storage, key, pair[0], { additions: additions, stopped: stopped, asNeeded: asNeeded });
+    await saveByName(storage, key, pair[0], Object.assign({}, fromBackup, onPhone, {
+      additions: additions,
+      stopped: stopped,
+      asNeeded: Object.assign({}, fromBackup.asNeeded || {}, onPhone.asNeeded),
+      allergies: allergies,
+      allergyReactions: Object.assign({}, fromBackup.allergyReactions || {}, onPhone.allergyReactions),
+      // "No known allergies" can't stand next to an allergy.
+      noKnownAllergies: allergies.length ? null : (onPhone.noKnownAllergies || fromBackup.noKnownAllergies || null),
+      changes: joinChanges(onPhone.changes, fromBackup.changes)
+    }));
   }
   return restored.length;
+}
+
+function joinById(onPhone, fromBackup) {
+  var ids = new Set(onPhone.map(function (a) { return a.id; }));
+  return onPhone.concat((fromBackup || []).filter(function (a) { return !ids.has(a.id); }));
+}
+
+// Both logs, without repeats. A change undone on one side only stays listed:
+// saying too much is better than losing the warning.
+function joinChanges(onPhone, fromBackup) {
+  var joined = (onPhone || []).slice();
+  (fromBackup || []).forEach(function (change) {
+    var known = joined.some(function (c) { return c.kind === change.kind && c.name === change.name; });
+    if (!known) joined.push(change);
+  });
+  return joined;
 }
 
 export function toBase64Url(bytes) {

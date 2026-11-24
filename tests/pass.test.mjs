@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, PASS_UNUSED_DAYS } from "../js/pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, PASS_UNUSED_DAYS, allPasses, deleteAllPasses, revokePass } from "../js/pass.js";
 import { deriveKeyFromPin, exportBackup, savePatientData } from "../js/vault.js";
 
 // A localStorage stand-in with the parts the app uses.
@@ -133,4 +133,47 @@ test("passFromState stamps when the pass was last used", () => {
   const before = Date.now();
   const pass = passFromState(STATE);
   assert.ok(pass.usedAt >= before && pass.usedAt <= Date.now());
+});
+
+const PASS = (patientId, o = {}) => Object.assign({ serverUrl: "https://ehr.example/r4", clientId: "app", tokenUri: "https://ehr.example/auth/token", scope: "s", refreshToken: "r-" + patientId, patientId }, o);
+
+test("sign out reaches everyone who signed in on this phone", async () => {
+  const storage = memoryStorage();
+  const k = await key();
+  await savePass(storage, k, PASS("one"));
+  await savePass(storage, k, PASS("two"));
+  storage.setItem("brownbag:data:x", "kept");
+  assert.deepEqual((await allPasses(storage, k)).map((p) => p.patientId).sort(), ["one", "two"]);
+  deleteAllPasses(storage);
+  assert.deepEqual(storage.names(), ["brownbag:data:x"]);
+});
+
+test("a pass that can't be opened is still deleted at sign out", async () => {
+  const storage = memoryStorage();
+  await savePass(storage, await key("111111"), PASS("one"));
+  assert.deepEqual(await allPasses(storage, await key()), []);
+  deleteAllPasses(storage);
+  assert.deepEqual(storage.names(), []);
+});
+
+test("sign out tells the health system to end the pass, when it offers that", async () => {
+  const calls = [];
+  const server = (config) => async (url, o = {}) => { calls.push([url, o.method || "GET", o.body && o.body.toString()]); return { ok: true, json: async () => config }; };
+  assert.equal(await revokePass(PASS("one"), server({ revocation_endpoint: "https://ehr.example/auth/revoke" })), true);
+  assert.equal(calls[0][0], "https://ehr.example/r4/.well-known/smart-configuration");
+  assert.deepEqual(calls[1], ["https://ehr.example/auth/revoke", "POST", "token=r-one&token_type_hint=refresh_token&client_id=app"]);
+});
+
+test("the pass is never sent to another server, and no answer is no harm", async () => {
+  let posted = 0;
+  const server = (config) => async (url, o = {}) => { if (o.method === "POST") posted += 1; return { ok: true, json: async () => config }; };
+  assert.equal(await revokePass(PASS("one"), server({ revocation_endpoint: "https://evil.example/revoke" })), false);
+  assert.equal(await revokePass(PASS("one"), server({ revocation_endpoint: "http://ehr.example/revoke" })), false);
+  assert.equal(await revokePass(PASS("one"), server({})), false);
+  assert.equal(posted, 0);
+  assert.equal(await revokePass(PASS("one"), async () => { throw new Error("offline"); }), false);
+});
+
+test("a sign-in with no token address gives no pass", () => {
+  assert.equal(passFromState(Object.assign({}, STATE, { tokenUri: undefined })), null);
 });

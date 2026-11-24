@@ -40,7 +40,9 @@ export async function searchDrugs(term, fetchFn = globalThis.fetch, { timeoutMs 
   return uniqueByRxcui(ranked).slice(0, MAX_RESULTS);
 }
 
-export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch, { timeoutMs = TIMEOUT_MS } = {}) {
+// none, a Set, collects the codes RxNav answered about but has no ingredient
+// for, so they needn't be asked again. A failed lookup isn't one of them.
+export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch, { timeoutMs = TIMEOUT_MS, none = null } = {}) {
   var map = new Map();
   var queue = Array.from(new Set(rxcuis));
   async function worker() {
@@ -61,6 +63,8 @@ export async function ingredientsFor(rxcuis, fetchFn = globalThis.fetch, { timeo
             rxcui: ingredients.map(function (concept) { return concept.rxcui; }).join("+"),
             name: ingredients.map(function (concept) { return concept.name; }).join(" / ")
           });
+        } else if (none) {
+          none.add(rxcui);
         }
       } catch (error) {
         // Leave it out. Grouping falls back to the exact product.

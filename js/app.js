@@ -8,14 +8,22 @@ import { LOCK_KEY, hasLock } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
-import { buildShareBundle, packShare, fitsInQr } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert } from "./view.js";
-import { saveRecords, loadLastRecords, hasSavedList } from "./offline.js";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired } from "./pass.js";
+import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle } from "./share.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
+import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
+import { heldBack, recordReader, waitLeft } from "./read.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
+import { signInLink } from "./sources.js";
+import { allergyBox, drawShareList, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
-import { checkAddition, displayName } from "./add-check.js";
+import { checkAddition, displayName, lookalikeText } from "./add-check.js";
+
+// The page's own watcher (in the HTML) stops once the app has started.
+window.brownBagStarted = true;
+try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
 
 var SOURCE = "SMART sandbox";
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -29,6 +37,9 @@ var RECORDS_WAIT_MS = 12000;
 // holds up the medicines.
 var CLAIMS_WAIT_MS = 6000;
 
+// Set by Sign out, until someone signs in again.
+var SIGNED_OUT_KEY = "brownbag:signed-out";
+
 var root = document.getElementById("app");
 var params = new URLSearchParams(location.search);
 var cameBackFromAuth = params.has("code") || params.has("error") || params.has("state");
@@ -38,19 +49,37 @@ var state = {
   patientId: null,
   patient: null,
   split: { current: [], older: [], failed: false },
-  data: { additions: [], stopped: {}, asNeeded: {} },
+  data: emptyData(),
+  // The patient's own part couldn't be opened, so nothing may read as "none".
+  dataFailed: false,
+  // The records' allergies; the patient's own are in data (js/allergies.js).
+  allergies: keepAllergies(null),
   adding: false,
-  qr: null,
+  // The add form as the patient left it (never saved to the phone).
+  draft: null,
+  // "new" while adding an allergy, or the key of the one whose reaction is
+  // being added; and its form as the patient left it.
+  allergyForm: null,
+  allergyDrafts: {},
+  lastRemovedAllergy: null,
   announce: "",
   focusId: null,
   savedAt: null,
+  // When the records last loaded, while they aren't a saved copy.
+  updatedAt: null,
   screen: "home",
   // The notes at the top of home: updating with the pass, no connection,
   // or the pass ended (or there is none) and the list is a saved copy.
   updating: false,
   offline: false,
-  needsSignIn: false
+  needsSignIn: false,
+  // Sign out was tapped: nothing may save a pass after this.
+  signedOut: false
 };
+
+function emptyData() {
+  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, noKnownAllergies: null };
+}
 
 // Locks Brown Bag again after 5 minutes without a tap, or 5 minutes away
 // from it (js/idle.js). Locking reloads the page, which forgets the key; the
@@ -114,6 +143,10 @@ async function start() {
     drawSignedOut(null);
     return;
   }
+  // Signed out: say so, and let them sign in or open the list they saved.
+  if (!cameBackFromAuth && localStorage.getItem(SIGNED_OUT_KEY)) {
+    await savedListAsked();
+  }
   state.key = await showLockScreen(root);
   startAutoLock();
   // One unlock: with a saved list and a pass, show the list now and update
@@ -163,6 +196,16 @@ async function openWithPass() {
   return true;
 }
 
+async function keepRotated(client, pass) {
+  var fresh = passFromState(client.state);
+  if (state.signedOut || !fresh || fresh.refreshToken === pass.refreshToken) return;
+  try {
+    await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
+  } catch (error) {
+    // Not kept: the next open asks to sign in.
+  }
+}
+
 // Trades the pass for fresh access, then loads the records the same way a
 // sign-in does. Each step has a time limit, and the new list only replaces
 // the saved one once it has fully arrived, so a late answer can't change
@@ -173,7 +216,9 @@ async function updateWithPass(pass) {
   var client;
   try {
     client = FHIR.client(clientStateFromPass(pass));
-    await withTimeout(client.refresh(), UPDATE_WAIT_MS);
+    // The new pass is kept even if it arrives after the wait is over: the
+    // server may already have ended the old one.
+    await withTimeout(client.refresh().then(function () { return keepRotated(client, pass); }), UPDATE_WAIT_MS);
   } catch (error) {
     if (refreshRefused(error)) {
       await deletePass(localStorage, pass.patientId);
@@ -184,33 +229,43 @@ async function updateWithPass(pass) {
     finishUpdate();
     return;
   }
+  // What has arrived so far, so allergies that loaded aren't lost when the
+  // medicines don't.
+  var found = {};
   try {
-    var fresh = passFromState(client.state);
-    if (fresh && fresh.refreshToken !== pass.refreshToken) {
-      await savePass(localStorage, state.key, Object.assign(fresh, { patientId: fresh.patientId || pass.patientId }));
-    }
-    var result = await withTimeout(loadFresh(client), RECORDS_WAIT_MS);
+    var result = await withTimeout(loadFresh(client, found, RECORDS_WAIT_MS), RECORDS_WAIT_MS);
     if (result.split.failed) {
       state.offline = true;
+      await allergiesAlone(found);
     } else {
       var samePatient = result.patientId === state.patientId;
       usePatient(result);
       if (!samePatient) {
+        state.adding = false;
+        state.draft = null;
+        state.allergyForm = null;
+        state.allergyDrafts = {};
+        state.lastRemoved = null;
+        state.lastRemovedAllergy = null;
         await loadAdditions();
       }
+      // After loadAdditions: clearing the change log saves state.data, which
+      // must already be this patient's.
+      await takeAllergies(found);
       await keepFreshCopy();
-      await clearChanges();
+      await clearChanges("medicines");
     }
   } catch (error) {
     state.offline = true;
+    await allergiesAlone(found);
   }
   finishUpdate();
 }
 
 function finishUpdate() {
   state.updating = false;
-  var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, now: new Date() })[0];
-  sayUpdate(note ? note.text : "Your list is up to date.");
+  var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
+  sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
   if (state.screen === "home") {
@@ -221,6 +276,8 @@ function finishUpdate() {
 // Saves the pass a sign-in returned, or removes the old one if this sign-in
 // didn't give one (the patient said no to staying signed in).
 async function keepPass(client) {
+  if (state.signedOut) return;
+  localStorage.removeItem(SIGNED_OUT_KEY);
   try {
     await storePassFrom(localStorage, state.key, client.state, state.patientId);
   } catch (error) {
@@ -230,17 +287,56 @@ async function keepPass(client) {
 
 // Reads the patient and the medicines without touching what's on screen.
 // Throws if the patient can't be read.
-async function loadFresh(client) {
+async function loadFresh(client, found, total) {
+  var started = Date.now();
   var patient = await client.patient.read();
   var patientId = client.patient.id;
-  // Claims load alongside the medicines under their own time limit, so a
-  // slow insurer never holds up the list.
-  var claims = readClaims(function (url) { return client.request(url); }, patientId, ingredientsFor, CLAIMS_WAIT_MS);
+  found.patientId = patientId;
+  var extras = waitLeft(Date.now() - started, CLAIMS_WAIT_MS, total);
+  // Claims and allergies load alongside the medicines under their own time
+  // limit, so neither ever holds up the list.
+  var allergies = readAllergies(recordReader(client), patientId, SOURCE, extras)
+    .then(function (result) { found.allergies = result; });
+  var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras);
+  var split = mergeClaims(await loadMedicines(client, patientId), await claims, new Date());
+  await allergies;
   return {
     patientId: patientId,
     patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
-    split: mergeClaims(await loadMedicines(client, patientId), await claims, new Date())
+    split: split
   };
+}
+
+// Puts the allergies that loaded on screen, or keeps this patient's saved
+// ones with their date. Never another patient's.
+async function takeAllergies(found) {
+  var saved = await loadRecordsFor(localStorage, state.key, found.patientId);
+  state.allergies = keepAllergies(found.allergies || { status: "failed" }, saved ? saved.allergies : undefined);
+  if (state.allergies.status === "loaded") {
+    await clearChanges("allergies");
+  }
+}
+
+// The medicines didn't load, so the saved list stays; allergies that did
+// load join it, with their own date.
+async function allergiesAlone(found) {
+  if (!found.allergies || found.patientId !== state.patientId) return;
+  await takeAllergies(found);
+  try {
+    var saved = await loadRecordsFor(localStorage, state.key, state.patientId);
+    if (saved) await saveRecords(localStorage, state.key, Object.assign({}, saved, { allergies: allergiesToSave() }));
+  } catch (error) {
+    // Not saved for offline use this time. They still show.
+  }
+}
+
+// What the saved copy holds: nothing (never loaded) stays nothing, so a
+// later open says "haven't been loaded yet", not "none".
+function allergiesToSave() {
+  var a = state.allergies;
+  if (a.savedAt) return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.savedAt };
+  if (a.status === "loaded") return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.updatedAt };
+  return undefined;
 }
 
 function usePatient(result) {
@@ -248,6 +344,7 @@ function usePatient(result) {
   state.patient = result.patient;
   state.split = result.split;
   state.savedAt = null;
+  state.updatedAt = new Date().toISOString();
   state.offline = false;
   state.needsSignIn = false;
 }
@@ -260,7 +357,9 @@ async function keepFreshCopy() {
       current: state.split.current,
       older: state.split.older,
       placeholders: state.split.placeholders || 0,
+      heldBack: Boolean(state.split.heldBack),
       claims: state.split.claims || null,
+      allergies: allergiesToSave(),
       savedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -271,32 +370,37 @@ async function keepFreshCopy() {
 // After a sign-in: the patient, the patient's additions and the medicines,
 // then the copy saved for offline use. Throws if the patient can't be read.
 async function loadFromClient(client) {
-  var result = await loadFresh(client);
+  var found = {};
+  var result = await loadFresh(client, found, Infinity);
   usePatient(result);
   await loadAdditions();
+  await takeAllergies(found);
   if (state.split.failed) {
     var saved = await loadLastRecords(localStorage, state.key);
     if (saved && saved.patientId === state.patientId) {
       useSaved(saved);
       state.needsSignIn = true;
+      await allergiesAlone(found);
     }
   } else {
     await keepFreshCopy();
-    await clearChanges();
+    await clearChanges("medicines");
   }
 }
 
 // Changes made while the records part is a saved copy are kept, so the QR
 // screen can say what changed since the records were last updated.
 function recordChange(kind, name, extra) {
-  if (state.savedAt) {
+  var savedAt = extra && extra.part === "allergies" ? state.allergies.savedAt : state.savedAt;
+  if (savedAt) {
     state.data.changes = logChange(state.data.changes, kind, name, extra);
   }
 }
 
-async function clearChanges() {
-  if (state.data.changes && state.data.changes.length) {
-    state.data.changes = [];
+async function clearChanges(part) {
+  var left = keepChanges(state.data.changes, part);
+  if (left.length !== (state.data.changes || []).length) {
+    state.data.changes = left;
     try {
       await savePatientData(localStorage, state.key, state.patientId, state.data);
     } catch (error) {
@@ -325,15 +429,19 @@ async function signInUnavailable(error) {
 function useSaved(saved) {
   state.patientId = saved.patientId;
   state.patient = saved.patient;
-  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, claims: saved.claims || null };
+  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, heldBack: Boolean(saved.heldBack), claims: saved.claims || null };
   state.savedAt = saved.savedAt;
+  state.updatedAt = null;
+  state.allergies = keepAllergies(null, saved.allergies);
 }
 
 async function loadAdditions() {
   try {
     state.data = await loadPatientData(localStorage, state.key, state.patientId);
+    state.dataFailed = false;
   } catch (error) {
-    state.data = { additions: [], stopped: {}, asNeeded: {} };
+    state.data = emptyData();
+    state.dataFailed = true;
     state.announce = "Your saved additions couldn't be opened on this phone, so new changes can't be saved over them.";
   }
 }
@@ -345,6 +453,7 @@ async function loadMedicines(client, patientId) {
   var items = [];
   var placeholders = 0;
   var failed = false;
+  var leftOut = false;
   var kinds = [["MedicationRequest", fromMedicationRequest], ["MedicationStatement", fromMedicationStatement]];
   for (var i = 0; i < kinds.length; i += 1) {
     var type = kinds[i][0];
@@ -354,6 +463,7 @@ async function loadMedicines(client, patientId) {
         type + "?patient=" + encodeURIComponent(patientId) + "&_include=" + type + ":medication",
         { pageLimit: 0, flat: true }
       );
+      if (heldBack(resources)) leftOut = true;
       var medications = new Map(resources
         .filter(function (r) { return r && r.resourceType === "Medication"; })
         .map(function (r) { return ["Medication/" + r.id, r]; }));
@@ -376,6 +486,7 @@ async function loadMedicines(client, patientId) {
   var ingredients = rxcuis.length ? await ingredientsFor(rxcuis) : new Map();
   var split = splitByStatus(groupByIngredient(merged, ingredients));
   split.failed = failed;
+  split.heldBack = leftOut;
   split.placeholders = placeholders;
   split.ingredientOf = ingredients;
   return split;
@@ -417,26 +528,56 @@ function render() {
 // instead of leaving Brown Bag. Done and Close take that same step back.
 var BACK_FOCUS = { medicines: "open-medicines", more: "open-more", install: "show-qr" };
 window.addEventListener("popstate", function () {
-  if (document.getElementById("qr-overlay")) {
-    var after = qrAfter;
-    qrAfter = null;
-    closeQr(after, true);
+  if (document.getElementById("inside-overlay")) {
+    closeInside(true);
+  } else if (document.getElementById("qr-overlay")) {
+    // Arriving at the code's own step leaves it open. Forward to a step whose
+    // screen is gone comes straight back.
+    var step = history.state && history.state.bb;
+    if (step === "inside") history.back();
+    else if (step !== "qr") closeQr(true);
+  } else if (state.screen === "install" && history.state && history.state.bb === "more") {
+    // The Home Screen steps opened from More options go back there.
+    go("more", "open-install");
   } else if (state.screen !== "home") {
     go("home", BACK_FOCUS[state.screen]);
   }
 });
 
 function go(screen, focusId) {
-  if (screen !== "home" && state.screen === "home") {
+  if (screen === "install" || (screen !== "home" && state.screen === "home")) {
     history.pushState({ bb: screen }, "");
   } else if (screen === "home" && history.state && history.state.bb) {
     history.back();
     return;
   }
+  // Undo for a removed addition lasts until the patient leaves the list.
+  if (state.screen === "medicines" && screen !== "medicines") leaveMedicines();
   state.screen = screen;
   state.focusId = focusId;
   render();
   window.scrollTo(0, 0);
+}
+
+// Half-typed forms stay, and home says they aren't saved. Empty ones close.
+function leaveMedicines() {
+  state.lastRemoved = null;
+  state.lastRemovedAllergy = null;
+  var unsaved = [];
+  if (state.adding && draftStarted(state.draft)) {
+    unsaved.push(unsavedText(state.draft));
+  } else {
+    state.adding = false;
+    state.draft = null;
+  }
+  var cards = arrangeAllergies(state.allergies, state.data).cards;
+  state.allergyDrafts = keepDrafts(state.allergyDrafts, cards);
+  state.allergyForm = startedDraft(state.allergyDrafts, state.allergyForm);
+  Object.keys(state.allergyDrafts).forEach(function (which) {
+    var of = cards.filter(function (card) { return card.key === which; })[0];
+    unsaved.push(unsavedAllergyText(state.allergyDrafts[which], of ? of.name : null));
+  });
+  if (unsaved.length) state.announce = unsaved.join(" ");
 }
 
 function drawHome(arranged) {
@@ -452,7 +593,7 @@ function drawHome(arranged) {
   bag.addEventListener("click", openQr);
   var actions = add(root, "div", null, "home-actions");
   button(actions, "Show my QR code", "primary big", openQr).id = "show-qr";
-  button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions)), "secondary big", function () {
+  button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions), medicinesPartial(state)), "secondary big", function () {
     go("medicines", "medicines-heading");
   }).id = "open-medicines";
   button(root, "More options", "link-button", function () {
@@ -463,18 +604,20 @@ function drawHome(arranged) {
 function drawMedicines(arranged) {
   var top = add(root, "div", null, "screen-top");
   button(top, "Done", "secondary big", function () {
-    state.adding = false;
     go("home", "open-medicines");
   }).id = "medicines-done";
   var title = add(root, "h1", "My medicines");
   title.id = "medicines-heading";
   title.tabIndex = -1;
   note(root, DISCLAIMER);
-  drawRecords(arranged);
-  drawFillsOnly(arranged);
-  drawAsNeeded(arranged);
-  drawAdditions();
-  drawStopped(arranged);
+  drawAllergies(root);
+  // No number when some didn't load: it would read as the whole.
+  var block = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
+  drawRecords(block, arranged);
+  drawFillsOnly(block, arranged);
+  drawAsNeeded(block, arranged);
+  drawAdditions(block);
+  drawStopped(block, arranged);
 }
 
 function drawMore() {
@@ -495,24 +638,264 @@ function drawMore() {
   }
   var section = add(root, "section");
   heading(section, "Sign out", "signout-heading");
-  note(section, "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time.");
-  button(section, "Sign out", "secondary big", async function () {
-    if (state.patientId) {
-      await deletePass(localStorage, state.patientId);
-    }
-    sessionStorage.clear();
+  note(section, "Signing out disconnects Brown Bag from the records of everyone who signed in on this phone. Saved lists stay on this phone, locked. You'll sign in again next time.");
+  var out = button(section, "Sign out", "secondary big", async function () {
+    out.disabled = true;
+    out.textContent = "Signing out…";
+    await signOutEveryone();
     location.href = "./";
   });
 }
 
-function drawRecords(arranged) {
-  var section = add(root, "section");
-  heading(section, "From your records", "records-heading");
+// Everyone who signed in on this phone. The passes go from the phone first,
+// so no signal or a slow server can't keep one; then each health system that
+// offers it is told to end its side.
+var SIGN_OUT_WAIT_MS = 3000;
+async function signOutEveryone() {
+  state.signedOut = true;
+  var passes = await allPasses(localStorage, state.key);
+  deleteAllPasses(localStorage);
+  sessionStorage.clear();
+  try {
+    localStorage.setItem(SIGNED_OUT_KEY, "yes");
+    await withTimeout(Promise.all(passes.map(function (pass) { return revokePass(pass); })), SIGN_OUT_WAIT_MS);
+  } catch (error) {
+    // Gone from this phone either way.
+  }
+}
+
+// Allergies (design 2026-11-23): the records' and the patient's own, first
+// on My medicines. Drawn on its own so it can move to its own screen.
+function drawAllergies(parent) {
+  var arranged = arrangeAllergies(state.allergies, state.data);
+  var notes = allergyNotes(state.allergies, new Date());
+  var box = allergyBox(parent, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", showsSymbol(arranged.count, arranged.unspecified, state.dataFailed ? "failed" : state.allergies.status), 2);
+  box.heading.id = "allergies-heading";
+  box.heading.tabIndex = -1;
+  var section = box.section;
+  if (state.dataFailed) add(section, "p", "Allergies you added couldn't be opened.", "notice");
+  notes.forEach(function (text) {
+    add(section, "p", text.text, "notice");
+    if (text.signIn) {
+      add(section, "a", "Sign in", "button secondary").href = signInLink();
+    }
+  });
+  arranged.statements.forEach(function (text) { add(section, "p", "Your records say: " + text + "."); });
+  var loaded = state.allergies.status === "loaded" || state.allergies.savedAt;
+  if (arranged.saidNone) {
+    var said = add(section, "p", "You said you have no known allergies on " + longDate(arranged.saidNone) + ".");
+    button(said, "Undo", "secondary", function () {
+      state.data.noKnownAllergies = null;
+      allergyChange("none-unsaid", "No known allergies");
+      allergySaved("Taken back.", "allergies-heading");
+    }, "Undo: no known allergies");
+  } else if (!arranged.count && !arranged.statements.length && !arranged.unspecified && loaded) {
+    add(section, "p", "No allergies in your records.");
+  }
+  var list = arranged.count ? add(section, "ul", null, "meds") : null;
+  arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
+  var unsaid = unspecifiedText(arranged.unspecified, arranged.count);
+  if (unsaid) note(section, unsaid);
+  if (state.lastRemovedAllergy) drawAllergyUndo(section);
+  if (state.allergyForm === "new") {
+    drawAllergyForm(section, arranged, null);
+  } else {
+    button(section, "+ Add an allergy", "secondary big", function () { openAllergyForm("new", "allergen"); }).id = "allergy-add-open";
+    if (arranged.canSayNone && !state.dataFailed) {
+      button(section, "I have no known allergies", "secondary big", function () {
+        state.data.noKnownAllergies = today();
+        allergyChange("none-said", "No known allergies");
+        allergySaved("Saved: you have no known allergies.", "allergies-heading");
+      }).id = "allergy-none";
+    }
+  }
+}
+
+function drawAllergyCard(list, card) {
+  var row = add(list, "li");
+  add(row, "p", card.name, "med-name");
+  add(row, "p", reactionLine(card), "med-line");
+  detailLines(card).forEach(function (text) { add(row, "p", text, "med-line"); });
+  if (state.allergyForm === card.key) {
+    drawAllergyForm(row, null, card);
+    return;
+  }
+  var open = function () { openAllergyForm(card.key, "allergy-reaction"); };
+  if (card.origin === "records" && !card.mine && !card.reactions.length) {
+    button(row, "Add the reaction", "secondary card-action", open, "Add the reaction: " + card.name);
+  } else if (card.origin === "records" && card.mine) {
+    button(row, "Change the reaction", "secondary card-action", open, "Change the reaction: " + card.name);
+  }
+  if (card.mine) {
+    var label = card.origin === "added" ? "Remove" : (card.mine.ids.length ? "Remove mine" : "Remove my reaction");
+    button(row, label, "stop card-action", function () { removeMyPart(card); }, label + ": " + card.name);
+  }
+}
+
+// Everything the patient said about this allergy: their own entry, or the
+// reaction they added to one from the records.
+function removeMyPart(card) {
+  var removed = removeMine(state.data, card);
+  var whole = removed.own.length > 0;
+  var record = card.origin === "records";
+  var name = !record ? card.name : (whole ? "your entry for " : "your reaction to ") + card.name;
+  state.lastRemovedAllergy = { name: name, of: card.name, whole: whole, record: record, removed: removed };
+  allergyChange(whole ? "allergy-removed" : "reaction-removed", card.name, record);
+  allergySaved("Removed " + state.lastRemovedAllergy.name + ".", "undo-allergy");
+}
+
+function drawAllergyUndo(section) {
+  var last = state.lastRemovedAllergy;
+  var row = add(section, "p", "Removed " + last.name + ". ", "med-line");
+  button(row, "Undo", "secondary", function () {
+    putBack(state.data, last.removed);
+    allergyChange(last.whole ? "allergy-added" : "reaction-restored", last.of);
+    allergySaved("Put back.", "allergies-heading");
+  }, "Undo: put " + last.name + " back").id = "undo-allergy";
+}
+
+function openAllergyForm(which, focusId) {
+  // The other form's answers stay, for when it's opened again.
+  state.allergyForm = which;
+  state.focusId = focusId;
+  render();
+}
+
+function allergyChange(kind, name, record) {
+  recordChange(kind, name, record ? { part: "allergies", record: true } : { part: "allergies" });
+}
+
+function allergySaved(announce, focusId) {
+  state.announce = announce;
+  state.focusId = focusId;
+  save();
+}
+
+function closeAllergyForm() {
+  delete state.allergyDrafts[state.allergyForm];
+  state.allergyForm = null;
+}
+
+function setReaction(card, reaction) {
+  var before = Boolean(card.mine);
+  setMyReaction(state.data, card, reaction, today());
+  allergyChange(before ? "reaction-changed" : "reaction-added", card.name);
+  closeAllergyForm();
+  allergySaved("Reaction to " + card.name + " saved.", "allergies-heading");
+}
+
+// Adds an allergy (card null), or a reaction to one from the records.
+function drawAllergyForm(parent, arranged, card) {
+  var form = add(parent, "form");
+  form.id = "allergy-form";
+  form.noValidate = true;
+  var allergen = card ? null : pickList(form, "allergen", "Allergic to", "Allergic to, in your words");
+  if (allergen) allergen.fill(ALLERGENS.map(function (choice) { return choice.label; }));
+  var reaction = pickList(form, "allergy-reaction", "What happened", "What happened, in your words");
+  reaction.fill(REACTIONS.map(function (choice) { return choice.label; }));
+  var status = add(form, "p", "", "status");
+  status.id = "allergy-status";
+  status.setAttribute("role", "status");
+  var saveButton = add(form, "button", "Save", "primary big");
+  saveButton.type = "submit";
+  var cancelButton = button(form, "Cancel", "secondary big", function () {
+    closeAllergyForm();
+    state.focusId = card ? "allergies-heading" : "allergy-add-open";
+    render();
+  });
+  var which = card ? card.key : "new";
+  var kept = state.allergyDrafts[which];
+  if (kept) {
+    if (allergen) allergen.restore(kept.allergen);
+    reaction.restore(kept.reaction);
+  }
+  function keepDraft() {
+    if (allergen) allergen.invalid(null);
+    reaction.invalid(null);
+    status.textContent = "";
+    state.allergyDrafts[which] = { allergen: allergen ? allergen.draft() : { choice: "", other: "" }, reaction: reaction.draft() };
+  }
+  // The message belongs to the field it's about (VoiceOver reads it there).
+  function askFor(list, text) {
+    status.textContent = text;
+    list.invalid("allergy-status");
+    list.focus();
+  }
+  form.addEventListener("input", keepDraft);
+  form.addEventListener("change", keepDraft);
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (document.getElementById("allergy-check")) return;
+    var name = allergen ? allergen.words().trim() : card.name;
+    var happened = reaction.words().trim();
+    if (!name) {
+      askFor(allergen, "Choose what you're allergic to.");
+      return;
+    }
+    if (allergen && saysNone(name)) {
+      askFor(allergen, "That says you have none. Cancel, then use “I have no known allergies” if it's there.");
+      return;
+    }
+    if (!happened) {
+      askFor(reaction, "Choose what happened, or Not sure.");
+      return;
+    }
+    status.textContent = "";
+    if (card) {
+      setReaction(card, happened);
+      return;
+    }
+    var match = sameAllergen(name, arranged.cards);
+    if (match) {
+      drawAllergyCheck(form, match, happened, [saveButton, cancelButton], function () { allergen.focus(); });
+      return;
+    }
+    var picked = ALLERGENS.filter(function (choice) { return choice.label === name; })[0];
+    if (state.data.noKnownAllergies) {
+      state.data.noKnownAllergies = null;
+      allergyChange("none-unsaid", "No known allergies");
+    }
+    var id = makeAddition({ name: name }, new Date()).id;
+    state.data.allergies.push({ id: id, name: name, rxcui: (picked && picked.rxcui) || null, reaction: happened, addedAt: today() });
+    allergyChange("allergy-added", name);
+    closeAllergyForm();
+    allergySaved(name + " added to your allergies.", "allergy-add-open");
+  });
+}
+
+// The allergy is already there: never a second card for it.
+function drawAllergyCheck(form, match, reaction, hide, back) {
+  var fields = Array.prototype.slice.call(form.querySelectorAll("input, select"));
+  fields.forEach(function (field) { field.disabled = true; });
+  hide.forEach(function (b) { b.hidden = true; });
+  var panel = add(form, "section", null, "add-check");
+  panel.id = "allergy-check";
+  var h = add(panel, "h3", match.name + " is already on your list");
+  h.tabIndex = -1;
+  add(panel, "p", reactionLine(match), "check-line");
+  button(panel, "Go back", "secondary big", function () {
+    form.removeChild(panel);
+    fields.forEach(function (field) { field.disabled = false; });
+    hide.forEach(function (b) { b.hidden = false; });
+    back();
+  });
+  if (match.origin === "records" && !match.mine && !match.reactions.length) {
+    button(panel, "Use my reaction for it", "primary big", function () { setReaction(match, reaction); });
+  }
+  h.focus();
+}
+
+function drawRecords(parent, arranged) {
+  var section = add(parent, "section");
+  partHeading(section, "From your records", "records-heading");
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
+  if (state.split.heldBack) {
+    add(section, "p", "Your health system didn't send some of your medicines. Ask your care team.", "notice");
+  }
   var empty = emptyRecordsText(state.split, arranged);
-  if (empty && !state.split.failed) {
+  if (empty && !state.split.failed && !state.split.heldBack) {
     add(section, "p", empty);
   }
   if (state.split.placeholders) {
@@ -536,12 +919,13 @@ function drawRecords(arranged) {
   }
 }
 
-function drawAdditions() {
-  var section = add(root, "section");
+function drawAdditions(parent) {
+  var section = add(parent, "section");
   helpHeading(section, "Added by me", "added-heading", "About Added by me", function (panel) {
     add(panel, "p", "Medicines you added yourself, like vitamins and ones bought over the counter. They go in your QR code.");
     add(panel, "p", "They're saved on this phone only. Clearing your browser erases them, so save a backup in More options.");
-  });
+  }, partHeading);
+  if (state.dataFailed) add(section, "p", "What you added or marked couldn't be opened.", "notice");
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
@@ -617,10 +1001,26 @@ function drawAddForm(section) {
   saveButton.type = "submit";
   var cancelButton = button(form, "Cancel", "secondary big", function () {
     state.adding = false;
+    state.draft = null;
     state.focusId = "add-open";
     render();
   });
   var checking = false;
+
+  // Coming back to a half-typed addition (Done, Back, or an update redrew
+  // the screen): the answers are as the patient left them.
+  if (state.draft) {
+    picked = state.draft.picked;
+    name.value = state.draft.name;
+    if (picked) fillDose(picked.name);
+    dose.restore(state.draft.dose);
+    often.restore(state.draft.often);
+  }
+  function keepDraft() {
+    state.draft = { name: name.value, picked: picked, dose: dose.draft(), often: often.draft() };
+  }
+  form.addEventListener("input", keepDraft);
+  form.addEventListener("change", keepDraft);
 
   name.addEventListener("input", function () {
     if (picked && picked.name !== name.value) {
@@ -649,6 +1049,7 @@ function drawAddForm(section) {
             picked = { rxcui: drug.rxcui, name: drug.name };
             name.value = drug.name;
             fillDose(drug.name);
+            keepDraft();
             clear(results);
             searchStatus.textContent = "Picked " + drug.name + ".";
             dose.focus();
@@ -719,6 +1120,7 @@ function keepAddition(addition, replacing) {
   state.data.additions.push(addition);
   recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
   state.adding = false;
+  state.draft = null;
   state.announce = addition.name + " added.";
   state.focusId = "add-open";
   save();
@@ -728,17 +1130,19 @@ function keepAddition(addition, replacing) {
 // first (so "Replace the one I added" is offered when one matches), then
 // the records and fills, then what they marked stopped. Ingredient lookups
 // get 4 seconds; without them (offline) the codes and names still count.
+// Codes RxNav has no ingredient for, so each Save doesn't ask again.
+var noIngredient = new Set();
 async function checkAgainstList(addition) {
   var arranged = arrangeList(state.split, state.data);
   var list = state.data.additions.map(function (a) { return Object.assign({ origin: "added" }, a); })
     .concat(arranged.current.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }))
-    .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: "records" }); }));
+    .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }));
   var ingredientOf = new Map(state.split.ingredientOf instanceof Map ? state.split.ingredientOf : []);
   var missing = [addition.rxcui].concat(list.map(function (e) { return e.rxcui; }))
-    .filter(function (code, i, all) { return code && !ingredientOf.has(code) && all.indexOf(code) === i; });
+    .filter(function (code, i, all) { return code && !ingredientOf.has(code) && !noIngredient.has(code) && all.indexOf(code) === i; });
   if (addition.rxcui && missing.length) {
     try {
-      (await withTimeout(ingredientsFor(missing, globalThis.fetch.bind(globalThis), { timeoutMs: 3000 }), 4000)).forEach(function (value, code) { ingredientOf.set(code, value); });
+      (await withTimeout(ingredientsFor(missing, globalThis.fetch.bind(globalThis), { timeoutMs: 3000, none: noIngredient }), 4000)).forEach(function (value, code) { ingredientOf.set(code, value); });
     } catch (error) {
       // Offline or slow: codes and names only.
     }
@@ -766,7 +1170,7 @@ function drawAddCheck(form, result, addition, how) {
   if (result.kind === "stopped") title = theirs + " is under Not taking";
   else if (result.kind === "lookalike") title = "Check the name";
   else title = mine + " is already on your list";
-  var h = add(panel, "h3", title);
+  var h = add(panel, "h4", title);
   h.tabIndex = -1;
   function close() {
     form.removeChild(panel);
@@ -783,8 +1187,9 @@ function drawAddCheck(form, result, addition, how) {
       delete state.data.stopped[match.key];
       recordChange("unstopped", match.name);
       state.adding = false;
-      state.announce = match.name + " moved back to From your records.";
-      state.focusId = "records-heading";
+      state.draft = null;
+      state.announce = match.name + " moved back to " + backToList(match).name + ".";
+      state.focusId = backToList(match).focusId;
       save();
     });
     // A new strength of a stopped medicine: add it, the old one stays stopped
@@ -792,7 +1197,7 @@ function drawAddCheck(form, result, addition, how) {
     button(panel, "Add it anyway", "secondary big", function () { keepAddition(addition); });
     button(panel, "Go back", "secondary big", close);
   } else if (result.kind === "lookalike") {
-    add(panel, "p", addition.name + " looks like " + theirs + ", which is already on your list. They're different medicines. Check the bottle.");
+    add(panel, "p", lookalikeText(addition.name, match));
     button(panel, "Go back", "secondary big", close);
     button(panel, "Add " + addition.name, "primary big", function () { keepAddition(addition); });
   } else {
@@ -834,7 +1239,18 @@ function pickList(form, id, labelText, otherText) {
     if (!otherBox.hidden) other.focus();
   });
   return {
-    focus: function () { select.focus(); },
+    focus: function () { (select.value === "other" && !otherBox.hidden ? other : select).focus(); },
+    // The field in use is marked wrong, with the message that says why.
+    invalid: function (messageId) {
+      [select, other].forEach(function (field) {
+        field.removeAttribute("aria-invalid");
+        field.removeAttribute("aria-describedby");
+      });
+      if (!messageId) return;
+      var field = select.value === "other" ? other : select;
+      field.setAttribute("aria-invalid", "true");
+      field.setAttribute("aria-describedby", messageId);
+    },
     fill: function (list) {
       labels = list;
       clear(select);
@@ -847,6 +1263,16 @@ function pickList(form, id, labelText, otherText) {
     chosen: function () {
       return select.value === "" || select.value === "other" ? -1 : Number(select.value);
     },
+    draft: function () {
+      var index = Number(select.value);
+      return { choice: select.value === "" || select.value === "other" ? select.value : labels[index], other: other.value };
+    },
+    restore: function (kept) {
+      other.value = kept.other;
+      var at = labels.indexOf(kept.choice);
+      select.value = kept.choice === "other" ? "other" : at === -1 ? "" : String(at);
+      otherBox.hidden = select.value !== "other";
+    },
     words: function () {
       if (select.value === "other") return other.value;
       return select.value === "" ? "" : labels[Number(select.value)];
@@ -854,13 +1280,13 @@ function pickList(form, id, labelText, otherText) {
   };
 }
 
-function drawStopped(arranged) {
+function drawStopped(parent, arranged) {
   if (!arranged.stopped.length) return;
-  var section = add(root, "section");
+  var section = add(parent, "section");
   helpHeading(section, "Not taking", "stopped-heading", "About Not taking", function (panel) {
     add(panel, "p", "Medicines your records list that you aren't taking now, like one you finished after surgery or stopped on your own.");
     add(panel, "p", "The person checking your medicines sees them in their own group, so they can ask about them. Tap Undo if you start taking one again.");
-  });
+  }, partHeading);
   var list = add(section, "ul", null, "meds");
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
@@ -868,8 +1294,8 @@ function drawStopped(arranged) {
     button(row, "Undo", "secondary card-action", function () {
       delete state.data.stopped[entry.key];
       recordChange("unstopped", entry.name);
-      state.announce = entry.name + " moved back to From your records.";
-      state.focusId = "records-heading";
+      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      state.focusId = backToList(entry).focusId;
       save();
     }, "Undo Not taking: " + entry.name);
   });
@@ -878,14 +1304,14 @@ function drawStopped(arranged) {
 // Medicines from the records or fills that the patient takes only when
 // needed, like pain medicine after surgery. They're still current: they
 // count on home and go in the QR code, marked as needed.
-function drawAsNeeded(arranged) {
+function drawAsNeeded(parent, arranged) {
   var asNeeded = arranged.current.filter(function (entry) { return entry.asNeededAt; });
   if (!asNeeded.length) return;
-  var section = add(root, "section");
+  var section = add(parent, "section");
   helpHeading(section, "As needed", "as-needed-heading", "About As needed", function (panel) {
     add(panel, "p", "Medicines you still take, but only when you need them, like pain medicine after surgery.");
     add(panel, "p", "They stay on your list and in your QR code, marked as needed. Tap Undo to move one back.");
-  });
+  }, partHeading);
   var list = add(section, "ul", null, "meds");
   asNeeded.forEach(function (entry) {
     var row = medRow(list, entry);
@@ -896,12 +1322,11 @@ function drawAsNeeded(arranged) {
 
 // The QR code covers the screen: it swooshes up out of the bag and tucks
 // back in on Close (css/brownbag.css; a fade with Reduce Motion). It shows
-// only the code, the 6 digits and Close. Focus stays inside it, Escape
+// only the code, the 6 digits, See what's inside and Close. Focus stays inside it, Escape
 // closes it, and focus goes back to "Show my QR code".
 // Making the code takes about a second (the list is encrypted first). A
 // second tap in that time is ignored, and the button says it's working.
 var qrBusy = false;
-var qrAfter = null;
 async function openQr() {
   if (qrBusy || document.getElementById("qr-overlay")) return;
   qrBusy = true;
@@ -923,9 +1348,8 @@ async function openQr() {
 
 async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
-  // Staff are told when the records part is an older saved copy, or when a
-  // source failed to load, so a partial list never looks complete.
-  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed };
+  var warnings = shareWarnings(state);
+  list.allergies = arrangeAllergies(state.allergies, state.data);
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   var fits = fitsInQr(packed.prefix, packed.digits);
 
@@ -935,11 +1359,15 @@ async function buildQr() {
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "qr-heading");
+  // A tap on the blank space lands on the overlay itself, so Escape and Tab
+  // still reach it.
+  overlay.tabIndex = -1;
   var bag = document.getElementById("home-bag");
   if (bag) {
     var from = bag.getBoundingClientRect();
-    overlay.style.setProperty("--from-x", (from.left + from.width / 2 - innerWidth / 2) + "px");
-    overlay.style.setProperty("--from-y", (from.top + from.height * 0.35 - innerHeight / 2) + "px");
+    var start = swooshFrom(from, innerWidth, innerHeight);
+    overlay.style.setProperty("--from-x", start.x + "px");
+    overlay.style.setProperty("--from-y", start.y + "px");
   }
   var titleRow = add(overlay, "div", null, "help-row");
   var title = add(titleRow, "h2", fits ? "Show this to the person checking your medicines" : "Your list is too long for one QR code");
@@ -950,17 +1378,18 @@ async function buildQr() {
       var items = add(panel, "ul");
       [
         "Your name and birth date",
+        "Your allergies and reactions",
         "Your current medicines from your records, with the dose, how often, and who prescribed them",
         "Medicines you added",
         "Medicines you take only as needed, marked that way",
         "Medicines you marked Not taking",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
-        "When the code was made, and a warning if the list is an older saved copy or some records didn't load"
+        "When your records were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
       ].forEach(function (text) { add(items, "li", text); });
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
     overlay.appendChild(whatsIn);
-    var alert = changeAlert(state.data.changes, state.savedAt, new Date());
+    var alert = changeAlert(state.data.changes, { medicines: state.savedAt, allergies: state.allergies.savedAt }, new Date());
     if (alert) {
       var warning = add(overlay, "div", null, "qr-alert");
       warning.id = "qr-alert";
@@ -982,11 +1411,12 @@ async function buildQr() {
     drawCodeReveal(overlay, packed.code);
     overlay.appendChild(why);
   } else {
-    add(overlay, "p", "Show your medicines on this screen instead.");
-    button(overlay, "Show my medicines instead", "secondary big", function () {
-      closeQr(function () { go("medicines", "medicines-heading"); });
-    });
+    add(overlay, "p", "Show the person checking your medicines the list on your phone instead.");
   }
+  var inside = button(overlay, fits ? "See what's inside" : "See my list", "secondary big", function () {
+    openInside(packed, inside, fits);
+  });
+  inside.id = "qr-inside";
   button(overlay, "Close", "primary big", function () { closeQr(); }).id = "qr-close";
   overlay.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
@@ -1004,18 +1434,89 @@ async function buildQr() {
   root.inert = true;
   root.setAttribute("aria-hidden", "true");
   history.pushState({ bb: "qr" }, "");
-  document.getElementById("qr-close").focus();
+  // The top shows first: the title and the code, even on a short screen.
+  document.getElementById("qr-close").focus({ preventScroll: true });
+}
+
+// What's in the code, on the patient's own phone: so they can trust it, and
+// so it can be read when nobody can scan. Brown Bag opens the code itself, the
+// way the staff page does, and shows what comes out. Read-only.
+var insideBusy = false;
+async function openInside(packed, opener, fits) {
+  if (insideBusy || document.getElementById("inside-overlay")) return;
+  insideBusy = true;
+  var words = opener.textContent;
+  opener.textContent = "Opening…";
+  opener.setAttribute("aria-busy", "true");
+  var groups = null;
+  try {
+    groups = groupShareBundle(await unpackShare(packed.prefix.split("#")[1] + packed.digits, packed.code));
+  } catch (error) {
+    console.error("Couldn't open the code", error);
+  } finally {
+    insideBusy = false;
+    opener.textContent = words;
+    opener.removeAttribute("aria-busy");
+  }
+  var qr = document.getElementById("qr-overlay");
+  // Closed meanwhile: nothing to show it over.
+  if (!qr || !qr.contains(opener) || qr.classList.contains("closing") || qr.dataset.leaving) return;
+  var overlay = document.createElement("div");
+  overlay.id = "inside-overlay";
+  overlay.className = "inside-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "inside-heading");
+  // A tap on its text lands on it, so Escape still reaches it.
+  overlay.tabIndex = -1;
+  var page = add(overlay, "div", null, "inside-page");
+  var backWords = fits ? "Back to the code" : "Back";
+  button(page, backWords, "secondary big", function () { closeInside(); });
+  var title = add(page, "h1", fits ? "What's in your code" : "Your list");
+  title.id = "inside-heading";
+  title.tabIndex = -1;
+  if (groups) {
+    add(page, "p", fits ? "This is what opens when your code is scanned." : "This is the list that was too long for one code.");
+    drawShareList(page, groups, 2, fits ? null : "List made", true);
+    button(page, backWords, "secondary big", function () { closeInside(); });
+  } else {
+    add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");
+  }
+  overlay.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeInside();
+  });
+  document.body.appendChild(overlay);
+  qr.inert = true;
+  history.pushState({ bb: "inside" }, "");
+  title.focus();
+}
+
+function closeInside(fromHistory) {
+  var overlay = document.getElementById("inside-overlay");
+  if (!overlay) return;
+  if (!fromHistory && history.state && history.state.bb === "inside") {
+    if (overlay.dataset.leaving) return;
+    overlay.dataset.leaving = "yes";
+    history.back();
+    return;
+  }
+  overlay.remove();
+  var qr = document.getElementById("qr-overlay");
+  if (qr) qr.inert = false;
+  var opener = document.getElementById("qr-inside");
+  if (opener) opener.focus();
 }
 
 // fromHistory is true when the Back button (or Close, through history.back)
 // is what closes it.
-function closeQr(after, fromHistory) {
+function closeQr(fromHistory) {
   var overlay = document.getElementById("qr-overlay");
   if (!overlay || overlay.classList.contains("closing")) return;
   if (!fromHistory && history.state && history.state.bb === "qr") {
     if (overlay.dataset.leaving) return;
     overlay.dataset.leaving = "yes";
-    qrAfter = after || null;
     history.back();
     return;
   }
@@ -1027,12 +1528,8 @@ function closeQr(after, fromHistory) {
     if (finished) return;
     finished = true;
     overlay.remove();
-    if (typeof after === "function") {
-      after();
-    } else {
-      var back = document.getElementById("show-qr");
-      if (back) back.focus();
-    }
+    var back = document.getElementById("show-qr");
+    if (back) back.focus();
   }
   // Only the closing animation ends it; the opening one may still be
   // finishing if Close was pressed quickly.
@@ -1088,7 +1585,9 @@ function drawNotices() {
     savedAt: state.savedAt,
     offline: state.offline,
     needsSignIn: state.needsSignIn,
-    failed: state.split.failed,
+    failed: state.split.failed || state.split.heldBack,
+    dataFailed: state.dataFailed,
+    allergiesRefused: state.allergies.status === "refused",
     installTip: hint,
     now: new Date()
   });
@@ -1102,7 +1601,8 @@ function drawNotices() {
     add(row, "p", note.text);
     if (note.kind === "sign-in") {
       var update = add(row, "a", "Sign in", "button secondary");
-      update.href = "./launch.html";
+      update.id = "notice-sign-in";
+      update.href = signInLink();
     }
     if (note.kind === "install") {
       var actions = add(row, "div", null, "notice-actions");
@@ -1113,7 +1613,7 @@ function drawNotices() {
         dismissInstallHint(localStorage, new Date());
         state.focusId = "show-qr";
         render();
-      });
+      }).id = "install-not-now";
     }
   });
 }
@@ -1123,7 +1623,7 @@ function drawNotices() {
 function drawInstall() {
   var top = add(root, "div", null, "screen-top");
   button(top, "Done", "secondary big", function () {
-    go("home", "show-qr");
+    history.back();
   }).id = "install-back";
   var title = add(root, "h1", "Add Brown Bag to your Home Screen");
   title.id = "install-heading";
@@ -1136,7 +1636,7 @@ function drawInstall() {
   button(root, "I've done this", "primary big", function () {
     markInstallDone(localStorage);
     state.announce = "The Home Screen tip is put away.";
-    go("home", "show-qr");
+    history.back();
   }).id = "install-done";
 }
 
@@ -1160,6 +1660,7 @@ function drawBackup() {
     try {
       var count = await importBackup(localStorage, state.key, await file.text());
       state.data = await loadPatientData(localStorage, state.key, state.patientId);
+      state.dataFailed = false;
       state.announce = restoreMessage(count) + " Nothing on this phone was replaced.";
     } catch (error) {
       state.announce = error && error.code === "locked"
@@ -1208,7 +1709,7 @@ function medRow(list, entry) {
   // Fill lines only when this list's claims loaded, so "No fill found" never
   // shows just because the claims couldn't be read.
   var filled = state.split.claims === "loaded" ? fillLine(entry.fills) : null;
-  if (filled) add(row, "p", filled, "med-line fill-line");
+  if (filled) add(row, "p", filled, "med-line");
   return row;
 }
 
@@ -1221,9 +1722,8 @@ function markButtons(row, entry) {
     button(actions, "Undo", "secondary", function () {
       delete state.data.asNeeded[entry.key];
       recordChange("regular", entry.name);
-      var claims = entry.origin === "claims";
-      state.announce = entry.name + " moved back to " + (claims ? "Filled, not in your records." : "From your records.");
-      state.focusId = claims ? "fills-heading" : "records-heading";
+      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      state.focusId = backToList(entry).focusId;
       save();
     }, "Undo As needed: " + entry.name);
   } else {
@@ -1249,13 +1749,13 @@ function markButtons(row, entry) {
 }
 
 // Fills the insurer paid for that the health record doesn't list.
-function drawFillsOnly(arranged) {
+function drawFillsOnly(parent, arranged) {
   var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims" && !entry.asNeededAt; });
   if (!fillsOnly.length) return;
-  var section = add(root, "section");
+  var section = add(parent, "section");
   helpHeading(section, "Filled, not in your records", "fills-heading", "About Filled, not in your records", function (panel) {
     add(panel, "p", "Your insurance paid for these, but your health record doesn't list them. Check with your care team.");
-  });
+  }, partHeading);
   var list = add(section, "ul", null, "meds");
   fillsOnly.forEach(function (entry) {
     markButtons(medRow(list, entry), entry);
@@ -1263,14 +1763,32 @@ function drawFillsOnly(arranged) {
 }
 
 async function save() {
-  state.qr = null;
   if (state.focusId !== "undo-remove") state.lastRemoved = null;
+  if (state.focusId !== "undo-allergy") state.lastRemovedAllergy = null;
   try {
     await savePatientData(localStorage, state.key, state.patientId, state.data);
   } catch (error) {
     state.announce = "Couldn't save on this phone. Your change shows now but may be lost.";
   }
   render();
+}
+
+// After Sign out. Resolves when they ask for the list saved on this phone.
+function savedListAsked() {
+  return new Promise(function (resolve) {
+    plainScreen();
+    var title = add(root, "h2", "You're signed out");
+    title.id = "signed-out-heading";
+    title.tabIndex = -1;
+    add(root, "p", "Sign in to update your list from your health records.", "screen-text");
+    add(root, "a", "Sign in", "button primary big").href = "./launch.html";
+    button(root, "Open my saved list", "secondary big", function () {
+      clear(root);
+      resolve();
+    }).id = "open-saved";
+    note(root, DISCLAIMER);
+    title.focus();
+  });
 }
 
 function drawSignedOut(error) {
@@ -1341,6 +1859,14 @@ function plainScreen() {
   add(root, "p", TAGLINE, "tagline");
 }
 
+// A part of a block, such as "From your records" under Medicines.
+function partHeading(parent, text, id) {
+  var h = add(parent, "h3", text, "part-title");
+  h.id = id;
+  h.tabIndex = -1;
+  return h;
+}
+
 function heading(parent, text, id) {
   var h = add(parent, "h2", text);
   h.id = id;
@@ -1349,10 +1875,11 @@ function heading(parent, text, id) {
 }
 
 // A section heading with a "?" beside it. The explanation opens under the
-// heading, so it's there when wanted and out of the way otherwise.
-function helpHeading(parent, text, id, label, fill) {
+// heading, so it's there when wanted and out of the way otherwise. makeHeading
+// is heading (h2) or partHeading (h3, a part of a block).
+function helpHeading(parent, text, id, label, fill, makeHeading) {
   var row = add(parent, "div", null, "help-row section-help");
-  var h = heading(row, text, id);
+  var h = (makeHeading || heading)(row, text, id);
   parent.appendChild(helpBubble(row, label, fill));
   return h;
 }

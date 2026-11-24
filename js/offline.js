@@ -26,7 +26,14 @@ export async function loadLastRecords(storage, key) {
     return null;
   }
   try {
-    var patientId = await decryptJSON(key, last);
+    return await loadRecordsFor(storage, key, await decryptJSON(key, last));
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function loadRecordsFor(storage, key, patientId) {
+  try {
     var blob = storage.getItem(RECORDS_PREFIX + await idTag(patientId));
     return blob ? await decryptJSON(key, blob) : null;
   } catch (error) {
