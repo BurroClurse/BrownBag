@@ -34,14 +34,15 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- See what's inside and the two blocks: both phones before publishing (QR and
-  staff pages).
+- See what's inside on Android: the phone's own Back button, TalkBack, and
+  whether a camera reads the slightly smaller code on a short screen.
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 
 ## On a real iPhone (Tyler)
 
-- Nothing yet.
+- See what's inside and the two blocks, with VoiceOver; a second phone reading
+  the code from Safari.
 
 ## Tested
 
@@ -96,3 +97,7 @@ pass, when it touches:
   without its Back memory), the iPhone simulator, and Claude in Chrome with
   real clicks (the list, the grey names, the sandbox and Back, the Chantell
   link, PIN, Sign out). Passed.
+- 2026-11-23, see what's inside and the two blocks, before publishing: the test
+  browser (axe, 200% text, short screens, a list that didn't load, a code that
+  won't open, Forward and Back), the iPhone simulator, and Claude in Chrome with
+  real clicks. Passed. Found and fixed: the QR screen scrolled in iPhone Safari.

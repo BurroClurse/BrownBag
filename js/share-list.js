@@ -2,7 +2,7 @@
 // patient's own phone. One piece of code draws both, so they can't differ.
 // Allergies and medicines are two blocks (design 2026-11-23).
 
-import { allergyEmptyText, allergyNotices, shareMedicineCount } from "./share.js";
+import { allergyEmptyText, allergyNotices, medicinesTitle } from "./share.js";
 import { showsSymbol } from "./allergies.js";
 
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -19,13 +19,14 @@ export function drawShareList(parent, groups, level) {
   if (groups.recordsSavedAt) {
     add(parent, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
   }
-  if (groups.incomplete) {
-    add(parent, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
-  }
   note(parent, DISCLAIMER);
   drawAllergies(parent, groups.allergies, level + 1);
-  var block = medicinesBlock(parent, "Medicines (" + shareMedicineCount(groups) + ")", level + 1).section;
-  part(block, "From records", groups.fromRecords, "No medicines from records.", level + 2);
+  var block = medicinesBlock(parent, medicinesTitle(groups), level + 1).section;
+  // Right under the heading, where it can't be missed.
+  if (groups.incomplete) {
+    add(block, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
+  }
+  part(block, "From records", groups.fromRecords, groups.incomplete ? "None loaded." : "No medicines from records.", level + 2);
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
   }
@@ -57,7 +58,7 @@ export function medicinesBlock(parent, text, level) {
 function drawAllergies(parent, allergies, level) {
   var count = allergies ? allergies.fromRecords.length + allergies.fromPatient.length : 0;
   var notices = allergyNotices(allergies);
-  var symbol = !allergies || showsSymbol(count, allergies.unspecified, notices);
+  var symbol = !allergies || showsSymbol(count, allergies.unspecified, allergies.status);
   var section = allergyBox(parent, count ? "Allergies (" + count + ")" : "Allergies", symbol, level).section;
   notices.forEach(function (text) { add(section, "p", text, "notice"); });
   var empty = allergyEmptyText(allergies);

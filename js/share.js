@@ -468,3 +468,8 @@ async function transform(bytes, stream) {
 export function shareMedicineCount(groups) {
   return groups.fromRecords.length + (groups.fromClaims || []).length + groups.addedByPatient.length;
 }
+
+// Some of it didn't load: no number, which would read as the whole.
+export function medicinesTitle(groups) {
+  return groups.incomplete ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
+}

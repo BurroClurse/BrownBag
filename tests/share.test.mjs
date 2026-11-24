@@ -495,3 +495,10 @@ test("the staff page and See what's inside are drawn by the same code", async ()
   // What's shown is what comes out of the code itself.
   assert.match(file("js/app.js"), /unpackShare\(packed\./);
 });
+
+test("a partial list never gets a definite total", async () => {
+  const { medicinesTitle } = await import("../js/share.js");
+  const groups = { fromRecords: [], fromClaims: [], addedByPatient: [{}], incomplete: false };
+  assert.equal(medicinesTitle(groups), "Medicines (1)");
+  assert.equal(medicinesTitle(Object.assign({}, groups, { incomplete: true })), "Medicines");
+});

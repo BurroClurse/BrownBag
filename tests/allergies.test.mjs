@@ -356,8 +356,8 @@ test("each choice on the list has the FHIR category it belongs to", () => {
 });
 
 test("the warning symbol shows for an allergy, an unnamed entry, or a load that failed", () => {
-  assert.equal(showsSymbol(0, 0, []), false);
-  assert.equal(showsSymbol(1, 0, []), true);
-  assert.equal(showsSymbol(0, 1, []), true);
-  assert.equal(showsSymbol(0, 0, ["Allergies from records couldn't be loaded."]), true);
+  assert.equal(showsSymbol(0, 0, "loaded"), false);
+  assert.equal(showsSymbol(1, 0, "loaded"), true);
+  assert.equal(showsSymbol(0, 1, "loaded"), true);
+  for (const status of ["failed", "refused", "not-loaded", undefined]) assert.equal(showsSymbol(0, 0, status), true, status);
 });

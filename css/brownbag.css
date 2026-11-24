@@ -442,7 +442,7 @@ button.help-button {
 
 /* The question asked before adding a medicine that is already there. */
 .add-check { background: var(--warn-bg); color: var(--warn-ink); border: 2px solid var(--warn-ink); border-radius: 14px; padding: 1rem; margin-top: 1rem; }
-.add-check h3 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.add-check h3, .add-check h4 { margin: 0 0 0.5rem; font-size: 1.2rem; }
 .add-check .check-line { margin: 0.25rem 0; font-weight: 600; }
 .add-check .big { font-size: 1.25rem; overflow-wrap: anywhere; }
 .other-box { margin-top: 0.25rem; }
@@ -465,8 +465,20 @@ button.help-button {
 .allergy-sign svg { display: block; width: 1em; height: 0.92em; }
 .allergy-box ul.meds > li:last-child { margin-bottom: 0; }
 .medicines-block > .block-title, .screen-medicines .medicines-block > .block-title { margin: 2.25rem 0 0; padding-bottom: 0.3rem; border-bottom: 3px solid var(--ink); font-size: 1.6rem; }
+.block-title, .part-title, .share-name { overflow-wrap: anywhere; }
+.inside-overlay:focus { outline: none; }
 .part-title { margin: 1.25rem 0 0.6rem; font-size: 1.25rem; }
 .allergy-box .part-title { margin-top: 0.75rem; font-size: 1.1rem; }
 .share-name { font-size: 1.75rem; margin: 0.5rem 0 0.25rem; border: none; padding: 0; }
 .inside-overlay { position: fixed; inset: 0; z-index: 20; overflow-y: auto; background: var(--paper); }
 .inside-page { max-width: 40rem; margin: 0 auto; padding: max(1rem, env(safe-area-inset-top)) 1rem max(2rem, env(safe-area-inset-bottom)); }
+/* A short screen (iPhone Safari with its toolbars): tighter, so the title, the
+   code, the digits and both buttons fit without scrolling. */
+@media (max-height: 720px) {
+  .qr-overlay { padding-top: max(0.6rem, env(safe-area-inset-top)); padding-bottom: max(0.6rem, env(safe-area-inset-bottom)); }
+  .qr-overlay h2 { font-size: 1.15rem; margin-bottom: 0.35rem; }
+  .qr-overlay .qr-say { font-size: 1.15rem; margin-top: 0.4rem; }
+  .qr-overlay .share-code { font-size: min(2.4rem, 12vw); }
+  .qr-overlay .qr canvas { width: min(88vw, 45dvh); }
+  .qr-overlay > button.big { min-height: 48px; padding: 0.35rem 1rem; margin-top: 0.4rem; font-size: 1.15rem; }
+}

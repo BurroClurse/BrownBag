@@ -60,6 +60,8 @@ Medicines (1)                      big heading, line under it
   Color is never the only sign.
 - "Medicines (N)" has the same N as the home button: current ones, filled ones
   and added ones; not stopped or older ones. The staff page counts the same way.
+- When some records didn't load, there is no number, and the warning sits right
+  under Medicines (found in review).
 - Headings: h2 Allergies and Medicines, h3 for the parts.
 
 ## Left to the builder

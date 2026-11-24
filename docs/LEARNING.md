@@ -1239,12 +1239,16 @@ phone, and hand it over.
 
 **Trust comes from the same path.** It would have been easy to draw the list
 the app already has. Instead Brown Bag unlocks the code on the screen, the way
-the staff page does, and draws what comes out, with the same drawing code. A
-test compares the words on both. If the two could differ, the button would be
-worth nothing.
+the staff page does, and draws what comes out. A test checks that both screens
+use the same drawing code. If the two could differ, the button would be worth
+nothing.
 
-**Read-only is a safety feature.** The screen has no Remove and no "I stopped
-this", so handing the phone over can't change the list.
+**Read-only is a safety feature.** This screen has no Remove and no "I stopped
+this", so a slip of the thumb while showing it can't change the list.
+
+**A total is a promise.** "Medicines (3)" says there are three. When some
+records didn't load, the number is left off and the warning sits right under
+the heading. The fresh review caught that.
 
 **A failure is never an empty list.** If the code can't be unlocked, the screen
 says so. An empty list would read as "takes nothing".

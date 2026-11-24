@@ -523,9 +523,11 @@ window.addEventListener("popstate", function () {
   if (document.getElementById("inside-overlay")) {
     closeInside(true);
   } else if (document.getElementById("qr-overlay")) {
-    var after = qrAfter;
-    qrAfter = null;
-    closeQr(after, true);
+    // Arriving at the code's own step leaves it open. Forward to a step whose
+    // screen is gone comes straight back.
+    var step = history.state && history.state.bb;
+    if (step === "inside") history.back();
+    else if (step !== "qr") closeQr(true);
   } else if (state.screen === "install" && history.state && history.state.bb === "more") {
     // The Home Screen steps opened from More options go back there.
     go("more", "open-install");
@@ -601,7 +603,9 @@ function drawMedicines(arranged) {
   title.tabIndex = -1;
   note(root, DISCLAIMER);
   drawAllergies(root);
-  var block = medicinesBlock(root, "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
+  // No number when some didn't load: it would read as the whole.
+  var part = state.split.failed || state.dataFailed;
+  var block = medicinesBlock(root, part ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
   drawRecords(block, arranged);
   drawFillsOnly(block, arranged);
   drawAdditions(block);
@@ -657,10 +661,11 @@ async function signOutEveryone() {
 function drawAllergies(parent) {
   var arranged = arrangeAllergies(state.allergies, state.data);
   var notes = allergyNotes(state.allergies, new Date());
-  var box = allergyBox(parent, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", showsSymbol(arranged.count, arranged.unspecified, notes), 2);
+  var box = allergyBox(parent, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", showsSymbol(arranged.count, arranged.unspecified, state.dataFailed ? "failed" : state.allergies.status), 2);
   box.heading.id = "allergies-heading";
   box.heading.tabIndex = -1;
   var section = box.section;
+  if (state.dataFailed) add(section, "p", "Allergies you added couldn't be opened.", "notice");
   notes.forEach(function (text) {
     add(section, "p", text.text, "notice");
     if (text.signIn) {
@@ -1151,7 +1156,7 @@ function drawAddCheck(form, result, addition, how) {
   if (result.kind === "stopped") title = theirs + " is on your stopped list";
   else if (result.kind === "lookalike") title = "Check the name";
   else title = mine + " is already on your list";
-  var h = add(panel, "h3", title);
+  var h = add(panel, "h4", title);
   h.tabIndex = -1;
   function close() {
     form.removeChild(panel);
@@ -1281,12 +1286,11 @@ function drawStopped(parent, arranged) {
 
 // The QR code covers the screen: it swooshes up out of the bag and tucks
 // back in on Close (css/brownbag.css; a fade with Reduce Motion). It shows
-// only the code, the 6 digits and Close. Focus stays inside it, Escape
+// only the code, the 6 digits, See what's inside and Close. Focus stays inside it, Escape
 // closes it, and focus goes back to "Show my QR code".
 // Making the code takes about a second (the list is encrypted first). A
 // second tap in that time is ignored, and the button says it's working.
 var qrBusy = false;
-var qrAfter = null;
 async function openQr() {
   if (qrBusy || document.getElementById("qr-overlay")) return;
   qrBusy = true;
@@ -1375,7 +1379,7 @@ async function buildQr() {
     add(overlay, "p", "Show the person checking your medicines the list on your phone instead.");
   }
   var inside = button(overlay, fits ? "See what's inside" : "See my list", "secondary big", function () {
-    openInside(packed, inside);
+    openInside(packed, inside, fits);
   });
   inside.id = "qr-inside";
   button(overlay, "Close", "primary big", function () { closeQr(); }).id = "qr-close";
@@ -1395,14 +1399,15 @@ async function buildQr() {
   root.inert = true;
   root.setAttribute("aria-hidden", "true");
   history.pushState({ bb: "qr" }, "");
-  document.getElementById("qr-close").focus();
+  // The top shows first: the title and the code, even on a short screen.
+  document.getElementById("qr-close").focus({ preventScroll: true });
 }
 
 // What's in the code, on the patient's own phone: so they can trust it, and
 // so it can be read when nobody can scan. Brown Bag opens the code itself, the
 // way the staff page does, and shows what comes out. Read-only.
 var insideBusy = false;
-async function openInside(packed, opener) {
+async function openInside(packed, opener, fits) {
   if (insideBusy || document.getElementById("inside-overlay")) return;
   insideBusy = true;
   var words = opener.textContent;
@@ -1427,17 +1432,20 @@ async function openInside(packed, opener) {
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "inside-heading");
+  // A tap on its text lands on it, so Escape still reaches it.
+  overlay.tabIndex = -1;
   var page = add(overlay, "div", null, "inside-page");
-  button(page, "Back to the code", "secondary big", function () { closeInside(); });
-  var title = add(page, "h1", words === "See my list" ? "Your list" : "What's in your code");
+  var backWords = fits ? "Back to the code" : "Back";
+  button(page, backWords, "secondary big", function () { closeInside(); });
+  var title = add(page, "h1", fits ? "What's in your code" : "Your list");
   title.id = "inside-heading";
   title.tabIndex = -1;
   if (groups) {
-    add(page, "p", words === "See my list" ? "This is the list that was too long for one code." : "This is what opens when your code is scanned.");
+    add(page, "p", fits ? "This is what opens when your code is scanned." : "This is the list that was too long for one code.");
     drawShareList(page, groups, 2);
-    button(page, "Back to the code", "secondary big", function () { closeInside(); });
+    button(page, backWords, "secondary big", function () { closeInside(); });
   } else {
-    add(page, "p", "Couldn't open the code. Close it and show a new one.", "error");
+    add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");
   }
   overlay.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
@@ -1468,13 +1476,12 @@ function closeInside(fromHistory) {
 
 // fromHistory is true when the Back button (or Close, through history.back)
 // is what closes it.
-function closeQr(after, fromHistory) {
+function closeQr(fromHistory) {
   var overlay = document.getElementById("qr-overlay");
   if (!overlay || overlay.classList.contains("closing")) return;
   if (!fromHistory && history.state && history.state.bb === "qr") {
     if (overlay.dataset.leaving) return;
     overlay.dataset.leaving = "yes";
-    qrAfter = after || null;
     history.back();
     return;
   }
@@ -1486,12 +1493,8 @@ function closeQr(after, fromHistory) {
     if (finished) return;
     finished = true;
     overlay.remove();
-    if (typeof after === "function") {
-      after();
-    } else {
-      var back = document.getElementById("show-qr");
-      if (back) back.focus();
-    }
+    var back = document.getElementById("show-qr");
+    if (back) back.focus();
   }
   // Only the closing animation ends it; the opening one may still be
   // finishing if Close was pressed quickly.

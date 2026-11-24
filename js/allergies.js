@@ -480,7 +480,7 @@ export function unsavedAllergyText(draft, reactionTo) {
 }
 
 // Whether the allergies box carries its warning symbol: there is one, or
-// nobody can say there isn't.
-export function showsSymbol(count, unspecified, notices) {
-  return count > 0 || unspecified > 0 || notices.length > 0;
+// they didn't load, so nobody can say there isn't.
+export function showsSymbol(count, unspecified, status) {
+  return count > 0 || unspecified > 0 || status !== "loaded";
 }

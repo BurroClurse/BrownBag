@@ -15,7 +15,7 @@ Native execution, in one session (approved 2026-11-23).
 - [x] 3. `js/app.js`: the two blocks on My medicines; "See what's inside" on
   the QR screen (`openInside`, `closeInside`, its own history step).
 - [x] 4. CSS, `sw.js` (v29), README, LEARNING, NEEDS-TESTING.
-- [ ] 5. Test browser (axe, 320 px, 200% text), fresh review, virtual iPhone,
+- [x] 5. Test browser (axe, 320 px, 200% text), fresh review, virtual iPhone,
   Android or Claude in Chrome, publish, live check.
 
 Review focus: a code that can't be unlocked never shows an empty list; Back,
