@@ -19,20 +19,26 @@ export function formatName(patient) {
   return (given + " " + (name.family || "")).trim() || "Name not recorded";
 }
 
-// Current medicines the patient marked stopped move to their own group.
-// A mark for a medicine that is no longer current is ignored.
+// Current medicines the patient marked "Not taking" move to their own group
+// (stoppedAt). Ones they marked "As needed" stay current, with asNeededAt,
+// and show in the As needed group. Not taking wins if both are set. A mark
+// for a medicine that is no longer current is ignored.
 export function arrangeList(split, data) {
   var marks = (data && data.stopped) || {};
+  var needed = (data && data.asNeeded) || {};
+  var has = function (map, key) { return Object.prototype.hasOwnProperty.call(map, key); };
   var current = [];
   var stopped = [];
   split.current.forEach(function (entry) {
     // A fill-only card can answer to several keys (claims.js); a mark saved
     // under any of them counts.
-    var marked = [entry.key].concat(entry.otherKeys || []).filter(function (key) {
-      return Object.prototype.hasOwnProperty.call(marks, key);
-    })[0];
+    var keys = [entry.key].concat(entry.otherKeys || []);
+    var marked = keys.filter(function (key) { return has(marks, key); })[0];
+    var neededKey = keys.filter(function (key) { return has(needed, key); })[0];
     if (marked !== undefined) {
       stopped.push(Object.assign({}, entry, { key: marked, stoppedAt: marks[marked] }));
+    } else if (neededKey !== undefined) {
+      current.push(Object.assign({}, entry, { key: neededKey, asNeededAt: needed[neededKey] }));
     } else {
       current.push(entry);
     }
@@ -74,8 +80,9 @@ export function countLine(entry) {
 export function emptyRecordsText(split, arranged) {
   // Medicines only the insurer knows about have their own section.
   var fromRecords = function (entry) { return entry.origin !== "claims"; };
-  if (arranged.current.some(fromRecords)) return null;
-  if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records stopped.";
+  if (arranged.current.some(function (entry) { return fromRecords(entry) && !entry.asNeededAt; })) return null;
+  if (arranged.current.some(fromRecords)) return "Your current medicines are under As needed.";
+  if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records Not taking.";
   if (split.older.some(fromRecords)) return "No current medicines in your records.";
   return "No medicines in your records.";
 }
@@ -152,7 +159,7 @@ function randomId() {
 }
 
 // The number on the home screen's "My medicines" button: what the patient
-// takes now, from records (not marked stopped) and their own additions.
+// takes now, from records (not marked Not taking, As needed included) and their own additions.
 export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
@@ -204,6 +211,7 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, da
 // fresh update since). A change that's undone cancels out.
 var OPPOSITE = {
   stopped: "unstopped", unstopped: "stopped", added: "removed", removed: "added",
+  "as-needed": "regular", regular: "as-needed",
   "allergy-added": "allergy-removed", "allergy-removed": "allergy-added",
   "none-said": "none-unsaid", "none-unsaid": "none-said"
 };
@@ -268,8 +276,10 @@ export function keepChanges(changes, updatedPart) {
 
 function changeLine(change) {
   switch (change.kind) {
-    case "stopped": return "Marked " + change.name + " stopped";
+    case "stopped": return "Marked " + change.name + " Not taking";
     case "unstopped": return "Put " + change.name + " back on your list";
+    case "as-needed": return "Marked " + change.name + " As needed";
+    case "regular": return "Took " + change.name + " off As needed";
     case "removed": return "Removed " + change.name;
     case "allergy-added": return "Added the allergy " + change.name;
     case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;

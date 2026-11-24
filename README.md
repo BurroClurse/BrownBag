@@ -9,12 +9,23 @@ list. It gathers their medicines from their health records, adds what they
 take over the counter and their allergies, and shares the whole list with one QR code.
 
 The records come from the patient's own health system, the hospital or
-clinic whose patient portal (such as MyChart) they already use. They sign in
-with that portal account, and Brown Bag reads their prescriptions and listed
-medicines through SMART on FHIR, which US certified health record systems
-must offer to patient apps. It adds pharmacy fills from insurance claims,
-showing what was actually picked up. Today it connects to the SMART Health
-IT sandbox (test patients only), whose claims stand in for an insurer's.
+clinic whose patient portal they already use. They sign in with that portal
+account, and Brown Bag reads their prescriptions and listed medicines
+through SMART on FHIR, which US certified health record systems must offer
+to patient apps. It adds pharmacy fills from insurance claims, showing what
+was actually picked up. Today it connects to the SMART Health IT sandbox
+(test patients only), whose claims stand in for an insurer's.
+
+Sign in lists the others, as the app does: **Not connected** — Epic, Oracle
+Health and MEDITECH (health systems), and Medicare and Medicaid
+(insurance). Brown Bag isn't connected to these. It may add them later. The
+test systems looked at so far, and why each fits or doesn't, are in
+[`docs/SANDBOXES.md`](docs/SANDBOXES.md).
+
+Epic is a trademark of Epic Systems Corporation. Oracle is a registered
+trademark of Oracle and/or its affiliates. Other names may be trademarks of
+their respective owners. Brown Bag isn't affiliated with or endorsed by any
+of them, or by any government agency.
 
 It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox and reads FHIR R4 records.
 It is built to be simple to use: one main screen with no
@@ -36,14 +47,18 @@ only, no real patients). To open it as a certain patient, see
   **My medicines (N)**, and **More options**.
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
-  (checked against RxNorm), and ones they marked stopped.
+  (checked against RxNorm). Each medicine from the records has two
+  buttons: **As needed** moves it to its own group, still on the list, for
+  one taken only when needed (pain medicine after surgery, say), and **Not
+  taking** moves it to Not taking, for one finished or stopped. Either can
+  be undone.
 - **Allergies** come first on My medicines, in their own box, apart from the
   medicines: the ones in their records and
   their own, each with the reaction and who says so. They can add an
   allergy, add a reaction to one from their records, or say they have no
   known allergies. A load that failed says so, and never looks like "none".
 - **What was actually filled.** Each medicine shows its insurance fills
-  ("Filled 2 times · last Sep 22, 2026 · Aetna claims") or "No fill found
+  ("Filled 2 times · last Sep 22, 2026 · Insurance claims") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
   and a prescription the record calls finished (completed, stopped or
   canceled) but filled since it was written moves back to the current

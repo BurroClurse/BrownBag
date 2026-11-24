@@ -5,10 +5,10 @@
 import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle } from "./share.js";
 import { showsSymbol } from "./allergies.js";
 
-var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
-
 // Draws into parent, starting with the patient's name as heading `level`.
 // Returns that heading. made: what was made, when it isn't a QR code.
+// No "your care team confirms it" note: staff don't need it, and See what's
+// inside shows exactly what staff see (the patient reads it on My medicines).
 export function drawShareList(parent, groups, level, made) {
   var title = add(parent, "h" + level, groups.patient ? groups.patient.name : "Shared medicine list", "share-name");
   title.tabIndex = -1;
@@ -19,7 +19,6 @@ export function drawShareList(parent, groups, level, made) {
   if (groups.recordsSavedAt) {
     add(parent, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
   }
-  note(parent, DISCLAIMER);
   drawAllergies(parent, groups.allergies, level + 1, allergyDateLine(groups, madeOn));
   var block = medicinesBlock(parent, medicinesTitle(groups), level + 1).section;
   medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
@@ -29,8 +28,11 @@ export function drawShareList(parent, groups, level, made) {
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
   }
+  if (groups.patientSaysAsNeeded && groups.patientSaysAsNeeded.length) {
+    part(block, "Patient takes only as needed", groups.patientSaysAsNeeded, "", level + 2);
+  }
   part(block, "Added by patient", groups.addedByPatient, emptyPartText(groups, "added"), level + 2, groups.ownMissing);
-  part(block, "Patient says stopped", groups.patientSaysStopped, emptyPartText(groups, "stopped"), level + 2, groups.ownMissing);
+  part(block, "Patient says not taking", groups.patientSaysStopped, emptyPartText(groups, "stopped"), level + 2, groups.ownMissing);
   return title;
 }
 

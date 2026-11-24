@@ -34,6 +34,24 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+Checked only in headless Chromium here (sandbox sign-in, PIN, Loria
+Jenkins), not yet on the simulators or a phone. The staff page and QR code
+changed, so these go first:
+
+- Staff page: the shorter "Patient's 6-digit code" box, big digits, the
+  full-width Open button; no patient disclaimer on it or on See what's inside (the two match); the new "Patient
+  takes only as needed" group and "Patient says not taking" wording.
+- My medicines: "As needed" and "Not taking" side by side on each card,
+  stacking at the largest text size; the As needed group and its Undo;
+  Not taking on an As needed medicine; the count on home (As needed still
+  counts).
+- The "?" beside As needed, Added by me, Filled, not in your records, Not
+  taking, and Backup: VoiceOver and TalkBack read the heading, then "About
+  …, collapsed"; the explanation opens under the heading.
+- "… is under Not taking" panel when adding a medicine marked Not taking,
+  and its "I'm taking it again" button.
+- A backup made before this change still restores (it has no As needed
+  marks).
 - See what's inside on Android: the phone's own Back button, TalkBack, and
   whether a camera reads the slightly smaller code on a short screen.
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude

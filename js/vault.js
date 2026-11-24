@@ -1,5 +1,5 @@
-// Encrypts what the patient adds (and the medicines they mark stopped)
-// before it goes into browser storage. Uses Web Crypto, so the same file
+// Encrypts what the patient adds (and the medicines they mark Not taking or
+// As needed) before it goes into browser storage. Uses Web Crypto, so the same file
 // runs in the browser and in Node's tests.
 
 var subtle = globalThis.crypto.subtle;
@@ -93,6 +93,7 @@ async function loadByName(storage, key, name) {
   return Object.assign({}, data, {
     additions: data.additions || [],
     stopped: data.stopped || {},
+    asNeeded: data.asNeeded || {},
     allergies: data.allergies || [],
     allergyReactions: data.allergyReactions || {},
     noKnownAllergies: data.noKnownAllergies || null
@@ -141,7 +142,8 @@ export async function importBackup(storage, key, text) {
     restored.push([DATA_PREFIX + tag, await decryptJSON(key, entry[1])]);
   }
   // Merge, never replace: anything added on this phone since the backup was
-  // made stays. Additions match by id; a stopped mark on the phone wins.
+  // made stays. Additions match by id; a Not taking or As needed mark on
+  // the phone wins.
   for (var pair of restored) {
     var fromBackup = pair[1] || {};
     var onPhone = await loadByName(storage, key, pair[0]);
@@ -151,6 +153,7 @@ export async function importBackup(storage, key, text) {
     await saveByName(storage, key, pair[0], Object.assign({}, fromBackup, onPhone, {
       additions: additions,
       stopped: stopped,
+      asNeeded: Object.assign({}, fromBackup.asNeeded || {}, onPhone.asNeeded),
       allergies: allergies,
       allergyReactions: Object.assign({}, fromBackup.allergyReactions || {}, onPhone.allergyReactions),
       // "No known allergies" can't stand next to an allergy.

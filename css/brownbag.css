@@ -79,6 +79,10 @@ ul.meds > li {
 }
 .med-name { font-weight: 700; font-size: 1.2rem; line-height: 1.3; margin: 0 0 0.35rem; overflow-wrap: anywhere; }
 ul.meds > li > button.card-action { display: block; width: 100%; min-height: 48px; margin: 0.75rem 0 0; border-radius: 10px; font-size: 1.1rem; }
+/* "As needed" and "Not taking" side by side; they stack at large text. */
+.card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.card-actions button { flex: 1 1 8rem; min-height: 48px; margin: 0; border-radius: 10px; font-size: 1.1rem; }
+.card-actions button.secondary { background: var(--card); border-color: var(--teal); }
 .med-line { color: var(--muted); margin: 0.1rem 0; overflow-wrap: anywhere; }
 
 .button, button {
@@ -359,7 +363,7 @@ button.secondary.big { border-color: var(--teal); }
 }
 .note-label { color: var(--teal); }
 
-/* "I stopped this" and "Remove": a brick red that sits with the bag's
+/* "Not taking" and "Remove": a brick red that sits with the bag's
    browns, so they read as taking something off the list. */
 :root { --stop: #A3402F; }
 button.stop { background: var(--stop); border-color: var(--stop); color: #FFFFFF; }
@@ -393,6 +397,11 @@ button.help-button {
 .qr-overlay .help-row { margin: 0 0 0.6rem; }
 .qr-overlay .help-row:first-child { margin-top: auto; }
 .qr-overlay .help-row .qr-say { margin: 0; }
+/* A section heading with its "?" at the end of the line. */
+.help-row.section-help { justify-content: space-between; margin: 2rem 0 0.5rem; }
+.help-row.section-help h2, .help-row.section-help h3 { flex: 1 1 auto; margin: 0; }
+.screen-medicines .help-row.section-help { margin: 1.25rem 0 0.6rem; }
+.section-help + .help-panel { margin-top: 0; }
 
 /* The 6 digits on the QR screen: blurred until tapped. */
 .qr-overlay button.code-reveal {
@@ -482,3 +491,21 @@ button.help-button {
   .qr-overlay .qr canvas { width: min(88vw, 45dvh); }
   .qr-overlay > button.big { min-height: 48px; padding: 0.35rem 1rem; margin-top: 0.4rem; font-size: 1.15rem; }
 }
+
+/* The staff page's code form: a short label, one big box for the digits,
+   and a full-width button. */
+.code-form { margin-top: 1rem; }
+.code-form label { margin-top: 0; }
+.code-form .code-input {
+  max-width: 16rem;
+  margin-top: 0.4rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding: 0.3rem 0 0.3rem 0.35em;
+}
+.code-form .status { margin: 0.5rem 0 0; }
+.code-form .status:empty { display: none; }
+.code-form .big { margin-top: 1rem; }

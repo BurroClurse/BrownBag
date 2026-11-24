@@ -71,9 +71,9 @@ test("staff see when the records and the allergies last loaded", () => {
 // couldn't open what the patient added, and a stopped medicine looks current.
 test("staff are told when the patient's own part couldn't be opened", () => {
   const lines = staffLines(state({ dataFailed: true }), { current: [ITEM] });
-  assert.ok(says(lines, "added or marked stopped couldn't be opened"));
+  assert.ok(says(lines, "added or marked not taking couldn't be opened"));
   assert.ok(!says(lines, "Nothing added by the patient."));
-  assert.ok(!says(lines, "Nothing marked stopped."));
+  assert.ok(!says(lines, "Nothing marked not taking."));
   assert.ok(!says(lines, "Medicines (1)"), "no total");
   assert.ok(says(lines, "Allergies from records couldn't be loaded"));
 });
@@ -139,8 +139,8 @@ test("claims that were held back, or weren't a list, are failed and not none", a
 
 // Without this, "Added by patient (0)" sits above "Couldn't be opened."
 test("a part that didn't load gets no number on the staff page", () => {
-  const headings = (s) => staffLines(s).filter((line) => /^(From records|Added by patient|Patient says stopped)/.test(line));
-  assert.deepEqual(headings(state()), ["From records (0)", "Added by patient (0)", "Patient says stopped (0)"]);
-  assert.deepEqual(headings(state(split({ failed: true }))), ["From records", "Added by patient (0)", "Patient says stopped (0)"]);
-  assert.deepEqual(headings(state({ dataFailed: true })), ["From records", "Added by patient", "Patient says stopped"]);
+  const headings = (s) => staffLines(s).filter((line) => /^(From records|Added by patient|Patient says not taking)/.test(line));
+  assert.deepEqual(headings(state()), ["From records (0)", "Added by patient (0)", "Patient says not taking (0)"]);
+  assert.deepEqual(headings(state(split({ failed: true }))), ["From records", "Added by patient (0)", "Patient says not taking (0)"]);
+  assert.deepEqual(headings(state({ dataFailed: true })), ["From records", "Added by patient", "Patient says not taking"]);
 });

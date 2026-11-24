@@ -37,6 +37,9 @@ export class ShareError extends Error {
 // saved copy (with the date they were saved), or a load where a source
 // failed. This is the one place the trimmed Bundle keeps a meta field.
 var TAGS = "https://burroclurse.github.io/BrownBag/tags";
+// A medicine the patient marked As needed: still active, taken only when
+// needed (asNeededBoolean), with this note so staff see who said so.
+export var AS_NEEDED_NOTE = "Patient says: takes only when needed";
 
 export function buildShareBundle(list, now, warnings = {}) {
   var entries = [{
@@ -63,6 +66,11 @@ export function buildShareBundle(list, now, warnings = {}) {
     }
     if (item.fills) {
       statement.note.push({ text: fillNote(item.fills) });
+    }
+    if (item.asNeededAt) {
+      statement.dosage = statement.dosage || [{}];
+      statement.dosage[0].asNeededBoolean = true;
+      statement.note.push({ text: AS_NEEDED_NOTE });
     }
     entries.push({ resource: statement });
   });
@@ -136,6 +144,7 @@ export function groupShareBundle(bundle) {
     unnamed: unnamed ? (/^[1-9]\d{0,3}$/.test(unnamed.display) ? Number(unnamed.display) : 1) : 0,
     fromRecords: [],
     fromClaims: [],
+    patientSaysAsNeeded: [],
     addedByPatient: [],
     patientSaysStopped: [],
     allergies: allergyTags(tags)
@@ -157,17 +166,20 @@ export function groupShareBundle(bundle) {
     var dosage = resource.dosage && resource.dosage[0] && resource.dosage[0].text;
     var fromPatient = resource.informationSource && resource.informationSource.reference === SELF.reference;
     var fromClaims = resource.informationSource && !resource.informationSource.reference && resource.informationSource.display;
+    var noteTexts = (resource.note || []).map(function (note) { return note.text; });
     if (resource.status === "stopped") {
       var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
-      groups.patientSaysStopped.push({ name: name, detail: joinDetail([dosage, stoppedOn ? "stopped " + stoppedOn : null]) });
+      groups.patientSaysStopped.push({ name: name, detail: joinDetail([dosage, stoppedOn ? "not taking since " + stoppedOn : null]) });
+    } else if (!fromPatient && noteTexts.indexOf(AS_NEEDED_NOTE) !== -1) {
+      var others = noteTexts.filter(function (t) { return t !== AS_NEEDED_NOTE; });
+      groups.patientSaysAsNeeded.push({ name: name, detail: joinDetail([dosage].concat(others)) });
     } else if (fromPatient) {
       groups.addedByPatient.push({ name: name, detail: joinDetail([dosage]) });
     } else if (fromClaims) {
-      var fillNotes = (resource.note || []).map(function (n) { return n.text; }).filter(function (t) { return t !== "Filled, not in the health record"; });
+      var fillNotes = noteTexts.filter(function (t) { return t !== "Filled, not in the health record"; });
       groups.fromClaims.push({ name: name, detail: joinDetail([dosage].concat(fillNotes)) });
     } else {
-      var notes = (resource.note || []).map(function (note) { return note.text; });
-      groups.fromRecords.push({ name: name, detail: joinDetail([dosage].concat(notes)) });
+      groups.fromRecords.push({ name: name, detail: joinDetail([dosage].concat(noteTexts)) });
     }
   });
   return groups;
@@ -490,7 +502,7 @@ async function transform(bytes, stream) {
 
 // The same number as the home button: current, filled and added.
 export function shareMedicineCount(groups) {
-  return groups.fromRecords.length + (groups.fromClaims || []).length + groups.addedByPatient.length;
+  return groups.fromRecords.length + (groups.fromClaims || []).length + (groups.patientSaysAsNeeded || []).length + groups.addedByPatient.length;
 }
 
 // What staff are told about the medicines that aren't listed, right under the
@@ -498,7 +510,7 @@ export function shareMedicineCount(groups) {
 export function medicineNotices(groups) {
   var out = [];
   if (groups.incomplete) out.push("Some of the patient's records couldn't be loaded. This list may be missing medicines.");
-  if (groups.ownMissing) out.push("What the patient added or marked stopped couldn't be opened. Ask the patient.");
+  if (groups.ownMissing) out.push("What the patient added or marked not taking couldn't be opened. Ask the patient.");
   if (groups.unnamed) {
     var one = groups.unnamed === 1;
     out.push("The records also have " + groups.unnamed + (one ? " entry" : " entries") + " with no medicine name, so " + (one ? "it isn't" : "they aren't") + " listed. Ask the patient.");
@@ -513,7 +525,7 @@ export function emptyPartText(groups, part) {
     return groups.unnamed ? "None with a medicine name." : "No medicines from records.";
   }
   if (groups.ownMissing) return "Couldn't be opened.";
-  return part === "added" ? "Nothing added by the patient." : "Nothing marked stopped.";
+  return part === "added" ? "Nothing added by the patient." : "Nothing marked not taking.";
 }
 
 // Some of it didn't load: no number, which would read as the whole.

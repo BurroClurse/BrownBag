@@ -110,7 +110,7 @@ function groupSameDrug(fills) {
 
 // One card for a drug no record lists. It shows the newest fill's name. Its
 // key comes from the oldest fill, so it stays the same as new fills come in;
-// the other keys are kept so an "I stopped this" under one of them holds.
+// the other keys are kept so a Not taking or As needed mark under one of them holds.
 function fillOnlyItem(group) {
   var fills = emptyFills();
   group.forEach(function (fill) { addFill(fills, fill); });
