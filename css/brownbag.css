@@ -502,6 +502,12 @@ button.help-button {
 .qr-alert ul { margin: 0.25rem 0; padding-left: 1.3rem; }
 .qr-alert-title { font-weight: 800; font-size: 1.1rem; }
 
+/* Signed out with no signal, in iPhone Safari with its toolbars: a smaller bag
+   keeps Open my saved list on screen. */
+@media (max-height: 720px) {
+  #app.screen-signed-out .screen-logo { width: min(50vw, 200px); }
+}
+
 /* The tagline, under the bag on the sign-in and unlock screens. */
 .tagline { text-align: center; color: var(--teal); font-weight: 700; font-size: 1.2rem; margin: 0 0 1rem; }
 

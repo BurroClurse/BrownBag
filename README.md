@@ -95,7 +95,8 @@ only, no real patients). To open it as a certain patient, see
 - **Interrupted while adding?** A half-typed medicine or allergy is kept until
   Brown Bag locks or closes, and home says it isn't saved.
 - **Sign out** signs out everyone on the phone. Saved lists stay, locked: the
-  next open says "You're signed out", with Sign in and Open my saved list.
+  next open says "You're signed out", with Sign in. With no signal, it also
+  has Open my saved list.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the
   app. The health record connection ends after 30 days without opening it.
 
@@ -192,6 +193,7 @@ The list never passes through a server.
 | `js/edit.js` | Changing a medicine the patient added. |
 | `js/sort.js` | The order of My medicines, and the short name on home. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |
+| `js/signed-out.js` | When a signed-out phone can open its saved list: only with no signal. |
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |

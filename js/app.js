@@ -12,6 +12,7 @@ import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredie
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
 import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
+import { mayOpenSaved, signedOutLine } from "./signed-out.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
@@ -85,7 +86,9 @@ var state = {
   offline: false,
   needsSignIn: false,
   // Sign out was tapped: nothing may save a pass after this.
-  signedOut: false
+  signedOut: false,
+  // Signed out with no signal, and Open my saved list was tapped.
+  askedForSaved: false
 };
 
 function emptyData() {
@@ -154,9 +157,10 @@ async function start() {
     drawSignedOut(null);
     return;
   }
-  // Signed out: say so, and let them sign in or open the list they saved.
+  // Signed out: say so. With no signal, they can open the list they saved.
   if (!cameBackFromAuth && localStorage.getItem(SIGNED_OUT_KEY)) {
     await savedListAsked();
+    state.askedForSaved = true;
   }
   state.key = await showLockScreen(root);
   startAutoLock();
@@ -446,9 +450,15 @@ async function clearChanges(part) {
 }
 
 // No sign-in (closed app, no signal, weak Wi-Fi): show the last saved list
-// if there is one, otherwise say what to do.
+// if there is one, otherwise say what to do. Signed out with a connection, a
+// sign-in that didn't finish doesn't open it.
 async function signInUnavailable(error) {
-  var saved = await loadLastRecords(localStorage, state.key);
+  var may = mayOpenSaved({
+    signedOut: Boolean(localStorage.getItem(SIGNED_OUT_KEY)),
+    asked: state.askedForSaved,
+    online: navigator.onLine
+  });
+  var saved = may ? await loadLastRecords(localStorage, state.key) : null;
   if (saved) {
     useSaved(saved);
     await loadAdditions();
@@ -1970,19 +1980,38 @@ async function save() {
   render();
 }
 
-// After Sign out. Resolves when they ask for the list saved on this phone.
+// After Sign out. With no signal, signing in can't work, so the list saved on
+// this phone is offered; the screen follows the signal. Resolves when they ask
+// for that list.
 function savedListAsked() {
   return new Promise(function (resolve) {
     plainScreen();
+    root.classList.add("screen-signed-out");
     var title = add(root, "h2", "You're signed out");
     title.id = "signed-out-heading";
     title.tabIndex = -1;
     add(root, "p", "Sign in to update your list from your health records.", "screen-text");
     add(root, "a", "Sign in", "button primary big").href = "./launch.html";
-    button(root, "Open my saved list", "secondary big", function () {
+    var line = add(root, "p", null, "screen-text");
+    var open = button(root, "Open my saved list", "secondary big", function () {
+      window.removeEventListener("online", follow);
+      window.removeEventListener("offline", follow);
       clear(root);
+      root.classList.remove("screen-signed-out");
       resolve();
-    }).id = "open-saved";
+    });
+    open.id = "open-saved";
+    function follow() {
+      var text = signedOutLine(navigator.onLine);
+      // The button they were on is going.
+      if (!text && document.activeElement === open) title.focus();
+      line.textContent = text || "";
+      line.hidden = !text;
+      open.hidden = !text;
+    }
+    window.addEventListener("online", follow);
+    window.addEventListener("offline", follow);
+    follow();
     title.focus();
   });
 }

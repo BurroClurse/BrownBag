@@ -75,3 +75,8 @@ an idea becomes a plan only after its own design.
   - Now: new backups are sealed to each person, and PIN backups have a long
     password.
   - Ideas: stop opening the old kind once nobody needs them.
+- [ ] **14. Signed out, on Wi-Fi that doesn't reach the internet, the saved
+  list can't be opened.** The phone says it has a connection, so only Sign in
+  shows. The same goes for a health system that's down.
+  - Now: airplane mode with Wi-Fi off shows Open my saved list.
+  - Ideas: offer it after a sign-in that couldn't start.

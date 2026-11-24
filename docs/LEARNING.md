@@ -1532,6 +1532,20 @@ characters and no required symbols.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 46. Signed out means signed out (`js/signed-out.js`)
+
+**What changed.** After Sign out, Open my saved list shows only with no signal.
+A sign-in that fails while signed out doesn't open the list either.
+
+**A choice should have a reason.** With a connection, that button made signing
+out look like it did nothing. With none, it's the only way to your medicines.
+
+**The browser says when the signal changes.** `navigator.onLine` answers now,
+and the `online` and `offline` events say when it changes. It only knows the
+phone has a network, not that the internet works.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

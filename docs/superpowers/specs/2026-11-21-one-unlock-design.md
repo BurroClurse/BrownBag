@@ -189,3 +189,10 @@ needed, is a follow-up.
   (still behind the lock). Signing in ends it.
 - A rotated refresh token that arrives after the wait is kept. A sign-in with
   no token address gives no pass.
+
+## Changed 2026-11-24 (Tyler: Open my saved list only with no signal)
+
+- "You're signed out" has only Sign in when there's a connection. With none it
+  adds "No connection. You can still open the list saved on this phone." and
+  Open my saved list. The screen follows the signal.
+- A sign-in that doesn't finish while signed out doesn't open the saved list.

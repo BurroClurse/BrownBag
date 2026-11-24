@@ -95,6 +95,8 @@ Decided for later, so nothing to test until they're picked up:
   "About these names" opening.
 - The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
   the popup, and starts on Cancel.
+- Signed out: only Sign in. In airplane mode with Wi-Fi off, the line and Open my
+  saved list appear, and it opens the list behind Face ID.
 - Save a backup on a real iPhone: only the .json file is saved, with Face ID and
   with a PIN. With a PIN: the password popup with VoiceOver, the keyboard up, and
   whether the phone's offer to save the password gets in the way.
@@ -211,3 +213,7 @@ Decided for later, so nothing to test until they're picked up:
   screen and on the sign-in screen, Cancel, Back, wrong password, an edited file;
   320 to 1440 wide, 200 percent text), then both virtual phones (make, save,
   wrong password, restore; the share sheet replaced by a stand-in). Passed.
+- 2026-11-24, Open my saved list only with no signal, before publishing: the test
+  browser (signal going and coming back, a refused sign-in, signed in again, 320
+  to 1440 wide, 200 percent text) and both virtual phones. Passed. On the phones
+  the lost signal was a stand-in, not airplane mode.
