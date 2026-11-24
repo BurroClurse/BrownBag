@@ -15,7 +15,7 @@ Native execution, in one session (small change, approved 2026-11-23).
   words as the app.
 - [x] 3. `js/app.js`: the two Sign in links after the lock go straight to the
   sandbox. `sw.js` keeps the new files; cache v28.
-- [ ] 4. README, LEARNING Step, NEEDS-TESTING. Test browser (axe, 320 px, 200%
+- [x] 4. README, LEARNING Step, NEEDS-TESTING. Test browser (axe, 320 px, 200%
   text), fresh review, both virtual phones, publish, live check.
 
 Review focus: an unknown or odd `source` never signs in; the README's `iss`

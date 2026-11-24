@@ -10,7 +10,9 @@ change, and moves it to "Tested" with the date when the pass is done.
    on the Mac. TalkBack can be switched on.
 2. **iPhone 15 simulator** (Safari): Claude drives it with Apple's built-in
    Safari driver. No VoiceOver or Face ID in the simulator.
-3. **Tyler's iPhone**: VoiceOver, Face ID, the Home Screen app, and anything
+3. **Claude in Chrome** when a virtual phone won't run (Tyler, 2026-11-23). It
+   covers Chrome's behavior, not the Android Back button, touch or TalkBack.
+4. **Tyler's iPhone**: VoiceOver, Face ID, the Home Screen app, and anything
    the simulators can't do. Listed under "On a real iPhone".
 
 Test patient: Loria Jenkins (`e7de504a-311d-49be-b2bc-566a328bcc72`), a
@@ -32,7 +34,8 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-- The sign-in list: both phones before it is published (it touches sign-in).
+- The sign-in list on Android: the phone's own Back button and TalkBack. Claude
+  in Chrome stood in for the emulator (the Mac's disk was full).
 
 ## On a real iPhone (Tyler)
 
@@ -87,3 +90,7 @@ pass, when it touches:
   metoprolol, since Avery is gone.
 - 2026-11-23, Tyler's iPhone: Sign out shows "You're signed out" with Sign in
   and Open my saved list. Works.
+- 2026-11-23, the sign-in list, before publishing: the test browser (with and
+  without its Back memory), the iPhone simulator, and Claude in Chrome with
+  real clicks (the list, the grey names, the sandbox and Back, the Chantell
+  link, PIN, Sign out). Passed.
