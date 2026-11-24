@@ -140,7 +140,7 @@ test("a backup password is long, isn't one thing repeated, and is typed twice", 
 // iPhone saved the title as a second file.
 test("saving a backup shares only the file", () => {
   const app = read("js/app.js");
-  assert.match(app, /navigator\.share\(\{ files: \[file\] \}\)/);
+  assert.match(read("js/save-file.js"), /nav\.share\(\{ files: \[file\] \}\)/);
   assert.ok(!app.includes('title: "Brown Bag backup"'));
 });
 

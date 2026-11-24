@@ -207,6 +207,7 @@ The list never passes through a server.
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
 | `js/ips.js`, `js/fhir-file.js` | Save as FHIR file: the International Patient Summary, and its button and warning. |
+| `js/save-file.js` | Saves that file, or a backup: the share sheet, or a download where sharing is refused. |
 | `privacy.html` | The privacy page: what Brown Bag keeps, who is contacted, and the limits of the locks. |
 | `js/test-patients.js` | The sandbox's test patients, and the sandbox address that signs in as one. |
 | `js/options.js` | What More options offers, in groups. |

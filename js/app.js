@@ -25,6 +25,7 @@ import { drawNotConnected } from "./source-list.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
 import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
+import { saveToDevice } from "./save-file.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
@@ -1976,18 +1977,7 @@ async function shareBackup(text) {
   var said;
   try {
     var file = new File([text], backupFileName(new Date()), { type: "application/json" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      // Only the file: an iPhone saves a title as a second file.
-      await navigator.share({ files: [file] });
-    } else {
-      var link = document.createElement("a");
-      link.href = URL.createObjectURL(file);
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
-    }
+    await saveToDevice(file);
     said = "Backup saved as " + file.name + ".";
   } catch (error) {
     said = error && error.name === "AbortError" ? "Backup cancelled." : "Couldn't save the backup.";

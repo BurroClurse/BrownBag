@@ -19,9 +19,9 @@ test("a cancelled or failed save never says saved", () => {
 });
 
 test("the file is made on the device and nothing is sent", () => {
-  for (const file of ["js/ips.js", "js/fhir-file.js", "js/share-view.js"]) assert.doesNotMatch(read(file), /fetch\(|XMLHttpRequest|sendBeacon|localStorage|indexedDB/, file);
+  for (const file of ["js/ips.js", "js/fhir-file.js", "js/save-file.js", "js/share-view.js"]) assert.doesNotMatch(read(file), /fetch\(|XMLHttpRequest|sendBeacon|localStorage|indexedDB/, file);
   // Only the file: a title becomes a second file on an iPhone.
-  assert.match(read("js/fhir-file.js"), /navigator\.share\(\{ files: \[file\] \}\)/);
+  assert.match(read("js/save-file.js"), /nav\.share\(\{ files: \[file\] \}\)/);
 });
 
 test("the patient is told the list can be saved unlocked", () => {

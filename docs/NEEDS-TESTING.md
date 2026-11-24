@@ -247,3 +247,6 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   (320 to 1440 wide, 200 percent text) and both virtual phones. Passed.
 - 2026-11-24, insurance fills on Health records, and Pharmacies under Not connected
   there and at sign-in: the test browser. Passed.
+- 2026-11-24, Save as FHIR file and Save a backup on Android, with the real share step
+  (not a stand-in): the virtual phone. Both files saved. On the live site the same day, on
+  the virtual phone: sign-in, allergies, As needed, I'm taking this, offline, signed out.

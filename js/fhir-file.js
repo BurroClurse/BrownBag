@@ -4,6 +4,7 @@
 
 import { openPopup, popupButton, popupLine } from "./popup.js";
 import { patientSummary, summaryFileName, whyNotSaved } from "./ips.js";
+import { saveToDevice } from "./save-file.js";
 
 export var NOT_SAVED = {
   incomplete: "This list is incomplete, so it can't be saved as a file.",
@@ -63,18 +64,7 @@ function ask(opener, warning, save) {
 async function saveFile(bundle) {
   var summary = patientSummary(bundle, { now: new Date(), uuid: newId });
   var file = new File([JSON.stringify(summary, null, 2)], summaryFileName(bundle), { type: "application/json" });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    // Only the file: an iPhone saves a title as a second file.
-    await navigator.share({ files: [file] });
-    return;
-  }
-  var link = document.createElement("a");
-  link.href = URL.createObjectURL(file);
-  link.download = file.name;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+  await saveToDevice(file);
 }
 
 // A random id (RFC 4122, version 4).

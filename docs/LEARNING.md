@@ -1739,6 +1739,24 @@ make a missing fill look like a medicine nobody picked up.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+---
+
+## Step 58: A phone that says yes, then no
+
+**What changed:** Save as FHIR file and Save a backup now work in Chrome on
+Android. Before, both said they couldn't save.
+
+**Why:** a page can ask "can you share this file?" first. Chrome on Android
+answers yes for a .json file, then refuses the real share. So a yes isn't
+enough. Try it, and if it's refused, download the file instead. Cancelling is
+different: the person said no, so nothing is saved.
+
+**How we missed it:** the phone test replaced the share step with a stand-in
+that always worked. A stand-in only proves the code around it. Pressing the
+real button on the live site found it.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.
