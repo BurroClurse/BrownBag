@@ -16,7 +16,7 @@ to patient apps. It adds pharmacy fills from insurance claims, showing what
 was actually picked up. Today it connects to the SMART Health IT sandbox
 (test patients only), whose claims stand in for an insurer's.
 
-Sign in lists the others, as the app does: **Not connected** — Epic, Oracle
+Sign in lists the others, as the app does: **Not connected**: Epic, Oracle
 Health and MEDITECH (health systems), and Medicare and Medicaid
 (insurance). Brown Bag isn't connected to these. It may add them later. The
 test systems looked at so far, and why each fits or doesn't, are in
