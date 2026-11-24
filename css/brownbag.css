@@ -369,7 +369,7 @@ button.secondary.big, .button.secondary.big { border-color: var(--teal); }
 .qr-overlay { overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 .qr-overlay.open { animation: none; transition: transform 200ms ease-out; }
 .qr-overlay.dragging { transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)); transition: none; box-shadow: 0 0 24px rgb(0 0 0 / 35%); }
-/* A hint that it can be pulled down; Close is the button for it. */
+/* A hint that it can be swiped away; Close is the button for it. */
 @media (pointer: coarse) {
   .qr-overlay::before { content: ""; position: absolute; top: max(0.4rem, env(safe-area-inset-top)); left: 50%; width: 2.5rem; height: 5px; margin-left: -1.25rem; border-radius: 3px; background: #8A8A8A; }
 }

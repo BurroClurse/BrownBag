@@ -256,3 +256,6 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   finger, so a real swipe there is still to check.
 - 2026-11-24, "Source:" on allergies from records, and one swipe down closing a code a little
   taller than the screen: the test browser. Passed.
+- 2026-11-24, swiping the QR code up as well, before publishing: real touches on the
+  virtual Android phone (down, up, left, right, slow, quick flicks, nudges, a tap), and
+  made-up touches on the virtual iPhone. Passed. A real finger on the iPhone is still to check.

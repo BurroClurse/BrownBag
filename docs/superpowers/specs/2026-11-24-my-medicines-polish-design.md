@@ -3,8 +3,9 @@
 Asked for by Tyler 2026-11-24, with the obvious choices left to Claude.
 
 - **Done at the bottom** of My medicines too, for a long list.
-- **Swipe the QR code away**: down, left or right. It follows the finger, and a
-  short swipe goes back. Up still scrolls. The phone's own edge swipe, two
+- **Swipe the QR code away**: down, up, left or right (up added the same day).
+  It follows the finger, and a short swipe goes back. A code too tall for the
+  screen scrolls first. The phone's own edge swipe, two
   fingers and a zoomed page are left alone. Close stays, for anyone who can't
   swipe (WCAG 2.5.1).
 - **Reaction buttons fold away.** Once the patient has said something about an
