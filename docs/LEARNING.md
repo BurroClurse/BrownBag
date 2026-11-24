@@ -1460,6 +1460,23 @@ The bag is the part that shrinks, so home still fits one screen.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 41. Back up before starting over (`js/install.js`)
+
+**What changed.** Start over says what's erased in fewer words, and how to save a
+backup first.
+
+**Say the way out before the danger.** The steps sit above the erase button, so
+they're read in time.
+
+**A backup is locked too.** It opens only with the same PIN or Face ID, so a
+stolen file is useless. That also means a forgotten PIN can't open it, and the
+screen says so.
+
+**A test for words.** The steps name buttons. The test checks those names exist
+on the real screens, so renaming one fails the test.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

@@ -5,7 +5,7 @@
 
 import { hasLock, lockMethod, setupLock, unlock, LockError, LOCK_KEY, eraseBrownBag } from "./lock.js";
 import { importBackup } from "./vault.js";
-import { lockRecordFrom } from "./install.js";
+import { lockRecordFrom, startOverText } from "./install.js";
 
 export function showLockScreen(root) {
   return new Promise(function (resolve) {
@@ -229,8 +229,23 @@ function exitOption(root, box, done, options, label) {
 function drawStartOver(root, done) {
   clear(root);
   var box = panel(root, "Start over?");
-  para(box, "This erases what Brown Bag saved on this phone: your lock, your additions, your stopped marks and your saved list.");
-  para(box, "Your medicines from your records come back when you sign in. A backup file brings your additions and stopped marks back.");
+  box.classList.add("start-over");
+  var text = startOverText(lockMethod());
+  text.lines.forEach(function (line) { para(box, line); });
+  var card = document.createElement("div");
+  card.className = "backup-first";
+  box.appendChild(card);
+  var title = document.createElement("h2");
+  title.textContent = text.title;
+  card.appendChild(title);
+  var steps = document.createElement("ol");
+  text.steps.forEach(function (step) {
+    var item = document.createElement("li");
+    item.textContent = step;
+    steps.appendChild(item);
+  });
+  card.appendChild(steps);
+  para(card, text.note);
   var erase = action(box, "Erase and start over");
   erase.addEventListener("click", function () {
     eraseBrownBag();
@@ -240,7 +255,8 @@ function drawStartOver(root, done) {
   keep.addEventListener("click", function () {
     drawLockStart(root, done);
   });
-  keep.focus();
+  // The top shows first, even on a short screen.
+  keep.focus({ preventScroll: true });
 }
 
 // heading null: the bag itself is the heading, read as "Brown Bag", for the

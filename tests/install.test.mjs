@@ -73,3 +73,28 @@ test("lockRecordFrom is null for a backup without lock settings or for junk", ()
   assert.equal(lockRecordFrom(JSON.stringify({ app: "brownbag", version: 1, data: {} })), null);
   assert.equal(lockRecordFrom("not json"), null);
 });
+
+// Start over erases what only a backup brings back, so it says how to make one
+// first. The names must be the ones on the screens.
+test("Start over says what's erased and how to back up first, in the app's own words", async () => {
+  const { startOverText } = await import("../js/install.js");
+  const { optionGroups } = await import("../js/options.js");
+  const { readFileSync } = await import("node:fs");
+  const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
+  const text = startOverText("pin");
+  assert.match(text.lines.join(" "), /erases everything Brown Bag saved on this phone/);
+  assert.match(text.lines.join(" "), /only from a backup/);
+  const steps = text.steps.join(" ");
+  assert.ok(steps.includes("Keep my lock") && read("js/lock-screen.js").includes('"Keep my lock"'));
+  assert.ok(steps.includes("More options") && read("js/app.js").includes('button(root, "More options"'));
+  const names = optionGroups({ status: { rows: [["a", "b"]], note: null }, homeScreen: false }).flatMap((g) => g.rows.map((r) => r.name));
+  assert.ok(steps.includes("Save a backup") && names.includes("Save a backup"));
+});
+
+// A backup is locked with the same key: without this, someone who forgot the
+// PIN would count on a file they can't open.
+test("Start over says what the backup needs to open", async () => {
+  const { startOverText } = await import("../js/install.js");
+  assert.equal(startOverText("pin").note, "The backup opens only with this same PIN.");
+  assert.equal(startOverText("passkey").note, "The backup opens only with this same Face ID or fingerprint lock.");
+});

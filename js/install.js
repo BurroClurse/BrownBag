@@ -92,3 +92,17 @@ export function lockRecordFrom(backupText) {
     return null;
   }
 }
+
+// What Start over says: what's erased, and how to save a backup first. A
+// backup is locked the same way as this phone, so it says that too.
+export function startOverText(method) {
+  return {
+    lines: [
+      "This erases everything Brown Bag saved on this phone, including your lock.",
+      "Your records come back when you sign in. What you added or marked comes back only from a backup."
+    ],
+    title: "To back up first",
+    steps: ["Tap Keep my lock, then unlock.", "Tap More options, then Save a backup."],
+    note: "The backup opens only with this same " + (method === "pin" ? "PIN." : "Face ID or fingerprint lock.")
+  };
+}

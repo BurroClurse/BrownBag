@@ -162,6 +162,11 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
 }
 
 .lock { margin-top: 1rem; }
+/* On Start over: how to save a backup before erasing. */
+.backup-first { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.75rem 1rem; margin: 0.9rem 0; }
+.backup-first h2 { border: none; margin: 0; padding: 0; font-size: 1.2rem; }
+.backup-first ol { margin: 0.35rem 0; padding-left: 1.4rem; }
+.backup-first p { margin: 0; color: var(--muted); font-size: 1rem; }
 
 /* The bag on the lock, sign-in, loading and staff screens, on the same
    wheat card as the home screen so its dark letters read in dark mode. */
@@ -547,6 +552,9 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .inside-page ul { margin: 0; padding-left: 1.1rem; }
 .inside-page li { margin: 0 0 0.45rem; }
 .inside-page .inside-warning { color: var(--error-ink); font-weight: 600; }
+/* Start over has more to read, so its bag is small. */
+.lock.start-over { margin-top: 0; }
+.lock.start-over .screen-logo { width: min(9rem, 22dvh); margin-bottom: 0.25rem; }
 /* A short screen (iPhone Safari with its toolbars): tighter, so the title, the
    code, the digits and both buttons fit without scrolling. */
 @media (max-height: 720px) {
