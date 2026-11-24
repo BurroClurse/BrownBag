@@ -64,6 +64,9 @@ The staff page changed, so it goes first:
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 
+- More options with bigger text (2026-11-23): both virtual phones. Checked only in
+  the test browser (320 to 1440 wide, 200 percent text).
+
 ## Not done yet
 
 Decided for later, so nothing to test until they're picked up:

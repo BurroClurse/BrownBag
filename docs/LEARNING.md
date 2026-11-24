@@ -1441,6 +1441,16 @@ them is separate.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 39. One set of text sizes (`css/brownbag.css`)
+
+**What changed.** More options uses the sizes of the other screens: an option's
+name is as big as a big button's words, and its line is as big as normal text.
+
+**Why it stood out.** A size picked for one screen looks wrong next to the
+others. Reusing the sizes already there is what makes an app look like one app.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary
