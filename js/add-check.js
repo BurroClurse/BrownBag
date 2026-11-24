@@ -90,6 +90,9 @@ function sameDoseAndSchedule(candidate, entry) {
   // Two products of one drug (10 MG and 20 MG) are never a duplicate.
   if (candidate.rxcui && entry.rxcui && candidate.rxcui !== entry.rxcui) return false;
   if (asNeeded(candidate.frequency) !== asNeeded(entry.frequency)) return false;
+  // One of several directions, one end of a range, or a schedule left to the
+  // record isn't the same schedule.
+  if (/Direction 1: |\d to \d|see the record/i.test(String(entry.frequency || ""))) return false;
   var schedule = words(entry.frequency);
   // With no dose of its own, the record has it in the schedule's words.
   var dose = entry.dose

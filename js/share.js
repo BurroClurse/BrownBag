@@ -6,6 +6,7 @@
 // the packed list is written as digits, which a QR code holds more of.
 
 import { fillNote, completedNote } from "./claims.js";
+import { holdText } from "./meds.js";
 import { dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
@@ -41,6 +42,9 @@ var TAGS = "https://burroclurse.github.io/BrownBag/tags";
 // A medicine the patient marked As needed: still active, taken only when
 // needed (asNeededBoolean), with this note so staff see who said so.
 var CLAIMS_ONLY_NOTE = "Filled, not in the health record";
+// On hold in the record. The words travel too, for an older staff page.
+var HOLD_NOTES = { all: "On hold in the records", some: "One record has this on hold" };
+var HOLD_STATUS = { all: "on-hold", some: "unknown" };
 export var AS_NEEDED_NOTE = "Patient says: takes only when needed";
 
 export function buildShareBundle(list, now, warnings = {}) {
@@ -52,7 +56,7 @@ export function buildShareBundle(list, now, warnings = {}) {
     }
   }];
   list.current.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), "active", null, dosageParts(item));
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), HOLD_STATUS[holdText(item)] || "active", null, dosageParts(item));
     if (item.origin === "claims") {
       // Filled through insurance, but not in the health record.
       statement.informationSource = { display: item.source };
@@ -62,6 +66,9 @@ export function buildShareBundle(list, now, warnings = {}) {
     }
     if (item.prescriber) {
       statement.note.push({ text: "Prescribed by " + item.prescriber });
+    }
+    if (HOLD_NOTES[holdText(item)]) {
+      statement.note.push({ text: HOLD_NOTES[holdText(item)] });
     }
     if (item.completedButFilled) {
       statement.note.push({ text: completedNote(item.completedButFilled, item.recordStatus) });
@@ -526,6 +533,10 @@ function cardFrom(resource, added) {
     var text = String(note.text || "");
     var found;
     if (text === AS_NEEDED_NOTE || text === CLAIMS_ONLY_NOTE) return;
+    if (text === HOLD_NOTES.all || text === HOLD_NOTES.some) {
+      card.flags.push(text);
+      return;
+    }
     if ((found = /^From records: (.+)$/.exec(text))) source.push(["Source", found[1]]);
     else if ((found = /^Prescribed by (.+)$/.exec(text))) card.facts.push(["Prescribed by", found[1]]);
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));

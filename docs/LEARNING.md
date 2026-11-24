@@ -1577,6 +1577,21 @@ people can't see the color.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 49. Say all of it, or send them to the record (`js/meds.js`)
+
+**What changed.** Every direction in a record shows. "As needed for pain" and "1
+to 2 times a day" are said. A held medicine says "On hold in your records".
+
+**Half a direction is worse than none.** FHIR lets a record hold several
+directions and many kinds of timing. We showed the first one and the parts we
+knew. Now a schedule with any part we can't say reads "See the record for how
+often".
+
+**A reviewer found it.** We were designing a file for hospitals and had someone
+read the design with fresh eyes. The old mistake would have gone into the file.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

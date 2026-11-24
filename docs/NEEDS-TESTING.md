@@ -224,3 +224,8 @@ Decided for later, so nothing to test until they're picked up:
   failing) and both virtual phones. Passed. Back from Privacy goes to More options
   on the iPhone and to the lock on Android. The sign-in list's blank end was
   trimmed so it fits iPhone Safari.
+- 2026-11-24, several directions, as needed for something, unclear timing and "On
+  hold", before publishing: the test browser (My medicines, See what's inside, 320
+  to 1440 wide, 200 percent text) and both virtual phones (My medicines, the staff
+  page). Passed. On the iPhone the two directions were checked by eye: Safari
+  reports line breaks differently from the check.

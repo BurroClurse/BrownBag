@@ -7,7 +7,7 @@ var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 var CURRENT_REQUEST = ["active", "on-hold"];
 var CURRENT_STATEMENT = ["active", "intended"];
 
-var UNIT_WORDS = { h: "hour", d: "day", wk: "week", mo: "month", a: "year" };
+var UNIT_WORDS = { min: "minute", h: "hour", d: "day", wk: "week", mo: "month", a: "year" };
 
 var unnamedCount = 0;
 
@@ -60,9 +60,18 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
   });
 }
 
-// FHIR allows several dosage entries. The first one is the one people read.
+// One dosage entry is split into its parts. Several are said in full, in the
+// record's order: whether they're taken together or one after the other is the
+// record's to say, so they're only numbered.
 export function formatDosage(dosageInstruction) {
-  var first = Array.isArray(dosageInstruction) ? dosageInstruction[0] : null;
+  var entries = (Array.isArray(dosageInstruction) ? dosageInstruction : []).filter(Boolean);
+  if (entries.length > 1) {
+    var lines = inOrder(entries).map(function (entry, index) {
+      return "Direction " + (index + 1) + ": " + (entry.text || [readDose(entry), readRoute(entry), readFrequency(entry)].filter(Boolean).join(", ") || "See the record");
+    });
+    return { dose: null, route: null, frequency: lines.join("\n") };
+  }
+  var first = entries[0];
   if (!first) {
     return { dose: null, route: null, frequency: null };
   }
@@ -71,6 +80,11 @@ export function formatDosage(dosageInstruction) {
     route: readRoute(first),
     frequency: first.text || readFrequency(first)
   };
+}
+
+function inOrder(entries) {
+  var numbered = entries.every(function (entry) { return typeof entry.sequence === "number"; });
+  return numbered ? entries.slice().sort(function (a, b) { return a.sequence - b.sequence; }) : entries;
 }
 
 // A record marked "entered in error" was a mistake in the chart. It is
@@ -96,9 +110,23 @@ export function dedupe(items) {
     shown.count = group.count + item.count;
     shown.status = group.status === "current" || item.status === "current" ? "current" : "older";
     shown.firstDate = earliest(group.firstDate, item.firstDate);
+    shown.hold = joinHolds(group, item);
     groups.set(item.key, shown);
   });
   return Array.from(groups.values());
+}
+
+// Whether the records have it on hold: "all" of the current ones, "some", or
+// null. A list saved before this has only the shown record's status.
+export function holdText(item) {
+  if (item.hold !== undefined) return item.hold;
+  return item.recordStatus === "on-hold" ? "all" : null;
+}
+
+function joinHolds(a, b) {
+  if (a.status !== "current") return holdText(b);
+  if (b.status !== "current") return holdText(a);
+  return holdText(a) === holdText(b) ? holdText(a) : "some";
 }
 
 function earliest(a, b) {
@@ -258,18 +286,87 @@ function readRoute(dosage) {
   return route.text || (coding && coding.display) || null;
 }
 
+var UNCLEAR = "See the record for how often";
+var WHEN_WORDS = {
+  MORN: "in the morning", AFT: "in the afternoon", EVE: "in the evening", NIGHT: "at night", HS: "at bedtime", WAKE: "on waking", PHS: "after sleep",
+  C: "with meals", CM: "with breakfast", CD: "with lunch", CV: "with dinner",
+  AC: "before meals", ACM: "before breakfast", ACD: "before lunch", ACV: "before dinner",
+  PC: "after meals", PCM: "after breakfast", PCD: "after lunch", PCV: "after dinner"
+};
+var DAY_WORDS = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
+var CODE_WORDS = { QD: "once a day", BID: "twice a day", TID: "3 times a day", QID: "4 times a day", QOD: "every other day", AM: "every morning", PM: "every afternoon", Q4H: "every 4 hours", Q6H: "every 6 hours" };
+var REPEAT_PARTS = ["frequency", "frequencyMax", "period", "periodMax", "periodUnit", "when", "dayOfWeek", "timeOfDay", "boundsPeriod"];
+
+// How often, in words. A schedule with any part that can't be put in words
+// sends the reader to the record: half a schedule reads as the whole.
 function readFrequency(dosage) {
-  var repeat = dosage.timing && dosage.timing.repeat;
+  if (dosage.modifierExtension) return UNCLEAR;
   var parts = [];
-  if (repeat && repeat.frequency && repeat.period && UNIT_WORDS[repeat.periodUnit]) {
-    var times = repeat.frequency === 1 ? "once" : repeat.frequency + " times";
-    var unit = UNIT_WORDS[repeat.periodUnit];
-    var article = unit === "hour" ? "an " : "a ";
-    var every = repeat.period === 1 ? article + unit : "every " + repeat.period + " " + unit + "s";
-    parts.push(times + " " + every);
-  }
-  if (dosage.asNeededBoolean) {
+  var schedule = readTiming(dosage.timing);
+  if (schedule) parts.push(schedule);
+  var reason = dosage.asNeededCodeableConcept;
+  if (reason) {
+    var why = reason.text || (reason.coding && reason.coding[0] && reason.coding[0].display);
+    parts.push("as needed" + (why ? " for " + why : ""));
+  } else if (dosage.asNeededBoolean) {
     parts.push("as needed");
   }
+  if (dosage.maxDosePerPeriod || dosage.maxDosePerAdministration || dosage.maxDosePerLifetime) {
+    parts.push("see the record for the most to take");
+  }
   return parts.length ? parts.join(", ") : null;
+}
+
+function readTiming(timing) {
+  if (!timing || !Object.keys(timing).length) return null;
+  if (timing.modifierExtension) return UNCLEAR;
+  var words = timing.repeat && !timing.event ? repeatWords(timing.repeat) : null;
+  return words || codeWords(timing.code) || UNCLEAR;
+}
+
+function codeWords(code) {
+  if (!code) return null;
+  var coding = (code.coding && code.coding[0]) || {};
+  return code.text || CODE_WORDS[coding.code] || coding.display || null;
+}
+
+function repeatWords(repeat) {
+  var known = Object.keys(repeat).every(function (key) { return REPEAT_PARTS.indexOf(key) !== -1; });
+  // A start date alone isn't a limit. An end is.
+  if (!known || (repeat.boundsPeriod && repeat.boundsPeriod.end)) return null;
+  var parts = [];
+  if (repeat.frequency || repeat.period || repeat.periodUnit) {
+    var unit = UNIT_WORDS[repeat.periodUnit];
+    if (!repeat.frequency || !repeat.period || !unit) return null;
+    var times = repeat.frequencyMax ? repeat.frequency + " to " + repeat.frequencyMax + " times" : repeat.frequency === 1 ? "once" : repeat.frequency + " times";
+    var every = repeat.periodMax ? "every " + repeat.period + " to " + repeat.periodMax + " " + unit + "s"
+      : repeat.period === 1 ? (unit === "hour" ? "an " : "a ") + unit : "every " + repeat.period + " " + unit + "s";
+    parts.push(times + " " + every);
+  } else if (repeat.frequencyMax || repeat.periodMax) {
+    return null;
+  }
+  var ok = addWords(parts, repeat.when, "", function (code) { return own(WHEN_WORDS, code); }) &&
+    addWords(parts, repeat.dayOfWeek, "on ", function (code) { return own(DAY_WORDS, code); }) &&
+    addWords(parts, repeat.timeOfDay, "at ", clockWords);
+  return ok && parts.length ? parts.join(", ") : null;
+}
+
+// False when one of them has no words.
+function addWords(parts, values, before, wordFor) {
+  if (!values || !values.length) return true;
+  var all = values.map(wordFor);
+  if (!all.every(Boolean)) return false;
+  parts.push(before + all.join(" and "));
+  return true;
+}
+
+function own(map, key) {
+  return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
+}
+
+function clockWords(time) {
+  var found = /^([01]\d|2[0-3]):([0-5]\d)(:\d\d(\.\d+)?)?$/.exec(String(time));
+  if (!found) return null;
+  var hour = Number(found[1]);
+  return (hour % 12 || 12) + ":" + found[2] + (hour < 12 ? " AM" : " PM");
 }

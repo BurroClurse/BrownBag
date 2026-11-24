@@ -3,7 +3,7 @@
 // staff page draw it the same way. Only drawCard touches the page.
 
 import { claimsLabel, completedLine } from "./claims.js";
-import { doseChange } from "./meds.js";
+import { doseChange, holdText } from "./meds.js";
 
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -18,7 +18,7 @@ export function dateText(date) {
 
 // A whole instruction ("Take 1 by mouth…") isn't a "how often".
 export function isDirections(text) {
-  return text.length > 40 || /^(take|use|apply|inject|inhale|place|put|instill|chew|give|insert|dissolve|swallow|spray)\b/i.test(text);
+  return text.length > 40 || /^Direction 1: /.test(text) || /^(take|use|apply|inject|inhale|place|put|instill|chew|give|insert|dissolve|swallow|spray)\b/i.test(text);
 }
 
 export function takeRows(dose, route, often) {
@@ -43,6 +43,8 @@ export function fillRowsFrom(count, last, label) {
   return [["Filled", (once ? "Once, " : count + " times, ") + when], ["Paid", paid]];
 }
 
+var HOLDS = { all: "On hold in your records", some: "One of your records has this on hold" };
+
 // claimsLoaded: "No fill found" never shows just because the claims couldn't
 // be read.
 export function patientCard(entry, claimsLoaded) {
@@ -64,7 +66,7 @@ export function patientCard(entry, claimsLoaded) {
   say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   return {
     take: takeRows(entry.dose, entry.route, entry.frequency),
-    flags: entry.completedButFilled ? [completedLine(entry.completedButFilled, entry.recordStatus)] : [],
+    flags: [HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean),
     facts: facts
   };
 }
