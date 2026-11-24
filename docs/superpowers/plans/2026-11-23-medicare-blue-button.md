@@ -42,14 +42,22 @@
 - Test: `tests/rxnorm.test.mjs`
 
 **Interfaces:**
-- Produces: `rxcuisForNdcs(ndcs: string[], fetchFn?, { timeoutMs }?) -> Promise<Map<ndc, { rxcui: string, name: string|null }>>`. Dashes are removed before the lookup; the map is keyed by the NDC as given.
+- Produces: `rxcuisForNdcs(ndcs: { ndc: string, date: string|null }[], fetchFn?, { timeoutMs }?) -> Promise<Map<key, { rxcui: string, name: string|null }>>`, keyed by the NDC as given and the month, so two fills of one NDC can differ. Dashes are removed before the lookup.
+
+**Changed 2026-11-24 (Tyler): the date decides, and a guess is never made.** One NDC can stand for more than one RxNorm product over time (NLM's own example, 00071015723, has two that overlap). So:
+- Ask with `start` and `end` set to the fill's month (YYYYMM), `history=0`, and no alternate packaging. Use the `activeRxcui` of the records for that month.
+- No date: use every history record, and the top `rxcui`.
+- Exactly one product left: use it. None, a blank one, or two different ones: leave the NDC out, and it's shown as it is today.
+- Extra test: two products in different years give each fill its own; two in the same month give neither.
+- This replaces "the newest history rxcui" below and in the pull request (closed, branch `claude/brownbag-rxnorm-interop-o0f0cz` kept).
+- Fills only. Joining health record cards by NDC is limit 16 in `docs/LIMITS.md`.
 
 - [ ] **Step 1: Write the failing tests** (adapt the pull request's tests to the current `ingredientsFor` signature, which takes `{ timeoutMs }`):
-  - "rxcuisForNdcs uses ndcstatus and keys by the NDC given": fake fetch returns `{ ndcStatus: { rxcui: "617310", conceptName: "atorvastatin 20 MG Oral Tablet" } }` for `ndc=00071015523`; `rxcuisForNdcs(["00071-0155-23"], fake)` → map has `"00071-0155-23"` → `{ rxcui: "617310", name: "atorvastatin 20 MG Oral Tablet" }`, and the URL asked for `ndc=00071015523`.
-  - "an NDC no longer sold uses the newest history rxcui": `{ ndcStatus: { ndcHistory: [{ activeRxcui: "1", endDate: "2019" }, { activeRxcui: "2", endDate: "2023" }] } }` → `"2"`.
+  - "rxcuisForNdcs uses ndcstatus and keys by the NDC given": fake fetch returns `{ ndcStatus: { rxcui: "617310", conceptName: "atorvastatin 20 MG Oral Tablet" } }` for `ndc=00071015523`; `rxcuisForNdcs([{ ndc: "00071-0155-23", date: null }], fake)` → map has `"00071-0155-23"` → `{ rxcui: "617310", name: "atorvastatin 20 MG Oral Tablet" }`, and the URL asked for `ndc=00071015523`.
+  - "an NDC no longer sold uses the product of the fill's month": history `1` (200706 to 201912) and `2` (202001 to 202312), as answered for each month → a 2018 fill gets `"1"`, a 2022 fill `"2"`, and no date gets neither.
   - "unknown NDCs and failed lookups are left out".
 - [ ] **Step 2: Run to see them fail.** `node --test tests/rxnorm.test.mjs` → `rxcuisForNdcs` not exported.
-- [ ] **Step 3: Implement** from the pull request's `rxcuisForNdcs` and `newestHistoryRxcui`, keeping the current `ingredientsFor` behaviour (all ingredients joined with "+", its timeout option).
+- [ ] **Step 3: Implement** from the pull request's `rxcuisForNdcs`, with the date rule above instead of `newestHistoryRxcui`, keeping the current `ingredientsFor` behaviour (all ingredients joined with "+", its timeout option).
 - [ ] **Step 4: Run the whole suite.** All pass.
 - [ ] **Step 5: Commit** `js/rxnorm.js tests/rxnorm.test.mjs`: "Turn package codes into drug codes through RxNav".
 

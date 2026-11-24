@@ -87,3 +87,12 @@ an idea becomes a plan only after its own design.
   with a picture of it could try all million codes on a computer.
   - Now: the privacy page says so; a new code is made each time.
   - Ideas: SMART Health Links, which can expire but need a server.
+- [ ] **16. A record that names a drug only by its package number (NDC) can show
+  beside the same drug from another record.** They join only when the names match.
+  Seen once: a patient another student added to the sandbox (saved 2026-11-20 in
+  `tests/fixtures/`). None of the app's test patients.
+  - Now: both show, so nothing is hidden. The NDC goes in the QR code when it fits.
+  - Careful: joining two cards joins their marks. If the patient marked one copy
+    Not taking to tidy the list, the one they take must not go with it.
+  - Ideas: look up the NDC in RxNav by the record's date (Medicare plan, Task 1),
+    join only cards with no marks, and make a mark on the joined card cover all.
