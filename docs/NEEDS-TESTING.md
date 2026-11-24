@@ -39,7 +39,7 @@ Jenkins), not yet on the simulators or a phone. The staff page and QR code
 changed, so these go first:
 
 - Staff page: the shorter "Patient's 6-digit code" box, big digits, the
-  full-width Open button; no patient disclaimer on it; the new "Patient
+  full-width Open button; no patient disclaimer on it or on See what's inside (the two match); the new "Patient
   takes only as needed" group and "Patient says not taking" wording.
 - My medicines: "As needed" and "Not taking" side by side on each card,
   stacking at the largest text size; the As needed group and its Undo;

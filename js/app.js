@@ -1477,7 +1477,7 @@ async function openInside(packed, opener, fits) {
   title.tabIndex = -1;
   if (groups) {
     add(page, "p", fits ? "This is what opens when your code is scanned." : "This is the list that was too long for one code.");
-    drawShareList(page, groups, 2, fits ? null : "List made", true);
+    drawShareList(page, groups, 2, fits ? null : "List made");
     button(page, backWords, "secondary big", function () { closeInside(); });
   } else {
     add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");

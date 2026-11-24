@@ -5,13 +5,11 @@
 import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle } from "./share.js";
 import { showsSymbol } from "./allergies.js";
 
-var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
-
 // Draws into parent, starting with the patient's name as heading `level`.
 // Returns that heading. made: what was made, when it isn't a QR code.
-// forPatient: the patient's own "See what's inside", which keeps the note
-// that their care team confirms the list; staff don't need it.
-export function drawShareList(parent, groups, level, made, forPatient) {
+// No "your care team confirms it" note: staff don't need it, and See what's
+// inside shows exactly what staff see (the patient reads it on My medicines).
+export function drawShareList(parent, groups, level, made) {
   var title = add(parent, "h" + level, groups.patient ? groups.patient.name : "Shared medicine list", "share-name");
   title.tabIndex = -1;
   if (groups.patient && groups.patient.birthDate) {
@@ -21,7 +19,6 @@ export function drawShareList(parent, groups, level, made, forPatient) {
   if (groups.recordsSavedAt) {
     add(parent, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
   }
-  if (forPatient) note(parent, DISCLAIMER);
   drawAllergies(parent, groups.allergies, level + 1, allergyDateLine(groups, madeOn));
   var block = medicinesBlock(parent, medicinesTitle(groups), level + 1).section;
   medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
