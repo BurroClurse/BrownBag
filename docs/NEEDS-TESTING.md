@@ -90,6 +90,8 @@ Decided for later, so nothing to test until they're picked up:
 - "+ Add a medicine" with VoiceOver: it comes before the medicines.
 - Sort on My medicines, with VoiceOver: the picker, then "Sorted: …".
 - Edit on a medicine added by hand, with VoiceOver ("Edit: …", then the form).
+- Where my records come from (More options), with VoiceOver: Update now, and
+  "About these names" opening.
 - The QR screen: See what's inside above the code, the title centered, and the
   code scanned with a second phone.
 
@@ -180,3 +182,8 @@ Decided for later, so nothing to test until they're picked up:
 - 2026-11-23, Edit on added medicines, the QR screen's new order, and "Meds last
   updated", before publishing: the test browser (320 to 1440 wide, 200 percent
   text, duplicates, half-typed edits, no signal) and both virtual phones. Passed.
+- 2026-11-23, Where my records come from and the shorter sign-in list, before
+  publishing: the test browser (320 to 1440 wide, 200 percent text, no signal,
+  records failing, an ended pass, Back) and both virtual phones. Passed. One
+  Android run right after a cold start missed the insurance fills; the next
+  three showed them. Cause not proven; watch it next time.

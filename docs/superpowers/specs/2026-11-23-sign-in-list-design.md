@@ -92,3 +92,9 @@ No owner says anything about "planned" lists. Not legal advice.
 - Medicaid: same law; run by states.
 - Aetna (left out for now): CVS Health's terms ask for written permission to use its marks, and
   no allowance for plain naming was found. `cvshealth.com/terms-of-use.html`
+
+## Changed 2026-11-23 (Tyler)
+
+- Signed in, the list is also under More options, "Where my records come from",
+  with the dates and Update now.
+- The names sit in one card. The trademark words open under "About these names".

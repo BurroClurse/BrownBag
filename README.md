@@ -39,7 +39,8 @@ only, no real patients). To open it as a certain patient, see
 
 - **Choose where the records are.** Sign in opens a list. The SMART sandbox
   works today; the health systems and insurers Brown Bag may add later show
-  in grey, under "Not connected".
+  in grey, under "Not connected". Signed in, the same list is under More
+  options, **Where my records come from**, with the dates and **Update now**.
 - **Sign in once.** The first time, the patient signs in at their health
   system and approves access. After that, Face ID (or a 6-digit PIN) opens
   Brown Bag and the list updates by itself.
@@ -170,7 +171,7 @@ The list never passes through a server.
 | `js/meds.js` | FHIR records into one deduplicated list. |
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/allergies.js` | Allergy records and the patient's own, one card each. |
-| `js/sources.js` | The sources: which are connected, and what shows for the rest. |
+| `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/card.js` | One medicine's card: how to take it, anything to check, then the rest, each labelled. |
 | `js/quiet.js` | Keeps the sign-in library's messages (passes, record addresses) out of the browser's log. |

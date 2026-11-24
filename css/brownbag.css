@@ -202,7 +202,7 @@ button.primary, .button.primary {
   border-color: var(--teal);
   color: var(--teal-ink);
 }
-button.secondary.big { border-color: var(--teal); }
+button.secondary.big, .button.secondary.big { border-color: var(--teal); }
 
 .link-button {
   background: none;
@@ -487,12 +487,22 @@ button.help-button {
 /* The sign-in list: the one that works is a button; the rest is grey text
    (not dimmed below 4.5 to 1), and nothing in it can be tapped. */
 .screen-launch .button.big, .screen-launch button.big { display: block; width: 100%; text-align: center; margin-right: 0; }
-.source-note { margin-top: 0.25rem; }
-.not-connected, .not-connected h2 { color: #5c5650; }
-.not-connected h2 { margin-top: 1.75rem; }
-.not-connected h3 { margin: 0.9rem 0 0.2rem; font-size: 1.05rem; }
-.not-connected ul { margin: 0; padding-left: 1.25rem; }
-.fine-print { font-size: 0.85rem; color: var(--muted); margin-top: 1.25rem; }
+.screen-launch h1 { font-size: 1.5rem; }
+button.source span { display: block; }
+button.source .source-note { font-size: 1rem; font-weight: 400; }
+/* One card for the connected source, one for the rest. */
+.source-card, .not-connected { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.85rem 1rem 1rem; margin: 1rem 0 0; }
+.source-card h2, .not-connected h2 { border: none; margin: 0; padding: 0; font-size: 1.2rem; }
+.source-card p, .not-connected p { margin: 0.2rem 0 0; }
+.source-card .flag { margin-top: 0.6rem; }
+.source-card .big { display: block; width: 100%; margin: 0.75rem 0 0; text-align: center; }
+.not-connected, .not-connected h2, .not-connected dt { color: #5c5650; }
+.not-connected .facts dt { font-weight: 600; }
+.not-connected .facts > div { padding: 0.3rem 0; }
+.not-connected .facts dd { white-space: normal; }
+.not-connected .facts dd span { display: block; }
+.about-names summary { font-weight: 400; font-size: 0.95rem; color: var(--muted); }
+.fine-print { font-size: 0.85rem; color: var(--muted); margin: 0; }
 
 /* Two blocks, on My medicines and the staff page:
    allergies in a box nobody can miss, then medicines. */

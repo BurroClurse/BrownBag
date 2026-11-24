@@ -1395,6 +1395,24 @@ column on the left, as wide as the "?", makes the two sides match.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 36. Where my records come from (`js/source-list.js`)
+
+**What changed.** More options has a screen for someone signed in: the source,
+when meds and allergies were last updated, and Update now. The list of sources
+is shorter, and the sign-in screens no longer show a note about a list.
+
+**One list, drawn once.** The list before sign-in and the one after it use the
+same code, so the names and the trademark words can't differ.
+
+**Refresh, not sign in.** Update now trades the saved pass (the refresh token)
+for fresh access and reads the records again. Only a refused pass needs the
+sign-in page.
+
+**A failed update changes what the list is.** The medicines stay, but the list
+is now a copy with a date, and the staff page says so.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

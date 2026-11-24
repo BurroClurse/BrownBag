@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SOURCES, TRADEMARKS, leavingText, needsFreshPage, notConnected, signInLink, startFor } from "../js/sources.js";
+import { SOURCES, TRADEMARKS, recordsStatus, leavingText, needsFreshPage, notConnected, signInLink, startFor } from "../js/sources.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -26,13 +26,61 @@ test("Sign in opens the list, and a named source or a link's own server goes str
 
 test("Sign in after the lock goes straight in; signed out, it opens the list", () => {
   const app = read("js/app.js");
-  assert.equal(app.match(/signInLink\(\)/g).length, 2);
+  // The two notes, and Where my records come from (the link, and Update
+  // now with no pass).
+  assert.equal(app.match(/signInLink\(\)/g).length, 4);
   assert.equal(app.match(/href = "\.\/launch\.html"/g).length, 2);
 });
 
 test("the trademark lines are said, in the list and in the README", () => {
   assert.equal(TRADEMARKS, "Epic is a trademark of Epic Systems Corporation. Oracle is a registered trademark of Oracle and/or its affiliates. Other names may be trademarks of their respective owners. Brown Bag isn't affiliated with or endorsed by any of them, or by any government agency.");
   assert.ok(read("README.md").replace(/\s+/g, " ").includes(TRADEMARKS));
+});
+
+// The screen under More options. A date never vouches for a part that didn't
+// load, and it always says what would bring the list up to date.
+const at = (iso) => "<" + iso + ">";
+const DAY = "2026-11-23T10:00:00.000Z";
+const OLD = "2026-11-20T10:00:00.000Z";
+const status = (more) => recordsStatus(Object.assign({ split: {}, savedAt: null, updatedAt: DAY, allergies: { status: "loaded", savedAt: null, updatedAt: DAY } }, more), at);
+
+test("where my records come from says when each part was last updated", () => {
+  assert.deepEqual(status({}), { rows: [["Meds last updated", at(DAY)], ["Allergies last updated", at(DAY)]], note: null, signIn: false });
+  assert.deepEqual(status({ savedAt: OLD, updatedAt: null, offline: true, allergies: { status: "failed", savedAt: OLD } }),
+    { rows: [["Meds last updated", at(OLD)], ["Allergies last updated", at(OLD)]], note: "Couldn't update. This is the last list that loaded.", signIn: false });
+});
+
+test("no date for a part that didn't load", () => {
+  for (const split of [{ failed: true }, { heldBack: true }]) assert.deepEqual(status({ split }).rows[0], ["Meds", "Some didn't load"]);
+  assert.deepEqual(status({ allergies: { status: "failed", savedAt: null } }).rows[1], ["Allergies", "Not loaded"]);
+  assert.deepEqual(status({ allergies: { status: "none", savedAt: null } }).rows[1], ["Allergies", "Not loaded"]);
+});
+
+test("it says when only signing in will update it", () => {
+  assert.deepEqual([status({ savedAt: OLD, needsSignIn: true }).note, status({ savedAt: OLD, needsSignIn: true }).signIn], ["Sign in again to update your list.", true]);
+  const refused = status({ allergies: { status: "refused", savedAt: null } });
+  assert.deepEqual([refused.note, refused.signIn, refused.rows[1]], ["Sign in again to add your allergies.", true, ["Allergies", "Not loaded"]]);
+});
+
+test("while updating, it says only that", () => {
+  assert.deepEqual([status({ updating: true, needsSignIn: true }).note, status({ updating: true, needsSignIn: true }).signIn], ["Updating your list…", false]);
+});
+
+// The lists before and after sign-in are one piece of code, so the names and
+// the owners' lines can't differ.
+test("both lists of sources are drawn the same way", () => {
+  for (const file of ["js/launch.js", "js/app.js"]) assert.match(read(file), /drawNotConnected\(/);
+  assert.ok(read("sw.js").includes('"./js/source-list.js"'));
+});
+
+// "This list is…" has no list to point at before one is open.
+test("the sign-in screens don't show the note about the list", () => {
+  const app = read("js/app.js");
+  for (const name of ["savedListAsked", "drawSignedOut"]) {
+    const body = app.slice(app.indexOf("function " + name)).split("\n}\n")[0];
+    assert.ok(body.length > 100);
+    assert.ok(!body.includes("DISCLAIMER"), name);
+  }
 });
 
 test("the list works with no signal, and a file that doesn't arrive is said", () => {

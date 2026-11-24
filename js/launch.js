@@ -1,7 +1,8 @@
 // launch.html's screen: the list of sources, then sign-in. startSignIn() is
 // in launch.html, with the SMART settings.
 
-import { TRADEMARKS, connected, leavingText, needsFreshPage, notConnected, signInLink, startFor } from "./sources.js";
+import { connected, leavingText, needsFreshPage, signInLink, startFor } from "./sources.js";
+import { drawNotConnected } from "./source-list.js";
 import { withTimeout } from "./pass.js";
 
 window.brownBagStarted = true;
@@ -31,22 +32,16 @@ function showList() {
   root.textContent = "";
   var h = title("Choose where your records are");
   connected().forEach(function (source) {
-    var button = add(root, "button", source.name, "primary big");
+    var button = add(root, "button", null, "primary big source");
     button.type = "button";
-    button.setAttribute("aria-describedby", "source-note-" + source.id);
+    add(button, "span", source.name);
+    // The space keeps the two lines apart for a screen reader.
+    button.appendChild(document.createTextNode(" "));
+    add(button, "span", source.note, "source-note");
     button.addEventListener("click", choose);
-    add(root, "p", source.note, "source-note").id = "source-note-" + source.id;
   });
-  var section = add(root, "section", null, "not-connected");
-  add(section, "h2", "Not connected");
-  add(section, "p", "Brown Bag isn't connected to these. It may add them later.");
-  notConnected().forEach(function (group) {
-    add(section, "h3", group.kind);
-    var list = add(section, "ul");
-    group.names.forEach(function (name) { add(list, "li", name); });
-  });
+  drawNotConnected(root);
   back("secondary big");
-  add(root, "p", TRADEMARKS, "fine-print");
   h.focus();
 }
 

@@ -8,7 +8,7 @@ import { LOCK_KEY, hasLock } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
-import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle } from "./share.js";
+import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
 import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
@@ -17,7 +17,8 @@ import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
 import { drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
-import { signInLink } from "./sources.js";
+import { connected, recordsStatus, signInLink } from "./sources.js";
+import { drawNotConnected } from "./source-list.js";
 import { drawInside } from "./inside.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
@@ -270,13 +271,39 @@ async function updateWithPass(pass) {
 
 function finishUpdate() {
   state.updating = false;
+  // Asked to update and couldn't: the list is now a copy with a date.
+  if ((state.offline || state.needsSignIn) && !state.savedAt) state.savedAt = state.updatedAt;
   var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
   sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
-  if (state.screen === "home") {
+  if (state.screen === "home" || state.screen === "records") {
+    var asked = document.activeElement && document.activeElement.id === "update-now";
     render();
+    // Only signing in is left: Update now has gone.
+    if (asked && !document.getElementById("update-now")) document.getElementById("sign-in-again").focus();
   }
+}
+
+// Update now, on Where my records come from. With no pass there's only
+// signing in.
+async function updateNow() {
+  if (state.updating) return;
+  state.updating = true;
+  state.offline = !navigator.onLine;
+  state.needsSignIn = false;
+  if (state.offline) {
+    finishUpdate();
+    return;
+  }
+  render();
+  var pass = await loadPass(localStorage, state.key, state.patientId).catch(function () { return null; });
+  if (!pass || passExpired(pass, Date.now())) {
+    state.updating = false;
+    location.href = signInLink();
+    return;
+  }
+  await updateWithPass(pass);
 }
 
 // Saves the pass a sign-in returned, or removes the old one if this sign-in
@@ -523,6 +550,8 @@ function render() {
     drawMore();
   } else if (state.screen === "install") {
     drawInstall();
+  } else if (state.screen === "records") {
+    drawRecordsFrom();
   } else {
     drawHome(arranged);
   }
@@ -542,7 +571,7 @@ function render() {
 // The phone's Back button. Each screen past home, and the QR code, is one
 // step in the browser's history, so Back goes home or closes the code
 // instead of leaving Brown Bag. Done and Close take that same step back.
-var BACK_FOCUS = { medicines: "open-medicines", more: "open-more", install: "show-qr" };
+var BACK_FOCUS = { medicines: "open-medicines", more: "open-more", install: "show-qr", records: "open-more" };
 window.addEventListener("popstate", function () {
   if (document.getElementById("inside-overlay")) {
     closeInside(true);
@@ -555,13 +584,15 @@ window.addEventListener("popstate", function () {
   } else if (state.screen === "install" && history.state && history.state.bb === "more") {
     // The Home Screen steps opened from More options go back there.
     go("more", "open-install");
+  } else if (state.screen === "records" && history.state && history.state.bb === "more") {
+    go("more", "open-records");
   } else if (state.screen !== "home") {
     go("home", BACK_FOCUS[state.screen]);
   }
 });
 
 function go(screen, focusId) {
-  if (screen === "install" || (screen !== "home" && state.screen === "home")) {
+  if (screen === "install" || screen === "records" || (screen !== "home" && state.screen === "home")) {
     history.pushState({ bb: screen }, "");
   } else if (screen === "home" && history.state && history.state.bb) {
     history.back();
@@ -666,6 +697,11 @@ function drawMore() {
   var title = add(root, "h1", "More options");
   title.id = "more-heading";
   title.tabIndex = -1;
+  var records = add(root, "section");
+  heading(records, "Health records", "records-from");
+  button(records, "Where my records come from", "secondary big", function () {
+    go("records", "records-from-heading");
+  }).id = "open-records";
   drawBackup();
   if (installTip(navigator.userAgent) && !isStandalone()) {
     var home = add(root, "section");
@@ -1756,6 +1792,39 @@ function drawInstall() {
   }).id = "install-done";
 }
 
+// Where the records come from, for someone signed in: when each part was last
+// updated, a way to update it, and the sources that aren't connected.
+function drawRecordsFrom() {
+  var top = add(root, "div", null, "screen-top");
+  button(top, "Done", "secondary big", function () {
+    history.back();
+  }).id = "records-done";
+  var title = add(root, "h1", "Where my records come from");
+  title.id = "records-from-heading";
+  title.tabIndex = -1;
+  var source = connected()[0];
+  var status = recordsStatus(state, timeText);
+  var card = add(root, "section", null, "source-card");
+  add(card, "h2", source.name);
+  add(card, "p", source.note, "med-line");
+  var list = add(card, "dl", null, "facts");
+  status.rows.forEach(function (row) {
+    var pair = add(list, "div");
+    add(pair, "dt", row[0]);
+    add(pair, "dd", row[1]);
+  });
+  if (status.note) add(card, "p", status.note, "flag");
+  if (!status.signIn) {
+    var update = button(card, state.updating ? "Updating…" : "Update now", "primary big", updateNow);
+    update.id = "update-now";
+    if (state.updating) update.setAttribute("aria-busy", "true");
+  }
+  var again = add(card, "a", "Sign in again", "button big " + (status.signIn ? "primary" : "secondary"));
+  again.id = "sign-in-again";
+  again.href = signInLink();
+  drawNotConnected(root);
+}
+
 // The backup stays encrypted. It also carries the lock settings (never the
 // key), so it can be opened after the phone's storage is erased.
 function drawBackup() {
@@ -1890,7 +1959,6 @@ function savedListAsked() {
       clear(root);
       resolve();
     }).id = "open-saved";
-    note(root, DISCLAIMER);
     title.focus();
   });
 }
@@ -1908,7 +1976,6 @@ function drawSignedOut(error) {
   if (!state.key && !hasLock()) {
     drawRestoreFromSignIn();
   }
-  note(root, DISCLAIMER);
 }
 
 // A new phone or the Home Screen app starts empty, with no lock. Its first

@@ -37,6 +37,32 @@ export function signInLink() {
   return "./launch.html?source=" + connected()[0].id;
 }
 
+// What the screen under More options says about the connected source. A date
+// never vouches for a part that didn't all load.
+export function recordsStatus(state, format) {
+  var allergies = state.allergies;
+  var meds = state.savedAt || state.updatedAt;
+  var allergyDate = allergies.savedAt || (allergies.status === "loaded" ? allergies.updatedAt : null);
+  var rows = [
+    state.split.failed || state.split.heldBack ? ["Meds", "Some didn't load"] : meds ? ["Meds last updated", format(meds)] : ["Meds", "Not loaded"],
+    allergyDate ? ["Allergies last updated", format(allergyDate)] : ["Allergies", "Not loaded"]
+  ];
+  var note = null;
+  var signIn = false;
+  if (state.updating) {
+    note = "Updating your list…";
+  } else if (state.offline) {
+    note = "Couldn't update. This is the last list that loaded.";
+  } else if (state.needsSignIn) {
+    note = "Sign in again to update your list.";
+    signIn = true;
+  } else if (allergies.status === "refused") {
+    note = "Sign in again to add your allergies.";
+    signIn = true;
+  }
+  return { rows: rows, note: note, signIn: signIn };
+}
+
 // What launch.html does. A link that names its own server (the README's test
 // patients, the SMART Launcher) or a connected source signs in; anything else
 // shows the list, so an odd address never starts a sign-in.
