@@ -88,6 +88,9 @@ export function buildShareBundle(list, now, warnings = {}) {
   if (warnings.recordsSavedAt) {
     tags.push({ system: TAGS, code: "records-saved-on", display: warnings.recordsSavedAt });
   }
+  if (warnings.recordsUpdatedAt) {
+    tags.push({ system: TAGS, code: "records-updated-on", display: warnings.recordsUpdatedAt });
+  }
   if (warnings.incomplete) {
     tags.push({ system: TAGS, code: "records-incomplete" });
   }
@@ -95,6 +98,9 @@ export function buildShareBundle(list, now, warnings = {}) {
     tags.push({ system: TAGS, code: "allergies-" + warnings.allergies.status });
     if (warnings.allergies.savedAt) {
       tags.push({ system: TAGS, code: "allergies-saved-on", display: warnings.allergies.savedAt });
+    }
+    if (warnings.allergies.updatedAt) {
+      tags.push({ system: TAGS, code: "allergies-updated-on", display: warnings.allergies.updatedAt });
     }
   }
   if (tags.length) {
@@ -106,10 +112,12 @@ export function buildShareBundle(list, now, warnings = {}) {
 export function groupShareBundle(bundle) {
   var tags = (bundle.meta && bundle.meta.tag) || [];
   var saved = tags.filter(function (tag) { return tag.system === TAGS && tag.code === "records-saved-on"; })[0];
+  var updated = tags.filter(function (tag) { return tag.system === TAGS && tag.code === "records-updated-on"; })[0];
   var groups = {
     patient: null,
     madeAt: bundle.timestamp,
     recordsSavedAt: saved ? saved.display : null,
+    recordsUpdatedAt: updated ? updated.display : null,
     incomplete: tags.some(function (tag) { return tag.system === TAGS && tag.code === "records-incomplete"; }),
     fromRecords: [],
     fromClaims: [],
@@ -252,7 +260,8 @@ function allergyTags(tags) {
   var status = ["loaded", "failed", "refused", "not-loaded"].filter(function (s) { return of("allergies-" + s); })[0];
   if (!status) return null;
   var saved = of("allergies-saved-on");
-  return { status: status, savedAt: saved ? saved.display : null, fromRecords: [], fromPatient: [], statements: [], unspecified: 0, saidNone: false };
+  var updated = of("allergies-updated-on");
+  return { status: status, savedAt: saved ? saved.display : null, updatedAt: updated ? updated.display : null, fromRecords: [], fromPatient: [], statements: [], unspecified: 0, saidNone: false };
 }
 
 function groupAllergy(groups, resource) {
@@ -472,4 +481,26 @@ export function shareMedicineCount(groups) {
 // Some of it didn't load: no number, which would read as the whole.
 export function medicinesTitle(groups) {
   return groups.incomplete ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
+}
+
+// How old the list is: when the records last loaded into Brown Bag, then when
+// the code was made. No date for a list that only partly loaded, so a date
+// never vouches for it; none either in a code made before it was included.
+export function dateLines(groups, format, made) {
+  var updated = groups.recordsUpdatedAt || groups.recordsSavedAt;
+  var out = [];
+  if (groups.incomplete) out.push("Records: some didn't load");
+  else if (updated) out.push("Records last updated: " + format(updated));
+  return out.concat((made || "QR code made") + ": " + format(groups.madeAt));
+}
+
+// The allergies' own date, when they didn't load along with the rest. A saved
+// copy's notice already says its date.
+var SAME_UPDATE_MS = 5 * 60 * 1000;
+export function allergyDateLine(groups, format) {
+  var allergies = groups.allergies;
+  if (!allergies || allergies.status !== "loaded" || allergies.savedAt || !allergies.updatedAt) return null;
+  var records = groups.incomplete ? null : groups.recordsUpdatedAt || groups.recordsSavedAt;
+  if (records && Math.abs(new Date(allergies.updatedAt) - new Date(records)) <= SAME_UPDATE_MS) return null;
+  return "Allergies last updated: " + format(allergies.updatedAt);
 }

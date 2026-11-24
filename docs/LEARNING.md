@@ -1259,6 +1259,26 @@ and color all say it, so no one needs the color.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 29. Two dates, two meanings (`js/share.js`, `js/share-list.js`)
+
+"Made on" said when the code was created. A code made today can hold records
+from last week, so it looked newer than it was. Now there are two lines:
+**Records last updated**, when they last loaded into Brown Bag, and **QR code
+made**.
+
+**A date vouches for what's under it.** When some records didn't load, there is
+no date, only "Records: some didn't load". Allergies that loaded at another
+time carry their own.
+
+**What it can't say.** "Last updated" isn't when the clinic changed the record.
+FHIR has that too (`meta.lastUpdated`, `recorded`), but only as good as what the
+clinic entered.
+
+**The date goes in the code.** It's a tag on the Bundle (`meta.tag`), where FHIR
+lets an app add its own labels. A code made before this simply doesn't have it.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

@@ -502,3 +502,43 @@ test("a partial list never gets a definite total", async () => {
   assert.equal(medicinesTitle(groups), "Medicines (1)");
   assert.equal(medicinesTitle(Object.assign({}, groups, { incomplete: true })), "Medicines");
 });
+
+// The staff page and See what's inside say how old the list is. If this broke,
+// a list from last week could look as new as the code, or a date could vouch
+// for a list that only partly loaded.
+const at = (iso) => "<" + iso + ">";
+const dated = (warnings, list = {}) => groupShareBundle(buildShareBundle(Object.assign({ patient: PATIENT, current: [], additions: [], stopped: [] }, list), NOW, warnings));
+
+test("the dates say when the records were updated, then when the QR code was made", async () => {
+  const { dateLines } = await import("../js/share.js");
+  const made = "QR code made: <" + NOW.toISOString() + ">";
+  assert.deepEqual(dateLines(dated({ recordsUpdatedAt: "2026-11-23T10:00:00.000Z" }), at), ["Records last updated: <2026-11-23T10:00:00.000Z>", made]);
+  assert.deepEqual(dateLines(dated({ recordsSavedAt: "2026-11-01T14:00:00.000Z" }), at), ["Records last updated: <2026-11-01T14:00:00.000Z>", made]);
+  assert.deepEqual(dateLines(dated({ recordsUpdatedAt: "2026-11-23T10:00:00.000Z", incomplete: true }), at), ["Records: some didn't load", made]);
+  // A code made before the date was in it.
+  assert.deepEqual(dateLines(dated({}), at), [made]);
+  // A list too long for one code has no QR code.
+  assert.deepEqual(dateLines(dated({}), at, "List made"), ["List made: <" + NOW.toISOString() + ">"]);
+});
+
+test("allergies that updated at another time have their own line", async () => {
+  const { allergyDateLine } = await import("../js/share.js");
+  const none = { cards: [], statements: [], saidNone: null };
+  const groups = (records, allergies, more = {}) => dated(Object.assign({ recordsUpdatedAt: records, allergies }, more), { allergies: none });
+  const fresh = (iso) => ({ status: "loaded", savedAt: null, updatedAt: iso });
+  assert.equal(allergyDateLine(groups("2026-11-23T10:00:00.000Z", fresh("2026-11-23T10:00:04.000Z")), at), null, "the same update");
+  assert.equal(allergyDateLine(groups("2026-11-19T10:00:00.000Z", fresh("2026-11-23T10:00:00.000Z")), at), "Allergies last updated: <2026-11-23T10:00:00.000Z>");
+  assert.equal(allergyDateLine(groups("2026-11-23T10:00:00.000Z", fresh("2026-11-23T10:00:00.000Z"), { incomplete: true }), at), "Allergies last updated: <2026-11-23T10:00:00.000Z>", "the records have no date");
+  // A saved copy's notice already says its date; a failed load has none.
+  assert.equal(allergyDateLine(groups("2026-11-23T10:00:00.000Z", { status: "loaded", savedAt: "2026-11-19T10:00:00.000Z", updatedAt: null }), at), null);
+  assert.equal(allergyDateLine(groups("2026-11-23T10:00:00.000Z", { status: "failed", savedAt: null, updatedAt: null }), at), null);
+  assert.equal(allergyDateLine(dated({}), at), null, "a code without allergies");
+});
+
+test("the dates travel in the QR code", async () => {
+  const bundle = buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: { cards: [], statements: [], saidNone: null } }, NOW, { recordsUpdatedAt: "2026-11-19T10:00:00.000Z", allergies: { status: "loaded", savedAt: null, updatedAt: "2026-11-23T10:00:00.000Z" } });
+  const packed = await packShare(bundle, BASE);
+  const groups = groupShareBundle(await unpackShare("v3." + packed.digits, packed.code));
+  assert.equal(groups.recordsUpdatedAt, "2026-11-19T10:00:00.000Z");
+  assert.equal(groups.allergies.updatedAt, "2026-11-23T10:00:00.000Z");
+});

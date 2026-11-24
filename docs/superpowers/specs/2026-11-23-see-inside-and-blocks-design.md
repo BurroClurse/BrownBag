@@ -64,6 +64,14 @@ Medicines (1)                      big heading, line under it
   under Medicines (found in review).
 - Headings: h2 Allergies and Medicines, h3 for the parts.
 
+## Dates (Tyler, 2026-11-23, after it was live)
+
+- Under the name, here and on the staff page: "Records last updated: …" (last
+  loaded into Brown Bag), then "QR code made: …" ("List made" for a list too
+  long for one code). Some didn't load: "Records: some didn't load", no date.
+- Allergies that loaded at another time: their own line in the box. The "may be
+  out of date" warnings stay. Codes without the date show no line for it.
+
 ## Left to the builder
 
 Exact colors (4.5 to 1 text, 3 to 1 border), sizes, and sharing the staff

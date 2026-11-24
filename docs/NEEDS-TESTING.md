@@ -101,3 +101,6 @@ pass, when it touches:
   browser (axe, 200% text, short screens, a list that didn't load, a code that
   won't open, Forward and Back), the iPhone simulator, and Claude in Chrome with
   real clicks. Passed. Found and fixed: the QR screen scrolled in iPhone Safari.
+- 2026-11-23, the dates (Records last updated, QR code made), before publishing:
+  the test browser (fresh, saved copy, some not loaded, older code, widths 320 to
+  1440) and the iPhone simulator. Passed. Android only as Chrome on the Mac.

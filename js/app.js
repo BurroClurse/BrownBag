@@ -65,6 +65,8 @@ var state = {
   announce: "",
   focusId: null,
   savedAt: null,
+  // When the records last loaded, while they aren't a saved copy.
+  updatedAt: null,
   screen: "home",
   // The notes at the top of home: updating with the pass, no connection,
   // or the pass ended (or there is none) and the list is a saved copy.
@@ -333,7 +335,7 @@ async function allergiesAlone(found) {
 function allergiesToSave() {
   var a = state.allergies;
   if (a.savedAt) return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.savedAt };
-  if (a.status === "loaded") return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: new Date().toISOString() };
+  if (a.status === "loaded") return { items: a.items, statements: a.statements, unspecified: a.unspecified, savedAt: a.updatedAt };
   return undefined;
 }
 
@@ -342,6 +344,7 @@ function usePatient(result) {
   state.patient = result.patient;
   state.split = result.split;
   state.savedAt = null;
+  state.updatedAt = new Date().toISOString();
   state.offline = false;
   state.needsSignIn = false;
 }
@@ -427,6 +430,7 @@ function useSaved(saved) {
   state.patient = saved.patient;
   state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, claims: saved.claims || null };
   state.savedAt = saved.savedAt;
+  state.updatedAt = null;
   state.allergies = keepAllergies(null, saved.allergies);
 }
 
@@ -1314,7 +1318,7 @@ async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   // Staff are told when the records part is an older saved copy, or when a
   // source failed to load, so a partial list never looks complete.
-  var warnings = { recordsSavedAt: state.savedAt, incomplete: state.split.failed || state.dataFailed, allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt } };
+  var warnings = { recordsSavedAt: state.savedAt, recordsUpdatedAt: state.updatedAt, incomplete: state.split.failed || state.dataFailed, allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt } };
   list.allergies = arrangeAllergies(state.allergies, state.data);
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   var fits = fitsInQr(packed.prefix, packed.digits);
@@ -1349,7 +1353,7 @@ async function buildQr() {
         "Medicines you added",
         "Medicines you marked stopped",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
-        "When the code was made, and a warning if the list is an older saved copy or some records didn't load"
+        "When your records were last updated, when the QR code was made, and a warning if the list is an older saved copy or some records didn't load"
       ].forEach(function (text) { add(items, "li", text); });
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
@@ -1442,7 +1446,7 @@ async function openInside(packed, opener, fits) {
   title.tabIndex = -1;
   if (groups) {
     add(page, "p", fits ? "This is what opens when your code is scanned." : "This is the list that was too long for one code.");
-    drawShareList(page, groups, 2);
+    drawShareList(page, groups, 2, fits ? null : "List made");
     button(page, backWords, "secondary big", function () { closeInside(); });
   } else {
     add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");

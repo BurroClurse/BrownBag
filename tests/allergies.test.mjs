@@ -219,7 +219,7 @@ test("a failed load keeps the saved allergies and their date", () => {
   assert.deepEqual(keepAllergies({ status: "failed", items: [], statements: [] }, saved), { status: "failed", items: saved.items, statements: ["x"], unspecified: 2, savedAt: "2026-11-21T10:00:00Z" });
   assert.equal(keepAllergies({ status: "refused", items: [], statements: [] }, saved).items.length, 1);
   assert.deepEqual(keepAllergies({ status: "failed", items: [], statements: [] }, undefined), { status: "failed", items: [], statements: [], unspecified: 0, savedAt: null });
-  assert.deepEqual(keepAllergies({ status: "loaded", items: [], statements: [] }, saved), loaded());
+  assert.deepEqual(keepAllergies({ status: "loaded", items: [], statements: [] }, saved, new Date(0)), Object.assign(loaded(), { updatedAt: "1970-01-01T00:00:00.000Z" }));
   assert.equal(keepAllergies(null, undefined).status, "not-loaded");
   assert.deepEqual(keepAllergies(null, saved), { status: "loaded", items: saved.items, statements: ["x"], unspecified: 2, savedAt: saved.savedAt });
 });
@@ -360,4 +360,16 @@ test("the warning symbol shows for an allergy, an unnamed entry, or a load that 
   assert.equal(showsSymbol(1, 0, "loaded"), true);
   assert.equal(showsSymbol(0, 1, "loaded"), true);
   for (const status of ["failed", "refused", "not-loaded", undefined]) assert.equal(showsSymbol(0, 0, status), true, status);
+});
+
+// The date staff see for allergies. If this broke, a saved copy could be
+// dated as if it had just loaded.
+test("allergies that just loaded carry the time, and a saved copy doesn't get a new one", () => {
+  const now = new Date("2026-11-23T10:00:00.000Z");
+  const result = { status: "loaded", items: [], statements: [] };
+  const saved = { items: [], statements: [], savedAt: "2026-11-19T10:00:00.000Z" };
+  assert.equal(keepAllergies(result, saved, now).updatedAt, "2026-11-23T10:00:00.000Z");
+  assert.equal(keepAllergies({ status: "failed", items: [], statements: [] }, saved, now).updatedAt, undefined);
+  assert.equal(keepAllergies(null, saved, now).updatedAt, undefined);
+  assert.equal(keepAllergies(null, saved, now).savedAt, "2026-11-19T10:00:00.000Z");
 });

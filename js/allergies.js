@@ -299,9 +299,9 @@ export async function readAllergies(request, patientId, sourceName, ms) {
 // What to show: the new ones when they loaded, else the saved ones with
 // their date. result is null when nothing was asked for (opening a saved
 // list); no saved copy then means it was made before Brown Bag had allergies.
-export function keepAllergies(result, saved) {
+export function keepAllergies(result, saved, now) {
   if (result && result.status === "loaded") {
-    return { status: "loaded", items: result.items, statements: result.statements, unspecified: result.unspecified || 0, savedAt: null };
+    return { status: "loaded", items: result.items, statements: result.statements, unspecified: result.unspecified || 0, savedAt: null, updatedAt: (now || new Date()).toISOString() };
   }
   return {
     status: result ? result.status : (saved ? "loaded" : "not-loaded"),
