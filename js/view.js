@@ -172,6 +172,12 @@ export function medicinesButtonText(count, partial) {
   return partial ? "My medicines" : "My medicines (" + count + ")";
 }
 
+// How many medicines the name search found.
+export function foundText(count) {
+  if (!count) return "No matches. You can still add it.";
+  return count === 1 ? "1 match. Pick it, or keep what you typed." : count + " matches. Pick one, or keep what you typed.";
+}
+
 // The notes at the top of the home screen, one short line each, only when
 // needed, in order. While the list is updating, its date line waits.
 export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, dataFailed, allergiesRefused, installTip, now }) {

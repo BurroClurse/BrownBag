@@ -93,7 +93,8 @@ only, no real patients). To open it as a certain patient, see
   order. A schedule Brown Bag can't put in words says "See the record for how
   often". A medicine the records have on hold says so, on the phone and to staff.
 - **No signal?** The last list is saved, encrypted, on the phone, and the QR
-  code still works. On a slow connection, a file that doesn't arrive is
+  code still works. When the signal comes back, the list updates by itself, or a
+  note says to sign in again. On a slow connection, a file that doesn't arrive is
   tried once more, and then Brown Bag says what to do.
 - **Interrupted while adding?** A half-typed medicine or allergy is kept until
   Brown Bag locks or closes, and home says it isn't saved.

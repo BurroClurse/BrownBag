@@ -38,6 +38,13 @@ export function passExpired(pass, now) {
   return now - pass.usedAt > PASS_UNUSED_DAYS * 24 * 60 * 60 * 1000;
 }
 
+// What to do when the signal comes back with a saved list open: "update" it,
+// say to "sign-in" (no pass, or it ended), or null, nothing.
+export function whenSignalBack({ open, offline, updating, signedOut, online, pass, now }) {
+  if (!open || !offline || updating || signedOut || !online) return null;
+  return pass && !passExpired(pass, now) ? "update" : "sign-in";
+}
+
 // The state FHIR.client() takes; client.refresh() then gets fresh access.
 export function clientStateFromPass(pass) {
   return {

@@ -83,8 +83,8 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
   and the popup starting on Cancel.
-- Start over from the Face ID lock screen: it says "this same Face ID or fingerprint
-  lock".
+- Airplane mode off with a saved list open: signed in, it updates by itself; signed
+  out, "Sign in again to update it." The virtual phones used a stand-in signal.
 
 ## Tested
 
@@ -226,3 +226,7 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   browser (320 and 393 wide, 150 percent text). Two notes sat too close, under Save
   as FHIR file and under the medicine name box. Both fixed. Tyler's iPhone: the
   shorter reactions, the saved file, signed out with no signal, and VoiceOver work.
+- 2026-11-24, the signal coming back with a saved list open, before publishing: the
+  test browser and both virtual phones (signed in, signed out, a half-typed
+  medicine, the password popup, the QR screen, More options, a server that fails).
+  Passed. Tyler's iPhone: Start over from the Face ID lock screen reads right.

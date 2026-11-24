@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -340,4 +340,10 @@ test("adding comes before the medicines and stays at the top of the screen", asy
   const drawn = /function drawMedicines\(arranged\) \{[\s\S]*?\n\}/.exec(read("js/app.js"))[0];
   assert.ok(drawn.includes("drawAdd(block)") && drawn.indexOf("drawAdd(block)") < drawn.indexOf("drawRecords("));
   assert.match(read("css/brownbag.css"), /\.add-bar \{[^}]*position: sticky; top: 0;/);
+});
+
+test("the name search says match for one, matches for more", () => {
+  assert.equal(foundText(0), "No matches. You can still add it.");
+  assert.equal(foundText(1), "1 match. Pick it, or keep what you typed.");
+  assert.equal(foundText(4), "4 matches. Pick one, or keep what you typed.");
 });

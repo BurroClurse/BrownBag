@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, PASS_UNUSED_DAYS, allPasses, deleteAllPasses, revokePass } from "../js/pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, PASS_UNUSED_DAYS, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "../js/pass.js";
 import { deriveKeyFromPin, exportBackup, savePatientData } from "../js/vault.js";
 
 // A localStorage stand-in with the parts the app uses.
@@ -176,4 +176,28 @@ test("the pass is never sent to another server, and no answer is no harm", async
 
 test("a sign-in with no token address gives no pass", () => {
   assert.equal(passFromState(Object.assign({}, STATE, { tokenUri: undefined })), null);
+});
+
+// The signal came back with a saved list open. If this broke, home would keep
+// saying there's no connection, or start a sign-in nobody asked for.
+test("when the signal comes back: update if still signed in, else say to sign in", () => {
+  const now = Date.parse("2026-11-24T12:00:00Z");
+  const pass = { refreshToken: "x", usedAt: now };
+  const old = { refreshToken: "x", usedAt: now - 31 * 24 * 60 * 60 * 1000 };
+  const open = { open: true, offline: true, updating: false, signedOut: false, online: true, now };
+  assert.equal(whenSignalBack({ ...open, pass }), "update");
+  assert.equal(whenSignalBack({ ...open, pass: null }), "sign-in");
+  assert.equal(whenSignalBack({ ...open, pass: old }), "sign-in");
+  // Locked, already fine, already updating, signing out, or still no signal.
+  for (const not of [{ open: false }, { offline: false }, { updating: true }, { signedOut: true }, { online: false }]) {
+    assert.equal(whenSignalBack({ ...open, pass, ...not }), null, JSON.stringify(not));
+  }
+});
+
+test("the open list hears the signal come back, and never leaves the page by itself", () => {
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /addEventListener\("online", /);
+  const body = app.slice(app.indexOf("async function signalBack")).split("\n}\n")[0];
+  assert.match(body, /whenSignalBack\(/);
+  assert.doesNotMatch(body, /location/);
 });

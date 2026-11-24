@@ -1647,6 +1647,26 @@ can't disagree.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 53. When the signal comes back (`js/app.js`, `js/pass.js`)
+
+**What changed.** A list opened with no signal kept saying "No connection" after
+the signal was back. Now it updates by itself, or says to sign in again.
+
+**The browser tells you.** The `online` event fires when the phone gets a
+connection. It can fire a moment before requests work, so Brown Bag waits 1.5
+seconds. An iPhone may not fire it while the app is in the background, so coming
+back to Brown Bag checks too.
+
+**Decide in one small function.** `whenSignalBack` takes the facts and answers
+"update", "sign-in" or nothing. It has no screen in it, so a test can try every
+case.
+
+**Don't pull the screen away.** A half-typed medicine or an open popup is never
+redrawn, and Brown Bag never jumps to the sign-in page by itself. A try that fails
+isn't repeated until the signal changes or they come back.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

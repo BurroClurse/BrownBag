@@ -11,10 +11,10 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText } from "./view.js";
 import { mayOpenSaved, signedOutLine } from "./signed-out.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
-import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
+import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, ALLERGENS, REACTIONS } from "./allergies.js";
@@ -120,6 +120,7 @@ function startAutoLock() {
     } else {
       check();
       hiddenAt = null;
+      signalMayBeBack();
     }
   });
   setInterval(check, 15000);
@@ -285,12 +286,46 @@ function finishUpdate() {
   sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
-  if (state.screen === "home" || state.screen === "records") {
+  if (mayRedraw()) {
     var asked = document.activeElement && document.activeElement.id === "update-now";
     render();
     // Only signing in is left: Update now has gone.
     if (asked && !document.getElementById("update-now")) document.getElementById("sign-in-again").focus();
   }
+}
+
+function mayRedraw() {
+  return ["home", "records", "more"].indexOf(state.screen) !== -1 && !document.querySelector("dialog[open]");
+}
+
+// The signal came back while the list was a saved copy. The phone says so a
+// moment before requests work, and may not say it while Brown Bag is away.
+var SIGNAL_WAIT_MS = 1500;
+window.addEventListener("online", signalMayBeBack);
+function signalMayBeBack() {
+  if (state.offline) setTimeout(signalBack, SIGNAL_WAIT_MS);
+}
+
+// Updates the list if still signed in; if not, the notes say to sign in. Never
+// leaves the page by itself.
+async function signalBack() {
+  var facts = { open: Boolean(state.key && state.patientId), offline: state.offline, updating: state.updating, signedOut: state.signedOut, online: navigator.onLine, pass: null, now: Date.now() };
+  if (!whenSignalBack(facts)) return;
+  // Claimed before waiting, so two of these never run at once.
+  state.updating = true;
+  facts.pass = await loadPass(localStorage, state.key, state.patientId).catch(function () { return null; });
+  if (!state.key || state.signedOut) {
+    state.updating = false;
+    return;
+  }
+  state.offline = false;
+  if (whenSignalBack(facts) === "sign-in") {
+    state.needsSignIn = true;
+    finishUpdate();
+    return;
+  }
+  if (mayRedraw()) render();
+  await updateWithPass(facts.pass);
 }
 
 // Update now, on Health records. With no pass there's only
@@ -1182,7 +1217,7 @@ function drawAddForm(section) {
         if (!answer.isLatest) return;
         var found = answer.value;
         clear(results);
-        searchStatus.textContent = found.length ? found.length + " matches. Pick one, or keep what you typed." : "No matches. You can still add it.";
+        searchStatus.textContent = foundText(found.length);
         found.forEach(function (drug) {
           var item = add(results, "li");
           button(item, drug.name, null, function () {
