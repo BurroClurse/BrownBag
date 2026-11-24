@@ -8,7 +8,7 @@ const words = () => page().replace(/<(script|style)[\s\S]*?<\/\1>/g, "").replace
 const CODE = () => [...readdirSync(new URL("../js/", import.meta.url)).map((f) => "js/" + f), "index.html", "launch.html", "share.html", "privacy.html", "sw.js", "css/brownbag.css", "manifest.webmanifest"];
 
 // Names of code systems and formats. Nothing is ever asked of them.
-const ONLY_NAMES = ["www.w3.org", "hl7.org", "terminology.hl7.org", "unitsofmeasure.org", "www.nlm.nih.gov", "snomed.info", "smarthealth.cards", "fhir-registry.smarthealthit.org", "www.hl7.org"];
+const ONLY_NAMES = ["www.w3.org", "loinc.org", "hl7.org", "terminology.hl7.org", "unitsofmeasure.org", "www.nlm.nih.gov", "snomed.info", "smarthealth.cards", "fhir-registry.smarthealthit.org", "www.hl7.org"];
 // Who is contacted, and the words that say so.
 const CONTACTED = {
   "launch.smarthealthit.org": "Your health records",

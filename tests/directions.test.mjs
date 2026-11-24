@@ -123,3 +123,47 @@ test("one of several directions, or one end of a range, isn't the same schedule"
   assert.equal(kind("1 capsule 1 to 2 times a day", { frequency: "Twice a day" }), "different");
   assert.equal(kind("1 capsule once a day, see the record for the most to take"), "different");
 });
+
+// Found in review (2026-11-24): each lost part of what the record said.
+test("a schedule's own words and its numbers are both said when they differ", () => {
+  const coded = (code, r) => often({ timing: { repeat: r || DAILY, code } });
+  assert.equal(coded({ text: "Every morning except Sunday" }), "Every morning except Sunday; once a day");
+  assert.equal(coded({ coding: [{ code: "BID" }] }, { frequency: 2, period: 1, periodUnit: "d" }), "2 times a day");
+  assert.equal(coded({ coding: [{ code: "QD" }] }), "once a day");
+});
+
+test("a course's limit isn't lost behind a schedule code", () => {
+  const limited = (r) => often({ timing: { code: { coding: [{ code: "BID" }] }, repeat: r } });
+  for (const r of [{ boundsDuration: { value: 7, unit: "d" } }, { count: 3 }, { boundsPeriod: { end: "2026-12-01" } }]) assert.equal(limited(r), "twice a day, see the record for the rest", JSON.stringify(r));
+  assert.equal(often({ timing: { code: { text: "Daily" }, event: ["2026-11-24"] } }), "Daily, see the record for the rest");
+});
+
+test("instructions beside the main one are said, once", () => {
+  assert.equal(repeat(DAILY, { patientInstruction: "Skip on dialysis days" }), "once a day; Skip on dialysis days");
+  assert.equal(often({ patientInstruction: "Take 1 tablet every other day" }), "Take 1 tablet every other day");
+  assert.equal(often({ text: "1 tablet daily", additionalInstruction: [{ text: "Do not crush" }, { coding: [{ display: "With food" }] }] }), "1 tablet daily; Do not crush; With food");
+  assert.equal(often({ text: "Take 1 tablet daily.", patientInstruction: "take 1 tablet daily" }), "Take 1 tablet daily.");
+});
+
+test("as needed and a limit are said beside the record's words", () => {
+  assert.equal(often({ text: "Take 1 tablet twice a day", asNeededBoolean: true }), "Take 1 tablet twice a day; as needed");
+  assert.equal(often({ text: "Take 1 tablet", asNeededCodeableConcept: { text: "pain" } }), "Take 1 tablet; as needed for pain");
+  assert.equal(often({ text: "Take 1 tablet PRN pain", asNeededBoolean: true }), "Take 1 tablet PRN pain");
+  assert.equal(often({ text: "Take 1 tablet", maxDosePerPeriod: {} }), "Take 1 tablet; see the record for the most to take");
+  assert.equal(often({ text: "Take 1 tablet, max 4 a day", maxDosePerPeriod: {} }), "Take 1 tablet, max 4 a day");
+});
+
+test("a dose is whole or sends the reader to the record", () => {
+  const dose = (...rates) => formatDosage([{ doseAndRate: rates }]).dose;
+  const q = (o) => ({ doseQuantity: Object.assign({ value: 5, unit: "mL" }, o) });
+  assert.equal(dose({ doseRange: { low: { value: 1, unit: "tablet" }, high: { value: 2, unit: "tablet" } } }), "1 to 2 tablet");
+  assert.equal(dose({ doseRange: { low: { value: 1 } } }), "See the record for how much");
+  assert.equal(dose(q({ comparator: "<" })), "<5 mL");
+  assert.equal(dose({ doseQuantity: { value: 10, code: "mg" } }), "10 mg");
+  assert.equal(dose(q(), q({ value: 10 })), "See the record for how much");
+  assert.equal(dose(q(), q()), "5 mL");
+  assert.equal(dose(Object.assign(q(), { type: { coding: [{ code: "ordered" }] } }), Object.assign(q({ value: 10 }), { type: { coding: [{ code: "calculated" }] } })), "5 mL");
+  assert.equal(dose(Object.assign(q(), { rateQuantity: { value: 1 } })), "5 mL, see the record for the rate");
+  // The record's words already say it.
+  assert.equal(formatDosage([{ text: "1 or 2", doseAndRate: [q(), q({ value: 10 })] }]).dose, null);
+});

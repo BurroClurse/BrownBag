@@ -70,7 +70,8 @@ an idea becomes a plan only after its own design.
 - [ ] **12. Most allergens and reactions the patient picks go as words.** Only
   drug ingredients (and bee venom) have a code, from RxNorm.
   - Ideas: SNOMED CT codes, once there is a UMLS license; they are checked
-    and listed in the allergies design.
+    and listed in the allergies design. Route codes are SNOMED too, so a route
+    goes in the QR code as words.
 - [ ] **13. Backups made before backups were sealed (2026-11-23) aren't
   protected.** They can be relabeled, and ones made with a PIN can be opened by
   trying every PIN.

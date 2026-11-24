@@ -1,10 +1,12 @@
 // The page staff see after scanning a Brown Bag QR code. The list is inside
 // the part of the link after "#", which browsers never send to the server.
 // It asks for the patient's 6-digit code, unlocks the list on this device,
-// and shows it. Nothing is saved, and no request leaves after the page loads.
+// and shows it. Nothing is saved unless staff save the file themselves, and no
+// request leaves after the page loads.
 
 import { unpackShare, groupShareBundle, ShareError } from "./share.js";
 import { drawShareList } from "./share-list.js";
+import { drawSaveFile } from "./fhir-file.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
 window.brownBagStarted = true;
@@ -66,7 +68,8 @@ function drawCodeForm(message) {
     open.disabled = true;
     status.textContent = "Opening…";
     try {
-      drawList(groupShareBundle(await unpackShare(fragment, code)));
+      var bundle = await unpackShare(fragment, code);
+      drawList(groupShareBundle(bundle), bundle);
     } catch (error) {
       if (error instanceof ShareError && error.code === "bad-link") {
         drawCodeForm("This link is damaged. Ask the patient to show a new code.");
@@ -80,10 +83,12 @@ function drawCodeForm(message) {
   input.focus();
 }
 
-function drawList(groups) {
+function drawList(groups, bundle) {
   clear(root);
   addLogo();
-  drawShareList(root, groups, 1).focus();
+  var title = drawShareList(root, groups, 1);
+  drawSaveFile(root, bundle);
+  title.focus();
 }
 
 // The bag, small, at the top of the staff page. Decoration only.

@@ -581,7 +581,7 @@ test("the fills note travels in the QR code, and an older code has none", async 
 test("the app tells the code about the fills, and the page draws the note", async () => {
   const { readFileSync } = await import("node:fs");
   const file = (f) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
-  assert.match(file("js/app.js"), /buildShareBundle\(list, new Date\(\), warnings\)/);
+  assert.match(file("js/app.js"), /shareBundleFor\(list, new Date\(\), warnings, here\)/);
   assert.match(file("js/app.js"), /warnings = shareWarnings\(state\)/);
   assert.match(file("js/view.js"), /claims: state\.split\.claims,/);
   assert.match(file("js/share-list.js"), /fillsNote\(groups\)/);

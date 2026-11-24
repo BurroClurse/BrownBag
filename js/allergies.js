@@ -92,9 +92,14 @@ function hasStatus(concept, list) {
   return codesOf(concept).some(function (c) { return list.indexOf(c.code) !== -1; });
 }
 
+function isNoneCode(code) {
+  return Object.prototype.hasOwnProperty.call(NONE_CODES, code);
+}
+
 export function statementOf(resource, name) {
-  var none = codesOf(resource.code).filter(function (c) { return c.system === SNOMED && NONE_CODES[c.code]; })[0];
-  if (none) return NONE_CODES[none.code];
+  var none = codesOf(resource.code).filter(function (c) { return c.system === SNOMED && isNoneCode(c.code); })[0];
+  // A code that says none, beside words that name something, is an allergy.
+  if (none && (!name || name === UNNAMED || /\b(no|none|not|nil|nka|nkda|denies|negative|without)\b/i.test(name))) return NONE_CODES[none.code];
   if (/^no known allerg(y|ies)$/i.test(name)) return "No known allergy";
   return /^no known (drug|medication|food|environmental) allerg(y|ies)$/i.test(name) ? name : null;
 }
@@ -158,7 +163,7 @@ function joinFhir(a, b) {
 
 function itemFrom(resource, sourceName) {
   var name = words(resource.code);
-  var codes = codesOf(resource.code).filter(function (c) { return !NO_CODE.test(c.system || ""); });
+  var codes = codesOf(resource.code).filter(function (c) { return !NO_CODE.test(c.system || "") && !(c.system === SNOMED && isNoneCode(c.code)); });
   var keys = codes.map(function (c) { return "alg:" + (c.system || "") + "|" + c.code; });
   if (name) keys.push("alg:name:" + plainName(name));
   // Nothing to tell it by: its id, else what it does say.

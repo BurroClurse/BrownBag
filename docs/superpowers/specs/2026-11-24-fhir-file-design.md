@@ -1,7 +1,7 @@
 # Codes in the QR code, and a FHIR file for staff: design
 
-Direction approved by Tyler 2026-11-24 ("all three"). This document waits on
-his approval; nothing is built before that.
+Approved by Tyler
+2026-11-24, with HL7's validator.
 
 ## Why
 
@@ -35,8 +35,8 @@ told; the patient's name in a file name; anything sent anywhere.
   systems: some are licensed, and some only say "no code". Display words are
   left out; the name is already there.
 - Coded directions, all or nothing. Only when the record has exactly one dosage
-  entry, and everything in it is one of: `text`, `sequence`,
-  `patientInstruction`, `route`, `asNeededBoolean`, one `doseAndRate` with a
+  entry, and everything in it is one of: `text`, `sequence`, `route`,
+  `asNeededBoolean`, one `doseAndRate` with a
   `doseQuantity` (its `type` is ignored), and `timing` whose `repeat` has only
   frequency, period, periodUnit and when. Any other field (a range, a maximum, a
   day of the week, "as needed for pain", a modifier) means no coded directions
@@ -97,7 +97,7 @@ only where you keep patient records.
 [ Cancel ]   [ Save the file ]
 ```
 
-- Cancel has focus. Escape and Back close it.
+- Cancel has focus. Escape closes it, and Android's Back where Chrome offers it.
 - The file is made on that device. Nothing is sent.
 - It uses the phone's share sheet when it can share files, and a download
   otherwise, the way backups do. Only the file is shared.
@@ -183,3 +183,14 @@ Found while designing. The file would carry these into a hospital system:
   Brown Bag can't put in words says "See the record for how often".
 - A medicine the records have on hold shows as a current one. It says "On hold in
   your records", on the phone and to staff.
+
+## Settled while building (a fresh review, 2026-11-24)
+
+- A patient instruction or any other instruction means no coded directions, and a
+  schedule code that says something other than its numbers does too. Both are now
+  said in words: "Every morning except Sunday; once a day".
+- A code in a real record that isn't a proper one is left out; it never stops the
+  file. A made-up link with unknown parts still does.
+- "As needed" from the patient: the file has no schedule, and its words end
+  "Patient says: takes only when needed".
+- A "no known allergy" code beside words that name an allergy is an allergy.

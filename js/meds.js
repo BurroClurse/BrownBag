@@ -3,11 +3,12 @@
 // No DOM here, so Node's test runner can check it.
 
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+var NDC = "http://hl7.org/fhir/sid/ndc";
 
 var CURRENT_REQUEST = ["active", "on-hold"];
 var CURRENT_STATEMENT = ["active", "intended"];
 
-var UNIT_WORDS = { min: "minute", h: "hour", d: "day", wk: "week", mo: "month", a: "year" };
+var UNIT_WORDS = { s: "second", min: "minute", h: "hour", d: "day", wk: "week", mo: "month", a: "year" };
 
 var unnamedCount = 0;
 
@@ -35,7 +36,8 @@ export function fromMedicationRequest(resource, sourceName, medications = new Ma
     prescriber: (resource.requester && resource.requester.display) || null,
     sourceName: sourceName,
     recordStatus: resource.status || null,
-    current: CURRENT_REQUEST.indexOf(resource.status) !== -1
+    current: CURRENT_REQUEST.indexOf(resource.status) !== -1,
+    coded: { codes: drug.codes, dosage: codedDosage(resource.dosageInstruction) }
   });
 }
 
@@ -56,7 +58,8 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
     // "unknown" with no end date stays on the main list: hiding it under
     // Older would leave it off the QR code (real sandbox data has these).
     current: CURRENT_STATEMENT.indexOf(resource.status) !== -1 ||
-      (resource.status === "unknown" && !period.end)
+      (resource.status === "unknown" && !period.end),
+    coded: { codes: drug.codes, dosage: codedDosage(resource.dosage) }
   });
 }
 
@@ -67,7 +70,7 @@ export function formatDosage(dosageInstruction) {
   var entries = (Array.isArray(dosageInstruction) ? dosageInstruction : []).filter(Boolean);
   if (entries.length > 1) {
     var lines = inOrder(entries).map(function (entry, index) {
-      return "Direction " + (index + 1) + ": " + (entry.text || [readDose(entry), readRoute(entry), readFrequency(entry)].filter(Boolean).join(", ") || "See the record");
+      return "Direction " + (index + 1) + ": " + (entry.text ? readFrequency(entry) : [readDose(entry), readRoute(entry), readFrequency(entry)].filter(Boolean).join(", ") || "See the record");
     });
     return { dose: null, route: null, frequency: lines.join("\n") };
   }
@@ -75,10 +78,12 @@ export function formatDosage(dosageInstruction) {
   if (!first) {
     return { dose: null, route: null, frequency: null };
   }
+  var dose = readDose(first);
   return {
-    dose: readDose(first),
+    // The record's own words already say it.
+    dose: first.text && dose === UNCLEAR_DOSE ? null : dose,
     route: readRoute(first),
-    frequency: first.text || readFrequency(first)
+    frequency: readFrequency(first)
   };
 }
 
@@ -241,6 +246,8 @@ function makeItem(parts) {
     status: parts.current ? "current" : "older",
     recordStatus: parts.recordStatus,
     origin: "records",
+    // What the record says in codes, for the QR code. Never shown.
+    fhir: parts.coded,
     lastDate: parts.lastDate,
     firstDate: parts.start,
     count: 1
@@ -256,7 +263,7 @@ function readDrug(resource, medications) {
   }
   if (!concept) {
     // Servers often put the name on the reference itself.
-    return { name: (reference && reference.display) || null, rxcui: null };
+    return { name: (reference && reference.display) || null, rxcui: null, codes: [] };
   }
   var codings = Array.isArray(concept.coding) ? concept.coding : [];
   var rxnorm = codings.filter(function (coding) { return coding.system === RXNORM && coding.code; })[0];
@@ -264,17 +271,108 @@ function readDrug(resource, medications) {
     // A placeholder text like "Medication" gives way to the coded name.
     name: (concept.text && !PLACEHOLDER.test(concept.text.trim()) ? concept.text : null) ||
       (rxnorm && rxnorm.display) || (codings[0] && codings[0].display) || concept.text || null,
-    rxcui: rxnorm ? String(rxnorm.code) : null
+    rxcui: rxnorm ? String(rxnorm.code) : null,
+    codes: shareable(codings, rxnorm)
   };
 }
 
-function readDose(dosage) {
-  var rate = Array.isArray(dosage.doseAndRate) ? dosage.doseAndRate[0] : null;
-  var quantity = rate && rate.doseQuantity;
-  if (!quantity || quantity.value === undefined) {
-    return null;
+// RxNorm first, then NDC. Other systems stay out: some are licensed, and some
+// only say there is no code.
+function shareable(codings, rxnorm) {
+  var ndc = codings.filter(function (coding) { return coding.system === NDC && coding.code; });
+  return (rxnorm ? [rxnorm] : []).concat(ndc).slice(0, 3).map(function (coding) {
+    return { system: coding.system, code: String(coding.code) };
+  });
+}
+
+var DOSAGE_PARTS = ["text", "sequence", "route", "asNeededBoolean", "doseAndRate", "timing"];
+var CODED_REPEAT = ["frequency", "period", "periodUnit", "when"];
+var PERIOD_UNITS = ["s", "min", "h", "d", "wk", "mo", "a"];
+
+// A record's directions in codes, all or nothing: part of a direction can mean
+// something else. Null when any of it can't go.
+function codedDosage(dosageInstruction) {
+  var entries = (Array.isArray(dosageInstruction) ? dosageInstruction : []).filter(Boolean);
+  if (entries.length !== 1 || !onlyKeys(entries[0], DOSAGE_PARTS)) return null;
+  var dosage = entries[0];
+  var out = {};
+  if (dosage.timing) {
+    if (!onlyKeys(dosage.timing, ["repeat", "code"])) return null;
+    if (dosage.timing.repeat) {
+      out.repeat = codedRepeat(dosage.timing.repeat);
+      if (!out.repeat) return null;
+      // A code that says something else is the record's whole schedule.
+      var code = codeWords(dosage.timing.code);
+      if (dosage.timing.code && !(code && sameSchedule(code, repeatWords(out.repeat) || ""))) return null;
+    }
   }
-  return (quantity.value + " " + (quantity.unit || "")).trim();
+  if (dosage.doseAndRate) {
+    var rates = dosage.doseAndRate;
+    if (!Array.isArray(rates) || rates.length !== 1 || !rates[0] || !onlyKeys(rates[0], ["type", "doseQuantity"])) return null;
+    if (rates[0].doseQuantity) {
+      out.quantity = codedQuantity(rates[0].doseQuantity);
+      if (!out.quantity) return null;
+    }
+  }
+  if (dosage.asNeededBoolean === true) out.asNeeded = true;
+  return Object.keys(out).length ? out : null;
+}
+
+function codedRepeat(repeat) {
+  if (!onlyKeys(repeat, CODED_REPEAT)) return null;
+  var timed = repeat.frequency !== undefined || repeat.period !== undefined || repeat.periodUnit !== undefined;
+  if (timed && !(Number.isInteger(repeat.frequency) && repeat.frequency > 0 && isPositive(repeat.period) && PERIOD_UNITS.indexOf(repeat.periodUnit) !== -1)) return null;
+  var when = repeat.when || [];
+  if (!Array.isArray(when) || !when.every(function (code) { return own(WHEN_WORDS, code); }) || (!timed && !when.length)) return null;
+  return Object.assign(timed ? { frequency: repeat.frequency, period: repeat.period, periodUnit: repeat.periodUnit } : {}, when.length ? { when: when.slice() } : {});
+}
+
+function codedQuantity(quantity) {
+  if (!onlyKeys(quantity, ["value", "unit", "system", "code"]) || !isPositive(quantity.value)) return null;
+  var words = ["unit", "system", "code"].filter(function (key) { return quantity[key] !== undefined; });
+  if (!words.every(function (key) { return typeof quantity[key] === "string" && quantity[key]; })) return null;
+  // FHIR: a code needs its system.
+  if (quantity.code && !quantity.system) return null;
+  return Object.assign({}, quantity);
+}
+
+function isPositive(value) {
+  return typeof value === "number" && isFinite(value) && value > 0;
+}
+
+function onlyKeys(object, keys) {
+  return Boolean(object) && typeof object === "object" && Object.keys(object).every(function (key) { return keys.indexOf(key) !== -1; });
+}
+
+var UNCLEAR_DOSE = "See the record for how much";
+
+function readDose(dosage) {
+  var rates = (Array.isArray(dosage.doseAndRate) ? dosage.doseAndRate : []).filter(Boolean);
+  if (!rates.length) return null;
+  // Ordered and calculated are two ways of saying one dose.
+  var ordered = rates.filter(function (rate) { return rate.type && ((rate.type.coding && rate.type.coding[0] && rate.type.coding[0].code) || rate.type.text) === "ordered"; });
+  var all = (ordered.length === 1 ? ordered : rates).map(rateWords);
+  if (all.every(function (words) { return words === null; })) return null;
+  return all.every(function (words) { return words === all[0]; }) ? all[0] : UNCLEAR_DOSE;
+}
+
+function rateWords(rate) {
+  var words = null;
+  var quantity = rate.doseQuantity;
+  if (quantity && quantity.value !== undefined) {
+    words = amountWords(quantity);
+  } else if (rate.doseRange) {
+    var low = rate.doseRange.low;
+    var high = rate.doseRange.high;
+    var whole = low && high && low.value !== undefined && high.value !== undefined;
+    words = whole ? low.value + " to " + amountWords(high) : UNCLEAR_DOSE;
+  }
+  if (!rate.rateQuantity && !rate.rateRatio && !rate.rateRange) return words;
+  return words ? words + ", see the record for the rate" : UNCLEAR_DOSE;
+}
+
+function amountWords(quantity) {
+  return ((quantity.comparator || "") + quantity.value + " " + (quantity.unit || quantity.code || "")).trim();
 }
 
 function readRoute(dosage) {
@@ -297,37 +395,79 @@ var DAY_WORDS = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursda
 var CODE_WORDS = { QD: "once a day", BID: "twice a day", TID: "3 times a day", QID: "4 times a day", QOD: "every other day", AM: "every morning", PM: "every afternoon", Q4H: "every 4 hours", Q6H: "every 6 hours" };
 var REPEAT_PARTS = ["frequency", "frequencyMax", "period", "periodMax", "periodUnit", "when", "dayOfWeek", "timeOfDay", "boundsPeriod"];
 
-// How often, in words. A schedule with any part that can't be put in words
-// sends the reader to the record: half a schedule reads as the whole.
+// How to take it, in words: the record's own, or its schedule; then anything
+// beside it that isn't said yet. A schedule with any part that can't be put in
+// words sends the reader to the record: half a schedule reads as the whole.
 function readFrequency(dosage) {
-  if (dosage.modifierExtension) return UNCLEAR;
-  var parts = [];
-  var schedule = readTiming(dosage.timing);
-  if (schedule) parts.push(schedule);
-  var reason = dosage.asNeededCodeableConcept;
-  if (reason) {
-    var why = reason.text || (reason.coding && reason.coding[0] && reason.coding[0].display);
-    parts.push("as needed" + (why ? " for " + why : ""));
-  } else if (dosage.asNeededBoolean) {
-    parts.push("as needed");
-  }
-  if (dosage.maxDosePerPeriod || dosage.maxDosePerAdministration || dosage.maxDosePerLifetime) {
-    parts.push("see the record for the most to take");
-  }
-  return parts.length ? parts.join(", ") : null;
+  var said = dosage.text ? [dosage.text] : scheduleParts(dosage);
+  var line = said.join(", ");
+  var also = dosage.text ? besideText(dosage) : [];
+  [dosage.patientInstruction].concat((dosage.additionalInstruction || []).map(conceptWords)).forEach(function (extra) {
+    if (extra) also.push(String(extra));
+  });
+  also.forEach(function (extra) {
+    if (plain(line).indexOf(plain(extra)) === -1) line = line ? line + "; " + extra : extra;
+  });
+  return line || null;
 }
 
+function scheduleParts(dosage) {
+  if (dosage.modifierExtension) return [UNCLEAR];
+  return [readTiming(dosage.timing), asNeededWords(dosage), hasMost(dosage) ? MOST : null].filter(Boolean);
+}
+
+// Said in codes but not in the record's words.
+function besideText(dosage) {
+  var out = [];
+  var needed = asNeededWords(dosage);
+  if (needed && !/\b(as needed|as required|if needed|when needed|prn)\b/i.test(dosage.text)) out.push(needed);
+  if (hasMost(dosage) && !/\b(max|maximum|no more than|not? exceed|up to)\b/i.test(dosage.text)) out.push(MOST);
+  if (dosage.modifierExtension) out.push("see the record for more");
+  return out;
+}
+
+var MOST = "see the record for the most to take";
+function hasMost(dosage) {
+  return Boolean(dosage.maxDosePerPeriod || dosage.maxDosePerAdministration || dosage.maxDosePerLifetime);
+}
+
+function asNeededWords(dosage) {
+  if (dosage.asNeededCodeableConcept) {
+    var why = conceptWords(dosage.asNeededCodeableConcept);
+    return "as needed" + (why ? " for " + why : "");
+  }
+  return dosage.asNeededBoolean ? "as needed" : null;
+}
+
+function conceptWords(concept) {
+  return (concept && (concept.text || (concept.coding && concept.coding[0] && concept.coding[0].display))) || null;
+}
+
+function plain(text) {
+  return String(text).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+// The schedule's own words (Timing.code) and its numbers. FHIR takes the code as
+// the whole schedule, so both are said when they differ.
 function readTiming(timing) {
   if (!timing || !Object.keys(timing).length) return null;
   if (timing.modifierExtension) return UNCLEAR;
-  var words = timing.repeat && !timing.event ? repeatWords(timing.repeat) : null;
-  return words || codeWords(timing.code) || UNCLEAR;
+  var code = codeWords(timing.code);
+  var numbers = timing.repeat && !timing.event ? repeatWords(timing.repeat) : null;
+  if (numbers) return !code || sameSchedule(code, numbers) ? numbers : code + "; " + numbers;
+  if (!code) return UNCLEAR;
+  return timing.repeat || timing.event ? code + ", see the record for the rest" : code;
+}
+
+function sameSchedule(a, b) {
+  var count = function (text) { return plain(text).replace(/\btwice\b/g, "2 times"); };
+  return count(a) === count(b);
 }
 
 function codeWords(code) {
   if (!code) return null;
   var coding = (code.coding && code.coding[0]) || {};
-  return code.text || CODE_WORDS[coding.code] || coding.display || null;
+  return code.text || own(CODE_WORDS, coding.code) || coding.display || null;
 }
 
 function repeatWords(repeat) {

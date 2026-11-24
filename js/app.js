@@ -10,7 +10,7 @@ import { LOCK_KEY, hasLock, lockMethod } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
-import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
+import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
 import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
 import { mayOpenSaved, signedOutLine } from "./signed-out.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
@@ -1519,7 +1519,8 @@ async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   var warnings = shareWarnings(state);
   list.allergies = arrangeAllergies(state.allergies, state.data);
-  var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
+  var here = new URL("./", location.href).href;
+  var packed = await packShare(await shareBundleFor(list, new Date(), warnings, here), here);
   var fits = fitsInQr(packed.prefix, packed.digits);
 
   var overlay = document.createElement("div");
@@ -1559,6 +1560,7 @@ async function buildQr() {
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
         "When your medicines and allergies were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
       ].forEach(function (text) { add(items, "li", text); });
+      add(panel, "p", "The person who opens it can save it as a file that isn't locked.");
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
     overlay.appendChild(whatsIn);

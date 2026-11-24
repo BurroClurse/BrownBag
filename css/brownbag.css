@@ -582,6 +582,9 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .none-known { font-weight: 800; font-size: 1.5rem; line-height: 1.25; margin: 0; overflow-wrap: anywhere; }
 .who + .none-known { margin-top: 0.5rem; }
 /* What happened, with Undo at the right; below it when there's no room. */
+/* Under the shared list, set apart from it. */
+.save-file { border-top: 3px solid var(--ink); margin-top: 2.25rem; padding-top: 0.5rem; }
+.save-file button { display: block; width: 100%; margin-right: 0; }
 .undo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; margin: 0.35rem 0 0.5rem; }
 .undo-row p { flex: 1 1 9rem; min-width: 0; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
 .undo-row button { margin: 0 0 0 auto; border-color: var(--teal); background: var(--card); }

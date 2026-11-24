@@ -84,6 +84,10 @@ only, no real patients). To open it as a certain patient, see
 - **Changed the list with no signal?** The QR code still includes the
   change, and the QR screen lists exactly what changed since the records
   were last updated and says to get a connection to update them.
+- **Save as FHIR file.** Staff can save the list as an
+  [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1). A
+  warning says the file isn't locked. A list where something didn't load can't
+  be saved.
 - **Directions are said in full.** A record with several shows them all, in its
   order. A schedule Brown Bag can't put in words says "See the record for how
   often". A medicine the records have on hold says so, on the phone and to staff.
@@ -163,7 +167,10 @@ never send that part to a server). The allergies keep the FHIR R4 rules and foll
 [US Core AllergyIntolerance](https://hl7.org/fhir/us/core/StructureDefinition-us-core-allergyintolerance.html)
 where the data allows: the records' codes and coded reactions, who said it,
 RxNorm codes for drug ingredients, and "no known allergies" as a confirmed
-statement. The packing borrows the trimming rules and
+statement. From records it also carries RxNorm and NDC codes and, when the whole direction
+can be coded, its amount and timing; the words are always there. Codes are left
+out when they'd make the QR code more than 161 squares across.
+The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.
 
@@ -190,6 +197,7 @@ The list never passes through a server.
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
+| `js/ips.js`, `js/fhir-file.js` | Save as FHIR file: the International Patient Summary, and its button and warning. |
 | `privacy.html` | The privacy page: what Brown Bag keeps, who is contacted, and the limits of the locks. |
 | `js/options.js` | What More options offers, in groups. |
 | `js/edit.js` | Changing a medicine the patient added. |
@@ -255,6 +263,13 @@ The course starter it grew from is
 [samoanGuy7/Smart-App](https://github.com/samoanGuy7/Smart-App). The libraries
 in `vendor/` keep their own licenses: fhirclient (Apache 2.0) and
 qrcode-generator (MIT).
+
+This material contains content from LOINC (http://loinc.org). LOINC is copyright
+© Regenstrief Institute, Inc. and the Logical Observation Identifiers Names and
+Codes (LOINC) Committee and is available at no cost under the license at
+http://loinc.org/license. LOINC® is a registered United States trademark of
+Regenstrief Institute, Inc. Units use UCUM codes (https://ucum.org), copyright
+© Regenstrief Institute, Inc. and the UCUM Organization.
 
 Epic is a trademark of Epic Systems Corporation. Oracle is a registered
 trademark of Oracle and/or its affiliates. Other names may be trademarks of

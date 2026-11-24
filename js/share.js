@@ -26,6 +26,7 @@ var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 var DATA_ABSENT = { system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" };
 var FROM_PATIENT = "From the patient";
 var QR_MAX_BITS = 18648; // QR_MAX_BYTES x 8: version 40, level M
+var CODED_MAX_BITS = 15288; // 1911 bytes x 8: version 36 (161 squares), level M
 
 export class ShareError extends Error {
   constructor(code, message) {
@@ -47,7 +48,9 @@ var HOLD_NOTES = { all: "On hold in the records", some: "One record has this on 
 var HOLD_STATUS = { all: "on-hold", some: "unknown" };
 export var AS_NEEDED_NOTE = "Patient says: takes only when needed";
 
-export function buildShareBundle(list, now, warnings = {}) {
+// level: how much of what the record says in codes goes. 2: all of it. 1: no
+// NDC codes. 0: none, as before codes were kept. The words are always the same.
+export function buildShareBundle(list, now, warnings = {}, level = 0) {
   var entries = [{
     resource: {
       resourceType: "Patient",
@@ -56,7 +59,8 @@ export function buildShareBundle(list, now, warnings = {}) {
     }
   }];
   list.current.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), HOLD_STATUS[holdText(item)] || "active", null, dosageParts(item));
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), statusFor(item), null, dosageParts(item, level));
+    addCodes(statement, item, level);
     if (item.origin === "claims") {
       // Filled through insurance, but not in the health record.
       statement.informationSource = { display: item.source };
@@ -84,12 +88,13 @@ export function buildShareBundle(list, now, warnings = {}) {
     entries.push({ resource: statement });
   });
   list.additions.forEach(function (addition) {
-    var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", addition);
+    var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", withUnitCode(addition, level));
     statement.informationSource = SELF;
     entries.push({ resource: statement });
   });
   list.stopped.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped", null, dosageParts(item));
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped", null, dosageParts(item, level));
+    addCodes(statement, item, level);
     statement.informationSource = SELF;
     statement.effectivePeriod = { end: item.stoppedAt };
     entries.push({ resource: statement });
@@ -421,13 +426,29 @@ export async function unpackShare(fragment, code) {
   }
 }
 
+// The list with as much in codes as fits. More squares are harder to scan, so
+// codes go only while the QR code stays at 161 across.
+export async function shareBundleFor(list, now, warnings, baseUrl) {
+  for (var level = 2; level > 0; level -= 1) {
+    var bundle = buildShareBundle(list, now, warnings, level);
+    // The same length as the real one, without the second the locking takes.
+    var packed = await transform(new TextEncoder().encode(JSON.stringify(bundle)), new CompressionStream("deflate-raw"));
+    var bytes = SECRET_BYTES + IV_BYTES + packed.length + TAG_BYTES;
+    if (bitsIn(baseUrl + "share.html#" + PREFIX, Math.ceil(bytes * 4 / 3) * 2) <= CODED_MAX_BITS) return bundle;
+  }
+  return buildShareBundle(list, now, warnings, 0);
+}
+
 // Counts the bits of a QR code made of two parts: the web address as text
 // (byte mode) and the packed list as digits (numeric mode).
 export function fitsInQr(prefix, digits) {
+  return bitsIn(prefix, digits.length) <= QR_MAX_BITS;
+}
+
+function bitsIn(prefix, digitCount) {
   var textBits = 4 + 16 + 8 * new TextEncoder().encode(prefix).length;
-  var rest = digits.length % 3;
-  var digitBits = 4 + 14 + 10 * Math.floor(digits.length / 3) + (rest === 1 ? 4 : rest === 2 ? 7 : 0);
-  return textBits + digitBits <= QR_MAX_BITS;
+  var rest = digitCount % 3;
+  return textBits + 4 + 14 + 10 * Math.floor(digitCount / 3) + (rest === 1 ? 4 : rest === 2 ? 7 : 0);
 }
 
 // Each base64url character becomes two digits: its character code minus 45,
@@ -496,11 +517,16 @@ function structuredDosage(structured) {
 
 // The records' route and how often on their own, beside the whole dosage in
 // words, so the staff page can label each.
-function dosageParts(item) {
+function dosageParts(item, level) {
   var out = {};
+  var coded = (level && item.fhir && item.fhir.dosage) || {};
   if (item.route) out.route = { text: item.route };
   if (item.frequency && isDirections(item.frequency)) out.patientInstruction = item.frequency;
   else if (item.frequency) out.timing = { code: { text: item.frequency } };
+  // The patient's own "as needed" isn't the record's schedule.
+  if (coded.repeat && !item.asNeededAt) out.timing = Object.assign({ repeat: coded.repeat }, out.timing);
+  if (coded.quantity) out.doseAndRate = [{ doseQuantity: coded.quantity }];
+  if (coded.asNeeded) out.asNeededBoolean = true;
   return Object.keys(out).length ? out : null;
 }
 
@@ -546,6 +572,30 @@ function cardFrom(resource, added) {
   });
   card.facts = card.facts.concat(source);
   return card;
+}
+
+function addCodes(statement, item, level) {
+  var codes = (level && item.fhir && item.fhir.codes) || [];
+  if (level === 1) codes = codes.filter(function (coding) { return coding.system === RXNORM; });
+  if (codes.length) statement.medicationCodeableConcept.coding = codes;
+}
+
+var UCUM = "http://unitsofmeasure.org";
+var UNIT_CODES = { tablet: "{tbl}", capsule: "{capsule}", drop: "[drp]", puff: "{puff}", spray: "{spray}", patch: "{patch}", suppository: "{suppository}", lozenge: "{lozenge}", scoop: "{scoop}" };
+function withUnitCode(addition, level) {
+  var quantity = addition.quantity;
+  if (!level || !quantity || quantity.code || !Object.prototype.hasOwnProperty.call(UNIT_CODES, quantity.unit)) return addition;
+  return Object.assign({}, addition, { quantity: Object.assign({}, quantity, { system: UCUM, code: UNIT_CODES[quantity.unit] }) });
+}
+
+// The record's own word when it isn't plainly active. A finished prescription
+// filled again, or a medicine only insurance knows: nobody has said it's taken.
+var OWN_STATUS = ["intended", "unknown"];
+function statusFor(item) {
+  var held = HOLD_STATUS[holdText(item)];
+  if (held) return held;
+  if (item.origin === "claims" || item.completedButFilled) return "unknown";
+  return OWN_STATUS.indexOf(item.recordStatus) !== -1 ? item.recordStatus : "active";
 }
 
 function dosageText(item) {

@@ -69,7 +69,7 @@ test("a joined allergy is unconfirmed only when every record of it is", () => {
 });
 
 test("no known allergy records are statements, not allergies", () => {
-  const all = fromAllergyRecords([coded("716186003", "No known allergy (situation)"), coded("409137002", "x"), coded("429625007", "x"), coded("428607008", "x"), named("No Known Allergies")], "S");
+  const all = fromAllergyRecords([coded("716186003", "No known allergy (situation)"), coded("409137002", "No known allergies on file"), coded("429625007", "No known allergies on file"), coded("428607008", "No known allergies on file"), named("No Known Allergies")], "S");
   assert.equal(all.items.length, 0);
   assert.deepEqual(all.statements, ["No known allergy", "No known drug allergy", "No known food allergy", "No known environmental allergy"]);
 });
@@ -384,4 +384,13 @@ test("the box stops being red only when the patient said none and nothing is in 
   assert.equal(saysNoneKnown(said({ unspecified: 1 }), "loaded"), false);
   assert.equal(saysNoneKnown(said({ count: 1 }), "loaded"), false);
   assert.equal(saysNoneKnown(said({ saidNone: null }), "loaded"), false);
+});
+
+// A record whose code says none but whose words name something is an allergy.
+test("a none code never hides a named allergy, and odd codes say nothing", () => {
+  const of = (code, text) => fromAllergyRecords([rec({ code: { coding: [{ system: SNOMED, code }], text } })], "S");
+  assert.deepEqual(of("716186003", "Peanuts").items.map((i) => i.name), ["Peanuts"]);
+  for (const text of ["No known allergies", "No known allergy (situation)", "NKA", "None", "Denies allergies", undefined]) assert.deepEqual(of("716186003", text).statements, ["No known allergy"], text);
+  assert.deepEqual(of("constructor", "Peanuts").items.map((i) => i.name), ["Peanuts"]);
+  assert.deepEqual(of("constructor", "Peanuts").statements, []);
 });

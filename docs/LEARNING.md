@@ -1592,6 +1592,27 @@ read the design with fresh eyes. The old mistake would have gone into the file.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 50. A file a hospital can read (`js/ips.js`)
+
+**What changed.** The QR code carries the record's RxNorm and NDC codes and coded
+directions. Staff can save the list as an International Patient Summary (IPS).
+
+**Words for people, codes for systems.** A person reads "2 times a day". A system
+needs frequency 2, period 1, unit d. Both travel, and they must agree.
+
+**All or nothing again.** If any part of a direction can't be coded, none is.
+
+**The QR code stays small.** An IPS has a cover record and readable text, so only
+about 7 medicines would fit. The staff page builds it from the code instead.
+
+**Never trust a link.** Anyone can make one. The file is written from checked
+fields, not copied.
+
+**Check with the owners' tool.** HL7's FHIR validator found 0 errors. It's the
+same one hospitals use.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary
@@ -1611,6 +1632,9 @@ read the design with fresh eyes. The old mistake would have gone into the file.
 - **Binding**: which list of codes a FHIR field must or should use.
 - **OperationOutcome**: a FHIR message about what went wrong, or was left out.
 - **ExplanationOfBenefit (EOB)**: the FHIR record of an insurance claim; a pharmacy one shows a fill.
+- **IPS (International Patient Summary)**: a FHIR document with a patient's key information, made to cross systems and borders.
+- **LOINC**: the standard codes for kinds of documents, sections and lab tests.
+- **NDC**: the US code for a drug package.
 - **FHIR**: the standard format for health records data.
 - **Fork**: your own copy of someone else's repo.
 - **_include**: a FHIR search option that also returns the records the results point to.

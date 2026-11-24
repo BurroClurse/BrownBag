@@ -93,6 +93,9 @@ Decided for later, so nothing to test until they're picked up:
 - More options with VoiceOver: each option reads its name, then its line. Then
   Health records: Update now, and
   "About these names" opening.
+- A long list's QR code scanned with a second phone: it's denser than before.
+- Save as FHIR file on the second phone: the real share sheet, only the .json file,
+  and the popup with VoiceOver.
 - The Privacy page in the Home Screen app: More options ▸ Privacy ▸ Back. With
   VoiceOver: each heading, the list, and the GitHub link (it opens a browser).
 - The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
@@ -229,3 +232,9 @@ Decided for later, so nothing to test until they're picked up:
   to 1440 wide, 200 percent text) and both virtual phones (My medicines, the staff
   page). Passed. On the iPhone the two directions were checked by eye: Safari
   reports line breaks differently from the check.
+- 2026-11-24, codes in the QR code and Save as FHIR file, before publishing: HL7's
+  validator (0 errors on four made-up summaries, IPS 2.0.1), a fresh review, the
+  test browser (320 to 1440 wide, 200 percent text, saved, cancelled, failed,
+  downloaded, incomplete, a made-up link; the QR code read back) and both virtual
+  phones (the popup, the file, the QR screen). Passed. The share sheet was a
+  stand-in.
