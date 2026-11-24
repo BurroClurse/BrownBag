@@ -16,13 +16,11 @@ to patient apps. It adds pharmacy fills from insurance claims, showing what
 was actually picked up. Today it connects to the SMART Health IT sandbox
 (test patients only), whose claims stand in for an insurer's.
 
-The same sign-in is built for the patient portal of any US certified health
-record system, such as one on Epic, Oracle Health or MEDITECH, and the same
-kind of claims access is something health plans, including Medicare and
-Medicaid, must offer their members (the CMS Patient Access API). Brown Bag
-isn't connected to any of them. Each one needs Brown Bag registered with it
-first. The test systems looked at so far, and why each fits or doesn't, are
-in [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
+Sign in lists the others, as the app does: **Not connected** — Epic, Oracle
+Health and MEDITECH (health systems), and Medicare and Medicaid
+(insurance). Brown Bag isn't connected to these. It may add them later. The
+test systems looked at so far, and why each fits or doesn't, are in
+[`docs/SANDBOXES.md`](docs/SANDBOXES.md).
 
 Epic is a trademark of Epic Systems Corporation. Oracle is a registered
 trademark of Oracle and/or its affiliates. Other names may be trademarks of
