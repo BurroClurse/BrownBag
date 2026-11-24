@@ -1375,6 +1375,26 @@ anyone nearby. Staff do need it, so the QR code keeps it.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 35. Editing, and a calmer code screen (`js/edit.js`)
+
+**What changed.** Each medicine you added has Edit. See what's inside is a small
+link above the code, and the title is centered. "Records last updated" is now
+"Meds last updated".
+
+**Same medicine, new answers.** An edit keeps the medicine's id and the day it
+was added. Remove and add again would lose both.
+
+**Nothing left over.** An RxNorm code belongs to a name, and the numbers in the
+QR code belong to the dose's words. Change the name or the words, and the old
+code or numbers go too. A leftover would tell staff the wrong medicine or dose.
+
+**Say it once.** Edited twice with no signal is one line on the code screen.
+
+**True centering.** The words were centered in the space the "?" left. An empty
+column on the left, as wide as the "?", makes the two sides match.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

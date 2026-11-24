@@ -527,9 +527,9 @@ const dated = (warnings, list = {}) => groupShareBundle(buildShareBundle(Object.
 test("the dates say when the records were updated, then when the QR code was made", async () => {
   const { dateLines } = await import("../js/share.js");
   const made = "QR code made: <" + NOW.toISOString() + ">";
-  assert.deepEqual(dateLines(dated({ recordsUpdatedAt: "2026-11-23T10:00:00.000Z" }), at), ["Records last updated: <2026-11-23T10:00:00.000Z>", made]);
-  assert.deepEqual(dateLines(dated({ recordsSavedAt: "2026-11-01T14:00:00.000Z" }), at), ["Records last updated: <2026-11-01T14:00:00.000Z>", made]);
-  assert.deepEqual(dateLines(dated({ recordsUpdatedAt: "2026-11-23T10:00:00.000Z", incomplete: true }), at), ["Records: some didn't load", made]);
+  assert.deepEqual(dateLines(dated({ recordsUpdatedAt: "2026-11-23T10:00:00.000Z" }), at), ["Meds last updated: <2026-11-23T10:00:00.000Z>", made]);
+  assert.deepEqual(dateLines(dated({ recordsSavedAt: "2026-11-01T14:00:00.000Z" }), at), ["Meds last updated: <2026-11-01T14:00:00.000Z>", made]);
+  assert.deepEqual(dateLines(dated({ recordsUpdatedAt: "2026-11-23T10:00:00.000Z", incomplete: true }), at), ["Meds: some didn't load", made]);
   // A code made before the date was in it.
   assert.deepEqual(dateLines(dated({}), at), [made]);
   // A list too long for one code has no QR code.

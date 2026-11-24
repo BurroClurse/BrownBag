@@ -63,7 +63,7 @@ test("staff are told when the insurance fills didn't load", () => {
 test("staff see when the records and the allergies last loaded", () => {
   const at = "2026-11-23T11:00:00.000Z";
   const lines = staffLines(state({ updatedAt: at, allergies: { status: "loaded", savedAt: null, updatedAt: "2026-11-20T11:00:00.000Z" } }), { current: [ITEM] });
-  assert.ok(says(lines, "Records last updated: "));
+  assert.ok(says(lines, "Meds last updated: "));
   assert.ok(says(lines, "Allergies last updated: "));
 });
 

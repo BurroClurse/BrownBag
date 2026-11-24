@@ -202,10 +202,19 @@ var OPPOSITE = {
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
   if (kind.indexOf("reaction-") === 0) return logReaction(list, kind, name, extra);
+  var edited = list.findIndex(function (c) { return c.name === name && c.kind === "edited"; });
+  // A new one stays "Added", and one edited twice is one line.
+  if (kind === "edited" && list.some(function (c) { return c.name === name && (c.kind === "added" || c.kind === "edited"); })) return list;
+  if (kind === "removed" && edited !== -1) {
+    list.splice(edited, 1);
+    return list.concat({ kind: kind, name: name, was: "edited" });
+  }
   for (var i = list.length - 1; i >= 0; i -= 1) {
     if (list[i].name === name && list[i].kind === OPPOSITE[kind]) {
+      var was = list[i].was;
       list.splice(i, 1);
-      return list;
+      // Undo after removing an edited one: the edit still counts.
+      return was ? list.concat({ kind: was, name: name }) : list;
     }
   }
   list.push(Object.assign({ kind: kind, name: name }, extra || {}));
@@ -264,6 +273,7 @@ function changeLine(change) {
     case "unstopped": return "Put " + change.name + " back on your list";
     case "as-needed": return "Marked " + change.name + " As needed";
     case "regular": return "Took " + change.name + " off As needed";
+    case "edited": return "Changed " + change.name;
     case "removed": return "Removed " + change.name;
     case "allergy-added": return "Added the allergy " + change.name;
     case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;

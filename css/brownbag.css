@@ -79,7 +79,8 @@ ul.meds > li {
 }
 .med-name { font-weight: 700; font-size: 1.2rem; line-height: 1.3; margin: 0 0 0.35rem; overflow-wrap: anywhere; }
 ul.meds > li > button.card-action { display: block; width: 100%; min-height: 48px; margin: 0.75rem 0 0; border-radius: 10px; font-size: 1.1rem; }
-/* "As needed" and "Not taking" side by side; they stack at large text. */
+/* "As needed" and "Not taking", or "Edit" and "Remove", side by side; they
+   stack at large text. */
 .card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 .card-actions button { flex: 1 1 8rem; min-height: 48px; margin: 0; border-radius: 10px; font-size: 1.1rem; }
 .card-actions button.secondary { background: var(--card); border-color: var(--teal); }
@@ -294,7 +295,7 @@ button.secondary.big { border-color: var(--teal); }
   color: #1b1b1b;
   text-align: center;
 }
-.qr-overlay h2 { border: none; margin: 0 0 0.75rem; font-size: 1.4rem; }
+.qr-overlay h2 { border: none; margin: 0 0 0.25rem; font-size: 1.4rem; text-wrap: balance; }
 /* Centered with auto margins rather than justify-content, so with very
    large text the top stays reachable by scrolling instead of cut off. */
 .qr-overlay { justify-content: flex-start; }
@@ -406,9 +407,24 @@ button.help-button {
 .help-panel { text-align: left; max-width: 28rem; width: 100%; }
 .help-panel p { margin: 0.3rem 0; }
 .help-panel ul { margin: 0.3rem 0; padding-left: 1.3rem; }
-.qr-overlay .help-row { margin: 0 0 0.6rem; }
-.qr-overlay .help-row:first-child { margin-top: auto; }
-.qr-overlay .help-row .qr-say { margin: 0; }
+/* On the QR screen the words are centered on the screen and the "?" sits at
+   the right edge: the empty first column is as wide as the "?". */
+.qr-overlay .help-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; width: 100%; max-width: 28rem; margin: 0 0 0.6rem; }
+.qr-overlay .help-row > * { grid-column: 2; grid-row: 1; justify-self: center; }
+.qr-overlay .help-row > .help-button { grid-column: 3; }
+.qr-overlay .help-row .qr-say { margin: 0; text-wrap: balance; }
+/* A quiet link: the code and "Tap to show the code" matter more. */
+.qr-overlay button.inside-link {
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0.75rem;
+  background: none;
+  border-color: transparent;
+  color: #164F5A;
+  font-size: 1rem;
+  font-weight: 400;
+  text-decoration: underline;
+}
 /* A section heading with its "?" at the end of the line. */
 .help-row.section-help { justify-content: space-between; margin: 2rem 0 0.5rem; }
 .help-row.section-help h2, .help-row.section-help h3 { flex: 1 1 auto; margin: 0; }
@@ -514,11 +530,15 @@ button.help-button {
    code, the digits and both buttons fit without scrolling. */
 @media (max-height: 720px) {
   .qr-overlay { padding-top: max(0.6rem, env(safe-area-inset-top)); padding-bottom: max(0.6rem, env(safe-area-inset-bottom)); }
-  .qr-overlay h2 { font-size: 1.15rem; margin-bottom: 0.35rem; }
+  .qr-overlay h2 { font-size: 1.15rem; margin-bottom: 0; }
+  .qr-overlay .help-row { margin-bottom: 0; }
   .qr-overlay .qr-say { font-size: 1.15rem; margin-top: 0.4rem; }
   .qr-overlay .share-code { font-size: min(2.4rem, 12vw); }
   .qr-overlay .qr canvas { width: min(88vw, 45dvh); }
-  .qr-overlay > button.big { min-height: 48px; padding: 0.35rem 1rem; margin-top: 0.4rem; font-size: 1.15rem; }
+  .qr-overlay > button.big { min-height: 48px; padding: 0.35rem 1rem; margin-top: 0.5rem; font-size: 1.15rem; }
+}
+@media (max-height: 600px) {
+  .qr-overlay > button.big { margin-top: 0.2rem; }
 }
 
 /* The staff page's code form: a short label, one big box for the digits,

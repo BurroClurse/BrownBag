@@ -50,7 +50,7 @@ test("everything the staff page says about each medicine and allergy is there", 
   }
   assert.ok(checked > 20);
   for (const row of groups.allergies.fromRecords) { assert.ok(text.includes(row.name)); assert.ok(text.includes(row.detail), row.detail); }
-  for (const piece of ["Avery Brownbag", "1950-03-14", "Records last updated: ", "QR code made: ", "Medicines (5)", "RxNorm: 314076"]) assert.ok(text.includes(piece), piece);
+  for (const piece of ["Avery Brownbag", "1950-03-14", "Meds last updated: ", "QR code made: ", "Medicines (5)", "RxNorm: 314076"]) assert.ok(text.includes(piece), piece);
 });
 
 test("every warning the staff page gives is there", () => {

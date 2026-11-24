@@ -603,14 +603,14 @@ export function savedCopyText(groups) {
   return "The From records part is a copy saved on " + timeText(groups.recordsSavedAt) + ". It may be out of date.";
 }
 
-// How old the list is: when the records last loaded into Brown Bag, then when
+// How old the list is: when the medicines last loaded into Brown Bag, then when
 // the code was made. No date for a list that only partly loaded, so a date
 // never vouches for it; none either in a code made before it was included.
 export function dateLines(groups, format, made) {
   var updated = groups.recordsUpdatedAt || groups.recordsSavedAt;
   var out = [];
-  if (groups.incomplete) out.push("Records: some didn't load");
-  else if (updated) out.push("Records last updated: " + format(updated));
+  if (groups.incomplete) out.push("Meds: some didn't load");
+  else if (updated) out.push("Meds last updated: " + format(updated));
   return out.concat((made || "QR code made") + ": " + format(groups.madeAt));
 }
 

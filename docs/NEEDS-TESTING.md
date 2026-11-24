@@ -89,6 +89,9 @@ Decided for later, so nothing to test until they're picked up:
 - See what's inside as short text, with VoiceOver.
 - "+ Add a medicine" with VoiceOver: it comes before the medicines.
 - Sort on My medicines, with VoiceOver: the picker, then "Sorted: …".
+- Edit on a medicine added by hand, with VoiceOver ("Edit: …", then the form).
+- The QR screen: See what's inside above the code, the title centered, and the
+  code scanned with a second phone.
 
 ## Tested
 
@@ -174,3 +177,6 @@ Decided for later, so nothing to test until they're picked up:
   scrolling, and See what's inside as short text. Works.
 - 2026-11-23, the short name on home and Sort, before publishing: the test
   browser and both virtual phones. Passed.
+- 2026-11-23, Edit on added medicines, the QR screen's new order, and "Meds last
+  updated", before publishing: the test browser (320 to 1440 wide, 200 percent
+  text, duplicates, half-typed edits, no signal) and both virtual phones. Passed.

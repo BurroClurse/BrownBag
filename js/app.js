@@ -23,6 +23,7 @@ import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
+import { draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
 window.brownBagStarted = true;
@@ -58,6 +59,8 @@ var state = {
   // The records' allergies; the patient's own are in data (js/allergies.js).
   allergies: keepAllergies(null),
   adding: false,
+  // The id of the added medicine the form is changing, or null for a new one.
+  editing: null,
   // The add form as the patient left it (never saved to the phone).
   draft: null,
   // "new" while adding an allergy, or the key of the one whose reaction is
@@ -245,8 +248,7 @@ async function updateWithPass(pass) {
       var samePatient = result.patientId === state.patientId;
       usePatient(result);
       if (!samePatient) {
-        state.adding = false;
-        state.draft = null;
+        closeAddForm();
         state.allergyForm = null;
         state.allergyDrafts = {};
         state.lastRemoved = null;
@@ -573,17 +575,30 @@ function go(screen, focusId) {
   window.scrollTo(0, 0);
 }
 
+function closeAddForm() {
+  state.adding = false;
+  state.editing = null;
+  state.draft = null;
+}
+
+// The added medicine being changed, as saved, or null.
+function editedNow() {
+  return state.data.additions.filter(function (a) { return a.id === state.editing; })[0] || null;
+}
+
 // Half-typed forms stay, and home says they aren't saved. Empty ones close.
 function leaveMedicines() {
   state.olderOpen = false;
   state.lastRemoved = null;
   state.lastRemovedAllergy = null;
   var unsaved = [];
-  if (state.adding && draftStarted(state.draft)) {
+  var editing = editedNow();
+  if (state.adding && editing && draftChanged(state.draft, editing)) {
+    unsaved.push(unsavedEditText(editing.name));
+  } else if (state.adding && !state.editing && draftStarted(state.draft)) {
     unsaved.push(unsavedText(state.draft));
   } else {
-    state.adding = false;
-    state.draft = null;
+    closeAddForm();
   }
   var cards = arrangeAllergies(state.allergies, state.data).cards;
   state.allergyDrafts = keepDrafts(state.allergyDrafts, cards);
@@ -617,6 +632,8 @@ function drawHome(arranged) {
 }
 
 function drawMedicines(arranged) {
+  // The one being edited was removed.
+  if (state.editing && !editedNow()) closeAddForm();
   var top = add(root, "div", null, "screen-top");
   button(top, "Done", "secondary big", function () {
     go("home", "open-medicines");
@@ -993,7 +1010,20 @@ function drawAdditions(parent, additions) {
     row.id = "added-" + addition.id;
     row.tabIndex = -1;
     drawCard(row, addition.name, patientCard(addition, false));
-    button(row, "Remove", "stop card-action", function () {
+    var actions = add(row, "div", null, "card-actions");
+    // One form at a time: no Edit while one is open.
+    if (!state.adding) {
+      button(actions, "Edit", "secondary", function () {
+        state.addFrom = window.scrollY;
+        state.adding = true;
+        state.editing = addition.id;
+        state.draft = draftFrom(addition);
+        state.focusId = "add-name";
+        render();
+        showOnScreen("add-form", "start");
+      }, "Edit: " + addition.name).id = "edit-" + addition.id;
+    }
+    button(actions, "Remove", "stop", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
       recordChange("removed", addition.name);
       state.lastRemoved = addition;
@@ -1020,6 +1050,8 @@ function drawAdditions(parent, additions) {
 function drawAddForm(section) {
   var form = add(section, "form");
   form.id = "add-form";
+  var editing = editedNow();
+  if (editing) add(form, "h3", "Edit " + editing.name, "form-title");
   var picked = null;
   var timer = null;
   var search = latestOnly(searchDrugs);
@@ -1045,15 +1077,20 @@ function drawAddForm(section) {
     doseChoicesNow = doseChoices(drugName);
     dose.fill(doseChoicesNow.map(function (choice) { return choice.label; }));
   }
+  // The same, but an edit keeps the dose already given.
+  function refillDose(drugName) {
+    var given = dose.words();
+    fillDose(drugName);
+    if (editing) dose.restore(pickFor(given, doseChoicesNow.map(function (choice) { return choice.label; })));
+  }
   fillDose(null);
   often.fill(FREQUENCY_CHOICES.map(function (choice) { return choice.label; }));
 
   var saveButton = add(form, "button", "Save", "primary big");
   saveButton.type = "submit";
   var cancelButton = button(form, "Cancel", "secondary big", function () {
-    state.adding = false;
-    state.draft = null;
-    state.focusId = "add-open";
+    state.focusId = editing ? "edit-" + editing.id : "add-open";
+    closeAddForm();
     render();
     // Back to the part of the list they were looking at.
     window.scrollTo(0, state.addFrom || 0);
@@ -1078,7 +1115,7 @@ function drawAddForm(section) {
   name.addEventListener("input", function () {
     if (picked && picked.name !== name.value) {
       picked = null;
-      fillDose(null);
+      refillDose(null);
     }
     clearTimeout(timer);
     search.cancel();
@@ -1101,7 +1138,7 @@ function drawAddForm(section) {
           button(item, drug.name, null, function () {
             picked = { rxcui: drug.rxcui, name: drug.name };
             name.value = drug.name;
-            fillDose(drug.name);
+            refillDose(drug.name);
             keepDraft();
             clear(results);
             searchStatus.textContent = "Picked " + drug.name + ".";
@@ -1124,19 +1161,31 @@ function drawAddForm(section) {
     }
     var doseChoice = doseChoicesNow[dose.chosen()];
     var oftenChoice = FREQUENCY_CHOICES[often.chosen()];
-    var addition = makeAddition({
+    var values = {
       name: name.value,
       rxcui: picked && picked.name === name.value ? picked.rxcui : null,
       dose: dose.words(),
       frequency: often.words(),
       quantity: doseChoice ? doseChoice.quantity : null,
       schedule: oftenChoice ? oftenChoice.schedule : null
-    }, new Date());
+    };
+    var addition = editing ? editedAddition(editing, values) : makeAddition(values, new Date());
+    if (editing && unchanged(editing, addition)) {
+      closeAddForm();
+      state.announce = "Nothing changed.";
+      state.focusId = "added-" + editing.id;
+      render();
+      showOnScreen("added-" + editing.id, "nearest");
+      return;
+    }
     checking = true;
     saveButton.disabled = true;
     cancelButton.disabled = true;
     saveButton.textContent = "Checking…";
     var result = await checkAgainstList(addition);
+    // The same medicine was asked about when it was added. Ask again only if
+    // the edit makes it a copy of another one.
+    if (result && editing && sameName(editing, addition) && result.kind !== "duplicate") result = null;
     checking = false;
     saveButton.disabled = false;
     cancelButton.disabled = false;
@@ -1145,7 +1194,8 @@ function drawAddForm(section) {
     // screen changed): then nothing is added.
     if (!form.isConnected || !state.adding) return;
     if (!result) {
-      keepAddition(addition);
+      if (editing) keepEdit(editing, addition);
+      else keepAddition(addition);
       return;
     }
     // The answers stay as they were when Save was tapped until the patient
@@ -1153,6 +1203,7 @@ function drawAddForm(section) {
     var fields = Array.prototype.slice.call(form.querySelectorAll("input, select"));
     fields.forEach(function (field) { field.disabled = true; });
     drawAddCheck(form, result, addition, {
+      editing: editing,
       back: function () {
         fields.forEach(function (field) { field.disabled = false; });
         saveButton.hidden = false;
@@ -1172,12 +1223,26 @@ function keepAddition(addition, replacing) {
   }
   state.data.additions.push(addition);
   recordChange("added", addition.name, { checked: Boolean(addition.rxcui) });
-  state.adding = false;
-  state.draft = null;
+  closeAddForm();
   state.announce = addition.name + " added.";
   // The new card, so they see it on the list.
   state.focusId = "added-" + addition.id;
   save().then(function () { showOnScreen("added-" + addition.id, "nearest"); });
+}
+
+// An edited medicine stays the same one, in its own place.
+function keepEdit(original, next) {
+  state.data.additions = state.data.additions.map(function (a) { return a.id === next.id ? next : a; });
+  if (sameName(original, next)) {
+    recordChange("edited", next.name);
+  } else {
+    recordChange("removed", original.name);
+    recordChange("added", next.name, { checked: Boolean(next.rxcui) });
+  }
+  closeAddForm();
+  state.announce = next.name + " changed.";
+  state.focusId = "added-" + next.id;
+  save().then(function () { showOnScreen("added-" + next.id, "nearest"); });
 }
 
 // Everything the new medicine is compared with: the patient's own additions
@@ -1188,7 +1253,8 @@ function keepAddition(addition, replacing) {
 var noIngredient = new Set();
 async function checkAgainstList(addition) {
   var arranged = arrangeList(state.split, state.data);
-  var list = state.data.additions.map(function (a) { return Object.assign({ origin: "added" }, a); })
+  // An edited one isn't compared with itself.
+  var list = state.data.additions.filter(function (a) { return a.id !== addition.id; }).map(function (a) { return Object.assign({ origin: "added" }, a); })
     .concat(arranged.current.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }))
     .concat(arranged.stopped.map(function (e) { return Object.assign({}, e, { origin: e.origin === "claims" ? "claims" : "records" }); }));
   var ingredientOf = new Map(state.split.ingredientOf instanceof Map ? state.split.ingredientOf : []);
@@ -1215,6 +1281,7 @@ function shortDate(date) {
 // The question asked before adding: drawn in the form, in place of Save and
 // Cancel, never a browser pop-up. Its heading takes focus.
 function drawAddCheck(form, result, addition, how) {
+  var keepAdded = function () { keepAddition(addition); };
   var panel = add(form, "section", null, "add-check");
   panel.id = "add-check";
   var match = result.match;
@@ -1230,6 +1297,8 @@ function drawAddCheck(form, result, addition, how) {
     form.removeChild(panel);
     how.back();
   }
+  if (how.editing) keepAdded = function () { keepEdit(how.editing, addition); };
+  var anyway = how.editing ? "Save it anyway" : "Add it anyway";
   function line(label, entry, origin) {
     // The full name carries the strength (10 MG or 20 MG).
     var detail = [entry.name, entry.dose, entry.frequency].filter(Boolean).join(" · ");
@@ -1237,33 +1306,32 @@ function drawAddCheck(form, result, addition, how) {
   }
   if (result.kind === "stopped") {
     add(panel, "p", "You marked " + theirs + " Not taking on " + shortDate(match.stoppedAt) + ".");
-    button(panel, "I'm taking it again", "primary big", function () {
+    if (!how.editing) button(panel, "I'm taking it again", "primary big", function () {
       delete state.data.stopped[match.key];
       recordChange("unstopped", match.name);
-      state.adding = false;
-      state.draft = null;
+      closeAddForm();
       state.announce = match.name + " moved back to " + backToList(match).name + ".";
       state.focusId = backToList(match).focusId;
       save();
     });
     // A new strength of a stopped medicine: add it, the old one stays stopped
     // (Tyler, 2026-11-23).
-    button(panel, "Add it anyway", "secondary big", function () { keepAddition(addition); });
+    button(panel, anyway, how.editing ? "primary big" : "secondary big", keepAdded);
     button(panel, "Go back", "secondary big", close);
   } else if (result.kind === "lookalike") {
     add(panel, "p", lookalikeText(addition.name, match));
     button(panel, "Go back", "secondary big", close);
-    button(panel, "Add " + addition.name, "primary big", function () { keepAddition(addition); });
+    button(panel, (how.editing ? "Save " : "Add ") + addition.name, "primary big", keepAdded);
   } else {
     line("On your list:", match, ORIGIN_WORDS[match.origin]);
-    line("Adding:", addition, null);
+    line(how.editing ? "Saving:" : "Adding:", addition, null);
     if (result.kind === "duplicate") {
-      button(panel, "Don't add it", "secondary big", close);
-      button(panel, "Add it anyway", "primary big", function () { keepAddition(addition); });
+      button(panel, how.editing ? "Go back and change it" : "Don't add it", "secondary big", close);
+      button(panel, anyway, "primary big", keepAdded);
     } else {
       button(panel, "Go back and change it", "secondary big", close);
-      button(panel, "Add it anyway", "primary big", function () { keepAddition(addition); });
-      if (match.origin === "added") {
+      button(panel, anyway, "primary big", keepAdded);
+      if (match.origin === "added" && !how.editing) {
         button(panel, "Replace the one I added", "secondary big", function () { keepAddition(addition, match); });
       }
     }
@@ -1374,7 +1442,7 @@ function drawAsNeeded(parent, arranged) {
 
 // The QR code covers the screen: it swooshes up out of the bag and tucks
 // back in on Close (css/brownbag.css; a fade with Reduce Motion). It shows
-// only the code, the 6 digits, See what's inside and Close. Focus stays inside it, Escape
+// only See what's inside, the code, the 6 digits and Close. Focus stays inside it, Escape
 // closes it, and focus goes back to "Show my QR code".
 // Making the code takes about a second (the list is encrypted first). A
 // second tap in that time is ignored, and the button says it's working.
@@ -1421,11 +1489,15 @@ async function buildQr() {
     overlay.style.setProperty("--from-x", start.x + "px");
     overlay.style.setProperty("--from-y", start.y + "px");
   }
-  var titleRow = add(overlay, "div", null, "help-row");
-  var title = add(titleRow, "h2", fits ? "Show this to the person checking your medicines" : "Your list is too long for one QR code");
+  var title = add(overlay, "h2", fits ? "Show this to the person checking your medicines" : "Your list is too long for one QR code");
   title.id = "qr-heading";
+  var inside;
+  function openIt() { openInside(packed, inside, fits); }
   if (fits) {
-    var whatsIn = helpBubble(titleRow, "What's in this code?", function (panel) {
+    // Under the title and quiet: the code and its digits matter most here.
+    var insideRow = add(overlay, "div", null, "help-row");
+    inside = button(insideRow, "See what's inside", "inside-link", openIt);
+    var whatsIn = helpBubble(insideRow, "What's in this code?", function (panel) {
       add(panel, "p", "Your list from My medicines, as it is right now:");
       var items = add(panel, "ul");
       [
@@ -1436,7 +1508,7 @@ async function buildQr() {
         "Medicines you take only as needed, marked that way",
         "Medicines you marked Not taking",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
-        "When your records were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
+        "When your medicines were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
       ].forEach(function (text) { add(items, "li", text); });
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
@@ -1465,9 +1537,7 @@ async function buildQr() {
   } else {
     add(overlay, "p", "Show the person checking your medicines the list on your phone instead.");
   }
-  var inside = button(overlay, fits ? "See what's inside" : "See my list", "secondary big", function () {
-    openInside(packed, inside, fits);
-  });
+  if (!fits) inside = button(overlay, "See my list", "secondary big", openIt);
   inside.id = "qr-inside";
   button(overlay, "Close", "primary big", function () { closeQr(); }).id = "qr-close";
   overlay.addEventListener("keydown", function (event) {

@@ -69,15 +69,16 @@ only, no real patients). To open it as a certain patient, see
   on screen while the list scrolls. It uses lists for how much and how often, so the
   QR code carries the dose as numbers other systems can read, and asks
   first when the medicine is already there, was marked stopped, or only
-  looks like one on the list.
+  looks like one on the list. Each one they added has **Edit**, which opens
+  the same form filled in.
 - **The QR code** comes up out of the bag and fills the screen, for the
   person checking their medicines. A 6-digit code, blurred until tapped, is
   told to that person after they scan; they type it on `share.html` to see
   the list. Two "?" buttons explain what's in the code and why the digits
   matter. **See what's inside** opens the code on the patient's own phone,
   read-only, as one short text with everything in it, for when nobody can scan
-  it. Both it and the staff page say when the records were last updated and
-  when the QR code was made.
+  it. Both it and the staff page say when the medicines were last updated
+  and when the QR code was made.
   A note says when insurance fills couldn't be loaded.
 - **Changed the list with no signal?** The QR code still includes the
   change, and the QR screen lists exactly what changed since the records
@@ -180,6 +181,7 @@ The list never passes through a server.
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
+| `js/edit.js` | Changing a medicine the patient added. |
 | `js/sort.js` | The order of My medicines, and the short name on home. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
