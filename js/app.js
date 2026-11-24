@@ -5,20 +5,20 @@
 import { showLockScreen, restoreBackupText } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, exportPasswordBackup, importBackup, importOpened, isPasswordBackup } from "./vault.js";
 import { openWithPassword, saveWithPassword } from "./backup-popups.js";
-import { closePopups } from "./popup.js";
+import { closePopups, openPopup, popupButton, popupLine } from "./popup.js";
 import { LOCK_KEY, hasLock, lockMethod } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText, isAsNeeded } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, ALLERGENS, REACTIONS } from "./allergies.js";
-import { drawCard, patientCard } from "./card.js";
+import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
@@ -29,7 +29,8 @@ import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
-import { draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
+import { olderQuestion, takenOlder } from "./older.js";
+import { draftFromOlder, olderFrom, draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
 window.brownBagStarted = true;
@@ -737,7 +738,7 @@ function drawMedicines(arranged) {
   if (!state.adding && arranged.current.length + arranged.stopped.length + arranged.older.length + sorted.additions.length > 1) drawSort(block);
   drawRecords(block, arranged);
   drawFillsOnly(block, arranged);
-  drawAsNeeded(block, arranged);
+  drawAsNeeded(block, arranged, sorted.additions);
   drawAdditions(block, sorted.additions);
   drawStopped(block, arranged);
 }
@@ -1034,7 +1035,7 @@ function drawRecords(parent, arranged) {
     note(section, "Your insurance fills couldn't be loaded.");
   }
   var list = add(section, "ul", null, "meds");
-  arranged.current.filter(function (entry) { return entry.origin !== "claims" && !entry.asNeededAt; }).forEach(function (entry) {
+  arranged.current.filter(function (entry) { return entry.origin !== "claims" && !isAsNeeded(entry); }).forEach(function (entry) {
     markButtons(medRow(list, entry), entry);
   });
   if (arranged.older.length) {
@@ -1044,8 +1045,35 @@ function drawRecords(parent, arranged) {
     details.open = state.olderOpen;
     details.addEventListener("toggle", function () { if (details.isConnected) state.olderOpen = details.open; });
     var older = add(details, "ul", null, "meds");
-    arranged.older.forEach(function (entry) { medRow(older, entry); });
+    arranged.older.forEach(function (entry) {
+      var row = medRow(older, entry);
+      if (takenOlder(entry, state.data.additions)) {
+        add(row, "p", "You're taking this", "flag");
+      } else if (!state.adding) {
+        // One form at a time.
+        var actions = add(row, "div", null, "card-actions");
+        var take = button(actions, "I'm taking this", "secondary", function () { askOlder(entry, take); }, "I'm taking this: " + entry.name);
+      }
+    });
   }
+}
+
+// Asked before the form opens, so an old medicine never joins the list by a slip.
+function askOlder(entry, opener) {
+  var popup = openPopup(document.body, "Are you taking this now?", opener);
+  olderQuestion(entry).concat("Only add it if you take it now. To restart a medicine, ask your care team first.").forEach(function (text) { popupLine(popup.inner, text); });
+  var cancel = popupButton(popup.inner, "Cancel", "secondary");
+  cancel.addEventListener("click", popup.close);
+  popupButton(popup.inner, "Yes, I'm taking it", "primary").addEventListener("click", function () {
+    popup.close();
+    state.addFrom = window.scrollY;
+    state.adding = true;
+    state.draft = draftFromOlder(entry);
+    state.focusId = "add-dose";
+    render();
+    showOnScreen("add-form", "start");
+  });
+  cancel.focus();
 }
 
 // Adding comes first in the list, and its button stays at the top of the
@@ -1093,33 +1121,7 @@ function drawAdditions(parent, additions) {
   }, partHeading);
   if (state.dataFailed) add(section, "p", "What you added or marked couldn't be opened.", "notice");
   var list = add(section, "ul", null, "meds");
-  additions.forEach(function (addition) {
-    var row = add(list, "li");
-    row.id = "added-" + addition.id;
-    row.tabIndex = -1;
-    drawCard(row, addition.name, patientCard(addition, false));
-    var actions = add(row, "div", null, "card-actions");
-    // One form at a time: no Edit while one is open.
-    if (!state.adding) {
-      button(actions, "Edit", "secondary", function () {
-        state.addFrom = window.scrollY;
-        state.adding = true;
-        state.editing = addition.id;
-        state.draft = draftFrom(addition);
-        state.focusId = "add-name";
-        render();
-        showOnScreen("add-form", "start");
-      }, "Edit: " + addition.name).id = "edit-" + addition.id;
-    }
-    button(actions, "Remove", "stop", function () {
-      state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
-      recordChange("removed", addition.name);
-      state.lastRemoved = addition;
-      state.announce = addition.name + " removed.";
-      state.focusId = "undo-remove";
-      save();
-    }, "Remove: " + addition.name);
-  });
+  additions.filter(function (addition) { return !isAsNeeded(addition); }).forEach(function (addition) { drawAddition(list, addition); });
   if (state.lastRemoved) {
     var removed = state.lastRemoved;
     var undoRow = add(section, "p", "Removed " + removed.name + ".", "med-line");
@@ -1135,11 +1137,42 @@ function drawAdditions(parent, additions) {
   }
 }
 
+function drawAddition(list, addition) {
+  var row = add(list, "li");
+  row.id = "added-" + addition.id;
+  row.tabIndex = -1;
+  drawCard(row, addition.name, patientCard(addition, false));
+  var actions = add(row, "div", null, "card-actions");
+  // One form at a time: no Edit while one is open.
+  if (!state.adding) {
+    button(actions, "Edit", "secondary", function () {
+      state.addFrom = window.scrollY;
+      state.adding = true;
+      state.editing = addition.id;
+      state.draft = draftFrom(addition);
+      state.focusId = "add-name";
+      render();
+      showOnScreen("add-form", "start");
+    }, "Edit: " + addition.name).id = "edit-" + addition.id;
+  }
+  button(actions, "Remove", "stop", function () {
+    state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
+    recordChange("removed", addition.name);
+    state.lastRemoved = addition;
+    state.announce = addition.name + " removed.";
+    state.focusId = "undo-remove";
+    save();
+  }, "Remove: " + addition.name);
+}
+
 function drawAddForm(section) {
   var form = add(section, "form");
   form.id = "add-form";
   var editing = editedNow();
   if (editing) add(form, "h3", "Edit " + editing.name, "form-title");
+  // An older prescription they still take: what it said, to check against.
+  var older = state.draft && !editing ? state.draft.older : null;
+  if (older) note(form, "Your older prescription" + (older.date ? ", " + dateText(older.date) + "," : "") + (older.said ? " said: " + older.said + "." : " didn't say how to take it.") + " Choose what you take now.");
   var picked = null;
   var timer = null;
   var search = latestOnly(searchDrugs);
@@ -1196,6 +1229,7 @@ function drawAddForm(section) {
   }
   function keepDraft() {
     state.draft = { name: name.value, picked: picked, dose: dose.draft(), often: often.draft() };
+    if (older) state.draft.older = older;
   }
   form.addEventListener("input", keepDraft);
   form.addEventListener("change", keepDraft);
@@ -1255,7 +1289,8 @@ function drawAddForm(section) {
       dose: dose.words(),
       frequency: often.words(),
       quantity: doseChoice ? doseChoice.quantity : null,
-      schedule: oftenChoice ? oftenChoice.schedule : null
+      schedule: oftenChoice ? oftenChoice.schedule : null,
+      older: olderFrom(older, name.value)
     };
     var addition = editing ? editedAddition(editing, values) : makeAddition(values, new Date());
     if (editing && unchanged(editing, addition)) {
@@ -1510,22 +1545,24 @@ function drawStopped(parent, arranged) {
   });
 }
 
-// Medicines from the records or fills that the patient takes only when
-// needed, like pain medicine after surgery. They're still current: they
-// count on home and go in the QR code, marked as needed.
-function drawAsNeeded(parent, arranged) {
-  var asNeeded = arranged.current.filter(function (entry) { return entry.asNeededAt; });
-  if (!asNeeded.length) return;
+// Medicines taken only when needed, like pain medicine after surgery: the records
+// say so, the patient marked them, or added them that way. They're still current:
+// they count on home and go in the QR code. Each says who said it.
+function drawAsNeeded(parent, arranged, additions) {
+  var asNeeded = arranged.current.filter(isAsNeeded);
+  var added = additions.filter(isAsNeeded);
+  if (!asNeeded.length && !added.length) return;
   var section = add(parent, "section");
   helpHeading(section, "As needed", "as-needed-heading", "About As needed", function (panel) {
     add(panel, "p", "Medicines you still take, but only when you need them, like pain medicine after surgery.");
-    add(panel, "p", "They stay on your list and in your QR code, marked as needed. Tap Undo to move one back.");
+    add(panel, "p", "They stay on your list and in your QR code, marked as needed. Each says who said so. Tap Undo to move back one you marked.");
   }, partHeading);
   var list = add(section, "ul", null, "meds");
   asNeeded.forEach(function (entry) {
     var row = medRow(list, entry);
     markButtons(row, entry);
   });
+  added.forEach(function (addition) { drawAddition(list, addition); });
 }
 
 // The QR code covers the screen: it swooshes up out of the bag and tucks
@@ -1594,7 +1631,7 @@ async function buildQr() {
         "Your allergies and reactions",
         "Your current medicines from your records, with the dose, how often, and who prescribed them",
         "Medicines you added",
-        "Medicines you take only as needed, marked that way",
+        "Medicines taken only as needed, with who said so",
         "Medicines you marked Not taking",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
         "When your medicines and allergies were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
@@ -1975,7 +2012,10 @@ function medRow(list, entry) {
 function markButtons(row, entry) {
   var actions = add(row, "div", null, "card-actions");
   if (!state.data.asNeeded) state.data.asNeeded = {};
-  if (entry.asNeededAt) {
+  // The records' own can't be moved back.
+  if (entry.prn) {
+    // Only Not taking.
+  } else if (entry.asNeededAt) {
     button(actions, "Undo", "secondary", function () {
       delete state.data.asNeeded[entry.key];
       recordChange("regular", entry.name);
@@ -2007,7 +2047,7 @@ function markButtons(row, entry) {
 
 // Fills the insurer paid for that the health record doesn't list.
 function drawFillsOnly(parent, arranged) {
-  var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims" && !entry.asNeededAt; });
+  var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims" && !isAsNeeded(entry); });
   if (!fillsOnly.length) return;
   var section = add(parent, "section");
   helpHeading(section, "Filled, not in your records", "fills-heading", "About Filled, not in your records", function (panel) {

@@ -245,7 +245,7 @@ export function claimsLabel(fills) {
 
 // What the record calls a prescription that was filled anyway. Lists saved
 // before Brown Bag kept the status just say "Not current".
-var STATUS_WORDS = { completed: "completed", stopped: "stopped", cancelled: "canceled", "not-taken": "not taken" };
+export var STATUS_WORDS = { completed: "completed", stopped: "stopped", cancelled: "canceled", "not-taken": "not taken" };
 
 export function completedLine(date, status) {
   var word = STATUS_WORDS[status];

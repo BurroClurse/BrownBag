@@ -46,6 +46,12 @@ export function arrangeList(split, data) {
   return { current: current, older: split.older, stopped: stopped };
 }
 
+// Taken only when needed: the records say so, the patient marked it, or they
+// added it that way (the picked answer, never words they typed).
+export function isAsNeeded(entry) {
+  return Boolean(entry.asNeededAt || entry.prn || (entry.schedule && entry.schedule.asNeeded));
+}
+
 // What goes on the QR code: older prescriptions are left off (spec).
 export function shareListFrom(patient, arranged, additions) {
   return {
@@ -60,7 +66,7 @@ export function shareListFrom(patient, arranged, additions) {
 export function emptyRecordsText(split, arranged) {
   // Medicines only the insurer knows about have their own section.
   var fromRecords = function (entry) { return entry.origin !== "claims"; };
-  if (arranged.current.some(function (entry) { return fromRecords(entry) && !entry.asNeededAt; })) return null;
+  if (arranged.current.some(function (entry) { return fromRecords(entry) && !isAsNeeded(entry); })) return null;
   if (arranged.current.some(fromRecords)) return "Your current medicines are under As needed.";
   if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records Not taking.";
   if (split.older.some(fromRecords)) return "No current medicines in your records.";
@@ -69,6 +75,7 @@ export function emptyRecordsText(split, arranged) {
 
 // Where a medicine goes when "I stopped this" is undone.
 export function backToList(entry) {
+  if (entry.prn) return { name: "As needed", focusId: "as-needed-heading" };
   return entry.origin === "claims"
     ? { name: "Filled, not in your records", focusId: "fills-heading" }
     : { name: "From your records", focusId: "records-heading" };
@@ -89,7 +96,7 @@ export function makeAddition(input, now) {
   if (!name) {
     throw new Error("An addition needs a name.");
   }
-  return {
+  var addition = {
     id: randomId(),
     rxcui: input.rxcui ? String(input.rxcui) : null,
     name: name,
@@ -100,6 +107,9 @@ export function makeAddition(input, now) {
     schedule: input.schedule || null,
     addedAt: localDate(now)
   };
+  // An older prescription they say they still take.
+  if (input.older) addition.older = input.older;
+  return addition;
 }
 
 // Wraps a search so only the newest call's answer counts. Typing "Ibupro"

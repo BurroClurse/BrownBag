@@ -4,6 +4,7 @@
 
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { makeAddition } from "./view.js";
+import { olderDate } from "./older.js";
 
 function labels(choices) {
   return choices.map(function (choice) { return choice.label; });
@@ -25,6 +26,23 @@ export function draftFrom(addition) {
   };
 }
 
+// "I'm taking this" on an older prescription: the name only. The old dose is
+// shown beside the form (said), never filled in, because it may be wrong now.
+export function draftFromOlder(entry) {
+  return {
+    name: entry.name,
+    picked: entry.rxcui ? { rxcui: entry.rxcui, name: entry.name } : null,
+    dose: pickFor(null, []),
+    often: pickFor(null, []),
+    older: { key: entry.key, name: entry.name, date: olderDate(entry), said: [entry.dose, entry.route, entry.frequency].filter(Boolean).join(" · ") || null }
+  };
+}
+
+// What's kept with the medicine, while it's still that medicine.
+export function olderFrom(older, name) {
+  return older && older.name === String(name).trim() ? { key: older.key, date: older.date } : null;
+}
+
 function said(answer) {
   return answer.choice === "other" ? "other:" + answer.other.trim() : answer.choice;
 }
@@ -41,6 +59,7 @@ export function editedAddition(original, values) {
   if (!next.rxcui && next.name === original.name) next.rxcui = original.rxcui;
   if (!next.quantity && next.dose === original.dose) next.quantity = original.quantity || null;
   if (!next.schedule && next.frequency === original.frequency) next.schedule = original.schedule || null;
+  if (original.older && next.name === original.name) next.older = original.older;
   next.id = original.id;
   next.addedAt = original.addedAt;
   return next;

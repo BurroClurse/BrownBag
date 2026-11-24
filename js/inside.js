@@ -19,7 +19,7 @@ export function drawInside(parent, groups, made) {
   if (groups.fromRecords.length) items(parent, "From records", groups.fromRecords);
   else lines(parent, [(recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   items(parent, "Filled, not in the health record", groups.fromClaims);
-  items(parent, "Only as needed", groups.patientSaysAsNeeded);
+  items(parent, "As needed", groups.asNeeded);
   items(parent, "Added by patient", groups.addedByPatient);
   items(parent, "Not taking", groups.patientSaysStopped);
   return title;

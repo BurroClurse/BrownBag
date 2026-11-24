@@ -129,7 +129,7 @@ function medicineWords(groups) {
   if (groups.fromRecords.length) list(words, "From records", groups.fromRecords);
   else words.push(["p", (recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   list(words, "Filled, not in the health record", groups.fromClaims);
-  list(words, "Patient takes only as needed", groups.patientSaysAsNeeded);
+  list(words, "As needed", groups.asNeeded);
   list(words, "Added by patient", groups.addedByPatient);
   list(words, "Patient says not taking", groups.patientSaysStopped);
   return words;

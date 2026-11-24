@@ -7,7 +7,7 @@
 
 import { fillNote, completedNote } from "./claims.js";
 import { holdText } from "./meds.js";
-import { dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
+import { olderText, dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -46,6 +46,10 @@ var CLAIMS_ONLY_NOTE = "Filled, not in the health record";
 // On hold in the record. The words travel too, for an older staff page.
 var HOLD_NOTES = { all: "On hold in the records", some: "One record has this on hold" };
 var HOLD_STATUS = { all: "on-hold", some: "unknown" };
+// The records say as needed. Its own note: the coded part doesn't always fit.
+var RECORDS_AS_NEEDED_NOTE = "Records say: as needed";
+// An addition that was an older prescription.
+var OLDER_NOTE = "From an older prescription";
 export var AS_NEEDED_NOTE = "Patient says: takes only when needed";
 
 // level: how much of what the record says in codes goes. 2: all of it. 1: no
@@ -84,12 +88,17 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
       statement.dosage = statement.dosage || [{}];
       statement.dosage[0].asNeededBoolean = true;
       statement.note.push({ text: AS_NEEDED_NOTE });
+    } else if (item.prn) {
+      statement.dosage = statement.dosage || [{}];
+      statement.dosage[0].asNeededBoolean = true;
+      statement.note.push({ text: RECORDS_AS_NEEDED_NOTE });
     }
     entries.push({ resource: statement });
   });
   list.additions.forEach(function (addition) {
     var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", withUnitCode(addition, level));
     statement.informationSource = SELF;
+    if (addition.older) statement.note = [{ text: OLDER_NOTE + (addition.older.date ? ", " + addition.older.date : "") }];
     entries.push({ resource: statement });
   });
   list.stopped.forEach(function (item) {
@@ -158,7 +167,7 @@ export function groupShareBundle(bundle) {
     unnamed: unnamed ? (/^[1-9]\d{0,3}$/.test(unnamed.display) ? Number(unnamed.display) : 1) : 0,
     fromRecords: [],
     fromClaims: [],
-    patientSaysAsNeeded: [],
+    asNeeded: [],
     addedByPatient: [],
     patientSaysStopped: [],
     allergies: allergyTags(tags)
@@ -179,7 +188,11 @@ export function groupShareBundle(bundle) {
     var name = (resource.medicationCodeableConcept && resource.medicationCodeableConcept.text) || "Unnamed medicine";
     var fromPatient = resource.informationSource && resource.informationSource.reference === SELF.reference;
     var fromClaims = resource.informationSource && !resource.informationSource.reference && resource.informationSource.display;
-    var asNeeded = (resource.note || []).some(function (note) { return note.text === AS_NEEDED_NOTE; });
+    var noted = function (text) { return (resource.note || []).some(function (note) { return note.text === text; }); };
+    var who = null;
+    if (fromPatient) who = resource.dosage && resource.dosage[0] && resource.dosage[0].asNeededBoolean === true ? "Added by patient" : null;
+    else if (noted(AS_NEEDED_NOTE)) who = "Patient says as needed";
+    else if (noted(RECORDS_AS_NEEDED_NOTE)) who = "Records say as needed";
     var stopped = resource.status === "stopped";
     var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped));
     var coded = ((resource.medicationCodeableConcept && resource.medicationCodeableConcept.coding) || []).filter(function (c) { return c.system === RXNORM && c.code; })[0];
@@ -188,8 +201,10 @@ export function groupShareBundle(bundle) {
       var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
       if (stoppedOn) row.facts.unshift(["Not taking since", dateText(stoppedOn)]);
       groups.patientSaysStopped.push(row);
-    } else if (!fromPatient && asNeeded) {
-      groups.patientSaysAsNeeded.push(row);
+    } else if (who) {
+      row.facts.push(["Who says", who]);
+      row.added = Boolean(fromPatient);
+      groups.asNeeded.push(row);
     } else if (fromPatient) {
       groups.addedByPatient.push(row);
     } else if (fromClaims) {
@@ -579,12 +594,14 @@ function cardFrom(resource, added) {
   (resource.note || []).forEach(function (note) {
     var text = String(note.text || "");
     var found;
-    if (text === AS_NEEDED_NOTE || text === CLAIMS_ONLY_NOTE) return;
+    if (text === AS_NEEDED_NOTE || text === RECORDS_AS_NEEDED_NOTE || text === CLAIMS_ONLY_NOTE) return;
     if (text === HOLD_NOTES.all || text === HOLD_NOTES.some) {
       card.flags.push(text);
       return;
     }
-    if ((found = /^From records: (.+)$/.exec(text))) source.push(["Source", found[1]]);
+    if (text === OLDER_NOTE) card.facts.push(["From", olderText(null)]);
+    else if ((found = /^From an older prescription, (\d{4}\S*)$/.exec(text))) card.facts.push(["From", olderText(found[1])]);
+    else if ((found = /^From records: (.+)$/.exec(text))) source.push(["Source", found[1]]);
     else if ((found = /^Prescribed by (.+)$/.exec(text))) card.facts.push(["Prescribed by", found[1]]);
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
     else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
@@ -644,7 +661,7 @@ async function transform(bytes, stream) {
 
 // The same number as the home button: current, filled and added.
 export function shareMedicineCount(groups) {
-  return groups.fromRecords.length + (groups.fromClaims || []).length + (groups.patientSaysAsNeeded || []).length + groups.addedByPatient.length;
+  return groups.fromRecords.length + (groups.fromClaims || []).length + (groups.asNeeded || []).length + groups.addedByPatient.length;
 }
 
 // What staff are told about the medicines that aren't listed, right under the
@@ -664,21 +681,27 @@ export function recordsPartial(groups) {
   return Boolean(groups.incomplete || (groups.unnamed && !groups.fromRecords.length));
 }
 
+// The ones under As needed that the patient didn't add.
+function othersAsNeeded(groups) {
+  return groups.asNeeded.filter(function (row) { return !row.added; });
+}
+
 // What an empty part says. "None" only when that much is known.
 export function emptyPartText(groups, part) {
   if (part === "records") {
     if (groups.incomplete) return "None loaded.";
-    if (!groups.unnamed) return "No medicines from records.";
-    return (groups.patientSaysAsNeeded || []).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
+    if (!groups.unnamed) return othersAsNeeded(groups).length ? "All under As needed." : "No medicines from records.";
+    return othersAsNeeded(groups).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
   }
   if (groups.ownMissing) return "Couldn't be opened.";
+  if (part === "added" && groups.asNeeded.length > othersAsNeeded(groups).length) return "All under As needed.";
   return part === "added" ? "Nothing added by the patient." : "Nothing marked not taking.";
 }
 
 // Some of it didn't load, or no record has a medicine name: no number, which
 // would read as the whole.
 export function medicinesTitle(groups) {
-  return groups.incomplete || (recordsPartial(groups) && !(groups.patientSaysAsNeeded || []).length) ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
+  return groups.incomplete || (recordsPartial(groups) && !othersAsNeeded(groups).length) ? "Medicines" : "Medicines (" + shareMedicineCount(groups) + ")";
 }
 
 export function timeText(timestamp) {

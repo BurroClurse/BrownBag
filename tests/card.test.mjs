@@ -105,12 +105,12 @@ test("staff see the dose of what the patient added, marked As needed or not taki
   const addition = makeAddition({ name: "Amoxicillin", dose: "5 mL", frequency: "3 times a day" }, NOW);
   assert.deepEqual(share({ additions: [addition] }).addedByPatient[0].take, [["Dose", "5 mL"], ["How often", "3 times a day"]]);
   const onlyOften = makeAddition({ name: "Ibuprofen", frequency: "As needed", schedule: { asNeeded: true } }, NOW);
-  assert.deepEqual(share({ additions: [onlyOften] }).addedByPatient[0].take, [["How often", "As needed"]]);
+  assert.deepEqual(share({ additions: [onlyOften] }).asNeeded[0].take, [["How often", "As needed"]]);
   const onlyDose = makeAddition({ name: "Zinc", dose: "1 tablet", quantity: { value: 1, unit: "tablet" } }, NOW);
   assert.deepEqual(share({ additions: [onlyDose] }).addedByPatient[0].take, [["Dose", "1 tablet"]]);
   // Typed, with nothing to say which it is: no guess.
   assert.deepEqual(share({ additions: [makeAddition({ name: "Zinc", dose: "a pinch" }, NOW)] }).addedByPatient[0].take, [["Directions", "a pinch"]]);
-  assert.deepEqual(share({ current: [item({ asNeededAt: "2026-11-20" })] }).patientSaysAsNeeded[0].take, [["Dose", "1 tablet"], ["How taken", "Oral"], ["How often", "once a day"]]);
+  assert.deepEqual(share({ current: [item({ asNeededAt: "2026-11-20" })] }).asNeeded[0].take, [["Dose", "1 tablet"], ["How taken", "Oral"], ["How often", "once a day"]]);
   const stopped = share({ stopped: [item({ stoppedAt: "2026-10-01" })] }).patientSaysStopped[0];
   assert.deepEqual(stopped.take, [["Dose", "1 tablet"], ["How taken", "Oral"], ["How often", "once a day"]]);
   assert.deepEqual(stopped.facts, [["Not taking since", "Oct 1, 2026"]]);

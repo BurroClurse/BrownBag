@@ -52,7 +52,9 @@ only, no real patients). To open it as a certain patient, see
   buttons: **As needed** moves it to its own group, still on the list, for
   one taken only when needed (pain medicine after surgery, say), and **Not
   taking** moves it to Not taking, for one finished or stopped. Either can
-  be undone.
+  be undone. Ones the records or the patient's own answer say are as needed are
+  under As needed too, each saying who said so. On an older prescription, **I'm
+  taking this** asks first, then opens the add form with the name only.
 - **Allergies** come first on My medicines, in their own box, apart from the
   medicines: the ones in their records and
   their own, each with the reaction and who says so. They can add an
@@ -209,6 +211,7 @@ The list never passes through a server.
 | `js/options.js` | What More options offers, in groups. |
 | `js/edit.js` | Changing a medicine the patient added. |
 | `js/sort.js` | The order of My medicines, and the short name on home. |
+| `js/older.js` | Older prescriptions the patient says they still take. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |
 | `js/signed-out.js` | When a signed-out phone can open its saved list: only with no signal. |
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |

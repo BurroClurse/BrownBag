@@ -282,8 +282,8 @@ test("an As needed medicine stays active, says so in FHIR, and gets its own staf
   assert.ok(oxy.note.some((n) => n.text === AS_NEEDED_NOTE));
   const groups = groupShareBundle(bundle);
   assert.deepEqual(groups.fromRecords.map((r) => r.name), ["lisinopril 10 MG Oral Tablet"]);
-  assert.deepEqual(groups.patientSaysAsNeeded.map((r) => r.name), ["oxycodone 5 MG Oral Tablet"]);
-  const texts = groups.patientSaysAsNeeded[0].facts.map(([, text]) => text);
+  assert.deepEqual(groups.asNeeded.map((r) => r.name), ["oxycodone 5 MG Oral Tablet"]);
+  const texts = groups.asNeeded[0].facts.map(([, text]) => text);
   assert.ok(!texts.includes(AS_NEEDED_NOTE));
   assert.ok(texts.includes("SMART sandbox"));
 });

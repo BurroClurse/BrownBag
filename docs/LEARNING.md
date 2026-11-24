@@ -1691,6 +1691,24 @@ page.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 55. Who said "as needed", and older prescriptions (`js/view.js`, `js/older.js`)
+
+**What changed.** Everything taken only when needed is under As needed, saying who
+said so. An older prescription has "I'm taking this".
+
+**Use the field, not the words.** FHIR has `asNeededBoolean` and
+`asNeededCodeableConcept`. "Not as needed" has the words too, so words alone never
+move a medicine. Every direction has to say it, and so does every current record
+that was merged into the card.
+
+**A note travels when codes don't fit.** A long list drops codes to keep the QR code
+readable. So "Records say: as needed" goes as a note as well, at every size.
+
+**Don't fill in an old dose.** The form opens with the name only and shows the old
+directions beside it. The patient chooses what they take now.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

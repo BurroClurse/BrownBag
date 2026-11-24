@@ -72,8 +72,6 @@ Decided for later, so nothing to test until they're picked up:
   the code made these dense codes fail far more often in a simulated
   camera test, even at error-correction level H. If it comes back, try the
   bag beside the code instead, and check it fits short iPhone screens.
-- Medicines the patient adds with How often "As needed" stay under Added by
-  me, not in the As needed part. Tyler hasn't said whether to move them.
 - Epic and Aetna: later; Medicare: being designed. See
   [`SANDBOXES.md`](SANDBOXES.md).
 
@@ -236,3 +234,7 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   the real sandbox (Chantell Bartell, Bret Hayes) and RxNav: sign-in, fills, name
   search, update with the pass, QR code, the staff page, the saved file, backups.
   Other servers, inline scripts and eval were blocked. Passed.
+- 2026-11-24, As needed from records and "I'm taking this", before publishing: the
+  test browser and both virtual phones (the As needed part, Not taking and back, the
+  popup, the form, interrupted and edited, See what's inside, the file). Passed.
+  Staff page grouping by tests.

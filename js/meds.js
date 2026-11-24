@@ -36,6 +36,7 @@ export function fromMedicationRequest(resource, sourceName, medications = new Ma
     prescriber: (resource.requester && resource.requester.display) || null,
     sourceName: sourceName,
     recordStatus: resource.status || null,
+    prn: allAsNeeded(resource.dosageInstruction),
     current: CURRENT_REQUEST.indexOf(resource.status) !== -1,
     coded: { codes: drug.codes, dosage: codedDosage(resource.dosageInstruction) }
   });
@@ -55,6 +56,7 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
     prescriber: null,
     sourceName: sourceName,
     recordStatus: resource.status || null,
+    prn: allAsNeeded(resource.dosage),
     // "unknown" with no end date stays on the main list: hiding it under
     // Older would leave it off the QR code (real sandbox data has these).
     current: CURRENT_STATEMENT.indexOf(resource.status) !== -1 ||
@@ -116,6 +118,7 @@ export function dedupe(items) {
     shown.status = group.status === "current" || item.status === "current" ? "current" : "older";
     shown.firstDate = earliest(group.firstDate, item.firstDate);
     shown.hold = joinHolds(group, item);
+    shown.prn = joinAsNeeded(group, item, shown.prn);
     groups.set(item.key, shown);
   });
   return Array.from(groups.values());
@@ -132,6 +135,13 @@ function joinHolds(a, b) {
   if (a.status !== "current") return holdText(b);
   if (b.status !== "current") return holdText(a);
   return holdText(a) === holdText(b) ? holdText(a) : "some";
+}
+
+// As needed only when all the current ones are: one taken every day counts.
+function joinAsNeeded(a, b, shown) {
+  if (a.status === "current" && b.status === "current") return Boolean(a.prn && b.prn);
+  if (a.status === "current") return a.prn;
+  return b.status === "current" ? b.prn : shown;
 }
 
 function earliest(a, b) {
@@ -246,6 +256,7 @@ function makeItem(parts) {
     status: parts.current ? "current" : "older",
     recordStatus: parts.recordStatus,
     origin: "records",
+    prn: parts.prn,
     // What the record says in codes, for the QR code. Never shown.
     fhir: parts.coded,
     lastDate: parts.lastDate,
@@ -437,6 +448,13 @@ function asNeededWords(dosage) {
     return "as needed" + (why ? " for " + why : "");
   }
   return dosage.asNeededBoolean ? "as needed" : null;
+}
+
+// Every direction says as needed, in the field for it. Words alone don't count:
+// they can say the opposite.
+function allAsNeeded(dosageInstruction) {
+  var entries = (Array.isArray(dosageInstruction) ? dosageInstruction : []).filter(Boolean);
+  return entries.length > 0 && entries.every(function (entry) { return Boolean(asNeededWords(entry)); });
 }
 
 function conceptWords(concept) {

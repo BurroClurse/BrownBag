@@ -40,7 +40,7 @@ test("everything the staff page says about each medicine and allergy is there", 
   const groups = groupsOf(LIST, FINE);
   const text = draw(drawInside, groups).textContent;
   let checked = 0;
-  for (const part of ["fromRecords", "fromClaims", "patientSaysAsNeeded", "addedByPatient", "patientSaysStopped"]) {
+  for (const part of ["fromRecords", "fromClaims", "asNeeded", "addedByPatient", "patientSaysStopped"]) {
     assert.ok(groups[part].length, part);
     for (const row of groups[part]) {
       assert.ok(text.includes(row.name), row.name);

@@ -28,8 +28,8 @@ export function drawShareList(parent, groups, level) {
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
   }
-  if (groups.patientSaysAsNeeded && groups.patientSaysAsNeeded.length) {
-    part(block, "Patient takes only as needed", groups.patientSaysAsNeeded, "", level + 2);
+  if (groups.asNeeded && groups.asNeeded.length) {
+    part(block, "As needed", groups.asNeeded, "", level + 2);
   }
   part(block, "Added by patient", groups.addedByPatient, emptyPartText(groups, "added"), level + 2, groups.ownMissing);
   part(block, "Patient says not taking", groups.patientSaysStopped, emptyPartText(groups, "stopped"), level + 2, groups.ownMissing);

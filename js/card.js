@@ -45,6 +45,10 @@ export function fillRowsFrom(count, last, label) {
 
 var HOLDS = { all: "On hold in your records", some: "One of your records has this on hold" };
 
+export function olderText(date) {
+  return "An older prescription" + (date ? ", " + dateText(date) : "");
+}
+
 // claimsLoaded: "No fill found" never shows just because the claims couldn't
 // be read.
 export function patientCard(entry, claimsLoaded) {
@@ -62,8 +66,11 @@ export function patientCard(entry, claimsLoaded) {
   if (change) say("Dose change", change.from + " to " + change.to + (change.date ? ", " + dateText(change.date) : ""));
   if (claimsLoaded) facts = facts.concat(fillRows(entry.fills));
   say("Added", entry.addedAt && dateText(entry.addedAt));
+  say("From", entry.older && olderText(entry.older.date));
   if (fromRecords) say("Source", entry.source);
   say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
+  if (entry.prn) say("Who says", "Your records say as needed");
+  else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
   return {
     take: takeRows(entry.dose, entry.route, entry.frequency),
     flags: [HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean),
