@@ -256,6 +256,9 @@ button.secondary.big, .button.secondary.big { border-color: var(--teal); }
 .home-actions { flex: none; }
 .home-disclaimer { flex: none; margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; font-size: 0.95rem; line-height: 1.35; }
 .home-actions .big { margin-top: 0.5rem; }
+/* The main thing to do here is bigger; the bag gives up the room. */
+#show-qr { min-height: 84px; font-size: 1.75rem; }
+@media (max-height: 600px) { #show-qr { min-height: 68px; } }
 #open-more { margin-top: 0.15rem; }
 #open-more { flex: none; }
 .status-line:empty { display: none; }

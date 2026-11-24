@@ -1451,6 +1451,15 @@ others. Reusing the sizes already there is what makes an app look like one app.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 40. A bigger main button (`css/brownbag.css`)
+
+**What changed.** Show my QR code on home is taller, with bigger words.
+
+**Size says what matters.** Two buttons of the same size look equally important.
+The bag is the part that shrinks, so home still fits one screen.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

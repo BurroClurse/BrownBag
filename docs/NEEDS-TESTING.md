@@ -67,6 +67,9 @@ The staff page changed, so it goes first:
 - More options with bigger text (2026-11-23): both virtual phones. Checked only in
   the test browser (320 to 1440 wide, 200 percent text).
 
+- The bigger Show my QR code button on home (2026-11-23): both virtual phones.
+  Checked only in the test browser.
+
 ## Not done yet
 
 Decided for later, so nothing to test until they're picked up:
