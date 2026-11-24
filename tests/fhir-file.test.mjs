@@ -14,6 +14,7 @@ test("why a list can't be saved is said plainly", () => {
 
 test("a cancelled or failed save never says saved", () => {
   assert.equal(saveResult(null), "Saved.");
+  assert.equal(saveResult(null, true), "Check your downloads.");
   assert.equal(saveResult({ name: "AbortError" }), "Not saved.");
   assert.equal(saveResult(new Error("x")), "Couldn't save the file.");
 });

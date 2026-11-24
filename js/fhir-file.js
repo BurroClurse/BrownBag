@@ -17,8 +17,8 @@ export var UNLOCKED = {
   patient: "Anyone who opens this file can read your name, birth date, allergies and medicines. Give it only to people you trust, and delete it when you're done."
 };
 
-export function saveResult(error) {
-  if (!error) return "Saved.";
+export function saveResult(error, downloaded) {
+  if (!error) return downloaded ? "Check your downloads." : "Saved.";
   return error.name === "AbortError" ? "Not saved." : "Couldn't save the file.";
 }
 
@@ -39,12 +39,13 @@ export function drawSaveFile(parent, bundle, warning) {
     status.textContent = "";
     ask(button, warning, async function () {
       var error = null;
+      var downloaded = false;
       try {
-        await saveFile(bundle);
+        downloaded = await saveFile(bundle);
       } catch (problem) {
         error = problem;
       }
-      status.textContent = saveResult(error);
+      status.textContent = saveResult(error, downloaded);
     });
   });
 }
@@ -64,7 +65,7 @@ function ask(opener, warning, save) {
 async function saveFile(bundle) {
   var summary = patientSummary(bundle, { now: new Date(), uuid: newId });
   var file = new File([JSON.stringify(summary, null, 2)], summaryFileName(bundle), { type: "application/json" });
-  await saveToDevice(file);
+  return saveToDevice(file);
 }
 
 // A random id (RFC 4122, version 4).

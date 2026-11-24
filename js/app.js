@@ -17,13 +17,14 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
-import { readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, ALLERGENS, REACTIONS } from "./allergies.js";
+import { readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
 import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
+import { swipeAway } from "./swipe.js";
 import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
 import { saveToDevice } from "./save-file.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
@@ -92,7 +93,7 @@ var state = {
 };
 
 function emptyData() {
-  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, noKnownAllergies: null };
+  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, unnamedAre: {}, noKnownAllergies: null };
 }
 
 // Locks Brown Bag again after 5 minutes without a tap, or 5 minutes away
@@ -720,10 +721,7 @@ function drawHome(arranged) {
 function drawMedicines(arranged) {
   // The one being edited was removed.
   if (state.editing && !editedNow()) closeAddForm();
-  var top = add(root, "div", null, "screen-top");
-  button(top, "Done", "secondary big", function () {
-    go("home", "open-medicines");
-  }).id = "medicines-done";
+  medicinesDone("screen-top", "medicines-done");
   var title = add(root, "h1", "My medicines");
   title.id = "medicines-heading";
   title.tabIndex = -1;
@@ -742,6 +740,14 @@ function drawMedicines(arranged) {
   drawAsNeeded(block, arranged, sorted.additions);
   drawAdditions(block, sorted.additions);
   drawStopped(block, arranged);
+  // At the end too, so a long list needn't be scrolled back.
+  medicinesDone("screen-bottom", "medicines-done-end");
+}
+
+function medicinesDone(where, id) {
+  button(add(root, "div", null, where), "Done", "secondary big", function () {
+    go("home", "open-medicines");
+  }).id = id;
 }
 
 function drawMore() {
@@ -821,7 +827,7 @@ function drawAllergies(parent) {
   }
   var list = arranged.count ? add(section, "ul", null, "meds") : null;
   arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
-  var unsaid = unspecifiedText(arranged.unspecified, arranged.count, arranged.unnamed);
+  var unsaid = unspecifiedText(arranged.open.length, arranged.count, arranged.open.map(function (entry) { return entry.details; }));
   if (unsaid) note(section, unsaid);
   if (state.lastRemovedAllergy) drawAllergyUndo(section);
   if (state.allergyForm === "new") {
@@ -850,13 +856,41 @@ function drawAllergyCard(list, card) {
   var open = function () { openAllergyForm(card.key, "allergy-reaction"); };
   if (card.origin === "records" && !card.mine && !card.reactions.length) {
     button(row, "Add the reaction", "secondary card-action", open, "Add the reaction: " + card.name);
-  } else if (card.origin === "records" && card.mine) {
-    button(row, "Change the reaction", "secondary card-action", open, "Change the reaction: " + card.name);
   }
-  if (card.mine) {
-    var label = card.origin === "added" ? "Remove" : (card.mine.ids.length ? "Remove mine" : "Remove my reaction");
-    button(row, label, "stop card-action", function () { removeMyPart(card); }, label + ": " + card.name);
+  if (!card.mine) return;
+  // Nothing left to do, so the buttons are folded away.
+  var more = add(row, "details", null, "card-more");
+  add(more, "summary", "Edit").setAttribute("aria-label", "Edit: " + card.name);
+  var actions = add(more, "div", null, "card-actions");
+  button(actions, "Change the reaction", "secondary", open, "Change the reaction: " + card.name);
+  var label = card.origin === "added" ? "Remove" : (card.mine.ids.length ? "Remove mine" : "Remove my reaction");
+  button(actions, label, "stop", function () { removeMyPart(card); }, label + ": " + card.name);
+  if (card.unnamedKeys.length) {
+    button(actions, "Show the note again", "secondary", function () {
+      card.unnamedKeys.forEach(function (key) { delete state.data.unnamedAre[key]; });
+      allergySaved("The note about the unnamed allergy is back.", "allergies-heading");
+    });
   }
+}
+
+// After an allergy is added. It starts on No: a yes takes a note off the screen.
+function askUnnamed(own) {
+  var entries = couldBe(own.name, arrangeAllergies(state.allergies, state.data));
+  if (!entries.length || state.screen !== "medicines") return;
+  var question = unnamedQuestion(own.name, entries);
+  var popup = openPopup(document.body, question.title, document.getElementById("allergy-add-open"));
+  question.lines.forEach(function (text) { popupLine(popup.inner, text); });
+  var keep = popupButton(popup.inner, "No, keep the note", "secondary");
+  keep.addEventListener("click", popup.close);
+  question.yes.forEach(function (text, i) {
+    popupButton(popup.inner, text, "primary").addEventListener("click", function () {
+      popup.close();
+      if (!state.data.unnamedAre) state.data.unnamedAre = {};
+      state.data.unnamedAre[entries[i].key] = own.id;
+      allergySaved("Note removed. Staff still see the record, with your answer.", "allergies-heading");
+    });
+  });
+  keep.focus();
 }
 
 // Everything the patient said about this allergy: their own entry, or the
@@ -896,7 +930,7 @@ function allergyChange(kind, name, record) {
 function allergySaved(announce, focusId) {
   state.announce = announce;
   state.focusId = focusId;
-  save();
+  return save();
 }
 
 function closeAllergyForm() {
@@ -983,11 +1017,11 @@ function drawAllergyForm(parent, arranged, card) {
       state.data.noKnownAllergies = null;
       allergyChange("none-unsaid", "No known allergies");
     }
-    var id = makeAddition({ name: name }, new Date()).id;
-    state.data.allergies.push({ id: id, name: name, rxcui: (picked && picked.rxcui) || null, reaction: happened, addedAt: today() });
+    var own = { id: makeAddition({ name: name }, new Date()).id, name: name, rxcui: (picked && picked.rxcui) || null, reaction: happened, addedAt: today() };
+    state.data.allergies.push(own);
     allergyChange("allergy-added", name);
     closeAllergyForm();
-    allergySaved(name + " added to your allergies.", "allergy-add-open");
+    allergySaved(name + " added to your allergies.", "allergy-add-open").then(function () { askUnnamed(own); });
   });
 }
 
@@ -1681,6 +1715,7 @@ async function buildQr() {
       stops[next].focus();
     }
   });
+  swipeAway(overlay, function () { closeQr(); });
   document.body.appendChild(overlay);
   root.inert = true;
   root.setAttribute("aria-hidden", "true");
@@ -1977,8 +2012,8 @@ async function shareBackup(text) {
   var said;
   try {
     var file = new File([text], backupFileName(new Date()), { type: "application/json" });
-    await saveToDevice(file);
-    said = "Backup saved as " + file.name + ".";
+    var downloaded = await saveToDevice(file);
+    said = downloaded ? "Check your downloads for " + file.name + "." : "Backup saved as " + file.name + ".";
   } catch (error) {
     said = error && error.name === "AbortError" ? "Backup cancelled." : "Couldn't save the backup.";
   }

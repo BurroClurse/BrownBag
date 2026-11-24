@@ -42,7 +42,7 @@ test("a share already open is not downloaded too", async () => {
 test("the FHIR file and the backup both save this way", () => {
   for (const name of ["js/fhir-file.js", "js/app.js"]) {
     const code = readFileSync(new URL("../" + name, import.meta.url), "utf8");
-    assert.match(code, /await saveToDevice\(file\)/);
+    assert.match(code, /(await|return) saveToDevice\(file\)/);
     assert.doesNotMatch(code, /navigator\.share\(/);
   }
 });

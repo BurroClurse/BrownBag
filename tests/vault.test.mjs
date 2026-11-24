@@ -54,7 +54,7 @@ test("stored text does not contain the medicine name", async () => {
 });
 
 test("nothing stored gives empty patient data", async () => {
-  assert.deepEqual(await loadPatientData(memoryStorage(), await keyA, "p1"), { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, noKnownAllergies: null });
+  assert.deepEqual(await loadPatientData(memoryStorage(), await keyA, "p1"), { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, unnamedAre: {}, noKnownAllergies: null });
 });
 
 test("two patients are stored separately", async () => {

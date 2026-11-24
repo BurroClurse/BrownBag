@@ -1757,6 +1757,24 @@ real button on the live site found it.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+---
+
+## Step 59: Answering a note without losing the record
+
+**What changed:** My medicines has Done at the end too. The QR code can be swiped
+away. An allergy's buttons fold under Edit once there's nothing left to do. After
+adding an allergy that could be the unnamed one, a popup asks.
+
+**Why:** the patient's answer is a clue, not proof. So "yes" takes the note off
+their screen, but the QR code and the FHIR file still carry the record, with
+"patient says it's Latex" on it. Who said something stays with what was said. In
+FHIR that idea is called provenance.
+
+**A swipe needs a button too.** Some people can't swipe, so WCAG asks for a way
+that takes one tap. Close stays.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

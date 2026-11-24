@@ -16,15 +16,13 @@ to patient apps. It adds pharmacy fills from insurance claims, showing what
 was actually picked up. Today it connects to the SMART Health IT sandbox
 (test patients only), whose claims stand in for an insurer's.
 
-Sign in lists the others, as the app does: **Not connected**: Epic, Oracle
-Health and MEDITECH (health systems), Medicare and Medicaid
-(insurance), and pharmacy fills. Brown Bag isn't connected to these. It may add them later. The
-test systems looked at so far, and why each fits or doesn't, are in
-[`docs/SANDBOXES.md`](docs/SANDBOXES.md).
+Sign in also names, under **Not connected**, what Brown Bag may add later:
+Epic, Oracle Health and MEDITECH (health systems), Medicare and Medicaid
+(insurance), and pharmacy fills. The test systems looked at so far, and why each
+fits or doesn't, are in [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
 
-It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox and reads FHIR R4 records.
-It is built to be simple to use: one main screen with no
-scrolling, big buttons, plain words, and WCAG 2.2 AA throughout.
+It's static pages with no backend server, built to be simple: one main screen,
+big buttons, plain words, and made to WCAG 2.2 AA.
 
 **Live:** <https://burroclurse.github.io/BrownBag/launch.html> (sandbox data
 only, no real patients). To open it as a certain patient, see
@@ -32,87 +30,57 @@ only, no real patients). To open it as a certain patient, see
 
 ## What the patient sees
 
-- **Choose where the records are.** Sign in opens a list. The SMART sandbox
-  works today, and opens a list of test patients; the health systems and insurers Brown Bag may add later show
-  in grey, under "Not connected". Signed in, the same list is under More
-  options, **Health records**, with the dates and **Update now**. It has a line for
-  insurance fills.
-- **Sign in once.** The first time, the patient signs in at their health
-  system and approves access. After that, Face ID (or a 6-digit PIN) opens
-  Brown Bag and the list updates by itself.
-- **One screen.** Their first name and last initial, the Brown Bag logo, **Show my QR code**,
-  **My medicines (N)**, and **More options**.
-- **Backups** hold what the patient added or marked, never a sign-in, and each
-  person's part is sealed to that person. Face ID or a fingerprint locks the
-  file; with a PIN, the patient chooses a long password for it.
-- **More options** is short groups, each option with one line saying what it
-  does: health records, backups, the Home Screen, and Sign out last.
-- **My medicines.** Medicines from their records (repeats merged, strengths of
-  one drug grouped, older prescriptions folded away), medicines they added
-  (checked against RxNorm). Each medicine from the records has two
-  buttons: **As needed** moves it to its own group, still on the list, for
-  one taken only when needed (pain medicine after surgery, say), and **Not
-  taking** moves it to Not taking, for one finished or stopped. Either can
-  be undone. Ones the records or the patient's own answer say are as needed are
-  under As needed too, each saying who said so. On an older prescription, **I'm
-  taking this** asks first, then opens the add form with the name only.
-- **Allergies** come first on My medicines, in their own box, apart from the
-  medicines: the ones in their records and
-  their own, each with the reaction and who says so. They can add an
-  allergy, add a reaction to one from their records, or say they have no
-  known allergies. A load that failed says so, and never looks like "none".
-- **What was actually filled.** Each medicine shows its insurance fills
-  ("Filled: 2 times, last Sep 22, 2026") or "No fill found
-  in your claims". Fills the record doesn't list get their own section,
-  and a prescription the record calls finished (completed, stopped or
-  canceled) but filled since it was written moves back to the current
-  list, saying so.
-- **Sort** puts each part of My medicines in order: A to Z, newest first, or by
-  who prescribed it. The phone remembers the choice. Staff see A to Z.
-- **Adding a medicine** starts from a button at the top of the list that stays
-  on screen while the list scrolls. It uses lists for how much and how often, so the
-  QR code carries the dose as numbers other systems can read, and asks
-  first when the medicine is already there, was marked stopped, or only
-  looks like one on the list. Each one they added has **Edit**, which opens
-  the same form filled in.
-- **The QR code** comes up out of the bag and fills the screen, for the
-  person checking their medicines. A 6-digit code, blurred until tapped, is
-  told to that person after they scan; they type it on `share.html` to see
-  the list. Two "?" buttons explain what's in the code and why the digits
-  matter. **See what's inside** opens the code on the patient's own phone,
-  read-only, as one short text with everything in it, for when nobody can scan
-  it. Both it and the staff page say when the medicines and allergies were
-  last updated and when the QR code was made.
-  A note says when insurance fills couldn't be loaded.
-- **Changed the list with no signal?** The QR code still includes the
-  change, and the QR screen lists exactly what changed since the records
-  were last updated and says to get a connection to update them.
-- **Save as FHIR file.** Staff can save the list as an
-  [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1). A
-  warning says the file isn't locked. A list where something didn't load can't
-  be saved. The patient can save the same file under See what's inside, for when
-  nobody can scan.
-- **Directions are said in full.** A record with several shows them all, in its
-  order. A schedule Brown Bag can't put in words says "See the record for how
-  often". A medicine the records have on hold says so, on the phone and to staff.
-- **No signal?** The last list is saved, encrypted, on the phone, and the QR
-  code still works. When the signal comes back, the list updates by itself, or a
-  note says to sign in again. On a slow connection, a file that doesn't arrive is
-  tried once more, and then Brown Bag says what to do.
-- **Interrupted while adding?** A half-typed medicine or allergy is kept until
-  Brown Bag locks or closes, and home says it isn't saved.
-- **Sign out** signs out everyone on the phone. Saved lists stay, locked: the
-  next open says "You're signed out", with Sign in. With no signal, it also
-  has Open my saved list, and so does a sign-in that couldn't start (hospital
-  Wi-Fi, or a health system that's down).
-- **Privacy** says what Brown Bag keeps and who can see it, in plain words:
-  <https://burroclurse.github.io/BrownBag/privacy.html>, under More options and
-  under the sign-in list.
-- **Locks itself** after 5 minutes without a tap or 5 minutes away from the
-  app. The health record connection ends after 30 days without opening it.
-- **Talks only to the sandbox and the drug name service.** Each page's content
-  security policy names the servers it may contact, so a link that names another
-  server doesn't work. The staff page can send nothing.
+**Signing in**
+- **Sign in** lists the sources. The SMART sandbox opens a list of 20 test patients.
+- After the first sign-in, Face ID, a fingerprint or a 6-digit PIN opens Brown
+  Bag and the list updates by itself. It locks after 5 minutes without a tap or
+  away, and the connection ends after 30 days unused.
+- **Sign out** is for everyone on the phone. Saved lists stay, locked.
+
+**Home** has their first name and last initial, **Show my QR code**, **My medicines
+(N)** and **More options** (Health records, backups, the Home Screen, Privacy, Sign out).
+
+**My medicines**
+- **Allergies** come first, in their own box, with each reaction and who says
+  so. The patient can add one, add or change their reaction, or say they have none
+  known. A record that names no allergen shows as a note; after adding an allergy
+  that could be it, the patient can say it is. Staff still see the record.
+- **Medicines** from the records: repeats merged, strengths of one drug grouped,
+  directions in full, on-hold ones marked, older prescriptions folded away.
+- **As needed** and **Not taking** move a medicine to its own part, with Undo.
+  **I'm taking this**, on an older prescription, asks first.
+- **Filled**: how many times, and when last, from insurance claims. A prescription
+  the record calls finished but filled since is current again, and says so. Fills the
+  record doesn't list get their own part.
+- **Add a medicine** uses lists for how much and how often, checks the name
+  against RxNorm, and asks when it's already there or looks like one that is.
+  Added ones can be edited.
+- **Sort** by name, newest, or who prescribed it.
+
+**The QR code**
+- It fills the screen; Close or a swipe puts it away. After scanning, staff type 6
+  digits the patient tells them (hidden until tapped) on `share.html`.
+- **See what's inside** shows everything in the code on the patient's own phone.
+- **Save as FHIR file** (staff, or the patient under See what's inside) saves an
+  [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
+  warning that it isn't locked. A list where something didn't load can't be saved.
+- It says when the medicines and allergies were last updated. Changes made with no
+  signal are in it, and listed on the screen.
+
+**When things go wrong**
+- **No signal:** the last list is kept encrypted on the phone, and the QR code
+  works. The list updates when the signal is back, or says to sign in again.
+- **Signed out with no signal, or a sign-in that couldn't start:** Open my saved list.
+- **Interrupted while adding:** what was typed is kept until Brown Bag locks or
+  closes, and home says it isn't saved.
+- **Slow connection:** a file that doesn't arrive is tried once more, then Brown
+  Bag says what to do.
+- **New phone:** a backup holds what the patient added or marked, never a sign-in,
+  sealed to each person. With a PIN, it gets its own long password.
+
+[Privacy](https://burroclurse.github.io/BrownBag/privacy.html) says what's kept and
+who can see it. Each page's content security policy names the servers it may
+contact: the app, only the sandbox and the drug name service; the staff page, none.
 
 ## How it uses SMART and FHIR
 
@@ -139,9 +107,8 @@ Every resource scope is read-only. `offline_access` asks for a refresh token
 4. `GET MedicationStatement?patient={id}&_include=MedicationStatement:medication`, all pages.
 5. `GET ExplanationOfBenefit?patient={id}`, all pages, keeping pharmacy
    claims: the drug (RxNorm), the fill date and the insurer. It starts
-   alongside steps 3 and 4 with its own 6-second limit, and asks for no
-   more pages once that is up, so a slow insurer never holds up the
-   medicines.
+   alongside steps 3 and 4 with its own 6-second limit, so a slow insurer
+   never holds up the medicines.
 6. `GET AllergyIntolerance?patient={id}`, all pages, alongside, with its own
    6-second limit. Mistaken, ruled-out and past entries are left out.
 7. RxNav ingredient lookups, to group strengths of the same drug and match
@@ -149,10 +116,9 @@ Every resource scope is read-only. `offline_access` asks for a refresh token
 
 Nothing is written to the health record. Nothing runs on a schedule.
 
-Records whose medicine is only a placeholder word, such as "Medication",
-with no drug code, are left out of the list and the QR code; a note on My
-medicines and on the staff page says how many there were. An allergy entry
-that doesn't say what it's to gets a note the same way, with everything else it says.
+Records that name no medicine ("Medication", no drug code) are left out; a note
+on My medicines and the staff page counts them. An allergy entry that doesn't say
+what it's to gets a note too, with everything else it says.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the
 patient's own additions couldn't be loaded, or the server says it left
@@ -207,6 +173,7 @@ The list never passes through a server.
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
 | `js/ips.js`, `js/fhir-file.js` | Save as FHIR file: the International Patient Summary, and its button and warning. |
+| `js/swipe.js` | Swiping the QR code away. |
 | `js/save-file.js` | Saves that file, or a backup: the share sheet, or a download where sharing is refused. |
 | `privacy.html` | The privacy page: what Brown Bag keeps, who is contacted, and the limits of the locks. |
 | `js/test-patients.js` | The sandbox's test patients, and the sandbox address that signs in as one. |
@@ -224,15 +191,14 @@ The list never passes through a server.
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
 | `tools/` | Local https server, the demo patient script and the logo source. |
 | `docs/` | Designs, build plans, the learning log, the limits on keeping the list current, and what's waiting for a phone test. |
+| `prompts/` | A prompt that has an AI agent list the sandbox's test data. |
 | `health.html` | From the course starter; not part of Brown Bag. |
 
 ## Test patients
 
-The sandbox is public and shared. Its own sign-in page lists only the first ten
-patients on it, and anyone can add patients, so that list changes. Brown Bag
-has its own list instead: Sign in, then SMART Health IT sandbox, shows 20
-made-up patients grouped by what they show. A choice goes to the sandbox's
-approval page. **Someone else** opens the sandbox's own list.
+Sign in, then SMART Health IT sandbox, lists 20 made-up patients grouped by what
+they show. A choice goes to the sandbox's approval page. **Someone else** opens the
+sandbox's own list, which changes because anyone can add patients.
 
 These links sign in as one patient directly, with no list, no approval and no
 password:
@@ -242,16 +208,10 @@ password:
 | Chantell Bartell `e89af71d-4aa4-2237-e71d-6fa8e4b5af09` | Insurance fills, one allergy, and an allergy entry that doesn't say what it's to. | [Open as Chantell](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU4OWFmNzFkLTRhYTQtMjIzNy1lNzFkLTZmYThlNGI1YWYwOSIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
 | Loria Jenkins `e7de504a-311d-49be-b2bc-566a328bcc72` | Four current medicines, no insurance claims and no allergies. | [Open as Loria](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU3ZGU1MDRhLTMxMWQtNDliZS1iMmJjLTU2NmEzMjhiY2M3MiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
 
-**The sandbox is reset every night, and patients that people added are
-deleted.** Chantell and Loria are made-up patients that come with the
-sandbox, so they are still there after the reset and these links still work.
-Nothing you do in Brown Bag is sent back to the sandbox; what you add stays
-on your phone.
-
-**Avery Brownbag** (`brownbag-demo-patient`) is made up too, and shows every
-fill case, but is an added patient, so Avery has no link here and is usually
-not on the sandbox. `node tools/demo-patient.mjs` puts Avery there (it
-replaces, never duplicates) until the next reset.
+Chantell and Loria come with the sandbox, so its nightly reset keeps them. Added
+patients are deleted: **Avery Brownbag** (`brownbag-demo-patient`), who shows every
+fill case, is there only after `node tools/demo-patient.mjs`, until the next reset.
+Nothing done in Brown Bag is sent to the sandbox; what you add stays on your phone.
 
 ## Run the tests
 

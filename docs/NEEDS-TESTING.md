@@ -250,3 +250,7 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - 2026-11-24, Save as FHIR file and Save a backup on Android, with the real share step
   (not a stand-in): the virtual phone. Both files saved. On the live site the same day, on
   the virtual phone: sign-in, allergies, As needed, I'm taking this, offline, signed out.
+- 2026-11-24, Done at the end, swiping the QR code away, Edit on allergies, and the unnamed
+  allergy popup, before publishing: the test browser (320 to 1440 wide, 200 percent text)
+  and both virtual phones. Passed. On the iPhone the swipes were made by the page, not a
+  finger, so a real swipe there is still to check.

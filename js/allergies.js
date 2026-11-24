@@ -313,6 +313,7 @@ export function fromAllergyRecords(resources, sourceName) {
   });
   return Object.assign({ items: items, statements: statements, unspecified: blank.length }, blank.length ? {
     unnamed: blank.map(function (resource) { return unnamedDetails(resource, named); }),
+    unnamedKeys: blank.map(function (resource) { return "id:" + (resource.id || JSON.stringify(unnamedFields(resource))); }),
     unnamedFhir: blank.map(unnamedFields)
   } : {});
 }
@@ -369,7 +370,7 @@ export function keepAllergies(result, saved, now) {
 
 // None in a list saved before these were kept.
 export function unnamedOf(from) {
-  return from && from.unnamed ? { unnamed: from.unnamed, unnamedFhir: from.unnamedFhir || [] } : {};
+  return from && from.unnamed ? { unnamed: from.unnamed, unnamedFhir: from.unnamedFhir || [], unnamedKeys: from.unnamedKeys || [] } : {};
 }
 
 export function sameAllergen(name, cards) {
@@ -420,15 +421,64 @@ export function arrangeAllergies(allergies, data) {
     addMine(card, { id: own.id }, own.reaction, own.addedAt);
   });
   var none = (data && data.noKnownAllergies) || null;
+  var unnamed = unnamedEntries(allergies, data);
+  cards.forEach(function (card) {
+    card.unnamedKeys = unnamed.filter(function (entry) { return entry.own && card.mine && card.mine.ids.indexOf(entry.own.id) !== -1; }).map(function (entry) { return entry.key; });
+  });
   return {
     cards: cards.sort(byName),
     statements: allergies.statements,
     unspecified: allergies.unspecified || 0,
-    unnamed: allergies.unnamed || [],
+    // For staff: every entry, with the patient's answer on it.
+    unnamed: unnamed.map(function (entry) { return entry.own ? [entry.details, "patient says it's " + shortened(entry.own.name)].filter(Boolean).join(", ") : entry.details; }),
+    // For the patient: the ones they haven't said what it is.
+    open: unnamed.filter(function (entry) { return !entry.own; }),
     unnamedFhir: allergies.unnamedFhir || [],
     saidNone: cards.length ? null : none,
     canSayNone: !cards.length && !none && (allergies.status === "loaded" || Boolean(allergies.savedAt)),
     count: cards.length
+  };
+}
+
+// The entries with no allergen. own: the patient's allergy they said it is, for
+// as long as that's on their list.
+function unnamedEntries(allergies, data) {
+  var said = (data && data.unnamedAre) || {};
+  return Array.from({ length: allergies.unspecified || 0 }, function (_, i) {
+    var key = (allergies.unnamedKeys || [])[i] || null;
+    var id = key && Object.prototype.hasOwnProperty.call(said, key) ? said[key] : null;
+    return {
+      key: key,
+      details: (allergies.unnamed || [])[i] || "",
+      category: ((allergies.unnamedFhir || [])[i] || {}).category || [],
+      own: (id && ((data && data.allergies) || []).filter(function (a) { return a.id === id; })[0]) || null
+    };
+  });
+}
+
+function shortened(name) {
+  var plain = String(name).trim();
+  return plain.length > 60 ? plain.slice(0, 60) + "…" : plain;
+}
+
+// The unnamed entries an allergy just added could be: the same kind, or when
+// either one's kind isn't known. One with no key can't be told apart.
+export function couldBe(name, arranged) {
+  var kind = (allergenNamed(name) || {}).category;
+  return arranged.open.filter(function (entry) {
+    return entry.key && (!kind || !entry.category.length || entry.category.indexOf(kind) !== -1);
+  });
+}
+
+// What the popup asks. One Yes for each entry.
+export function unnamedQuestion(name, entries) {
+  return {
+    title: "Is " + shortened(name) + " the unnamed allergy?",
+    lines: [
+      unspecifiedSentence(entries.length, 0, "Your records", "", entries.map(function (entry) { return entry.details; })).trim(),
+      "If it is, the note comes off My medicines. Staff still see the record, with your answer."
+    ],
+    yes: entries.length === 1 ? ["Yes, remove the note"] : entries.map(function (_, i) { return "Yes, it's number " + (i + 1); })
   };
 }
 
@@ -492,7 +542,8 @@ export function detailLines(card) {
     card.highRisk ? "Marked high risk" : null,
     card.intolerance ? "Intolerance" : null,
     card.unconfirmed ? "Not confirmed" : null,
-    card.origin === "added" ? "Added by me · " + longDate(card.mine.addedAt) : card.source
+    card.origin === "added" ? "Added by me · " + longDate(card.mine.addedAt) : card.source,
+    (card.unnamedKeys || []).length ? "You said this is the unnamed allergy in your records." : null
   ].filter(Boolean);
 }
 

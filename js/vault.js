@@ -112,6 +112,7 @@ async function loadByName(storage, key, name) {
     asNeeded: data.asNeeded || {},
     allergies: data.allergies || [],
     allergyReactions: data.allergyReactions || {},
+    unnamedAre: data.unnamedAre || {},
     noKnownAllergies: data.noKnownAllergies || null
   });
 }
@@ -234,6 +235,7 @@ async function merge(storage, key, restored) {
       asNeeded: Object.assign({}, fromBackup.asNeeded || {}, onPhone.asNeeded),
       allergies: allergies,
       allergyReactions: Object.assign({}, fromBackup.allergyReactions || {}, onPhone.allergyReactions),
+      unnamedAre: Object.assign({}, fromBackup.unnamedAre || {}, onPhone.unnamedAre),
       // "No known allergies" can't stand next to an allergy.
       noKnownAllergies: allergies.length ? null : (onPhone.noKnownAllergies || fromBackup.noKnownAllergies || null),
       changes: joinChanges(onPhone.changes, fromBackup.changes)
