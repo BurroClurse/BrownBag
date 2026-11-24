@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SOURCES, TRADEMARKS, notConnected, signInLink, startFor } from "../js/sources.js";
+import { SOURCES, TRADEMARKS, leavingText, needsFreshPage, notConnected, signInLink, startFor } from "../js/sources.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -38,5 +38,28 @@ test("the trademark lines are said, in the list and in the README", () => {
 test("the list works with no signal, and a file that doesn't arrive is said", () => {
   const worker = read("sw.js");
   for (const file of ["./launch.html", "./js/sources.js", "./js/launch.js"]) assert.ok(worker.includes('"' + file + '"'), file);
-  assert.match(read("launch.html"), /onerror="[^"]+" src="js\/launch\.js"|src="js\/launch\.js" onerror="[^"]+"/);
+  // The same watcher as the app's own page: a missing file, or files that
+  // don't fit together, is tried once more and then said.
+  const watcher = (file) => /window\.addEventListener\("error"[\s\S]*?\}, true\);/.exec(read(file))[0];
+  assert.equal(watcher("launch.html"), watcher("index.html"));
+  assert.match(read("js/launch.js"), /window\.brownBagStarted = true/);
+});
+
+test("a choice on the list never carries another sign-in's address or failure", () => {
+  assert.equal(needsFreshPage("", 0), false);
+  assert.equal(needsFreshPage("?iss=https%3A%2F%2Fexample.test", 0), true);
+  assert.equal(needsFreshPage("?launch=abc", 0), true);
+  assert.equal(needsFreshPage("", 1), true);
+});
+
+test("sign-in has a time limit and never redirects on its own", () => {
+  assert.match(read("launch.html"), /noRedirect: true/);
+  assert.match(read("js/launch.js"), /SIGN_IN_WAIT_MS/);
+});
+
+test("a link to another server isn't called the sandbox", () => {
+  assert.match(leavingText("?source=smart-sandbox"), /the SMART sandbox/);
+  assert.match(leavingText(""), /the SMART sandbox/);
+  assert.doesNotMatch(leavingText("?iss=https%3A%2F%2Fexample.test%2Ffhir"), /sandbox/);
+  assert.match(leavingText("?iss=https%3A%2F%2Fexample.test%2Ffhir"), /your health system's sign-in page/);
 });

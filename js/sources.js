@@ -46,3 +46,16 @@ export function startFor(search) {
   var id = params.get("source");
   return connected().some(function (source) { return source.id === id; }) ? "sign-in" : "list";
 }
+
+// Whether a choice on the list needs a fresh page: the sign-in library reads
+// the address (a server left in it would win over the choice), and keeps the
+// address and the answers of an earlier try.
+export function needsFreshPage(search, tries) {
+  return Boolean(search) || tries > 0;
+}
+
+export function leavingText(search) {
+  return new URLSearchParams(search).get("iss")
+    ? "You are leaving this page for your health system's sign-in page. After you sign in, it sends you back here."
+    : "You are leaving this page for the SMART sandbox. Sign in there as the patient, then the sandbox sends you back here.";
+}

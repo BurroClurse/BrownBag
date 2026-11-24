@@ -1226,7 +1226,11 @@ there. So the heading says "Not connected", not "Coming soon".
 too, with the signal back: the sign-in library keeps its first answer. A fresh
 page forgets it. The test browser found this, not reading the code.
 
-**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+**Back is an input too.** A page left mid sign-in can come back exactly as it
+was. So the address is cleaned before leaving, a late answer is ignored, and
+every screen has its own way back (the Home Screen app has no Back button).
+
+**Practice in the lab:** [Watch the Flow](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#watch-the-flow).
 
 ---
 

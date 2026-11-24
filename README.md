@@ -72,7 +72,7 @@ only, no real patients). To open it as a certain patient, see
 ## How it uses SMART and FHIR
 
 **Launch.** `launch.html` lists the sources. Choosing the sandbox (or a link
-that names its server with `iss`) starts a patient standalone launch with
+that names its server with `iss`, or a connected source with `source`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
 

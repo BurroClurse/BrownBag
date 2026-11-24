@@ -9,6 +9,31 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="theme-color" content="#6b3f1d">
   <link rel="stylesheet" href="css/brownbag.css">
+  <script>
+    // A slow connection can lose one of the files below. Then this page
+    // tries once more by itself, and after that says what to do. The app
+    // sets brownBagStarted as its first step.
+    window.addEventListener("error", function (event) {
+      var file = event.target && event.target.tagName === "SCRIPT";
+      if (window.brownBagStarted || (!file && !(event instanceof ErrorEvent))) return;
+      try {
+        if (!sessionStorage.getItem("brownbag:retried")) {
+          sessionStorage.setItem("brownbag:retried", "yes");
+          location.reload();
+          return;
+        }
+        sessionStorage.removeItem("brownbag:retried");
+      } catch (error) {
+        // No session storage: say what to do instead of trying forever.
+      }
+      document.addEventListener("DOMContentLoaded", say);
+      if (document.readyState !== "loading") say();
+      function say() {
+        var main = document.querySelector("main");
+        main.textContent = "Part of Brown Bag didn't arrive. Check your connection, then open it again.";
+      }
+    }, true);
+  </script>
   <script src="vendor/fhir-client-3.0.1.js" integrity="sha384-KCMFUEhPpmBodyBFJ/fdPsY5TQrayEi08dDvK6gTHSvz4BVSRtn8fpbMBFg2nmCJ"></script>
 </head>
 <body>
@@ -36,8 +61,7 @@
         + btoa(JSON.stringify(launchOptions)).replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_")
         + "/fhir";
 
-      // authorize() redirects the browser. Code after it does not run
-      // unless the sandbox cannot be reached.
+      // authorize() answers with the sign-in page's address.
       return Promise.resolve().then(function () {
         return FHIR.oauth2.authorize({
           // Public client. The sandbox does not require a registered secret.
@@ -49,14 +73,13 @@
           // Must be this app's index.html. fhir-client turns the relative URL
           // into the full GitHub Pages URL before sending it.
           redirectUri: "index.html",
-          iss: sandboxIss
+          iss: sandboxIss,
+          // js/launch.js goes there, unless the patient has moved on.
+          noRedirect: true
         });
       });
     }
-    function didNotArrive() {
-      document.getElementById("launch").textContent = "Part of Brown Bag didn't arrive. Check your connection, then open it again.";
-    }
   </script>
-  <script type="module" src="js/launch.js" onerror="didNotArrive()"></script>
+  <script type="module" src="js/launch.js"></script>
 </body>
 </html>
