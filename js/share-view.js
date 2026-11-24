@@ -3,7 +3,8 @@
 // It asks for the patient's 6-digit code, unlocks the list on this device,
 // and shows it. Nothing is saved, and no request leaves after the page loads.
 
-import { unpackShare, groupShareBundle, allergyNotices, allergyEmptyText, ShareError } from "./share.js";
+import { unpackShare, groupShareBundle, ShareError } from "./share.js";
+import { drawShareList } from "./share-list.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
 window.brownBagStarted = true;
@@ -84,69 +85,7 @@ function drawCodeForm(message) {
 function drawList(groups) {
   clear(root);
   addLogo();
-  var title = add(root, "h1", groups.patient ? groups.patient.name : "Shared medicine list");
-  title.tabIndex = -1;
-  if (groups.patient && groups.patient.birthDate) {
-    add(root, "p", "Born " + groups.patient.birthDate, "who");
-  }
-  add(root, "p", "Made on " + madeOn(groups.madeAt), "who");
-  if (groups.recordsSavedAt) {
-    add(root, "p", "The From records part is a copy saved on " + madeOn(groups.recordsSavedAt) + ". It may be out of date.", "notice");
-  }
-  if (groups.incomplete) {
-    add(root, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
-  }
-  note(root, DISCLAIMER);
-  drawAllergies(groups.allergies);
-  group("From records", groups.fromRecords, "No medicines from records.");
-  if (groups.fromClaims && groups.fromClaims.length) {
-    group("Filled, not in the health record", groups.fromClaims, "");
-  }
-  group("Added by patient", groups.addedByPatient, "Nothing added by the patient.");
-  group("Patient says stopped", groups.patientSaysStopped, "Nothing marked stopped.");
-  title.focus();
-}
-
-// Allergies come first: staff read them before any medicine.
-function drawAllergies(allergies) {
-  var section = add(root, "section");
-  var count = allergies ? allergies.fromRecords.length + allergies.fromPatient.length : 0;
-  add(section, "h2", count ? "Allergies (" + count + ")" : "Allergies");
-  allergyNotices(allergies).forEach(function (text) { add(section, "p", text, "notice"); });
-  var empty = allergyEmptyText(allergies);
-  if (empty) add(section, "p", empty, allergies ? "med-line" : "notice");
-  if (!allergies) return;
-  allergies.statements.forEach(function (text) { add(section, "p", "Records say: " + text + ".", "med-line"); });
-  [["From records", allergies.fromRecords], ["From patient", allergies.fromPatient]].forEach(function (part) {
-    if (!part[1].length) return;
-    add(section, "h3", part[0]);
-    rowsInto(section, part[1]);
-  });
-}
-
-function rowsInto(section, rows) {
-  var list = add(section, "ul", null, "meds");
-  rows.forEach(function (row) {
-    var item = add(list, "li");
-    add(item, "p", row.name, "med-name");
-    if (row.detail) add(item, "p", row.detail, "med-line");
-  });
-}
-
-function group(heading, rows, empty) {
-  var section = add(root, "section");
-  add(section, "h2", heading + " (" + rows.length + ")");
-  if (!rows.length) {
-    add(section, "p", empty, "med-line");
-    return;
-  }
-  rowsInto(section, rows);
-}
-
-function madeOn(timestamp) {
-  var date = new Date(timestamp);
-  if (isNaN(date)) return "an unknown date";
-  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  drawShareList(root, groups, 1).focus();
 }
 
 // The bag, small, at the top of the staff page. Decoration only.

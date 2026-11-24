@@ -1,6 +1,6 @@
 # See what's inside, and two blocks: short design
 
-Status: waiting for Tyler's approval. He chose both options 1 on 2026-11-23.
+Status: approved by Tyler, 2026-11-23.
 
 ## Why
 

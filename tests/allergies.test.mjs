@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, startedDraft, keepDrafts } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, startedDraft, keepDrafts, showsSymbol } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -353,4 +353,11 @@ test("each choice on the list has the FHIR category it belongs to", () => {
   assert.deepEqual(by("medication"), ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye"]);
   assert.deepEqual(by("food"), ["Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk"]);
   assert.deepEqual(by("environment"), ["Latex", "Bee stings"]);
+});
+
+test("the warning symbol shows for an allergy, an unnamed entry, or a load that failed", () => {
+  assert.equal(showsSymbol(0, 0, []), false);
+  assert.equal(showsSymbol(1, 0, []), true);
+  assert.equal(showsSymbol(0, 1, []), true);
+  assert.equal(showsSymbol(0, 0, ["Allergies from records couldn't be loaded."]), true);
 });

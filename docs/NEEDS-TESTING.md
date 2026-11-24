@@ -34,6 +34,8 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+- See what's inside and the two blocks: both phones before publishing (QR and
+  staff pages).
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 

@@ -1232,6 +1232,29 @@ every screen has its own way back (the Home Screen app has no Back button).
 
 **Practice in the lab:** [Watch the Flow](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#watch-the-flow).
 
+### Step 28. Show the real thing (`js/share-list.js`, `js/app.js`)
+
+Not everyone can scan a code. Now the patient can open their own, on their own
+phone, and hand it over.
+
+**Trust comes from the same path.** It would have been easy to draw the list
+the app already has. Instead Brown Bag unlocks the code on the screen, the way
+the staff page does, and draws what comes out, with the same drawing code. A
+test compares the words on both. If the two could differ, the button would be
+worth nothing.
+
+**Read-only is a safety feature.** The screen has no Remove and no "I stopped
+this", so handing the phone over can't change the list.
+
+**A failure is never an empty list.** If the code can't be unlocked, the screen
+says so. An empty list would read as "takes nothing".
+
+**Two blocks.** Allergies and medicines looked alike. Now a box with a thick
+border and a symbol holds one, and a big heading starts the other. Shape, words
+and color all say it, so no one needs the color.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

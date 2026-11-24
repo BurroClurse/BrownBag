@@ -8,14 +8,15 @@ import { LOCK_KEY, hasLock } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
-import { buildShareBundle, packShare, fitsInQr } from "./share.js";
+import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle } from "./share.js";
 import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { recordReader, waitLeft } from "./read.js";
-import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, ALLERGENS, REACTIONS } from "./allergies.js";
+import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
 import { signInLink } from "./sources.js";
+import { allergyBox, drawShareList, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
@@ -519,7 +520,9 @@ function render() {
 // instead of leaving Brown Bag. Done and Close take that same step back.
 var BACK_FOCUS = { medicines: "open-medicines", more: "open-more", install: "show-qr" };
 window.addEventListener("popstate", function () {
-  if (document.getElementById("qr-overlay")) {
+  if (document.getElementById("inside-overlay")) {
+    closeInside(true);
+  } else if (document.getElementById("qr-overlay")) {
     var after = qrAfter;
     qrAfter = null;
     closeQr(after, true);
@@ -598,10 +601,11 @@ function drawMedicines(arranged) {
   title.tabIndex = -1;
   note(root, DISCLAIMER);
   drawAllergies(root);
-  drawRecords(arranged);
-  drawFillsOnly(arranged);
-  drawAdditions();
-  drawStopped(arranged);
+  var block = medicinesBlock(root, "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
+  drawRecords(block, arranged);
+  drawFillsOnly(block, arranged);
+  drawAdditions(block);
+  drawStopped(block, arranged);
 }
 
 function drawMore() {
@@ -652,9 +656,12 @@ async function signOutEveryone() {
 // on My medicines. Drawn on its own so it can move to its own screen.
 function drawAllergies(parent) {
   var arranged = arrangeAllergies(state.allergies, state.data);
-  var section = add(parent, "section");
-  heading(section, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", "allergies-heading");
-  allergyNotes(state.allergies, new Date()).forEach(function (text) {
+  var notes = allergyNotes(state.allergies, new Date());
+  var box = allergyBox(parent, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", showsSymbol(arranged.count, arranged.unspecified, notes), 2);
+  box.heading.id = "allergies-heading";
+  box.heading.tabIndex = -1;
+  var section = box.section;
+  notes.forEach(function (text) {
     add(section, "p", text.text, "notice");
     if (text.signIn) {
       add(section, "a", "Sign in", "button secondary").href = signInLink();
@@ -865,9 +872,9 @@ function drawAllergyCheck(form, match, reaction, hide, back) {
   h.focus();
 }
 
-function drawRecords(arranged) {
-  var section = add(root, "section");
-  heading(section, "From your records", "records-heading");
+function drawRecords(parent, arranged) {
+  var section = add(parent, "section");
+  partHeading(section, "From your records", "records-heading");
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
@@ -896,9 +903,9 @@ function drawRecords(arranged) {
   }
 }
 
-function drawAdditions() {
-  var section = add(root, "section");
-  heading(section, "Added by me", "added-heading");
+function drawAdditions(parent) {
+  var section = add(parent, "section");
+  partHeading(section, "Added by me", "added-heading");
   note(section, "Saved on this phone only. Clearing your browser erases these.");
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
@@ -1254,10 +1261,10 @@ function pickList(form, id, labelText, otherText) {
   };
 }
 
-function drawStopped(arranged) {
+function drawStopped(parent, arranged) {
   if (!arranged.stopped.length) return;
-  var section = add(root, "section");
-  heading(section, "Stopped by me", "stopped-heading");
+  var section = add(parent, "section");
+  partHeading(section, "Stopped by me", "stopped-heading");
   var list = add(section, "ul", null, "meds");
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
@@ -1366,10 +1373,11 @@ async function buildQr() {
     overlay.appendChild(why);
   } else {
     add(overlay, "p", "Show the person checking your medicines the list on your phone instead.");
-    button(overlay, "Show my medicines instead", "secondary big", function () {
-      closeQr(function () { go("medicines", "medicines-heading"); });
-    });
   }
+  var inside = button(overlay, fits ? "See what's inside" : "See my list", "secondary big", function () {
+    openInside(packed, inside);
+  });
+  inside.id = "qr-inside";
   button(overlay, "Close", "primary big", function () { closeQr(); }).id = "qr-close";
   overlay.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
@@ -1388,6 +1396,74 @@ async function buildQr() {
   root.setAttribute("aria-hidden", "true");
   history.pushState({ bb: "qr" }, "");
   document.getElementById("qr-close").focus();
+}
+
+// What's in the code, on the patient's own phone: so they can trust it, and
+// so it can be read when nobody can scan. Brown Bag opens the code itself, the
+// way the staff page does, and shows what comes out. Read-only.
+var insideBusy = false;
+async function openInside(packed, opener) {
+  if (insideBusy || document.getElementById("inside-overlay")) return;
+  insideBusy = true;
+  var words = opener.textContent;
+  opener.textContent = "Opening…";
+  opener.setAttribute("aria-busy", "true");
+  var groups = null;
+  try {
+    groups = groupShareBundle(await unpackShare(packed.prefix.split("#")[1] + packed.digits, packed.code));
+  } catch (error) {
+    console.error("Couldn't open the code", error);
+  } finally {
+    insideBusy = false;
+    opener.textContent = words;
+    opener.removeAttribute("aria-busy");
+  }
+  var qr = document.getElementById("qr-overlay");
+  // Closed meanwhile: nothing to show it over.
+  if (!qr || !qr.contains(opener) || qr.classList.contains("closing") || qr.dataset.leaving) return;
+  var overlay = document.createElement("div");
+  overlay.id = "inside-overlay";
+  overlay.className = "inside-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "inside-heading");
+  var page = add(overlay, "div", null, "inside-page");
+  button(page, "Back to the code", "secondary big", function () { closeInside(); });
+  var title = add(page, "h1", words === "See my list" ? "Your list" : "What's in your code");
+  title.id = "inside-heading";
+  title.tabIndex = -1;
+  if (groups) {
+    add(page, "p", words === "See my list" ? "This is the list that was too long for one code." : "This is what opens when your code is scanned.");
+    drawShareList(page, groups, 2);
+    button(page, "Back to the code", "secondary big", function () { closeInside(); });
+  } else {
+    add(page, "p", "Couldn't open the code. Close it and show a new one.", "error");
+  }
+  overlay.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeInside();
+  });
+  document.body.appendChild(overlay);
+  qr.inert = true;
+  history.pushState({ bb: "inside" }, "");
+  title.focus();
+}
+
+function closeInside(fromHistory) {
+  var overlay = document.getElementById("inside-overlay");
+  if (!overlay) return;
+  if (!fromHistory && history.state && history.state.bb === "inside") {
+    if (overlay.dataset.leaving) return;
+    overlay.dataset.leaving = "yes";
+    history.back();
+    return;
+  }
+  overlay.remove();
+  var qr = document.getElementById("qr-overlay");
+  if (qr) qr.inert = false;
+  var opener = document.getElementById("qr-inside");
+  if (opener) opener.focus();
 }
 
 // fromHistory is true when the Back button (or Close, through history.back)
@@ -1607,11 +1683,11 @@ function stopButton(row, entry) {
 }
 
 // Fills the insurer paid for that the health record doesn't list.
-function drawFillsOnly(arranged) {
+function drawFillsOnly(parent, arranged) {
   var fillsOnly = arranged.current.filter(function (entry) { return entry.origin === "claims"; });
   if (!fillsOnly.length) return;
-  var section = add(root, "section");
-  heading(section, "Filled, not in your records", "fills-heading");
+  var section = add(parent, "section");
+  partHeading(section, "Filled, not in your records", "fills-heading");
   note(section, "Your insurance paid for these, but your health record doesn't list them. Check with your care team.");
   var list = add(section, "ul", null, "meds");
   fillsOnly.forEach(function (entry) {
@@ -1714,6 +1790,14 @@ function plainScreen() {
   picture.src = "icons/logo-trimmed.png";
   picture.alt = "Brown Bag";
   add(root, "p", TAGLINE, "tagline");
+}
+
+// A part of a block, such as "From your records" under Medicines.
+function partHeading(parent, text, id) {
+  var h = add(parent, "h3", text, "part-title");
+  h.id = id;
+  h.tabIndex = -1;
+  return h;
 }
 
 function heading(parent, text, id) {

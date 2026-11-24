@@ -474,3 +474,24 @@ test("an allergy with no name says the name is unknown, in the standard's own wo
   const [a] = allergyEntries(buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], allergies: arranged }, NOW, { allergies: { status: "loaded", savedAt: null } }));
   assert.deepEqual(a.code, { text: "Unnamed allergy", coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }] });
 });
+
+test("the medicines block counts what the home button counts", async () => {
+  const { shareMedicineCount } = await import("../js/share.js");
+  const { medicineCount, arrangeList, shareListFrom } = await import("../js/view.js");
+  const current = [recordItem("lisinopril", "314076"), Object.assign(recordItem("sertraline", "312941"), { origin: "claims", source: "Aetna claims" }), recordItem("warfarin", "855332")];
+  const split = { current, older: [recordItem("old one", "9")], failed: false };
+  const data = { stopped: { "rx:855332": { name: "warfarin", stoppedAt: "2026-11-01" } }, additions: [ADDITION], changes: [] };
+  const arranged = arrangeList(split, data);
+  const groups = groupShareBundle(buildShareBundle(shareListFrom(PATIENT, arranged, data.additions), NOW));
+  assert.equal(shareMedicineCount(groups), medicineCount(arranged, data.additions));
+  assert.equal(shareMedicineCount(groups), 3);
+});
+
+test("the staff page and See what's inside are drawn by the same code", async () => {
+  const { readFileSync } = await import("node:fs");
+  const file = (f) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  for (const f of ["js/app.js", "js/share-view.js"]) assert.match(file(f), /import \{ [^}]*drawShareList[^}]* \} from "\.\/share-list\.js"/, f);
+  assert.ok(file("sw.js").includes('"./js/share-list.js"'));
+  // What's shown is what comes out of the code itself.
+  assert.match(file("js/app.js"), /unpackShare\(packed\./);
+});

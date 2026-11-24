@@ -478,3 +478,9 @@ export function unsavedAllergyText(draft, reactionTo) {
   var what = reactionTo ? "The reaction to " + reactionTo : (name || "The allergy you were adding");
   return what + " isn't saved yet. Open My medicines to finish adding it.";
 }
+
+// Whether the allergies box carries its warning symbol: there is one, or
+// nobody can say there isn't.
+export function showsSymbol(count, unspecified, notices) {
+  return count > 0 || unspecified > 0 || notices.length > 0;
+}

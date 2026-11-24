@@ -463,3 +463,8 @@ async function transform(bytes, stream) {
   var output = new Blob([bytes]).stream().pipeThrough(stream);
   return new Uint8Array(await new Response(output).arrayBuffer());
 }
+
+// The same number as the home button: current, filled and added.
+export function shareMedicineCount(groups) {
+  return groups.fromRecords.length + (groups.fromClaims || []).length + groups.addedByPatient.length;
+}
