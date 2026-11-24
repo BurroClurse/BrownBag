@@ -8,7 +8,7 @@ import {
   dedupe,
   splitByStatus,
   groupByIngredient,
-  doseChangeText,
+  doseChange,
   usableRecord
 } from "../js/meds.js";
 
@@ -178,7 +178,7 @@ test("groupByIngredient merges two strengths of lisinopril", () => {
   assert.equal(result[0].status, "current");
   assert.equal(result[0].count, 2);
   assert.deepEqual(result[0].doseHistory.map((d) => d.date), ["2022-02-01", "2024-05-01"]);
-  assert.equal(doseChangeText(result[0]), "dose changed from 10 MG to 20 MG on 2024-05-01");
+  assert.deepEqual(doseChange(result[0]), { from: "10 MG", to: "20 MG", date: "2024-05-01" });
 });
 
 test("groupByIngredient with an empty map changes nothing", () => {
@@ -188,7 +188,7 @@ test("groupByIngredient with an empty map changes nothing", () => {
   ]);
   const result = groupByIngredient(items, new Map());
   assert.equal(result.length, 2);
-  assert.equal(doseChangeText(result[0]), null);
+  assert.equal(doseChange(result[0]), null);
 });
 
 // Real SMART sandbox records, saved 2026-11-20. Synthetic patients:
@@ -257,20 +257,20 @@ test("a statement with status unknown and an end date in the past is older", () 
   assert.equal(item.status, "older");
 });
 
-test("doseChangeText shows the date only, not the time", () => {
+test("doseChange shows the date only, not the time", () => {
   const item = { doseHistory: [
     { name: "aspirin 325 MG Oral Tablet", date: "2022-12-03T20:36:37+00:00" },
     { name: "aspirin 81 MG Oral Tablet", date: "2023-09-29T22:39:37+00:00" }
   ] };
-  assert.equal(doseChangeText(item), "dose changed from 325 MG to 81 MG on 2023-09-29");
+  assert.deepEqual(doseChange(item), { from: "325 MG", to: "81 MG", date: "2023-09-29" });
 });
 
-test("doseChangeText says nothing when only the form changed, not the amount", () => {
+test("doseChange says nothing when only the form changed, not the amount", () => {
   const item = { doseHistory: [
     { name: "Nitroglycerin 0.4 MG Sublingual Tablet", date: "2022-12-03" },
     { name: "Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray", date: "2023-11-21" }
   ] };
-  assert.equal(doseChangeText(item), null);
+  assert.equal(doseChange(item), null);
 });
 
 test("a combination pill is not merged into one of its ingredients", () => {

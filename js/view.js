@@ -56,26 +56,6 @@ export function shareListFrom(patient, arranged, additions) {
   };
 }
 
-export function detailLine(entry) {
-  return [entry.dose, entry.route, entry.frequency].filter(Boolean).join(" · ");
-}
-
-export function sourceLine(entry) {
-  return [
-    entry.prescriber,
-    entry.start ? "since " + String(entry.start).slice(0, 10) : null,
-    entry.end ? "until " + String(entry.end).slice(0, 10) : null,
-    entry.source
-  ].filter(Boolean).join(" · ");
-}
-
-export function countLine(entry) {
-  if (!(entry.count > 1)) return null;
-  return entry.firstDate
-    ? "Prescribed " + entry.count + " times since " + String(entry.firstDate).slice(0, 4)
-    : "In your records " + entry.count + " times";
-}
-
 // Why "From your records" is empty, or null when it isn't.
 export function emptyRecordsText(split, arranged) {
   // Medicines only the insurer knows about have their own section.

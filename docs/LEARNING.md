@@ -1309,6 +1309,25 @@ what it logged. It failed first, which proved the leak.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 31. One label for each thing (`js/card.js`)
+
+**What changed.** A medicine's line read "Dr. Patel · since 2023-03-02 · SMART
+sandbox". The reader had to work out which part was which. Now every piece has
+its label, how to take it has its own box, and the rest comes after, quieter.
+
+**A list of pairs is `dl`.** HTML has a tag for labels and values: `dl`, with
+`dt` for the label and `dd` for the value. VoiceOver reads them as pairs.
+
+**Never guess a label.** A QR code made before this has only the joined words.
+Those show whole, as "Directions", because a wrong label on a dose is worse
+than none.
+
+**FHIR has a place for each part.** The whole dosage stays in `text`, so any
+system can read it. The route goes in `route`, how often in `timing.code`, and
+a full instruction in `patientInstruction`.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

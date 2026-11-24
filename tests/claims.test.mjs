@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fillsFromClaims, attachFills, fillLine, completedLine, claimsLabel, fillNote, readClaims, mergeClaims } from "../js/claims.js";
+import { fillsFromClaims, attachFills, completedLine, claimsLabel, fillNote, readClaims, mergeClaims } from "../js/claims.js";
 
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 const NOW = new Date("2026-11-21T12:00:00Z");
@@ -100,15 +100,6 @@ test("medicines with no fill get a count of zero", () => {
   const split = { current: [item("rx:617312", "617312", "Atorvastatin")], older: [], failed: false };
   const out = attachFills(split, fillsFromClaims([claim("312940", "sertraline", "2026-10-21")]), new Map(), NOW);
   assert.equal(out.current.find((i) => i.key === "rx:617312").fills.count, 0);
-});
-
-test("fillLine says how often, when last and who paid", () => {
-  assert.equal(fillLine({ count: 3, last: "2025-07-23", insurers: ["Aetna"], cash: false }), "Filled 3 times · last Jul 23, 2025 · Aetna claims");
-  assert.equal(fillLine({ count: 1, last: "2025-07-23", insurers: ["Aetna"], cash: false }), "Filled once · Jul 23, 2025 · Aetna claims");
-  assert.equal(fillLine({ count: 1, last: "2026-10-10", insurers: [], cash: true }), "Filled once · Oct 10, 2026 · paid without insurance");
-  assert.equal(fillLine({ count: 2, last: "2026-10-10", insurers: ["Aetna", "Medicare"], cash: false }), "Filled 2 times · last Oct 10, 2026 · Aetna and Medicare claims");
-  assert.equal(fillLine({ count: 0 }), "No fill found in your claims");
-  assert.equal(fillLine(undefined), null);
 });
 
 test("claimsLabel names who paid", () => {
@@ -216,11 +207,7 @@ test("claims that were canceled, entered in error, drafts or only asked about ar
   assert.equal(fillsFromClaims([withStatus({ status: "active", use: "claim" })]).length, 1);
 });
 
-test("a fill with no date, or only a month or year, still reads well", () => {
-  assert.equal(fillLine({ count: 1, last: null, insurers: ["Aetna"], cash: false }), "Filled once · date not given · Aetna claims");
-  assert.equal(fillLine({ count: 2, last: null, insurers: ["Aetna"], cash: false }), "Filled 2 times · dates not given · Aetna claims");
-  assert.equal(fillLine({ count: 1, last: "2026-09", insurers: ["Aetna"], cash: false }), "Filled once · Sep 2026 · Aetna claims");
-  assert.equal(fillLine({ count: 1, last: "2026", insurers: ["Aetna"], cash: false }), "Filled once · 2026 · Aetna claims");
+test("a fill with no date still reads well in the code", () => {
   assert.equal(fillNote({ count: 1, last: null, insurers: ["Aetna"], cash: false }), "Filled, date not given (Aetna claims), 1 fill");
   assert.equal(fillNote({ count: 2, last: null, insurers: ["Aetna"], cash: false }), "Filled, dates not given (Aetna claims), 2 fills");
 });

@@ -79,6 +79,9 @@ Decided for later, so nothing to test until they're picked up:
 
 ## On a real iPhone (Tyler)
 
+- The new medicine cards (how to take it, then the rest, each labelled) on My
+  medicines and the staff page, with VoiceOver, and a second phone's camera
+  reading the QR code.
 - See what's inside and the two blocks, with VoiceOver; a second phone reading
   the code from Safari.
 - What didn't load, with VoiceOver: the new lines on home, My medicines and the
@@ -156,3 +159,6 @@ Decided for later, so nothing to test until they're picked up:
 - 2026-11-23, no number when every record has no medicine name, before
   publishing: the test browser, then both virtual phones (home, My medicines,
   See what's inside, the staff page). Passed.
+- 2026-11-23, the labelled medicine cards, before publishing: the test browser
+  (320 to 1440 wide, 200 percent text, every failure), then both virtual phones
+  (My medicines, See what's inside, the staff page). Passed.

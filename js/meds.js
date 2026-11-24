@@ -144,7 +144,8 @@ export function groupByIngredient(items, ingredientOf) {
   }, []);
 }
 
-export function doseChangeText(item) {
+// The strength it changed from and to, or null.
+export function doseChange(item) {
   var history = item.doseHistory || [];
   if (history.length < 2) {
     return null;
@@ -155,8 +156,7 @@ export function doseChangeText(item) {
   if (!first || !last || parseFloat(first) === parseFloat(last)) {
     return null;
   }
-  var date = String(history[history.length - 1].date || "").slice(0, 10);
-  return "dose changed from " + first + " to " + last + " on " + date;
+  return { from: first, to: last, date: String(history[history.length - 1].date || "").slice(0, 10) };
 }
 
 function mergeIngredientGroup(members) {

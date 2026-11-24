@@ -6,6 +6,7 @@
 // the packed list is written as digits, which a QR code holds more of.
 
 import { fillNote, completedNote } from "./claims.js";
+import { dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, reactionWords, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -39,6 +40,7 @@ export class ShareError extends Error {
 var TAGS = "https://burroclurse.github.io/BrownBag/tags";
 // A medicine the patient marked As needed: still active, taken only when
 // needed (asNeededBoolean), with this note so staff see who said so.
+var CLAIMS_ONLY_NOTE = "Filled, not in the health record";
 export var AS_NEEDED_NOTE = "Patient says: takes only when needed";
 
 export function buildShareBundle(list, now, warnings = {}) {
@@ -50,11 +52,11 @@ export function buildShareBundle(list, now, warnings = {}) {
     }
   }];
   list.current.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), "active");
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), "active", null, dosageParts(item));
     if (item.origin === "claims") {
       // Filled through insurance, but not in the health record.
       statement.informationSource = { display: item.source };
-      statement.note = [{ text: "Filled, not in the health record" }];
+      statement.note = [{ text: CLAIMS_ONLY_NOTE }];
     } else {
       statement.note = [{ text: "From records: " + item.source }];
     }
@@ -80,7 +82,7 @@ export function buildShareBundle(list, now, warnings = {}) {
     entries.push({ resource: statement });
   });
   list.stopped.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped");
+    var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped", null, dosageParts(item));
     statement.informationSource = SELF;
     statement.effectivePeriod = { end: item.stoppedAt };
     entries.push({ resource: statement });
@@ -163,23 +165,23 @@ export function groupShareBundle(bundle) {
       return;
     }
     var name = (resource.medicationCodeableConcept && resource.medicationCodeableConcept.text) || "Unnamed medicine";
-    var dosage = resource.dosage && resource.dosage[0] && resource.dosage[0].text;
     var fromPatient = resource.informationSource && resource.informationSource.reference === SELF.reference;
     var fromClaims = resource.informationSource && !resource.informationSource.reference && resource.informationSource.display;
-    var noteTexts = (resource.note || []).map(function (note) { return note.text; });
-    if (resource.status === "stopped") {
+    var asNeeded = (resource.note || []).some(function (note) { return note.text === AS_NEEDED_NOTE; });
+    var stopped = resource.status === "stopped";
+    var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped));
+    if (stopped) {
       var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
-      groups.patientSaysStopped.push({ name: name, detail: joinDetail([dosage, stoppedOn ? "not taking since " + stoppedOn : null]) });
-    } else if (!fromPatient && noteTexts.indexOf(AS_NEEDED_NOTE) !== -1) {
-      var others = noteTexts.filter(function (t) { return t !== AS_NEEDED_NOTE; });
-      groups.patientSaysAsNeeded.push({ name: name, detail: joinDetail([dosage].concat(others)) });
+      if (stoppedOn) row.facts.unshift(["Not taking since", dateText(stoppedOn)]);
+      groups.patientSaysStopped.push(row);
+    } else if (!fromPatient && asNeeded) {
+      groups.patientSaysAsNeeded.push(row);
     } else if (fromPatient) {
-      groups.addedByPatient.push({ name: name, detail: joinDetail([dosage]) });
+      groups.addedByPatient.push(row);
     } else if (fromClaims) {
-      var fillNotes = noteTexts.filter(function (t) { return t !== "Filled, not in the health record"; });
-      groups.fromClaims.push({ name: name, detail: joinDetail([dosage].concat(fillNotes)) });
+      groups.fromClaims.push(row);
     } else {
-      groups.fromRecords.push({ name: name, detail: joinDetail([dosage].concat(noteTexts)) });
+      groups.fromRecords.push(row);
     }
   });
   return groups;
@@ -440,7 +442,7 @@ function fromDigits(digits) {
 
 // structured: an addition's picked answers ({ quantity, schedule }), added
 // as FHIR dosage numbers next to the words.
-function statementFor(name, rxcui, dosage, status, structured) {
+function statementFor(name, rxcui, dosage, status, structured, separate) {
   var concept = { text: name };
   if (rxcui) {
     concept.coding = [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: rxcui }];
@@ -451,7 +453,7 @@ function statementFor(name, rxcui, dosage, status, structured) {
     subject: SELF,
     medicationCodeableConcept: concept
   };
-  var parts = structuredDosage(structured);
+  var parts = structuredDosage(structured) || separate;
   if (dosage || parts) {
     statement.dosage = [Object.assign(dosage ? { text: dosage } : {}, parts || {})];
   }
@@ -475,6 +477,56 @@ function structuredDosage(structured) {
     if (schedule.asNeeded) out.asNeededBoolean = true;
   }
   return out;
+}
+
+// The records' route and how often on their own, beside the whole dosage in
+// words, so the staff page can label each.
+function dosageParts(item) {
+  var out = {};
+  if (item.route) out.route = { text: item.route };
+  if (item.frequency && isDirections(item.frequency)) out.patientInstruction = item.frequency;
+  else if (item.frequency) out.timing = { code: { text: item.frequency } };
+  return Object.keys(out).length ? out : null;
+}
+
+// Back into labelled rows. Words that don't say which part is which (an older
+// code, a changed one) stay whole: never a guessed label.
+function takeFrom(dosage, added) {
+  var text = dosage && dosage.text;
+  if (!text) return [];
+  var route = (dosage.route && dosage.route.text) || null;
+  var often = (dosage.timing && dosage.timing.code && dosage.timing.code.text) || dosage.patientInstruction || null;
+  if (added) {
+    // The add form makes these: a dose, how often, or both.
+    var two = text.split(" · ");
+    if (two.length === 2) return takeRows(two[0], null, two[1]);
+    if (two.length === 1 && (dosage.timing || dosage.asNeededBoolean)) return takeRows(null, null, text);
+    if (two.length === 1 && dosage.doseAndRate) return takeRows(text, null, null);
+    return [["Directions", text]];
+  }
+  var rest = joinDetail([route, often]);
+  if (!rest) return [["Directions", text]];
+  if (text === rest) return takeRows(null, route, often);
+  return text.slice(-rest.length - 3) === " · " + rest ? takeRows(text.slice(0, -rest.length - 3), route, often) : [["Directions", text]];
+}
+
+// The notes on a shared medicine, each under its own label.
+function cardFrom(resource, added) {
+  var card = { take: takeFrom(resource.dosage && resource.dosage[0], added), flags: [], facts: [] };
+  var source = [];
+  (resource.note || []).forEach(function (note) {
+    var text = String(note.text || "");
+    var found;
+    if (text === AS_NEEDED_NOTE || text === CLAIMS_ONLY_NOTE) return;
+    if ((found = /^From records: (.+)$/.exec(text))) source.push(["Source", found[1]]);
+    else if ((found = /^Prescribed by (.+)$/.exec(text))) card.facts.push(["Prescribed by", found[1]]);
+    else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
+    else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
+    else if (text === "No fill found in claims") card.facts.push(["Filled", text]);
+    else if (text) source.push(["Note", text]);
+  });
+  card.facts = card.facts.concat(source);
+  return card;
 }
 
 function dosageText(item) {

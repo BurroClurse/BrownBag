@@ -6,18 +6,19 @@ import { showLockScreen, restoreBackupText } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, importBackup } from "./vault.js";
 import { LOCK_KEY, hasLock } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, withLockRecord } from "./install.js";
-import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
+import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
+import { drawCard, patientCard } from "./card.js";
 import { signInLink } from "./sources.js";
 import { allergyBox, drawShareList, medicinesBlock } from "./share-list.js";
-import { readClaims, mergeClaims, fillLine, completedLine } from "./claims.js";
+import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 
@@ -929,10 +930,7 @@ function drawAdditions(parent) {
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
-    add(row, "p", addition.name, "med-name");
-    var line = detailLine(addition);
-    if (line) add(row, "p", line, "med-line");
-    add(row, "p", "Added " + addition.addedAt, "med-line");
+    drawCard(row, addition.name, patientCard(addition, false));
     button(row, "Remove", "stop card-action", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
       recordChange("removed", addition.name);
@@ -1290,7 +1288,6 @@ function drawStopped(parent, arranged) {
   var list = add(section, "ul", null, "meds");
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
-    add(row, "p", "You marked this Not taking on " + entry.stoppedAt, "med-line");
     button(row, "Undo", "secondary card-action", function () {
       delete state.data.stopped[entry.key];
       recordChange("unstopped", entry.name);
@@ -1315,7 +1312,6 @@ function drawAsNeeded(parent, arranged) {
   var list = add(section, "ul", null, "meds");
   asNeeded.forEach(function (entry) {
     var row = medRow(list, entry);
-    add(row, "p", "You marked this As needed on " + entry.asNeededAt, "med-line");
     markButtons(row, entry);
   });
 }
@@ -1697,19 +1693,7 @@ async function saveBackup() {
 
 function medRow(list, entry) {
   var row = add(list, "li");
-  add(row, "p", entry.name, "med-name");
-  var detail = detailLine(entry);
-  if (detail) add(row, "p", detail, "med-line");
-  var change = doseChangeText(entry);
-  if (change) add(row, "p", change, "med-line");
-  if (entry.origin !== "claims") add(row, "p", sourceLine(entry), "med-line");
-  var count = countLine(entry);
-  if (count) add(row, "p", count, "med-line");
-  if (entry.completedButFilled) add(row, "p", completedLine(entry.completedButFilled, entry.recordStatus), "med-line");
-  // Fill lines only when this list's claims loaded, so "No fill found" never
-  // shows just because the claims couldn't be read.
-  var filled = state.split.claims === "loaded" ? fillLine(entry.fills) : null;
-  if (filled) add(row, "p", filled, "med-line");
+  drawCard(row, entry.name, patientCard(entry, state.split.claims === "loaded"));
   return row;
 }
 

@@ -103,8 +103,8 @@ test("grouping puts each medicine in the right group", () => {
   assert.deepEqual(groups.fromRecords.map((row) => row.name), ["lisinopril 10 MG Oral Tablet"]);
   assert.deepEqual(groups.addedByPatient.map((row) => row.name), ["Vitamin D3 2000 IU"]);
   assert.deepEqual(groups.patientSaysStopped.map((row) => row.name), ["metformin 500 MG Oral Tablet"]);
-  assert.match(groups.fromRecords[0].detail, /once a day/);
-  assert.match(groups.patientSaysStopped[0].detail, /2026-10-01/);
+  assert.ok(groups.fromRecords[0].take.some(([, text]) => text === "once a day"));
+  assert.deepEqual(groups.patientSaysStopped[0].facts, [["Not taking since", "Oct 1, 2026"]]);
 });
 
 test("records keep their RxNorm coding in the bundle", () => {
@@ -230,7 +230,7 @@ test("fills travel in the shared list and land in their own staff group", () => 
   const groups = groupShareBundle(bundle);
   assert.deepEqual(groups.fromClaims.map((r) => r.name), ["sertraline 50 MG Oral Tablet"]);
   assert.equal(groups.fromRecords.length, 4);
-  assert.ok(groups.fromRecords[0].detail.includes("Last filled 2025-07-23 (Aetna claims), 3 fills"));
+  assert.deepEqual(groups.fromRecords[0].facts.slice(0, 2), [["Filled", "3 times, last Jul 23, 2025"], ["Paid", "Through Aetna"]]);
 });
 
 test("a list without fills shares no fill notes", () => {
@@ -282,8 +282,9 @@ test("an As needed medicine stays active, says so in FHIR, and gets its own staf
   const groups = groupShareBundle(bundle);
   assert.deepEqual(groups.fromRecords.map((r) => r.name), ["lisinopril 10 MG Oral Tablet"]);
   assert.deepEqual(groups.patientSaysAsNeeded.map((r) => r.name), ["oxycodone 5 MG Oral Tablet"]);
-  assert.ok(!groups.patientSaysAsNeeded[0].detail.includes(AS_NEEDED_NOTE));
-  assert.ok(groups.patientSaysAsNeeded[0].detail.includes("From records"));
+  const texts = groups.patientSaysAsNeeded[0].facts.map(([, text]) => text);
+  assert.ok(!texts.includes(AS_NEEDED_NOTE));
+  assert.ok(texts.includes("SMART sandbox"));
 });
 
 const CARD = (o) => Object.assign({ key: "k", otherKeys: [], name: "Mold", code: null, reactions: [], intolerance: false, unconfirmed: false, highRisk: false, source: "SMART sandbox", origin: "records", mine: null }, o);

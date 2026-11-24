@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -64,21 +64,6 @@ test("shareListFrom leaves older prescriptions off", () => {
   assert.deepEqual(list.patient, { name: "Jane Example", birthDate: "1961-04-02" });
 });
 
-test("detailLine joins what is known and skips what isn't", () => {
-  assert.equal(detailLine(item("rx:1", "x")), "1 tablet · Oral · once a day");
-  assert.equal(detailLine(item("rx:1", "x", { dose: null, route: null, frequency: null })), "");
-});
-
-test("sourceLine names the prescriber, start date and source", () => {
-  assert.equal(sourceLine(item("rx:1", "x")), "Dr. Patel · since 2023-03-02 · SMART sandbox");
-  assert.equal(sourceLine(item("rx:1", "x", { prescriber: null, start: null })), "SMART sandbox");
-});
-
-test("countLine only speaks up for repeats", () => {
-  assert.equal(countLine(item("rx:1", "x")), null);
-  assert.equal(countLine(item("rx:1", "x", { count: 6 })), "In your records 6 times");
-});
-
 test("makeAddition trims the name and stamps the date", () => {
   var addition = makeAddition({ name: "  Fish oil ", rxcui: "", dose: "", frequency: "daily" }, new Date("2026-11-20T12:00:00Z"));
   assert.equal(addition.name, "Fish oil");
@@ -90,10 +75,6 @@ test("makeAddition trims the name and stamps the date", () => {
 
 test("makeAddition refuses an empty name", () => {
   assert.throws(() => makeAddition({ name: "   " }, new Date()), /name/);
-});
-
-test("sourceLine shows the start date only, not the time", () => {
-  assert.equal(sourceLine(item("rx:1", "x", { start: "2023-11-21T20:36:37+00:00" })), "Dr. Patel · since 2023-11-21 · SMART sandbox");
 });
 
 test("localDate uses the phone's own date, not UTC", () => {
@@ -133,14 +114,6 @@ test("latestOnly quietly drops an older search that fails", async () => {
   await search("ibuprofen");
   fail(new Error("network"));
   assert.equal((await older).isLatest, false);
-});
-
-test("countLine says how long a medicine has been prescribed", () => {
-  assert.equal(countLine(item("rx:1", "x", { count: 6, firstDate: "2019-06-01T10:00:00Z" })), "Prescribed 6 times since 2019");
-});
-
-test("sourceLine shows an end date when there is one", () => {
-  assert.equal(sourceLine(item("rx:1", "x", { end: "2024-05-01" })), "Dr. Patel · since 2023-03-02 · until 2024-05-01 · SMART sandbox");
 });
 
 test("emptyRecordsText explains why From your records is empty", () => {

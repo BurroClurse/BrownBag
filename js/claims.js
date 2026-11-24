@@ -243,14 +243,6 @@ export function claimsLabel(fills) {
   return listOf(insurers) + " claims" + (fills.cash ? ", some paid without insurance" : "");
 }
 
-export function fillLine(fills) {
-  if (!fills) return null;
-  if (!fills.count) return "No fill found in your claims";
-  var once = fills.count === 1;
-  var when = fills.last ? (once ? "" : "last ") + longDate(fills.last) : (once ? "date not given" : "dates not given");
-  return (once ? "Filled once" : "Filled " + fills.count + " times") + " · " + when + " · " + claimsLabel(fills);
-}
-
 // What the record calls a prescription that was filled anyway. Lists saved
 // before Brown Bag kept the status just say "Not current".
 var STATUS_WORDS = { completed: "completed", stopped: "stopped", cancelled: "canceled", "not-taken": "not taken" };

@@ -3,6 +3,7 @@
 // Allergies and medicines are two blocks (design 2026-11-23).
 
 import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial } from "./share.js";
+import { drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
 // Draws into parent, starting with the patient's name as heading `level`.
@@ -89,6 +90,11 @@ function rowsInto(section, rows) {
   var list = add(section, "ul", null, "meds");
   rows.forEach(function (row) {
     var item = add(list, "li");
+    if (row.take) {
+      drawCard(item, row.name, row);
+      return;
+    }
+    // An allergy.
     add(item, "p", row.name, "med-name");
     if (row.detail) add(item, "p", row.detail, "med-line");
   });

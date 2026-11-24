@@ -58,7 +58,7 @@ only, no real patients). To open it as a certain patient, see
   allergy, add a reaction to one from their records, or say they have no
   known allergies. A load that failed says so, and never looks like "none".
 - **What was actually filled.** Each medicine shows its insurance fills
-  ("Filled 2 times · last Sep 22, 2026 · Insurance claims") or "No fill found
+  ("Filled: 2 times, last Sep 22, 2026") or "No fill found
   in your claims". Fills the record doesn't list get their own section,
   and a prescription the record calls finished (completed, stopped or
   canceled) but filled since it was written moves back to the current
@@ -167,6 +167,7 @@ The list never passes through a server.
 | `js/allergies.js` | Allergy records and the patient's own, one card each. |
 | `js/sources.js` | The sources: which are connected, and what shows for the rest. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
+| `js/card.js` | One medicine's card: how to take it, anything to check, then the rest, each labelled. |
 | `js/quiet.js` | Keeps the sign-in library's messages (passes, record addresses) out of the browser's log. |
 | `js/rxnorm.js` | Drug name search and ingredient lookup through RxNav. |
 | `js/add-choices.js`, `js/add-check.js` | The add form's lists, and the check for medicines already there. |
