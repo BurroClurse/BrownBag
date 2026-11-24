@@ -53,18 +53,37 @@ test("the trademark lines are said, in the list and in the README", () => {
 const at = (iso) => "<" + iso + ">";
 const DAY = "2026-11-23T10:00:00.000Z";
 const OLD = "2026-11-20T10:00:00.000Z";
-const status = (more) => recordsStatus(Object.assign({ split: {}, savedAt: null, updatedAt: DAY, allergies: { status: "loaded", savedAt: null, updatedAt: DAY } }, more), at);
+const PHARMACY = ["Pharmacy fills", "Not connected"];
+const status = (more) => recordsStatus(Object.assign({ split: { claims: "loaded" }, savedAt: null, updatedAt: DAY, allergies: { status: "loaded", savedAt: null, updatedAt: DAY } }, more), at);
 
 test("Health records says when each part was last updated", () => {
-  assert.deepEqual(status({}), { rows: [["Meds last updated", at(DAY)], ["Allergies last updated", at(DAY)]], note: null, signIn: false });
+  assert.deepEqual(status({}), { rows: [["Meds last updated", at(DAY)], ["Allergies last updated", at(DAY)], ["Insurance fills last updated", at(DAY)], PHARMACY], note: null, signIn: false });
   assert.deepEqual(status({ savedAt: OLD, updatedAt: null, offline: true, allergies: { status: "failed", savedAt: OLD } }),
-    { rows: [["Meds last updated", at(OLD)], ["Allergies last updated", at(OLD)]], note: "Couldn't update. This is the last list that loaded.", signIn: false });
+    { rows: [["Meds last updated", at(OLD)], ["Allergies last updated", at(OLD)], ["Insurance fills last updated", at(OLD)], PHARMACY], note: "Couldn't update. This is the last list that loaded.", signIn: false });
 });
 
 test("no date for a part that didn't load", () => {
   for (const split of [{ failed: true }, { heldBack: true }]) assert.deepEqual(status({ split }).rows[0], ["Meds", "Some didn't load"]);
   assert.deepEqual(status({ allergies: { status: "failed", savedAt: null } }).rows[1], ["Allergies", "Not loaded"]);
   assert.deepEqual(status({ allergies: { status: "none", savedAt: null } }).rows[1], ["Allergies", "Not loaded"]);
+});
+
+test("insurance fills have a date only when they loaded", () => {
+  const fills = (split, more) => status(Object.assign({ split }, more)).rows[2];
+  assert.deepEqual(fills({ claims: "loaded" }), ["Insurance fills last updated", at(DAY)]);
+  // Saved with the medicines, so it has their date.
+  assert.deepEqual(fills({ claims: "loaded" }, { savedAt: OLD, updatedAt: DAY }), ["Insurance fills last updated", at(OLD)]);
+  assert.deepEqual(fills({ claims: "none" }), ["Insurance fills", "None found, " + at(DAY)]);
+  assert.deepEqual(fills({ claims: "refused" }), ["Insurance fills", "Sign in again to add them"]);
+  // Old saved lists (null), and fills with no medicines to go on.
+  for (const split of [{ claims: "failed" }, { claims: null }, {}, { claims: "loaded", failed: true }, { claims: "none", failed: true }]) {
+    assert.deepEqual(fills(split), ["Insurance fills", "Not loaded"]);
+  }
+  for (const claims of ["loaded", "none"]) assert.deepEqual(fills({ claims }, { updatedAt: null }), ["Insurance fills", "Not loaded"]);
+});
+
+test("pharmacies are named as a source that isn't connected", () => {
+  for (const claims of ["loaded", "failed", null]) assert.deepEqual(status({ split: { claims } }).rows[3], PHARMACY);
 });
 
 test("it says when only signing in will update it", () => {

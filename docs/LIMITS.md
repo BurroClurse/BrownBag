@@ -28,7 +28,11 @@ an idea becomes a plan only after its own design.
 - [ ] **4. Some medicines are in no source:** cash, discount cards, free
   samples, over-the-counter.
   - Now: the patient adds them; the add check catches duplicates.
-  - Ideas: scan the bottle's barcode; "upload to Brown Bag" from a pharmacy.
+  - Ideas: scan the bottles (Tyler, 2026-11-24, for later): read each label,
+    fill in the medicine, update the one already listed, skip duplicates. The
+    patient checks each one before it's saved; the photo stays on the phone.
+    Needs a library or a service to read the label, so ask first. Also
+    "upload to Brown Bag" from a pharmacy.
 - [ ] **5. Every source is its own sign-in, and some can't stay signed in.**
   Epic and Aetna give a browser app no refresh token; Medicare and the
   SMART sandbox do.

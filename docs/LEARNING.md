@@ -1726,6 +1726,18 @@ knows what it is.
 
 ---
 
+## Step 57: When did each part arrive?
+
+**What changed:** More options ▸ Health records has two more lines. Insurance
+fills shows its date, and Pharmacy fills says Not connected.
+
+**Why:** a list comes from several places, and each can be late or missing on
+its own. A date should only vouch for what really loaded. "None found" means
+the insurer answered. "Not loaded" means we don't know. Mixing them up would
+make a missing fill look like a medicine nobody picked up.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

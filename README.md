@@ -35,7 +35,8 @@ only, no real patients). To open it as a certain patient, see
 - **Choose where the records are.** Sign in opens a list. The SMART sandbox
   works today, and opens a list of test patients; the health systems and insurers Brown Bag may add later show
   in grey, under "Not connected". Signed in, the same list is under More
-  options, **Health records**, with the dates and **Update now**.
+  options, **Health records**, with the dates and **Update now**. It has a line for
+  insurance fills, and says pharmacies aren't connected.
 - **Sign in once.** The first time, the patient signs in at their health
   system and approves access. After that, Face ID (or a 6-digit PIN) opens
   Brown Bag and the list updates by itself.

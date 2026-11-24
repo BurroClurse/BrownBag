@@ -60,7 +60,9 @@ export function recordsStatus(state, format) {
   var allergyDate = allergies.savedAt || (allergies.status === "loaded" ? allergies.updatedAt : null);
   var rows = [
     state.split.failed || state.split.heldBack ? ["Meds", "Some didn't load"] : meds ? ["Meds last updated", format(meds)] : ["Meds", "Not loaded"],
-    allergyDate ? ["Allergies last updated", format(allergyDate)] : ["Allergies", "Not loaded"]
+    allergyDate ? ["Allergies last updated", format(allergyDate)] : ["Allergies", "Not loaded"],
+    fillsRow(state.split, meds, format),
+    ["Pharmacy fills", "Not connected"]
   ];
   var note = null;
   var signIn = false;
@@ -76,6 +78,14 @@ export function recordsStatus(state, format) {
     signIn = true;
   }
   return { rows: rows, note: note, signIn: signIn };
+}
+
+// Insurance fills load and are saved with the medicines, so they share a date.
+function fillsRow(split, date, format) {
+  var known = date && !split.failed;
+  if (known && split.claims === "loaded") return ["Insurance fills last updated", format(date)];
+  if (known && split.claims === "none") return ["Insurance fills", "None found, " + format(date)];
+  return ["Insurance fills", split.claims === "refused" ? "Sign in again to add them" : "Not loaded"];
 }
 
 // What launch.html does. A link that names its own server (the README's test
