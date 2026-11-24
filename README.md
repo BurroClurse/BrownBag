@@ -22,11 +22,6 @@ Health and MEDITECH (health systems), and Medicare and Medicaid
 test systems looked at so far, and why each fits or doesn't, are in
 [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
 
-Epic is a trademark of Epic Systems Corporation. Oracle is a registered
-trademark of Oracle and/or its affiliates. Other names may be trademarks of
-their respective owners. Brown Bag isn't affiliated with or endorsed by any
-of them, or by any government agency.
-
 It's a patient facing SMART on FHIR app that runs as static pages with no backend server. It signs in through SMART App Launch against the SMART Health IT R4 sandbox and reads FHIR R4 records.
 It is built to be simple to use: one main screen with no
 scrolling, big buttons, plain words, and WCAG 2.2 AA throughout.
