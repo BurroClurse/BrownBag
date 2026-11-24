@@ -13,7 +13,8 @@ export const SOURCES = [
   { id: "oracle-health", name: "Oracle® Health", kind: "Health systems", connected: false },
   { id: "meditech", name: "MEDITECH", kind: "Health systems", connected: false },
   { id: "medicare", name: "Medicare", kind: "Insurance", connected: false },
-  { id: "medicaid", name: "Medicaid", kind: "Insurance", connected: false }
+  { id: "medicaid", name: "Medicaid", kind: "Insurance", connected: false },
+  { id: "pharmacies", name: "Pharmacy fills", kind: "Pharmacies", connected: false }
 ];
 
 // The words their owners ask for (read 2026-11-23, listed in the design).
@@ -61,8 +62,7 @@ export function recordsStatus(state, format) {
   var rows = [
     state.split.failed || state.split.heldBack ? ["Meds", "Some didn't load"] : meds ? ["Meds last updated", format(meds)] : ["Meds", "Not loaded"],
     allergyDate ? ["Allergies last updated", format(allergyDate)] : ["Allergies", "Not loaded"],
-    fillsRow(state.split, meds, format),
-    ["Pharmacy fills", "Not connected"]
+    fillsRow(state.split, meds, format)
   ];
   var note = null;
   var signIn = false;

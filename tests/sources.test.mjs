@@ -12,7 +12,8 @@ test("only the SMART sandbox is connected", () => {
 test("the others show in order, by kind, in their owners' spelling", () => {
   assert.deepEqual(notConnected(), [
     { kind: "Health systems", names: ["Epic®", "Oracle® Health", "MEDITECH"] },
-    { kind: "Insurance", names: ["Medicare", "Medicaid"] }
+    { kind: "Insurance", names: ["Medicare", "Medicaid"] },
+    { kind: "Pharmacies", names: ["Pharmacy fills"] }
   ]);
 });
 
@@ -53,13 +54,12 @@ test("the trademark lines are said, in the list and in the README", () => {
 const at = (iso) => "<" + iso + ">";
 const DAY = "2026-11-23T10:00:00.000Z";
 const OLD = "2026-11-20T10:00:00.000Z";
-const PHARMACY = ["Pharmacy fills", "Not connected"];
 const status = (more) => recordsStatus(Object.assign({ split: { claims: "loaded" }, savedAt: null, updatedAt: DAY, allergies: { status: "loaded", savedAt: null, updatedAt: DAY } }, more), at);
 
 test("Health records says when each part was last updated", () => {
-  assert.deepEqual(status({}), { rows: [["Meds last updated", at(DAY)], ["Allergies last updated", at(DAY)], ["Insurance fills last updated", at(DAY)], PHARMACY], note: null, signIn: false });
+  assert.deepEqual(status({}), { rows: [["Meds last updated", at(DAY)], ["Allergies last updated", at(DAY)], ["Insurance fills last updated", at(DAY)]], note: null, signIn: false });
   assert.deepEqual(status({ savedAt: OLD, updatedAt: null, offline: true, allergies: { status: "failed", savedAt: OLD } }),
-    { rows: [["Meds last updated", at(OLD)], ["Allergies last updated", at(OLD)], ["Insurance fills last updated", at(OLD)], PHARMACY], note: "Couldn't update. This is the last list that loaded.", signIn: false });
+    { rows: [["Meds last updated", at(OLD)], ["Allergies last updated", at(OLD)], ["Insurance fills last updated", at(OLD)]], note: "Couldn't update. This is the last list that loaded.", signIn: false });
 });
 
 test("no date for a part that didn't load", () => {
@@ -80,10 +80,6 @@ test("insurance fills have a date only when they loaded", () => {
     assert.deepEqual(fills(split), ["Insurance fills", "Not loaded"]);
   }
   for (const claims of ["loaded", "none"]) assert.deepEqual(fills({ claims }, { updatedAt: null }), ["Insurance fills", "Not loaded"]);
-});
-
-test("pharmacies are named as a source that isn't connected", () => {
-  for (const claims of ["loaded", "failed", null]) assert.deepEqual(status({ split: { claims } }).rows[3], PHARMACY);
 });
 
 test("it says when only signing in will update it", () => {

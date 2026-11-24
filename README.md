@@ -17,8 +17,8 @@ was actually picked up. Today it connects to the SMART Health IT sandbox
 (test patients only), whose claims stand in for an insurer's.
 
 Sign in lists the others, as the app does: **Not connected**: Epic, Oracle
-Health and MEDITECH (health systems), and Medicare and Medicaid
-(insurance). Brown Bag isn't connected to these. It may add them later. The
+Health and MEDITECH (health systems), Medicare and Medicaid
+(insurance), and pharmacy fills. Brown Bag isn't connected to these. It may add them later. The
 test systems looked at so far, and why each fits or doesn't, are in
 [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
 
@@ -36,7 +36,7 @@ only, no real patients). To open it as a certain patient, see
   works today, and opens a list of test patients; the health systems and insurers Brown Bag may add later show
   in grey, under "Not connected". Signed in, the same list is under More
   options, **Health records**, with the dates and **Update now**. It has a line for
-  insurance fills, and says pharmacies aren't connected.
+  insurance fills.
 - **Sign in once.** The first time, the patient signs in at their health
   system and approves access. After that, Face ID (or a 6-digit PIN) opens
   Brown Bag and the list updates by itself.

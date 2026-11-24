@@ -1728,8 +1728,9 @@ knows what it is.
 
 ## Step 57: When did each part arrive?
 
-**What changed:** More options ▸ Health records has two more lines. Insurance
-fills shows its date, and Pharmacy fills says Not connected.
+**What changed:** More options ▸ Health records has a line for insurance fills
+with its date. Pharmacy fills are in the Not connected list, there and at
+sign-in.
 
 **Why:** a list comes from several places, and each can be late or missing on
 its own. A date should only vouch for what really loaded. "None found" means
