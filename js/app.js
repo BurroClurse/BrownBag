@@ -9,11 +9,11 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, doseChangeText, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { buildShareBundle, packShare, fitsInQr, unpackShare, groupShareBundle } from "./share.js";
-import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
+import { formatName, arrangeList, shareListFrom, detailLine, sourceLine, countLine, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom } from "./view.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { recordReader, waitLeft } from "./read.js";
+import { heldBack, recordReader, waitLeft } from "./read.js";
 import { readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, keepDrafts, startedDraft, showsSymbol, ALLERGENS, REACTIONS } from "./allergies.js";
 import { signInLink } from "./sources.js";
 import { allergyBox, drawShareList, medicinesBlock } from "./share-list.js";
@@ -357,6 +357,7 @@ async function keepFreshCopy() {
       current: state.split.current,
       older: state.split.older,
       placeholders: state.split.placeholders || 0,
+      heldBack: Boolean(state.split.heldBack),
       claims: state.split.claims || null,
       allergies: allergiesToSave(),
       savedAt: new Date().toISOString()
@@ -428,7 +429,7 @@ async function signInUnavailable(error) {
 function useSaved(saved) {
   state.patientId = saved.patientId;
   state.patient = saved.patient;
-  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, claims: saved.claims || null };
+  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, heldBack: Boolean(saved.heldBack), claims: saved.claims || null };
   state.savedAt = saved.savedAt;
   state.updatedAt = null;
   state.allergies = keepAllergies(null, saved.allergies);
@@ -452,6 +453,7 @@ async function loadMedicines(client, patientId) {
   var items = [];
   var placeholders = 0;
   var failed = false;
+  var leftOut = false;
   var kinds = [["MedicationRequest", fromMedicationRequest], ["MedicationStatement", fromMedicationStatement]];
   for (var i = 0; i < kinds.length; i += 1) {
     var type = kinds[i][0];
@@ -461,6 +463,7 @@ async function loadMedicines(client, patientId) {
         type + "?patient=" + encodeURIComponent(patientId) + "&_include=" + type + ":medication",
         { pageLimit: 0, flat: true }
       );
+      if (heldBack(resources)) leftOut = true;
       var medications = new Map(resources
         .filter(function (r) { return r && r.resourceType === "Medication"; })
         .map(function (r) { return ["Medication/" + r.id, r]; }));
@@ -483,6 +486,7 @@ async function loadMedicines(client, patientId) {
   var ingredients = rxcuis.length ? await ingredientsFor(rxcuis) : new Map();
   var split = splitByStatus(groupByIngredient(merged, ingredients));
   split.failed = failed;
+  split.heldBack = leftOut;
   split.placeholders = placeholders;
   split.ingredientOf = ingredients;
   return split;
@@ -589,7 +593,7 @@ function drawHome(arranged) {
   bag.addEventListener("click", openQr);
   var actions = add(root, "div", null, "home-actions");
   button(actions, "Show my QR code", "primary big", openQr).id = "show-qr";
-  button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions)), "secondary big", function () {
+  button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions), medicinesPartial(state)), "secondary big", function () {
     go("medicines", "medicines-heading");
   }).id = "open-medicines";
   button(root, "More options", "link-button", function () {
@@ -608,8 +612,7 @@ function drawMedicines(arranged) {
   note(root, DISCLAIMER);
   drawAllergies(root);
   // No number when some didn't load: it would read as the whole.
-  var part = state.split.failed || state.dataFailed;
-  var block = medicinesBlock(root, part ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
+  var block = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
   drawRecords(block, arranged);
   drawFillsOnly(block, arranged);
   drawAdditions(block);
@@ -887,8 +890,11 @@ function drawRecords(parent, arranged) {
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
+  if (state.split.heldBack) {
+    add(section, "p", "Your health system didn't send some of your medicines. Ask your care team.", "notice");
+  }
   var empty = emptyRecordsText(state.split, arranged);
-  if (empty && !state.split.failed) {
+  if (empty && !state.split.failed && !state.split.heldBack) {
     add(section, "p", empty);
   }
   if (state.split.placeholders) {
@@ -916,6 +922,7 @@ function drawAdditions(parent) {
   var section = add(parent, "section");
   partHeading(section, "Added by me", "added-heading");
   note(section, "Saved on this phone only. Clearing your browser erases these.");
+  if (state.dataFailed) add(section, "p", "What you added or marked stopped couldn't be opened.", "notice");
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
@@ -1316,9 +1323,7 @@ async function openQr() {
 
 async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
-  // Staff are told when the records part is an older saved copy, or when a
-  // source failed to load, so a partial list never looks complete.
-  var warnings = { recordsSavedAt: state.savedAt, recordsUpdatedAt: state.updatedAt, claims: state.split.claims, incomplete: state.split.failed || state.dataFailed, allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt } };
+  var warnings = shareWarnings(state);
   list.allergies = arrangeAllergies(state.allergies, state.data);
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   var fits = fitsInQr(packed.prefix, packed.digits);
@@ -1554,7 +1559,8 @@ function drawNotices() {
     savedAt: state.savedAt,
     offline: state.offline,
     needsSignIn: state.needsSignIn,
-    failed: state.split.failed,
+    failed: state.split.failed || state.split.heldBack,
+    dataFailed: state.dataFailed,
     allergiesRefused: state.allergies.status === "refused",
     installTip: hint,
     now: new Date()
@@ -1627,6 +1633,7 @@ function drawBackup() {
     try {
       var count = await importBackup(localStorage, state.key, await file.text());
       state.data = await loadPatientData(localStorage, state.key, state.patientId);
+      state.dataFailed = false;
       state.announce = restoreMessage(count) + " Nothing on this phone was replaced.";
     } catch (error) {
       state.announce = error && error.code === "locked"

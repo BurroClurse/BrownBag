@@ -110,8 +110,14 @@ Nothing is written to the health record. Nothing runs on a schedule.
 
 Records whose medicine is only a placeholder word, such as "Medication",
 with no drug code, are left out of the list and the QR code; a note on My
-medicines says how many there were. An allergy entry that doesn't say what
-it's to gets a note the same way.
+medicines and on the staff page says how many there were. An allergy entry
+that doesn't say what it's to gets a note the same way.
+
+**Unknown is never none.** When medicines, insurance fills, allergies or the
+patient's own additions couldn't be loaded, or the server says it left
+something out, My medicines and the staff page say so and no empty part says
+"none". Home and the Medicines heading leave the number off when the
+medicines or the patient's own part didn't load.
 
 **The refresh token** is stored encrypted (AES-GCM) with a key that comes
 from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
@@ -145,6 +151,7 @@ The list never passes through a server.
 | `js/allergies.js` | Allergy records and the patient's own, one card each. |
 | `js/sources.js` | The sources: which are connected, and what shows for the rest. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
+| `js/quiet.js` | Keeps the sign-in library's messages (passes, record addresses) out of the browser's log. |
 | `js/rxnorm.js` | Drug name search and ingredient lookup through RxNav. |
 | `js/add-choices.js`, `js/add-check.js` | The add form's lists, and the check for medicines already there. |
 | `js/pass.js` | The encrypted refresh token ("the pass"). |

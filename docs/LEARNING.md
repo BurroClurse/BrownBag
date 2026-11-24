@@ -1283,6 +1283,32 @@ lets an app add its own labels. A code made before this simply doesn't have it.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 30. Saying what didn't load (`js/share.js`, `js/view.js`, `js/quiet.js`)
+
+**What changed for staff.** The staff page now says when what the patient added
+couldn't be opened, and when the records have entries with no medicine name.
+Before, those parts looked empty.
+
+**Unknown is not none.** "Nothing added by the patient" is a claim. If the
+phone couldn't open that part, nobody knows. The page now says "Couldn't be
+opened." The same goes for the home button: no number is better than a wrong 0.
+
+**A polite answer can still leave things out.** A FHIR server can answer "OK"
+and put an OperationOutcome inside the Bundle that says some records were held
+back. The allergies check looked for it. The medicines and claims checks now
+do too, with one shared function.
+
+**Logs leak.** The browser keeps a log that anyone holding the phone or
+computer can open. The sign-in library wrote sign-in passes and patient ids in
+it. `js/quiet.js` drops those lines. The library's own file stays unchanged,
+because its hash is checked.
+
+**Test what people read.** The staff tests draw the real page code into a tiny
+stand-in page and read the words. The log test runs the real library and reads
+what it logged. It failed first, which proved the leak.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

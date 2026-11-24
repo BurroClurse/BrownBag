@@ -21,6 +21,14 @@ export function recordReader(client, fetchFn) {
   };
 }
 
+// Whether an answer says the server left something out. Warnings and
+// information are only remarks.
+export function heldBack(resources) {
+  return resources.some(function (r) {
+    return Boolean(r) && r.resourceType === "OperationOutcome" && (r.issue || []).some(function (i) { return i.severity === "error" || i.severity === "fatal"; });
+  });
+}
+
 // How long an extra read may still take: at most its own limit, and never so
 // long that the medicines miss theirs (with time left to show them).
 var TIME_TO_SHOW_MS = 1500;

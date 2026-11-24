@@ -4,6 +4,7 @@
 // runner can check it.
 
 import { listDate } from "./offline.js";
+import { heldBack } from "./read.js";
 
 var SNOMED = "http://snomed.info/sct";
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
@@ -283,11 +284,8 @@ export async function readAllergies(request, patientId, sourceName, ms) {
       url = next ? next.url : null;
     }
     // The server left something out, or says there are some and sent none.
-    var withheld = found.some(function (r) {
-      return r.resourceType === "OperationOutcome" && (r.issue || []).some(function (i) { return i.severity === "error" || i.severity === "fatal"; });
-    });
     var read = found.some(function (r) { return r.resourceType === "AllergyIntolerance"; });
-    if (withheld || (said > 0 && !read)) return nothing("failed");
+    if (heldBack(found) || (said > 0 && !read)) return nothing("failed");
     return Object.assign({ status: "loaded" }, fromAllergyRecords(found, sourceName));
   })().catch(function (error) {
     var status = error && (error.status || (error.response && error.response.status));

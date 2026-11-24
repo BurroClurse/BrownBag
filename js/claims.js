@@ -4,6 +4,8 @@
 // Blue Button 2.0) adds more fills the same way. No DOM here, so Node's
 // test runner can check it.
 
+import { heldBack } from "./read.js";
+
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 var CLAIM_TYPE = "http://terminology.hl7.org/CodeSystem/claim-type";
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -188,10 +190,13 @@ export async function readClaims(request, patientId, lookup, ms) {
       if (Date.now() >= deadline) return { status: "failed" };
       var bundle = await request(url);
       if (Date.now() >= deadline) return { status: "failed" };
-      ((bundle && bundle.entry) || []).forEach(function (entry) {
+      // An odd answer, or one that left something out, is never "no claims".
+      if (!bundle || bundle.resourceType !== "Bundle") return { status: "failed" };
+      if (heldBack((bundle.entry || []).map(function (entry) { return entry && entry.resource; }))) return { status: "failed" };
+      (bundle.entry || []).forEach(function (entry) {
         if (entry && entry.resource && entry.resource.resourceType === "ExplanationOfBenefit") eobs.push(entry.resource);
       });
-      var next = ((bundle && bundle.link) || []).filter(function (l) { return l.relation === "next" && l.url; })[0];
+      var next = (bundle.link || []).filter(function (l) { return l.relation === "next" && l.url; })[0];
       url = next ? next.url : null;
     }
     var fills = fillsFromClaims(eobs);

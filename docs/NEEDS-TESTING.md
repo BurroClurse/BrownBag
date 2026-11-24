@@ -36,6 +36,9 @@ pass, when it touches:
 
 - See what's inside on Android: the phone's own Back button, TalkBack, and
   whether a camera reads the slightly smaller code on a short screen.
+- What didn't load, said to patient and staff, and the quiet log: both virtual
+  phones (staff page, QR code, sign-in). The failure states need made-up
+  answers, so the test browser covers those.
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 

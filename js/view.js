@@ -157,13 +157,33 @@ export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
 
-export function medicinesButtonText(count) {
-  return "My medicines (" + count + ")";
+// Some of the medicines didn't load: no number anywhere, which would read as
+// the whole.
+export function medicinesPartial(state) {
+  return Boolean(state.split.failed || state.split.heldBack || state.dataFailed);
+}
+
+// What the QR code tells staff about what's missing, so a partial list never
+// looks complete.
+export function shareWarnings(state) {
+  return {
+    recordsSavedAt: state.savedAt,
+    recordsUpdatedAt: state.updatedAt,
+    claims: state.split.claims,
+    incomplete: medicinesPartial(state),
+    ownMissing: state.dataFailed,
+    unnamed: state.split.placeholders || 0,
+    allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt }
+  };
+}
+
+export function medicinesButtonText(count, partial) {
+  return partial ? "My medicines" : "My medicines (" + count + ")";
 }
 
 // The notes at the top of the home screen, one short line each, only when
 // needed, in order. While the list is updating, its date line waits.
-export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, allergiesRefused, installTip, now }) {
+export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, dataFailed, allergiesRefused, installTip, now }) {
   var out = [];
   if (updating) {
     out.push({ kind: "updating", text: "Updating your list…" });
@@ -175,6 +195,7 @@ export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, al
     out.push({ kind: "sign-in", text: "Sign in again to add your allergies." });
   }
   if (failed) out.push({ kind: "failed", text: "Some records didn't load." });
+  if (dataFailed) out.push({ kind: "failed", text: "What you added couldn't be opened." });
   if (installTip) out.push({ kind: "install", text: installTip });
   return out;
 }

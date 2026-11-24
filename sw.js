@@ -3,7 +3,7 @@
 // It never keeps health data. Records (FHIR), the sign-in server and RxNav
 // always go straight to the network and are never cached.
 
-var CACHE = "brownbag-v31";
+var CACHE = "brownbag-v32";
 // On weak Wi-Fi, stop waiting after this long and use the phone's copy.
 var NETWORK_WAIT_MS = 3000;
 
@@ -14,6 +14,7 @@ var APP_FILES = [
   "./launch.html",
   "./manifest.webmanifest",
   "./css/brownbag.css",
+  "./js/quiet.js",
   "./js/app.js",
   "./js/view.js",
   "./js/meds.js",

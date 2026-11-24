@@ -97,6 +97,12 @@ export function buildShareBundle(list, now, warnings = {}) {
   if (warnings.incomplete) {
     tags.push({ system: TAGS, code: "records-incomplete" });
   }
+  if (warnings.ownMissing) {
+    tags.push({ system: TAGS, code: "own-missing" });
+  }
+  if (warnings.unnamed) {
+    tags.push({ system: TAGS, code: "records-unnamed", display: String(warnings.unnamed) });
+  }
   if (list.allergies) {
     tags.push({ system: TAGS, code: "allergies-" + warnings.allergies.status });
     if (warnings.allergies.savedAt) {
@@ -114,15 +120,20 @@ export function buildShareBundle(list, now, warnings = {}) {
 
 export function groupShareBundle(bundle) {
   var tags = (bundle.meta && bundle.meta.tag) || [];
-  var saved = tags.filter(function (tag) { return tag.system === TAGS && tag.code === "records-saved-on"; })[0];
-  var updated = tags.filter(function (tag) { return tag.system === TAGS && tag.code === "records-updated-on"; })[0];
+  var of = function (code) { return tags.filter(function (tag) { return tag.system === TAGS && tag.code === code; })[0]; };
+  var saved = of("records-saved-on");
+  var updated = of("records-updated-on");
+  var unnamed = of("records-unnamed");
   var groups = {
     patient: null,
     madeAt: bundle.timestamp,
     recordsSavedAt: saved ? saved.display : null,
     recordsUpdatedAt: updated ? updated.display : null,
-    claimsNotLoaded: tags.some(function (tag) { return tag.system === TAGS && tag.code === "claims-not-loaded"; }),
-    incomplete: tags.some(function (tag) { return tag.system === TAGS && tag.code === "records-incomplete"; }),
+    claimsNotLoaded: Boolean(of("claims-not-loaded")),
+    incomplete: Boolean(of("records-incomplete")),
+    ownMissing: Boolean(of("own-missing")),
+    // A count that isn't one still means there are some.
+    unnamed: unnamed ? (/^[1-9]\d{0,3}$/.test(unnamed.display) ? Number(unnamed.display) : 1) : 0,
     fromRecords: [],
     fromClaims: [],
     addedByPatient: [],
@@ -480,6 +491,29 @@ async function transform(bytes, stream) {
 // The same number as the home button: current, filled and added.
 export function shareMedicineCount(groups) {
   return groups.fromRecords.length + (groups.fromClaims || []).length + groups.addedByPatient.length;
+}
+
+// What staff are told about the medicines that aren't listed, right under the
+// heading, where it can't be missed.
+export function medicineNotices(groups) {
+  var out = [];
+  if (groups.incomplete) out.push("Some of the patient's records couldn't be loaded. This list may be missing medicines.");
+  if (groups.ownMissing) out.push("What the patient added or marked stopped couldn't be opened. Ask the patient.");
+  if (groups.unnamed) {
+    var one = groups.unnamed === 1;
+    out.push("The records also have " + groups.unnamed + (one ? " entry" : " entries") + " with no medicine name, so " + (one ? "it isn't" : "they aren't") + " listed. Ask the patient.");
+  }
+  return out;
+}
+
+// What an empty part says. "None" only when that much is known.
+export function emptyPartText(groups, part) {
+  if (part === "records") {
+    if (groups.incomplete) return "None loaded.";
+    return groups.unnamed ? "None with a medicine name." : "No medicines from records.";
+  }
+  if (groups.ownMissing) return "Couldn't be opened.";
+  return part === "added" ? "Nothing added by the patient." : "Nothing marked stopped.";
 }
 
 // Some of it didn't load: no number, which would read as the whole.

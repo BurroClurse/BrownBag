@@ -2,7 +2,7 @@
 // patient's own phone. One piece of code draws both, so they can't differ.
 // Allergies and medicines are two blocks (design 2026-11-23).
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, fillsNote, medicinesTitle } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle } from "./share.js";
 import { showsSymbol } from "./allergies.js";
 
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -22,18 +22,15 @@ export function drawShareList(parent, groups, level, made) {
   note(parent, DISCLAIMER);
   drawAllergies(parent, groups.allergies, level + 1, allergyDateLine(groups, madeOn));
   var block = medicinesBlock(parent, medicinesTitle(groups), level + 1).section;
-  // Right under the heading, where it can't be missed.
-  if (groups.incomplete) {
-    add(block, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
-  }
+  medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
   var fills = fillsNote(groups);
   if (fills) note(block, fills);
-  part(block, "From records", groups.fromRecords, groups.incomplete ? "None loaded." : "No medicines from records.", level + 2);
+  part(block, "From records", groups.fromRecords, emptyPartText(groups, "records"), level + 2, groups.incomplete);
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
   }
-  part(block, "Added by patient", groups.addedByPatient, "Nothing added by the patient.", level + 2);
-  part(block, "Patient says stopped", groups.patientSaysStopped, "Nothing marked stopped.", level + 2);
+  part(block, "Added by patient", groups.addedByPatient, emptyPartText(groups, "added"), level + 2, groups.ownMissing);
+  part(block, "Patient says stopped", groups.patientSaysStopped, emptyPartText(groups, "stopped"), level + 2, groups.ownMissing);
   return title;
 }
 
@@ -75,9 +72,10 @@ function drawAllergies(parent, allergies, level, dated) {
   });
 }
 
-function part(parent, text, rows, empty, level) {
+// partial: some of it didn't load, so no number.
+function part(parent, text, rows, empty, level, partial) {
   var section = add(parent, "section");
-  add(section, "h" + level, text + " (" + rows.length + ")", "part-title");
+  add(section, "h" + level, partial ? text : text + " (" + rows.length + ")", "part-title");
   if (!rows.length) {
     add(section, "p", empty, "med-line");
     return;
