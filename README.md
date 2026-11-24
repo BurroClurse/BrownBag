@@ -14,8 +14,8 @@ account, and Brown Bag reads their prescriptions and listed medicines
 through SMART on FHIR, which US certified health record systems must offer
 to patient apps. It adds pharmacy fills from insurance claims, showing what
 was actually picked up. Today it connects to the SMART Health IT sandbox
-(test patients only), whose claims stand in for an insurer's. Epic, Aetna
-and Medicare sandboxes are being added (see the table below).
+(test patients only), whose claims stand in for an insurer's. A Medicare
+sandbox is being added, and Epic and Aetna come later (see the table below).
 
 The accounts it is built to work with: the patient portal of any US
 certified health record system, such as Epic MyChart, Oracle Health
@@ -33,9 +33,9 @@ the list out of any server.
 | Sandbox | Status | Why |
 | --- | --- | --- |
 | SMART Health IT | Connected | The course sandbox. Test patients only. |
-| Epic (open.epic) | Being added | Self-service, no approval wait. Browser reading works. Test patient Camila Lopez has medicines. A browser-only app gets no stay-signed-in pass. |
-| Aetna | Being added | Allows browser apps (PKCE), and records are readable from the browser. Its sign-up questionnaire is reviewed in 2 to 4 business days, even for the sandbox. No stay-signed-in pass. |
 | Medicare (Blue Button) | Being added | Pharmacy fills from Medicare claims. Design: `docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md`. |
+| Epic (open.epic) | Later | The best fit of the health systems: self-service, no approval wait, browser reading works, and test patient Camila Lopez has medicines. Parked to focus on the SMART sandbox; Epic's terms, a privacy page and an erase button come first (see the design's next steps). A browser-only app gets no stay-signed-in pass. |
+| Aetna | Later | The best fit of the insurers: allows browser apps (PKCE), and records are readable from the browser. Its sign-up questionnaire is reviewed in 2 to 4 business days, even for the sandbox. No stay-signed-in pass. |
 | Oracle Health (Ignite) | Later | Free account, and browser reading works. Patient apps need a code in the app's own domain's DNS settings, which a github.io address can't hold, so it needs a custom domain. |
 | MEDITECH (Greenfield) | Later | Manual sign-up with a license agreement and a call. Three test patients. Each real hospital approves the app separately. |
 | UnitedHealthcare | No | Needs a registered organization, and its server doesn't let a browser read data, so claims would have to pass through a server. No MedicationStatement records either. |
