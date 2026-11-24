@@ -92,6 +92,9 @@ only, no real patients). To open it as a certain patient, see
 - **Sign out** signs out everyone on the phone. Saved lists stay, locked: the
   next open says "You're signed out", with Sign in. With no signal, it also
   has Open my saved list.
+- **Privacy** says what Brown Bag keeps and who can see it, in plain words:
+  <https://burroclurse.github.io/BrownBag/privacy.html>, under More options and
+  under the sign-in list.
 - **Locks itself** after 5 minutes without a tap or 5 minutes away from the
   app. The health record connection ends after 30 days without opening it.
 
@@ -184,6 +187,7 @@ The list never passes through a server.
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
+| `privacy.html` | The privacy page: what Brown Bag keeps, who is contacted, and the limits of the locks. |
 | `js/options.js` | What More options offers, in groups. |
 | `js/edit.js` | Changing a medicine the patient added. |
 | `js/sort.js` | The order of My medicines, and the short name on home. |

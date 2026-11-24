@@ -10,13 +10,13 @@ const ids = (groups) => groups.map((group) => group.rows.map((row) => row.id));
 // own and marked; the one people come for is first.
 test("options are grouped, records first and signing out last", () => {
   const groups = optionGroups({ status: STATUS, homeScreen: false });
-  assert.deepEqual(ids(groups), [["open-records"], ["save-backup", "restore-backup"], ["sign-out"]]);
-  assert.equal(groups[2].rows[0].kind, "stop");
-  assert.ok(groups.slice(0, 2).every((group) => group.rows.every((row) => row.kind !== "stop")));
+  assert.deepEqual(ids(groups), [["open-records"], ["save-backup", "restore-backup"], ["open-privacy"], ["sign-out"]]);
+  assert.equal(groups[3].rows[0].kind, "stop");
+  assert.ok(groups.slice(0, 3).every((group) => group.rows.every((row) => row.kind !== "stop")));
 });
 
 test("the Home Screen steps show only where they help", () => {
-  assert.deepEqual(ids(optionGroups({ status: STATUS, homeScreen: true })), [["open-records"], ["save-backup", "restore-backup"], ["open-install"], ["sign-out"]]);
+  assert.deepEqual(ids(optionGroups({ status: STATUS, homeScreen: true })), [["open-records"], ["save-backup", "restore-backup"], ["open-install", "open-privacy"], ["sign-out"]]);
 });
 
 test("every option says what it does and has an icon", () => {
@@ -30,7 +30,7 @@ test("every option says what it does and has an icon", () => {
 
 // What signing out does, all of it: it's for everyone, and lists stay.
 test("signing out says it's for everyone and that saved lists stay, locked", () => {
-  const out = optionGroups({ status: STATUS, homeScreen: false })[2].rows[0];
+  const out = optionGroups({ status: STATUS, homeScreen: false })[3].rows[0];
   assert.match(out.detail, /everyone who signed in on this phone/);
   assert.match(out.detail, /Saved lists stay on this phone, locked/);
 });
@@ -43,4 +43,8 @@ test("Health records says how current they are, or what to do", () => {
 
 test("the options work with no signal", () => {
   assert.ok(readFileSync(new URL("../sw.js", import.meta.url), "utf8").includes('"./js/options.js"'));
+});
+
+test("Privacy opens its own page", () => {
+  assert.match(readFileSync(new URL("../js/app.js", import.meta.url), "utf8"), /"open-privacy": function \(\) \{ location\.href = "\.\/privacy\.html"; \}/);
 });

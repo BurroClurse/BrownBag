@@ -1546,6 +1546,23 @@ phone has a network, not that the internet works.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 47. A privacy page that has to stay true (`privacy.html`)
+
+**What changed.** More options and the sign-in list open a Privacy page.
+
+**Check the code before writing the promise.** We listed every address the code
+contacts and everything it stores, then wrote the page. That turned up a real
+limit: a QR code's 6 digits can be guessed by someone with a picture of it.
+
+**HIPAA follows who holds the records.** It covers doctors, insurers and the
+companies working for them. An app the patient chose is usually outside it, and
+the page says so. Nobody certifies an app as "HIPAA compliant".
+
+**A test for a promise.** A new outside address in the code fails a test until
+the page names it.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

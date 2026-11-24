@@ -6,6 +6,7 @@ export const ICONS = {
   records: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5",
   save: "M12 4v10M8 10l4 4 4-4M5 17v3h14v-3",
   restore: "M5 4v5h5M5.5 9A8 8 0 1 1 4 13",
+  privacy: "M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6zM9 12l2 2 4-4",
   phone: "M8 3h8v18H8zM11 18h2",
   out: "M13 4H6v16h7M10 12h10M17 8.5l3.5 3.5-3.5 3.5"
 };
@@ -22,9 +23,10 @@ export function optionGroups({ status, homeScreen }) {
       { id: "restore-backup", icon: "restore", name: "Restore a backup", detail: "Get your list back from a copy." }
     ] }
   ];
-  if (homeScreen) {
-    groups.push({ rows: [{ id: "open-install", icon: "phone", name: "Add to Home Screen", detail: "Open Brown Bag like an app.", opens: true }] });
-  }
+  var about = [];
+  if (homeScreen) about.push({ id: "open-install", icon: "phone", name: "Add to Home Screen", detail: "Open Brown Bag like an app.", opens: true });
+  about.push({ id: "open-privacy", icon: "privacy", name: "Privacy", detail: "What's kept and who sees it.", opens: true });
+  groups.push({ rows: about });
   groups.push({ rows: [{ id: "sign-out", icon: "out", kind: "stop", name: "Sign out", detail: "For everyone who signed in on this phone. Saved lists stay on this phone, locked." }] });
   return groups;
 }

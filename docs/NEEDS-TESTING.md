@@ -64,6 +64,15 @@ The staff page changed, so it goes first:
 - The sign-in list on Android: the phone's own Back button and TalkBack. Claude
   in Chrome stood in for the emulator (the Mac's disk was full).
 
+**Privacy page** (2026-11-24). Checked only in the test browser (320 to 1440 wide,
+200 percent text, no signal, Back from both places), not on a virtual phone:
+
+- More options ▸ Privacy opens the page. Back returns to More options, or to the
+  lock and then home if the phone dropped the page.
+- The Privacy link under the sign-in list, and Back.
+- The sign-in list still fits one screen. More options now scrolls on a short
+  screen (667 px); Sign out is last.
+
 ## Not done yet
 
 Decided for later, so nothing to test until they're picked up:
@@ -93,6 +102,8 @@ Decided for later, so nothing to test until they're picked up:
 - More options with VoiceOver: each option reads its name, then its line. Then
   Health records: Update now, and
   "About these names" opening.
+- The Privacy page in the Home Screen app: More options ▸ Privacy ▸ Back. With
+  VoiceOver: each heading, the list, and the GitHub link (it opens a browser).
 - The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
   the popup, and starts on Cancel.
 - Signed out: only Sign in. In airplane mode with Wi-Fi off, the line and Open my

@@ -41,6 +41,7 @@ function showList() {
     button.addEventListener("click", choose);
   });
   drawNotConnected(root);
+  add(root, "a", "Privacy", "quiet-link").href = "./privacy.html";
   back("secondary big");
   h.focus();
 }

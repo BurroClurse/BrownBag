@@ -52,7 +52,9 @@ an idea becomes a plan only after its own design.
     and "dose changed" lines; the patient and care team decide.
   - Ideas: a "differences to check" screen for the person at the desk.
 - [ ] **9. Sandbox only.** Real patients need each company's production
-  review, and a public privacy policy (Brown Bag has none yet).
+  review, and a public privacy policy.
+  - Now: `privacy.html` (2026-11-24). Before real patients: a lawyer reads it,
+    and Questions gets an email address instead of GitHub issues.
 - [ ] **10. The public SMART sandbox resets nightly,** so made-up demo
   patients (Avery Brownbag) disappear.
   - Ideas: the SMART team adds Avery to the built-in data (Tyler holds the
@@ -80,3 +82,7 @@ an idea becomes a plan only after its own design.
   shows. The same goes for a health system that's down.
   - Now: airplane mode with Wi-Fi off shows Open my saved list.
   - Ideas: offer it after a sign-in that couldn't start.
+- [ ] **15. A QR code never expires, and its 6 digits can be guessed.** Someone
+  with a picture of it could try all million codes on a computer.
+  - Now: the privacy page says so; a new code is made each time.
+  - Ideas: SMART Health Links, which can expire but need a server.

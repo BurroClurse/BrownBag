@@ -719,6 +719,7 @@ function drawMore() {
     "save-backup": saveBackup,
     "restore-backup": function () { picker.click(); },
     "open-install": function () { go("install", "install-heading"); },
+    "open-privacy": function () { location.href = "./privacy.html"; },
     "sign-out": async function (out) {
       out.disabled = true;
       out.querySelector(".option-name").textContent = "Signing out…";

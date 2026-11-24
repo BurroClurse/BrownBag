@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy | Brown Bag</title>
+  <link rel="icon" href="data:,">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#6b3f1d">
+  <link rel="stylesheet" href="css/brownbag.css">
+</head>
+<body>
+  <main class="screen-privacy">
+    <div class="screen-top"><a class="button secondary big" id="privacy-back" href="./">Back</a></div>
+    <h1>Privacy</h1>
+    <p>Brown Bag is a student project by Tyler Beattie. It uses test patients only. <strong>Don't enter real health information.</strong></p>
+
+    <section>
+      <h2>What stays on your phone</h2>
+      <p>Your list, what you add, and your sign-in are saved locked. While Brown Bag is open, your browser also holds your sign-in.</p>
+    </section>
+
+    <section>
+      <h2>What Brown Bag's maker gets</h2>
+      <p>Nothing from your list. There is no Brown Bag server, account, ads or tracking.</p>
+    </section>
+
+    <section>
+      <h2>Who else is contacted</h2>
+      <ul>
+        <li><strong>Your health records:</strong> for your medicines, allergies and insurance fills.</li>
+        <li><strong>The National Library of Medicine:</strong> gets medicine names you type and drug codes, but not your name.</li>
+        <li><strong>GitHub:</strong> hosts the app, and can see your internet address.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>When you share</h2>
+      <p>Your QR code is locked with 6 digits. Anyone with both can read it, and it doesn't expire. Someone with a picture of the code could work out the digits by trying them all. Share it only with people you trust.</p>
+    </section>
+
+    <section>
+      <h2>Backups</h2>
+      <p>Backups are locked. Where you save one is up to you.</p>
+    </section>
+
+    <section>
+      <h2>Deleting it</h2>
+      <p>Sign out ends the sign-in on this phone and keeps your list, locked. Start over erases Brown Bag on this phone. Delete your backups yourself.</p>
+    </section>
+
+    <section>
+      <h2>HIPAA</h2>
+      <p>HIPAA protects your records at your doctor and insurer. It doesn't cover the copy in Brown Bag.</p>
+    </section>
+
+    <section>
+      <h2>If something goes wrong</h2>
+      <p>If we learn your information was exposed, we'll say so here. Brown Bag has no way to contact you.</p>
+    </section>
+
+    <section>
+      <h2>Questions</h2>
+      <p><a href="https://github.com/BurroClurse/BrownBag/issues">Open an issue on GitHub</a>. Don't include health information.</p>
+    </section>
+
+    <p class="who">Last changed: November 24, 2026</p>
+  </main>
+  <script>
+    // Back to the screen they came from. Opened by itself (a search result, a
+    // shared link), or with no script, Back opens Brown Bag.
+    document.getElementById("privacy-back").addEventListener("click", function (event) {
+      var home = new URL("./", location.href).href;
+      if (history.length > 1 && document.referrer.indexOf(home) === 0) {
+        event.preventDefault();
+        history.back();
+      }
+    });
+  </script>
+</body>
+</html>
