@@ -169,13 +169,16 @@ no list and no password:
 | Chantell Bartell `e89af71d-4aa4-2237-e71d-6fa8e4b5af09` | Insurance fills, one allergy, and an allergy entry that doesn't say what it's to. | [Open as Chantell](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU4OWFmNzFkLTRhYTQtMjIzNy1lNzFkLTZmYThlNGI1YWYwOSIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
 | Loria Jenkins `e7de504a-311d-49be-b2bc-566a328bcc72` | Four current medicines, no insurance claims and no allergies. | [Open as Loria](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU3ZGU1MDRhLTMxMWQtNDliZS1iMmJjLTU2NmEzMjhiY2M3MiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
 
-Both are made-up patients that come with the sandbox. Nothing is sent back
-to it; what you add stays on your phone.
+**The sandbox is reset every night, and patients that people added are
+deleted.** Chantell and Loria are made-up patients that come with the
+sandbox, so they are still there after the reset and these links still work.
+Nothing you do in Brown Bag is sent back to the sandbox; what you add stays
+on your phone.
 
 **Avery Brownbag** (`brownbag-demo-patient`) is made up too, and shows every
-fill case. `node tools/demo-patient.mjs` puts Avery on the sandbox (it
-replaces, never duplicates). The sandbox is reset every night, so Avery is
-there only until then.
+fill case, but is an added patient, so Avery has no link here and is usually
+not on the sandbox. `node tools/demo-patient.mjs` puts Avery there (it
+replaces, never duplicates) until the next reset.
 
 ## Run the tests
 
