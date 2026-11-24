@@ -19,6 +19,7 @@ import { drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
+import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
 import { readClaims, mergeClaims } from "./claims.js";
@@ -285,7 +286,7 @@ function finishUpdate() {
   }
 }
 
-// Update now, on Where my records come from. With no pass there's only
+// Update now, on Health records. With no pass there's only
 // signing in.
 async function updateNow() {
   if (state.updating) return;
@@ -697,28 +698,22 @@ function drawMore() {
   var title = add(root, "h1", "More options");
   title.id = "more-heading";
   title.tabIndex = -1;
-  var records = add(root, "section");
-  heading(records, "Health records", "records-from");
-  button(records, "Where my records come from", "secondary big", function () {
-    go("records", "records-from-heading");
-  }).id = "open-records";
-  drawBackup();
-  if (installTip(navigator.userAgent) && !isStandalone()) {
-    var home = add(root, "section");
-    heading(home, "Home Screen", "home-screen-heading");
-    button(home, "Add to Home Screen", "secondary big", function () {
-      go("install", "install-heading");
-    }).id = "open-install";
-  }
-  var section = add(root, "section");
-  heading(section, "Sign out", "signout-heading");
-  note(section, "Signing out disconnects Brown Bag from the records of everyone who signed in on this phone. Saved lists stay on this phone, locked. You'll sign in again next time.");
-  var out = button(section, "Sign out", "secondary big", async function () {
-    out.disabled = true;
-    out.textContent = "Signing out…";
-    await signOutEveryone();
-    location.href = "./";
+  drawOptions(root, optionGroups({
+    status: recordsStatus(state, timeText),
+    homeScreen: Boolean(installTip(navigator.userAgent)) && !isStandalone()
+  }), {
+    "open-records": function () { go("records", "records-from-heading"); },
+    "save-backup": saveBackup,
+    "restore-backup": function () { picker.click(); },
+    "open-install": function () { go("install", "install-heading"); },
+    "sign-out": async function (out) {
+      out.disabled = true;
+      out.querySelector(".option-name").textContent = "Signing out…";
+      await signOutEveryone();
+      location.href = "./";
+    }
   });
+  var picker = backupPicker();
 }
 
 // Everyone who signed in on this phone. The passes go from the phone first,
@@ -1799,7 +1794,7 @@ function drawRecordsFrom() {
   button(top, "Done", "secondary big", function () {
     history.back();
   }).id = "records-done";
-  var title = add(root, "h1", "Where my records come from");
+  var title = add(root, "h1", "Health records");
   title.id = "records-from-heading";
   title.tabIndex = -1;
   var source = connected()[0];
@@ -1827,18 +1822,12 @@ function drawRecordsFrom() {
 
 // The backup stays encrypted. It also carries the lock settings (never the
 // key), so it can be opened after the phone's storage is erased.
-function drawBackup() {
-  var section = add(root, "section");
-  helpHeading(section, "Backup", "backup-heading", "About backups", function (panel) {
-    add(panel, "p", "Save a backup file to Files or iCloud. If your phone ever erases Brown Bag's saved list, Restore brings it back.");
-  });
-  button(section, "Save a backup", "secondary big", saveBackup);
-  var picker = add(section, "input");
+function backupPicker() {
+  var picker = add(root, "input");
   picker.type = "file";
   picker.accept = ".json,application/json";
   picker.hidden = true;
   picker.id = "restore-file";
-  button(section, "Restore a backup", "secondary big", function () { picker.click(); });
   picker.addEventListener("change", async function () {
     var file = picker.files && picker.files[0];
     if (!file) return;
@@ -1855,6 +1844,7 @@ function drawBackup() {
     state.focusId = "backup-heading";
     render();
   });
+  return picker;
 }
 
 async function saveBackup() {

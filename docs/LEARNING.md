@@ -1424,6 +1424,23 @@ If they didn't load, there's no date, so a date never vouches for nothing.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 38. More options in groups (`js/options.js`)
+
+**What changed.** More options is cards: health records, backups, and Sign out
+last. Each option has an icon, a name and one line saying what it does. The
+sign-in list's title is centered.
+
+**Say it where it's used.** The "?" and the note held explanations away from
+their buttons. One line inside each button does the same job.
+
+**Danger goes last and looks different.** Sign out sits alone, in red, so it's
+hard to tap by mistake.
+
+**Lists as data.** The groups are a plain list the tests can read, and drawing
+them is separate.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary

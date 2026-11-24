@@ -26,7 +26,7 @@ test("Sign in opens the list, and a named source or a link's own server goes str
 
 test("Sign in after the lock goes straight in; signed out, it opens the list", () => {
   const app = read("js/app.js");
-  // The two notes, and Where my records come from (the link, and Update
+  // The two notes, and Health records (the link, and Update
   // now with no pass).
   assert.equal(app.match(/signInLink\(\)/g).length, 4);
   assert.equal(app.match(/href = "\.\/launch\.html"/g).length, 2);
@@ -44,7 +44,7 @@ const DAY = "2026-11-23T10:00:00.000Z";
 const OLD = "2026-11-20T10:00:00.000Z";
 const status = (more) => recordsStatus(Object.assign({ split: {}, savedAt: null, updatedAt: DAY, allergies: { status: "loaded", savedAt: null, updatedAt: DAY } }, more), at);
 
-test("where my records come from says when each part was last updated", () => {
+test("Health records says when each part was last updated", () => {
   assert.deepEqual(status({}), { rows: [["Meds last updated", at(DAY)], ["Allergies last updated", at(DAY)]], note: null, signIn: false });
   assert.deepEqual(status({ savedAt: OLD, updatedAt: null, offline: true, allergies: { status: "failed", savedAt: OLD } }),
     { rows: [["Meds last updated", at(OLD)], ["Allergies last updated", at(OLD)]], note: "Couldn't update. This is the last list that loaded.", signIn: false });

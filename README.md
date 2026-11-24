@@ -40,12 +40,14 @@ only, no real patients). To open it as a certain patient, see
 - **Choose where the records are.** Sign in opens a list. The SMART sandbox
   works today; the health systems and insurers Brown Bag may add later show
   in grey, under "Not connected". Signed in, the same list is under More
-  options, **Where my records come from**, with the dates and **Update now**.
+  options, **Health records**, with the dates and **Update now**.
 - **Sign in once.** The first time, the patient signs in at their health
   system and approves access. After that, Face ID (or a 6-digit PIN) opens
   Brown Bag and the list updates by itself.
 - **One screen.** Their first name and last initial, the Brown Bag logo, **Show my QR code**,
   **My medicines (N)**, and **More options**.
+- **More options** is short groups, each option with one line saying what it
+  does: health records, backups, the Home Screen, and Sign out last.
 - **My medicines.** Medicines from their records (repeats merged, strengths of
   one drug grouped, older prescriptions folded away), medicines they added
   (checked against RxNorm). Each medicine from the records has two
@@ -182,6 +184,7 @@ The list never passes through a server.
 | `js/idle.js` | When the app locks itself. |
 | `js/share.js`, `js/share-view.js` | The shared Bundle, its QR packing, and the staff page. |
 | `js/share-list.js` | The shared list on the staff page. |
+| `js/options.js` | What More options offers, in groups. |
 | `js/edit.js` | Changing a medicine the patient added. |
 | `js/sort.js` | The order of My medicines, and the short name on home. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |

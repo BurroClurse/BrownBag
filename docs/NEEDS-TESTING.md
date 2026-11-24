@@ -50,8 +50,8 @@ The staff page changed, so it goes first:
   stacking at the largest text size; the As needed part and its Undo;
   Not taking on an As needed medicine; As needed on a "Filled, not in your
   records" medicine, and its Undo going back there.
-- The "?" beside As needed, Added by me, Filled, not in your records, Not
-  taking, and Backup: VoiceOver and TalkBack read the heading, then "About
+- The "?" beside As needed, Added by me, Filled, not in your records, and Not
+  taking: VoiceOver and TalkBack read the heading, then "About
   …, collapsed"; the explanation opens under the heading.
 - The "… is under Not taking" panel when adding a medicine marked Not
   taking, and its "I'm taking it again" button.
@@ -90,7 +90,8 @@ Decided for later, so nothing to test until they're picked up:
 - "+ Add a medicine" with VoiceOver: it comes before the medicines.
 - Sort on My medicines, with VoiceOver: the picker, then "Sorted: …".
 - Edit on a medicine added by hand, with VoiceOver ("Edit: …", then the form).
-- Where my records come from (More options), with VoiceOver: Update now, and
+- More options with VoiceOver: each option reads its name, then its line. Then
+  Health records: Update now, and
   "About these names" opening.
 - The QR screen: See what's inside above the code, the title centered, and the
   code scanned with a second phone.
@@ -189,3 +190,6 @@ Decided for later, so nothing to test until they're picked up:
   three showed them. Cause not proven; watch it next time.
 - 2026-11-23, "Allergies last updated" always shown, before publishing: the test
   browser and both virtual phones (See what's inside, the staff page). Passed.
+- 2026-11-23, More options in groups and the centered sign-in title, before
+  publishing: the test browser (320 to 1440 wide, 200 percent text, backup,
+  Restore, Sign out) and both virtual phones. Passed.
