@@ -78,10 +78,10 @@ const card = (o) => Object.assign({ origin: "records", reactions: [], mine: null
 test("reactionLine never leaves a blank", () => {
   assert.equal(reactionLine(card()), "Reaction not in your records");
   assert.equal(reactionLine(card({ reactions: [{ text: "Hives", severity: "severe" }] })), "Reaction: Hives (severe)");
-  assert.equal(reactionLine(card({ mine: { reaction: "Itching" } })), "Reaction: Itching (added by me)");
-  assert.equal(reactionLine(card({ reactions: [{ text: "Hives" }], mine: { reaction: "Itching" } })), "Reaction: Hives · Itching (added by me)");
-  assert.equal(reactionLine(card({ mine: { reaction: "Not sure" } })), "Reaction not known (added by me)");
-  assert.equal(reactionLine(card({ origin: "added", mine: { reaction: "Not sure" } })), "Reaction not known");
+  assert.equal(reactionLine(card({ mine: { reaction: "Itching" } })), "Reaction: Itching (me)");
+  assert.equal(reactionLine(card({ reactions: [{ text: "Hives" }], mine: { reaction: "Itching" } })), "Reaction: Hives · Itching (me)");
+  assert.equal(reactionLine(card({ mine: { reaction: "Not sure" } })), "Reaction: not known (me)");
+  assert.equal(reactionLine(card({ origin: "added", mine: { reaction: "Not sure" } })), "Reaction: not known");
   assert.equal(reactionLine(card({ origin: "added", mine: { reaction: "Itching" } })), "Reaction: Itching");
 });
 
@@ -155,7 +155,7 @@ test("the patient's own and their reaction on the record both show", () => {
   setMyReaction(data(), arrangeAllergies(loaded(items(rec())), data()).cards[0], "x", "2026-11-23");
   d.allergyReactions = { "alg:name:mold": { name: "Mold", keys: ["alg:name:mold"], reaction: "Hives or rash", addedAt: "2026-11-23" } };
   const card = arrangeAllergies(loaded(items(rec())), d).cards[0];
-  assert.equal(reactionLine(card), "Reaction: Hives or rash · Itching (added by me)");
+  assert.equal(reactionLine(card), "Reaction: Hives or rash · Itching (me)");
   const removed = removeMine(d, card);
   assert.deepEqual([d.allergies.length, Object.keys(d.allergyReactions).length], [0, 0]);
   putBack(d, removed);

@@ -473,9 +473,9 @@ export function reactionWords(reaction) {
 
 export function reactionLine(card) {
   var parts = card.reactions.map(reactionWords);
-  var byMe = card.origin === "added" ? "" : " (added by me)";
+  var byMe = card.origin === "added" ? "" : " (me)";
   if (card.mine && card.mine.reaction === NOT_SURE) {
-    if (!parts.length) return "Reaction not known" + byMe;
+    if (!parts.length) return "Reaction: not known" + byMe;
   } else if (card.mine) {
     parts.push(card.mine.reaction + byMe);
   }

@@ -241,3 +241,5 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - 2026-11-24, what an unnamed allergy does say, before publishing: the test browser
   and both virtual phones with the real sandbox (Chantell Bartell: My medicines, See
   what's inside, the staff page with made-up allergies). Passed.
+- 2026-11-24, the brown bands on My medicines and the reaction line, before publishing:
+  the test browser (320 to 1440 wide, 200 percent text) and both virtual phones. Passed.

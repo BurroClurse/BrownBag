@@ -602,6 +602,16 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .block-title, .part-title, .share-name { overflow-wrap: anywhere; }
 .inside-overlay:focus { outline: none; }
 .part-title { margin: 1.25rem 0 0.6rem; font-size: 1.25rem; }
+/* Each part of My medicines starts with a band the bag's brown, so where one ends
+   and the next begins is plain. The buttons are teal. */
+.screen-medicines .medicines-block > section { margin-top: 2rem; }
+.screen-medicines .medicines-block > section > .part-title, .screen-medicines .medicines-block > section > .section-help { background: var(--brand); color: var(--brand-ink); border-radius: 8px; padding: 0.35rem 0.5rem 0.35rem 0.85rem; margin: 0 0 0.75rem; min-height: 54px; display: flex; align-items: center; }
+.screen-medicines .section-help > .part-title { font-size: 1.35rem; color: inherit; scroll-margin-top: 14px; }
+.screen-medicines .medicines-block > section > .part-title { font-size: 1.35rem; }
+.screen-medicines .section-help .help-button { background: var(--card); color: var(--brand); border-color: var(--card); }
+.screen-medicines .section-help .help-button:focus-visible, .screen-medicines .medicines-block .part-title:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* Short lines, close together, so a wrapped one reads as one. */
+.allergy-box .med-line { line-height: 1.3; margin: 0.3rem 0; text-wrap: pretty; }
 .allergy-box .part-title { margin-top: 0.75rem; font-size: 1.1rem; }
 .share-name { font-size: 1.75rem; margin: 0.5rem 0 0.25rem; border: none; padding: 0; }
 .inside-overlay { position: fixed; inset: 0; z-index: 20; overflow-y: auto; background: var(--paper); }
