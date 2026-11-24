@@ -79,36 +79,12 @@ Decided for later, so nothing to test until they're picked up:
 
 ## On a real iPhone (Tyler)
 
-- The new medicine cards (how to take it, then the rest, each labelled) on My
-  medicines and the staff page, with VoiceOver, and a second phone's camera
-  reading the QR code.
-- See what's inside and the two blocks, with VoiceOver; a second phone reading
-  the code from Safari.
-- What didn't load, with VoiceOver: the new lines on home, My medicines and the
-  staff page. They only show when something fails.
-- See what's inside as short text, with VoiceOver.
-- "+ Add a medicine" with VoiceOver: it comes before the medicines.
-- Sort on My medicines, with VoiceOver: the picker, then "Sorted: …".
-- Edit on a medicine added by hand, with VoiceOver ("Edit: …", then the form).
-- More options with VoiceOver: each option reads its name, then its line. Then
-  Health records: Update now, and
-  "About these names" opening.
-- A long list's QR code scanned with a second phone: it's denser than before.
+VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
+
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
-  and the popup with VoiceOver. The same under See what's inside on the first phone.
-- The Privacy page in the Home Screen app: More options ▸ Privacy ▸ Back. With
-  VoiceOver: each heading, the list, and the GitHub link (it opens a browser).
-- The "Erase everything?" popup with VoiceOver: it reads the question, stays inside
-  the popup, and starts on Cancel.
-- Signed out: only Sign in. In airplane mode with Wi-Fi off, the line and Open my
-  saved list appear, and it opens the list behind Face ID.
-- Save a backup on a real iPhone: only the .json file is saved, with Face ID and
-  with a PIN. With a PIN: the password popup with VoiceOver, the keyboard up, and
-  whether the phone's offer to save the password gets in the way.
+  and the popup starting on Cancel.
 - Start over from the Face ID lock screen: it says "this same Face ID or fingerprint
-  lock", and VoiceOver reads the steps.
-- The QR screen: See what's inside above the code, the title centered, and the
-  code scanned with a second phone.
+  lock".
 
 ## Tested
 
@@ -246,3 +222,7 @@ Decided for later, so nothing to test until they're picked up:
   inside, before publishing: the test browser (320 to 1440 wide, 200 percent text)
   and both virtual phones (See what's inside, the popup, the saved file, the staff
   page). Passed. The share sheet was a stand-in.
+- 2026-11-24, the space around buttons, measured on nearly every screen in the test
+  browser (320 and 393 wide, 150 percent text). Two notes sat too close, under Save
+  as FHIR file and under the medicine name box. Both fixed. Tyler's iPhone: the
+  shorter reactions, the saved file, signed out with no signal, and VoiceOver work.
