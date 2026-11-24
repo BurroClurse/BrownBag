@@ -124,7 +124,7 @@ export function restoreBackupText(root, text) {
 function drawPinSetup(root, done) {
   clear(root);
   var box = panel(root, "Choose a 6-digit PIN");
-  para(box, "You'll type this PIN each time you open Brown Bag. Write it down somewhere safe. If you forget it, you can start over, and a backup brings your additions back.");
+  para(box, "You'll type this PIN each time you open Brown Bag. Write it down somewhere safe. If you forget it, you'll have to start over, and your backups won't open.");
   var form = document.createElement("form");
   box.appendChild(form);
   var first = pinField(form, "pin-new", "New PIN", "new-password");

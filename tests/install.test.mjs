@@ -98,3 +98,11 @@ test("Start over says what the backup needs to open", async () => {
   assert.equal(startOverText("pin").note, "The backup opens only with this same PIN.");
   assert.equal(startOverText("passkey").note, "The backup opens only with this same Face ID or fingerprint lock.");
 });
+
+// Someone choosing a PIN must not count on a backup they couldn't open.
+test("choosing a PIN says backups won't open without it", async () => {
+  const { readFileSync } = await import("node:fs");
+  const screen = readFileSync(new URL("../js/lock-screen.js", import.meta.url), "utf8");
+  assert.ok(screen.includes("If you forget it, you'll have to start over, and your backups won't open."));
+  assert.ok(!/a backup brings your additions back/.test(screen));
+});

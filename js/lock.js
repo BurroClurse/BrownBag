@@ -153,7 +153,8 @@ async function saveLock(storage, key, record) {
 }
 
 // "Start over" for a forgotten PIN or a lost passkey. Records come back at
-// the next sign-in; additions and stopped marks come back from a backup.
+// the next sign-in; additions and marks come back only from a backup, which
+// needs the same PIN or passkey to open.
 export function eraseBrownBag(storage = globalThis.localStorage) {
   var names = [];
   for (var i = 0; i < storage.length; i += 1) {

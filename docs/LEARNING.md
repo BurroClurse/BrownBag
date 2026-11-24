@@ -1487,6 +1487,17 @@ the swipe bar. The space comes from around the bag, so home still fits.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 43. An honest line about the PIN (`js/lock-screen.js`)
+
+**What changed.** Choosing a PIN now says that if you forget it, you'll have to
+start over and your backups won't open.
+
+**Why the old line was wrong.** It said a backup brings things back. The backup
+is locked with the PIN, so a forgotten PIN locks it for good. Words about safety
+need checking against what the code really does.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary
