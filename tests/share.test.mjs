@@ -542,3 +542,30 @@ test("the dates travel in the QR code", async () => {
   assert.equal(groups.recordsUpdatedAt, "2026-11-19T10:00:00.000Z");
   assert.equal(groups.allergies.updatedAt, "2026-11-23T10:00:00.000Z");
 });
+
+// Staff must hear that fills are missing, or a medicine only insurance knows
+// about would be left out with no word. It must not say the list is wrong
+// (Tyler, 2026-11-23): what's on it still comes from the records and the patient.
+test("insurance fills that didn't load are said, without calling the list wrong", async () => {
+  const { fillsNote } = await import("../js/share.js");
+  const text = "Insurance fills couldn't be loaded. That doesn't mean this list is wrong: what's here comes from the records and the patient. A medicine only insurance knows about may not be listed.";
+  for (const claims of ["failed", "refused"]) assert.equal(fillsNote(dated({ claims })), text, claims);
+  for (const claims of ["loaded", null, undefined]) assert.equal(fillsNote(dated({ claims })), null, String(claims));
+  // When the records themselves didn't load, that warning says it all.
+  assert.equal(fillsNote(dated({ claims: "failed", incomplete: true })), null);
+});
+
+test("the fills note travels in the QR code, and an older code has none", async () => {
+  const { fillsNote } = await import("../js/share.js");
+  const open = async (bundle) => { const p = await packShare(bundle, BASE); return groupShareBundle(await unpackShare("v3." + p.digits, p.code)); };
+  const list = { patient: PATIENT, current: [], additions: [], stopped: [] };
+  assert.ok(fillsNote(await open(buildShareBundle(list, NOW, { claims: "failed" }))));
+  assert.equal(fillsNote(await open(buildShareBundle(list, NOW, {}))), null);
+});
+
+test("the app tells the code about the fills, and the page draws the note", async () => {
+  const { readFileSync } = await import("node:fs");
+  const file = (f) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  assert.match(file("js/app.js"), /claims: state\.split\.claims, incomplete/);
+  assert.match(file("js/share-list.js"), /fillsNote\(groups\)/);
+});

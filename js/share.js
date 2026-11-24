@@ -91,6 +91,9 @@ export function buildShareBundle(list, now, warnings = {}) {
   if (warnings.recordsUpdatedAt) {
     tags.push({ system: TAGS, code: "records-updated-on", display: warnings.recordsUpdatedAt });
   }
+  if (warnings.claims === "failed" || warnings.claims === "refused") {
+    tags.push({ system: TAGS, code: "claims-not-loaded" });
+  }
   if (warnings.incomplete) {
     tags.push({ system: TAGS, code: "records-incomplete" });
   }
@@ -118,6 +121,7 @@ export function groupShareBundle(bundle) {
     madeAt: bundle.timestamp,
     recordsSavedAt: saved ? saved.display : null,
     recordsUpdatedAt: updated ? updated.display : null,
+    claimsNotLoaded: tags.some(function (tag) { return tag.system === TAGS && tag.code === "claims-not-loaded"; }),
     incomplete: tags.some(function (tag) { return tag.system === TAGS && tag.code === "records-incomplete"; }),
     fromRecords: [],
     fromClaims: [],
@@ -503,4 +507,11 @@ export function allergyDateLine(groups, format) {
   var records = groups.incomplete ? null : groups.recordsUpdatedAt || groups.recordsSavedAt;
   if (records && Math.abs(new Date(allergies.updatedAt) - new Date(records)) <= SAME_UPDATE_MS) return null;
   return "Allergies last updated: " + format(allergies.updatedAt);
+}
+
+// Insurance fills are extra: without them the list still stands, so this is a
+// note and not a warning (Tyler, 2026-11-23).
+export function fillsNote(groups) {
+  if (!groups.claimsNotLoaded || groups.incomplete) return null;
+  return "Insurance fills couldn't be loaded. That doesn't mean this list is wrong: what's here comes from the records and the patient. A medicine only insurance knows about may not be listed.";
 }

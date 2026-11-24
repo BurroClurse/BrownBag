@@ -59,6 +59,7 @@ only, no real patients). To open it as a certain patient, see
   matter. **See what's inside** opens the code on the patient's own phone,
   read-only and drawn like the staff page, for when nobody can scan it. Both
   say when the records were last updated and when the QR code was made.
+  A note says when insurance fills couldn't be loaded.
 - **Changed the list with no signal?** The QR code still includes the
   change, and the QR screen lists exactly what changed since the records
   were last updated and says to get a connection to update them.

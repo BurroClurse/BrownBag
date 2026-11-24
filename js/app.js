@@ -1318,7 +1318,7 @@ async function buildQr() {
   var list = shareListFrom(state.patient, arrangeList(state.split, state.data), state.data.additions);
   // Staff are told when the records part is an older saved copy, or when a
   // source failed to load, so a partial list never looks complete.
-  var warnings = { recordsSavedAt: state.savedAt, recordsUpdatedAt: state.updatedAt, incomplete: state.split.failed || state.dataFailed, allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt } };
+  var warnings = { recordsSavedAt: state.savedAt, recordsUpdatedAt: state.updatedAt, claims: state.split.claims, incomplete: state.split.failed || state.dataFailed, allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt } };
   list.allergies = arrangeAllergies(state.allergies, state.data);
   var packed = await packShare(buildShareBundle(list, new Date(), warnings), new URL("./", location.href).href);
   var fits = fitsInQr(packed.prefix, packed.digits);
@@ -1353,7 +1353,7 @@ async function buildQr() {
         "Medicines you added",
         "Medicines you marked stopped",
         "Insurance fills: when each medicine was last filled, and fills your record doesn't list",
-        "When your records were last updated, when the QR code was made, and a warning if the list is an older saved copy or some records didn't load"
+        "When your records were last updated, when the QR code was made, and a note if the list is an older saved copy or something didn't load"
       ].forEach(function (text) { add(items, "li", text); });
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });

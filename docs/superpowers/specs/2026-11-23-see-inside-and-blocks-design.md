@@ -72,6 +72,12 @@ Medicines (1)                      big heading, line under it
 - Allergies that loaded at another time: their own line in the box. The "may be
   out of date" warnings stay. Codes without the date show no line for it.
 
+## Fills that didn't load (Tyler, 2026-11-23)
+
+A note, not a warning, under Medicines: they couldn't be loaded, that doesn't
+make the list wrong, and a medicine only insurance knows about may not be
+listed. The number stays. Not shown when the records themselves didn't load.
+
 ## Left to the builder
 
 Exact colors (4.5 to 1 text, 3 to 1 border), sizes, and sharing the staff

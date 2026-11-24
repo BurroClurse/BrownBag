@@ -1274,6 +1274,10 @@ time carry their own.
 FHIR has that too (`meta.lastUpdated`, `recorded`), but only as good as what the
 clinic entered.
 
+**Say what's missing without scaring anyone.** When insurance fills don't load,
+staff see a note, not a warning: the list still stands, and a medicine only
+insurance knows about may not be listed. A missing extra isn't a wrong list.
+
 **The date goes in the code.** It's a tag on the Bundle (`meta.tag`), where FHIR
 lets an app add its own labels. A code made before this simply doesn't have it.
 

@@ -2,7 +2,7 @@
 // patient's own phone. One piece of code draws both, so they can't differ.
 // Allergies and medicines are two blocks (design 2026-11-23).
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, medicinesTitle } from "./share.js";
+import { allergyDateLine, allergyEmptyText, allergyNotices, dateLines, fillsNote, medicinesTitle } from "./share.js";
 import { showsSymbol } from "./allergies.js";
 
 var DISCLAIMER = "This list is what you and your records say. Your care team confirms it.";
@@ -26,6 +26,8 @@ export function drawShareList(parent, groups, level, made) {
   if (groups.incomplete) {
     add(block, "p", "Some of the patient's records couldn't be loaded. This list may be missing medicines.", "notice");
   }
+  var fills = fillsNote(groups);
+  if (fills) note(block, fills);
   part(block, "From records", groups.fromRecords, groups.incomplete ? "None loaded." : "No medicines from records.", level + 2);
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
