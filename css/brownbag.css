@@ -228,8 +228,10 @@ button.secondary.big, .button.secondary.big { border-color: var(--teal); }
   display: flex;
   flex-direction: column;
   padding-top: max(0.75rem, env(safe-area-inset-top));
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  /* Room under More options, clear of the phone's own bar at the bottom. */
+  padding-bottom: max(1.75rem, calc(env(safe-area-inset-bottom) + 0.5rem));
 }
+@media (max-height: 600px) { #app.screen-home { padding-bottom: 0.75rem; } }
 .home-name {
   text-align: center;
   font-size: 1.5rem;

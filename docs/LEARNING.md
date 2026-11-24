@@ -1477,6 +1477,16 @@ on the real screens, so renaming one fails the test.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 42. Room at the bottom of home (`css/brownbag.css`)
+
+**What changed.** Home's buttons sit a little higher, with room under More
+options.
+
+**Thumbs and the phone's own bar.** A button on the bottom edge competes with
+the swipe bar. The space comes from around the bag, so home still fits.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary
