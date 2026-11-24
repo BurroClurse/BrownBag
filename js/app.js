@@ -497,10 +497,20 @@ async function loadMedicines(client, patientId) {
 // One screen at a time: "home" (the bag and two big buttons), "medicines"
 // (the full list) or "more" (backup and sign out). The QR code opens over
 // whichever screen is showing (openQr).
+// iPhone Safari doesn't always scroll to what gets focus.
+function showOnScreen(id, block) {
+  var target = document.getElementById(id);
+  if (target) target.scrollIntoView({ block: block });
+}
+
+// Watches the height of the add button that stays at the top (drawAdd).
+var barWatcher = null;
 function render() {
   // A redraw keeps focus where it was unless a screen change says otherwise.
   var had = !state.focusId && document.activeElement && document.activeElement.id;
   clear(root);
+  if (barWatcher) barWatcher.disconnect();
+  document.documentElement.style.scrollPaddingTop = "";
   root.className = "screen-" + state.screen;
   var arranged = arrangeList(state.split, state.data);
   if (state.screen === "medicines") {
@@ -615,6 +625,7 @@ function drawMedicines(arranged) {
   drawAllergies(root);
   // No number when some didn't load: it would read as the whole.
   var block = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
+  drawAdd(block);
   drawRecords(block, arranged);
   drawFillsOnly(block, arranged);
   drawAsNeeded(block, arranged);
@@ -921,6 +932,28 @@ function drawRecords(parent, arranged) {
   }
 }
 
+// Adding comes first in the list, and its button stays at the top of the
+// screen while the list scrolls under it, so a long list never hides it.
+function drawAdd(parent) {
+  if (state.adding) {
+    drawAddForm(parent);
+    return;
+  }
+  var bar = add(parent, "div", null, "add-bar");
+  button(bar, "+ Add a medicine", "primary", function () {
+    state.addFrom = window.scrollY;
+    state.adding = true;
+    state.focusId = "add-name";
+    render();
+    showOnScreen("add-form", "start");
+  }).id = "add-open";
+  // Whatever gets focus scrolls clear of the bar, however tall it is.
+  var clearOf = function () { document.documentElement.style.scrollPaddingTop = bar.offsetHeight + 8 + "px"; };
+  clearOf();
+  barWatcher = new ResizeObserver(clearOf);
+  barWatcher.observe(bar);
+}
+
 function drawAdditions(parent) {
   var section = add(parent, "section");
   helpHeading(section, "Added by me", "added-heading", "About Added by me", function (panel) {
@@ -931,6 +964,8 @@ function drawAdditions(parent) {
   var list = add(section, "ul", null, "meds");
   state.data.additions.forEach(function (addition) {
     var row = add(list, "li");
+    row.id = "added-" + addition.id;
+    row.tabIndex = -1;
     drawCard(row, addition.name, patientCard(addition, false));
     button(row, "Remove", "stop card-action", function () {
       state.data.additions = state.data.additions.filter(function (a) { return a.id !== addition.id; });
@@ -954,20 +989,11 @@ function drawAdditions(parent) {
     }, "Undo: put " + removed.name + " back");
     undo.id = "undo-remove";
   }
-  if (state.adding) {
-    drawAddForm(section);
-  } else {
-    var open = button(section, "+ Add a medicine or supplement", "primary big", function () {
-      state.adding = true;
-      state.focusId = "add-name";
-      render();
-    });
-    open.id = "add-open";
-  }
 }
 
 function drawAddForm(section) {
   var form = add(section, "form");
+  form.id = "add-form";
   var picked = null;
   var timer = null;
   var search = latestOnly(searchDrugs);
@@ -1003,6 +1029,8 @@ function drawAddForm(section) {
     state.draft = null;
     state.focusId = "add-open";
     render();
+    // Back to the part of the list they were looking at.
+    window.scrollTo(0, state.addFrom || 0);
   });
   var checking = false;
 
@@ -1121,8 +1149,9 @@ function keepAddition(addition, replacing) {
   state.adding = false;
   state.draft = null;
   state.announce = addition.name + " added.";
-  state.focusId = "add-open";
-  save();
+  // The new card, so they see it on the list.
+  state.focusId = "added-" + addition.id;
+  save().then(function () { showOnScreen("added-" + addition.id, "nearest"); });
 }
 
 // Everything the new medicine is compared with: the patient's own additions

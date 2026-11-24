@@ -331,3 +331,13 @@ test("the swoosh always starts on the screen", () => {
   assert.deepEqual(swooshFrom({ left: 100, top: -900, width: 200, height: 300 }, 400, 800), { x: 0, y: -400 });
   assert.deepEqual(swooshFrom({ left: 100, top: 2000, width: 200, height: 300 }, 400, 800), { x: 0, y: 400 });
 });
+
+// On a long list the button scrolled out of reach below the last medicine. If
+// this fails, the patient has to find it at the bottom again.
+test("adding comes before the medicines and stays at the top of the screen", async () => {
+  const { readFileSync } = await import("node:fs");
+  const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
+  const drawn = /function drawMedicines\(arranged\) \{[\s\S]*?\n\}/.exec(read("js/app.js"))[0];
+  assert.ok(drawn.includes("drawAdd(block)") && drawn.indexOf("drawAdd(block)") < drawn.indexOf("drawRecords("));
+  assert.match(read("css/brownbag.css"), /\.add-bar \{[^}]*position: sticky; top: 0;/);
+});

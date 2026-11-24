@@ -63,7 +63,8 @@ only, no real patients). To open it as a certain patient, see
   and a prescription the record calls finished (completed, stopped or
   canceled) but filled since it was written moves back to the current
   list, saying so.
-- **Adding a medicine** uses lists for how much and how often, so the
+- **Adding a medicine** starts from a button at the top of the list that stays
+  on screen while the list scrolls. It uses lists for how much and how often, so the
   QR code carries the dose as numbers other systems can read, and asks
   first when the medicine is already there, was marked stopped, or only
   looks like one on the list.

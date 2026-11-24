@@ -87,6 +87,8 @@ Decided for later, so nothing to test until they're picked up:
 - What didn't load, with VoiceOver: the new lines on home, My medicines and the
   staff page. They only show when something fails.
 - See what's inside as short text, with VoiceOver.
+- "+ Add a medicine" at the top of the list: it stays there while scrolling, and
+  VoiceOver reaches it before the medicines.
 
 ## Tested
 
@@ -165,3 +167,6 @@ Decided for later, so nothing to test until they're picked up:
   (My medicines, See what's inside, the staff page). Passed.
 - 2026-11-23, See what's inside as short text, before publishing: the test
   browser and both virtual phones. Passed.
+- 2026-11-23, "+ Add a medicine" at the top of the list, before publishing: the
+  test browser (320 to 1440 wide, sideways, 200 percent text, focus, Cancel, a
+  medicine added) and both virtual phones. Passed.

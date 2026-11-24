@@ -1341,6 +1341,23 @@ out.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
 
+### Step 33. A button that stays put (`js/app.js`, `css/brownbag.css`)
+
+**What changed.** "+ Add a medicine" was under the last medicine. Now it's at the
+top of the list and stays at the top of the screen while the list scrolls.
+
+**`position: sticky`.** One line of CSS: the bar scrolls until it reaches the top
+of the screen, then stays.
+
+**A bar can hide what you tab to.** WCAG 2.2 (2.4.11) says a focused button must
+not be hidden. `scroll-padding-top` tells the browser to leave room, and the app
+measures the bar, because large text makes it taller.
+
+**Test the worst case.** At 200 percent text on a small phone, the first try took
+56 percent of the screen. Shorter words and less padding made it 23.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper).
+
 ---
 
 ## Glossary
