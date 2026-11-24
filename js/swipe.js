@@ -16,6 +16,11 @@ export function dragOf(start, dx, dy) {
   return dy > 0 && start.atTop ? { x: 0, y: dy } : null;
 }
 
+// A code a little taller than the screen still closes with one swipe down.
+export function nearTop(scrollTop) {
+  return scrollTop <= 40;
+}
+
 export function endsIt(drag, ms) {
   if (!drag) return false;
   var far = Math.max(Math.abs(drag.x), Math.abs(drag.y));
@@ -46,7 +51,7 @@ export function swipeAway(overlay, close) {
     var zoomed = window.visualViewport && window.visualViewport.scale > 1.01;
     if (zoomed || !overlay.classList.contains("open")) return;
     var touch = event.touches[0];
-    start = { x: touch.clientX, y: touch.clientY, width: innerWidth, atTop: overlay.scrollTop <= 0, at: Date.now() };
+    start = { x: touch.clientX, y: touch.clientY, width: innerWidth, atTop: nearTop(overlay.scrollTop), at: Date.now() };
   }, { passive: true });
   overlay.addEventListener("touchmove", function (event) {
     if (!start || event.touches.length > 1) return;

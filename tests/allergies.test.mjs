@@ -86,8 +86,8 @@ test("reactionLine never leaves a blank", () => {
 });
 
 test("detailLines shows only what the record says", () => {
-  assert.deepEqual(detailLines(card()), ["SMART sandbox"]);
-  assert.deepEqual(detailLines(card({ intolerance: true, unconfirmed: true, highRisk: true })), ["Marked high risk", "Intolerance", "Not confirmed", "SMART sandbox"]);
+  assert.deepEqual(detailLines(card()), ["Source: SMART sandbox"]);
+  assert.deepEqual(detailLines(card({ intolerance: true, unconfirmed: true, highRisk: true })), ["Marked high risk", "Intolerance", "Not confirmed", "Source: SMART sandbox"]);
   assert.deepEqual(detailLines(card({ origin: "added", mine: { addedAt: "2026-11-23" } })), ["Added by me · Nov 23, 2026"]);
 });
 

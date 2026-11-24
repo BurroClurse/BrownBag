@@ -542,7 +542,7 @@ export function detailLines(card) {
     card.highRisk ? "Marked high risk" : null,
     card.intolerance ? "Intolerance" : null,
     card.unconfirmed ? "Not confirmed" : null,
-    card.origin === "added" ? "Added by me · " + longDate(card.mine.addedAt) : card.source,
+    card.origin === "added" ? "Added by me · " + longDate(card.mine.addedAt) : (card.source ? "Source: " + card.source : null),
     (card.unnamedKeys || []).length ? "You said this is the unnamed allergy in your records." : null
   ].filter(Boolean);
 }

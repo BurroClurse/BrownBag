@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { dragOf, endsIt } from "../js/swipe.js";
+import { dragOf, endsIt, nearTop } from "../js/swipe.js";
 
 const start = { x: 200, width: 400, atTop: true };
 test("down and sideways are swipes; up scrolls", () => {
@@ -32,4 +32,10 @@ test("the QR code can be swiped away, and Close is still there", () => {
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
   assert.match(app, /swipeAway\(overlay, closeQr\)|swipeAway\(overlay, function \(\) \{ closeQr\(\); \}\)/);
   assert.match(app, /"Close", "primary big"/);
+});
+
+// A code a little taller than the screen took two swipes down to close.
+test("nearly at the top counts as the top", () => {
+  for (const top of [-5, 0, 8, 40]) assert.equal(nearTop(top), true, String(top));
+  assert.equal(nearTop(120), false);
 });

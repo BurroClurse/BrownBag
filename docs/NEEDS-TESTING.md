@@ -254,3 +254,5 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   allergy popup, before publishing: the test browser (320 to 1440 wide, 200 percent text)
   and both virtual phones. Passed. On the iPhone the swipes were made by the page, not a
   finger, so a real swipe there is still to check.
+- 2026-11-24, "Source:" on allergies from records, and one swipe down closing a code a little
+  taller than the screen: the test browser. Passed.
