@@ -15,6 +15,17 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md` (approved 2026-11-25).
 
+## Decisions Tyler made on this plan (2026-11-25)
+
+Asked one at a time, each confirmed as proposed:
+1. The test source is served only by the home server at `/_home/demo-source.json`, when started with `BROWN_BAG_DEMO=two-clinics`, and the app asks only on port 8443.
+2. Only the review's card number is kept in session storage across the lock.
+3. Fill hint: nearest half, shown only from 0.5 to 12 a day, newest fill with both numbers.
+4. The fingerprint is plain text inside the encrypted data, not a hash.
+5. A second source that didn't load is named for the patient and for staff (a new Brown Bag tag in the QR code).
+6. HL7's FHIR validator may be downloaded and run on test data only.
+7. Wording: "Valley Clinic (test records)" and "Saved. Your list is up to date."
+
 ## Global Constraints
 
 - Tests: `node --test "tests/*.test.mjs"`. Node 22, nothing to install. Every task ends with the whole suite passing.
