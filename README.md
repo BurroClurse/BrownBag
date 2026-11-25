@@ -115,10 +115,12 @@ screen to make that work.
 - When the patient's records disagree and they haven't said which is right,
   each source's version comes first, under "Records disagree: ask the
   patient", noted "Records disagree" (and "Patient isn't sure" when they said
-  so). The same goes for a Not taking mark against a newer prescription: the
-  record and the mark. A version the patient chose says "Patient confirmed
-  this", with each other source's as "Other record". For now each version is
-  its own row; a card per medicine is planned.
+  so), with its record's date and, when they disagree on whether it's still
+  taken, "Records say: current" or "Records say: stopped". The same goes for a
+  Not taking mark against a newer prescription: the record and the mark. A
+  version the patient chose says "Patient confirmed this", with each other
+  source's as "Other record". For now each version is its own row; a card per
+  medicine is planned.
 - **Save as FHIR file** saves an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
   warning that it isn't locked. A list where something didn't load can't be saved.

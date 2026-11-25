@@ -77,10 +77,10 @@ export function buildShareBundle(list, now, warnings = {}, level = 0, undated = 
   list.current.forEach(function (item) {
     addAll(currentStatements(item, level, !undated));
   });
-  // A card to check that isn't current still reaches staff.
-  var shown = list.current.map(function (item) { return item.key; });
+  // A card to check that isn't current still reaches staff. Matched by
+  // itself: two cards can share a key.
   (list.toCheck || []).forEach(function (item) {
-    if (shown.indexOf(item.key) === -1) addAll(currentStatements(item, level, !undated));
+    if (list.current.indexOf(item) === -1) addAll(currentStatements(item, level, !undated));
   });
   list.additions.forEach(function (addition) {
     var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", withUnitCode(addition, level));
@@ -162,14 +162,19 @@ function currentStatements(item, level, dated) {
   var answer = item.answer || null;
   var question = answer ? null : item.question;
   var sides = item.group && item.group.sides.length > 1 ? item.group.sides : null;
+  // The records disagree with each other, whatever the patient marked.
+  var asked = Boolean(sides) && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
   var out;
   if (question && isMark(question.fingerprint)) {
-    var asked = sides && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
     var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE], dated) : [recordStatement(item, level)];
-    out = records.concat(stoppedStatement(item, markedAt(question.fingerprint), level));
+    // Linked to the mark, so even records that agree aren't an ordinary row.
+    if (!asked) records[0].note.splice(1, 0, { text: DISAGREE_NOTE });
+    out = records.concat(markStatement(item, question, level));
   } else if (question && sides) {
     out = sideStatements(item, sides, level, [DISAGREE_NOTE], dated);
-  } else if (answer && answer.choice === "not-sure" && sides && !isMark(answer.fingerprint)) {
+  } else if (answer && answer.choice === "not-sure" && asked) {
+    // Not sure, about the records or about a mark among records that
+    // disagree: every side stays.
     out = sideStatements(item, sides, level, [DISAGREE_NOTE, UNSURE_NOTE], dated);
   } else if (answer && answer.choice === "not-sure") {
     out = [recordStatement(item, level)];
@@ -200,6 +205,25 @@ function markedAt(fingerprint) {
   return text.slice(5, text.lastIndexOf(">"));
 }
 
+// The patient's Not taking, as the record they marked says it: in a group,
+// that source's words and code, never the shown record's.
+function markStatement(item, question, level) {
+  var mark = question.mark || null;
+  var at = mark && mark.at ? mark.at : markedAt(question.fingerprint);
+  var side = mark && mark.side;
+  if (!side || isOwnSide(item, side)) return stoppedStatement(item, at, level);
+  var statement = statementFor(side.name || item.name, rxcuiOf(side), dosageText(side), "stopped", null, dosageParts(side, 0));
+  statement.informationSource = SELF;
+  statement.effectivePeriod = { end: at };
+  return statement;
+}
+
+// A side's RxNorm code, from its key.
+function rxcuiOf(side) {
+  var coded = /^rx:(\d+)/.exec(String(side.key || ""));
+  return coded ? coded[1] : null;
+}
+
 // The side an answer chose, as the records say it now, else as it was then.
 function chosenSide(item) {
   var find = function (sides) { return (sides || []).filter(function (side) { return side.sourceId === item.answer.choice; })[0]; };
@@ -209,16 +233,21 @@ function chosenSide(item) {
 // The staff notes go right after each side's source, then the side's own
 // date, so staff can see which is newer.
 function sideStatements(item, sides, level, notes, dated) {
+  var aboutStopping = item.group.verdicts.indexOf("status") !== -1;
   return sides.map(function (side) {
     var statement = sideStatement(item, side, level);
     var when = dated ? recordDate(side) : null;
-    var texts = notes.concat(when ? RECORD_DATE + when : []);
+    // On a status disagreement, which side lists it current and which
+    // stopped, in words an older staff page shows too (Tyler, 2026-11-25).
+    var says = aboutStopping ? RECORDS_SAY[side.status] : null;
+    var texts = notes.concat(says ? "Records say: " + says : [], when ? RECORD_DATE + when : []);
     statement.note.splice.apply(statement.note, [1, 0].concat(texts.map(function (text) { return { text: text }; })));
     return statement;
   });
 }
 
 var RECORD_DATE = "Record date: ";
+var RECORDS_SAY = { current: "current", "not-current": "stopped" };
 
 // "<YYYY-MM>", or the year when that's all the record has.
 function recordDate(side) {
@@ -230,8 +259,7 @@ function recordDate(side) {
 // what its side says: never the shown record's codes, prescriber or fills.
 function sideStatement(item, side, level) {
   if (isOwnSide(item, side)) return recordStatement(item, level, side.sourceName);
-  var coded = /^rx:(\d+)/.exec(String(side.key || ""));
-  var statement = statementFor(side.name || item.name, coded ? coded[1] : null, dosageText(side), sideStatus(side), null, dosageParts(side, 0));
+  var statement = statementFor(side.name || item.name, rxcuiOf(side), dosageText(side), sideStatus(side), null, dosageParts(side, 0));
   statement.note = [{ text: "From records: " + side.sourceName }];
   // The patient's As needed mark is on the card, so on every side.
   if (item.asNeededAt) asNeeded(statement, AS_NEEDED_NOTE);
@@ -842,6 +870,7 @@ function cardFrom(resource, added) {
     else if ((found = /^From records: (.+)$/.exec(text))) source.push(["Source", found[1]]);
     else if ((found = /^Prescribed by (.+)$/.exec(text))) card.facts.push(["Prescribed by", found[1]]);
     else if ((found = /^Record date: (\d{4}(?:-\d{2})?)$/.exec(text))) card.facts.push(["Record date", monthText(found[1])]);
+    else if ((found = /^Records say: (current|stopped)$/.exec(text))) card.facts.push(["Records say", found[1]]);
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
     else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
     else if (text === "No fill found in claims") card.facts.push(["Filled", text]);
@@ -940,10 +969,10 @@ function othersAsNeeded(groups) {
 export function emptyPartText(groups, part) {
   if (part === "records") {
     if (groups.incomplete) return "None loaded.";
-    if ((groups.noMedicines || []).length && !groups.unnamed && !othersAsNeeded(groups).length) return null;
-    // Records that disagree are still from records.
-    if (!groups.unnamed && (groups.disagree || []).length && !othersAsNeeded(groups).length) return "All under Records disagree.";
-    if (!groups.unnamed) return othersAsNeeded(groups).length ? "All under As needed." : "No medicines from records.";
+    var elsewhere = [(groups.disagree || []).length ? DISAGREE_TITLE : null, othersAsNeeded(groups).length ? "As needed" : null].filter(Boolean);
+    if ((groups.noMedicines || []).length && !groups.unnamed && !elsewhere.length) return null;
+    // The parts the records' medicines are under instead (Tyler, 2026-11-25).
+    if (!groups.unnamed) return elsewhere.length ? "All under " + elsewhere.join(", and ") + "." : "No medicines from records.";
     return othersAsNeeded(groups).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
   }
   if (groups.ownMissing) return "Couldn't be opened.";

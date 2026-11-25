@@ -53,10 +53,11 @@ export function arrangeList(split, data) {
     var neededKey = keys.filter(function (key) { return has(needed, key); })[0];
     var groupId = entry.group ? entry.group.id : entry.key;
     // A copy goes by the marked key, so Undo finds it, and keeps the rest,
-    // so Undo clears every key the mark was saved under.
+    // so Undo clears every key the mark was saved under. ownKey stays the
+    // card's own record's key: the marked one can be another source's.
     function rekeyed(key) {
       var own = [entry.key].concat(entry.otherKeys || []);
-      return { key: key, otherKeys: own.filter(function (one) { return one !== key; }) };
+      return { key: key, otherKeys: own.filter(function (one) { return one !== key; }), ownKey: entry.ownKey || entry.key };
     }
     function stop(key, at, answer) {
       stopped.push(Object.assign({}, entry, rekeyed(key), { stoppedAt: at }, answer ? { answer: answer } : {}));
@@ -74,7 +75,10 @@ export function arrangeList(split, data) {
       } else if (answer) {
         keep({ answer: answer });
       } else {
-        keep({ question: { kind: question.kind, why: question.why, groupId: groupId, fingerprint: question.fingerprint } });
+        var asked = { kind: question.kind, why: question.why, groupId: groupId, fingerprint: question.fingerprint };
+        // What was marked, and on which source's record, for the QR code.
+        if (question.mark) asked.mark = { key: question.mark.key, at: question.mark.at, side: question.mark.side || null };
+        keep({ question: asked });
       }
     }
     var marked = markState(entry, marks);
@@ -125,7 +129,10 @@ function markState(entry, marks) {
   } else {
     members = [{ side: null, current: true, keys: keysOf(entry), date: entry.lastDate || null }];
   }
-  members.forEach(function (member) { member.mark = markOf(member.keys, marks); });
+  members.forEach(function (member) {
+    member.mark = markOf(member.keys, marks);
+    if (member.mark) member.mark.side = member.side;
+  });
   // With no current record at all, every record counts, as before.
   var counted = members.some(function (member) { return member.current; }) ? members.filter(function (member) { return member.current; }) : members;
   var markedOnes = counted.filter(function (member) { return member.mark; });

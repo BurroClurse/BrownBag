@@ -55,8 +55,8 @@ certificate); screenshots `task-7-riley-*.png` in
 - The staff page, opened from the scan with the 6 digits, shows the same.
   The rows wrap well on the iPhone SE size, and VoiceOver and TalkBack read
   each row's source with it.
-- Known for now: atorvastatin's two rows read the same; which one is stopped
-  is only in the code. Task 8 draws the part properly.
+- Atorvastatin's two rows say "Records say: current" and "Records say:
+  stopped". Task 8 draws the part as one card per medicine.
 
 **Allergies, names and birth dates as real sources write them** (2026-11-25,
 Task 6d). Checked only in headless Chromium (iPhone 15 size, PIN lock, the live

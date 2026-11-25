@@ -522,12 +522,14 @@ export function sideWords(side) {
 
 // Whether a side is the card's own record: the same key from the same
 // source, never the key alone, since two sources with the same code share
-// one. A card saved before it carried its source id goes by the key when
-// only one side has it, else by the source's name.
+// one. The key is the record's own (ownKey), not one a mark renamed the card
+// by. A card saved before it carried its source id goes by the key when only
+// one side has it, else by the source's name.
 export function isOwnSide(entry, side) {
-  if (!side || side.key !== entry.key) return false;
+  var key = entry.ownKey || entry.key;
+  if (!side || side.key !== key) return false;
   if (entry.sourceId) return side.sourceId === entry.sourceId;
-  var same = ((entry.group && entry.group.sides) || []).filter(function (one) { return one.key === entry.key; });
+  var same = ((entry.group && entry.group.sides) || []).filter(function (one) { return one.key === key; });
   return same.length < 2 || side.sourceName === entry.source;
 }
 
