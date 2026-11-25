@@ -555,6 +555,17 @@ The findings' cases 33–54. Tyler's answers, one question each:
   - TalkBack reading a choice and its detail together
 - [ ] **Step 5: Commit** `js/review.js js/app.js css/brownbag.css tests/review.test.mjs docs/NEEDS-TESTING.md`: "Ask the patient one thing at a time when records disagree".
 
+### Task 10b: Fixes from the first Mac phone pass (added 2026-11-25, Tyler chose option 2)
+
+The Mac phone pass (docs/NEEDS-TESTING.md, "Found in the 2026-11-25 pass") found four things, all already on `main` before PR #13. Tyler chose to fix the first two now.
+
+**Files:** `share.html`, `css/brownbag.css`, `js/share-view.js` (the code box); `js/app.js`, `js/connections.js` and/or `js/signed-out.js` (Back after signing out); `docs/LIMITS.md`, `docs/NEEDS-TESTING.md`.
+
+- [ ] **1. The staff page's code box at 200 percent text.** At iPhone Accessibility Large (about 200 percent) the 6th digit is past the box's right edge; the digits are about 66 px wide with wide letter spacing. All 6 digits must show at 200 percent text and at 320 CSS px wide, and the box must keep working at 100 percent, with no page that scrolls sideways. Size the digits and spacing from the box's width (for example `ch`/`em` with a `clamp()`), never fixed pixels. Test: a Node test that the CSS for the box has no fixed-pixel digit width or letter spacing, plus a headless Chromium check at 393 px wide with the root font size at 200 percent and at 320 px, in which the 6th digit's right edge is inside the box.
+- [ ] **2. Back after signing out.** Sign out, Sign in, unlock, Connect, then the browser's Back lands on "You're signed out", not on the connections screen. A first run (lock, connections, Connect, Back) is right. Find why the signed-out screen is in history there, and make Back from the sandbox's list (or its approval page) land on the connections screen in both paths. Test the history steps in a Node test where the logic allows, and in headless Chromium for both paths.
+- [ ] **3. Note the other two.** In `docs/LIMITS.md`, add one entry for the sandbox's Deny page, which never returns to Brown Bag (its own `{"error":"invalid_request",...}` text), so "Sign-in didn't finish. Try again." can't show: it's the sandbox's behavior. Add one entry for text past 200 percent, where My medicines scrolls sideways from Accessibility XXL and the QR code falls below the fold from Accessibility XL, as an idea. In `docs/NEEDS-TESTING.md`, move items 1 and 2 under "Waiting for the next pass" with what to check.
+- [ ] **4. Commit:** "Fit the staff code at large text, and bring Back to the connections screen".
+
 ### Task 11: Docs, privacy and the app cache
 
 **Files:**
