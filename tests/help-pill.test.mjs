@@ -26,3 +26,8 @@ test("still 44 by 44 to tap, and still named for screen readers", () => {
 test("the paper ball has the pills on it too", () => {
   assert.match(read("js/crumple.js"), /querySelectorAll\("\.help-pill"\)/);
 });
+
+// At 27px Tyler found the mark hard to see.
+test("the mark nearly fills the pill", () => {
+  assert.match(rule(".help-pill > span"), /font-size: 38px/);
+});
