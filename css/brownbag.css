@@ -646,13 +646,27 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 /* A small link with room for a thumb. */
 .quiet-link { display: inline-block; padding: 0.55rem 0.5rem 0.4rem 0; min-height: 44px; min-width: 44px; font-size: 0.95rem; color: var(--ink); }
 
-/* The privacy page: one card for each question. */
-.screen-privacy section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.85rem 1rem; margin: 0.9rem 0 0; overflow-wrap: anywhere; }
-.screen-privacy h2 { border: none; margin: 0 0 0.25rem; padding: 0; font-size: 1.25rem; }
-.screen-privacy section p, .screen-privacy ul { margin: 0; text-wrap: pretty; }
-.screen-privacy ul { padding-left: 1.2rem; }
-.screen-privacy li + li { margin-top: 0.4rem; }
-.screen-privacy .who { margin-top: 1rem; }
+/* The privacy page: a header with the logo and date, the test-patients
+   warning set apart, then one numbered document. */
+.policy-head { display: flex; align-items: center; gap: 0.9rem; margin: 0.75rem 0 1rem; padding-bottom: 1rem; border-bottom: 3px solid var(--brand); }
+.policy-logo { flex: none; width: 56px; height: 56px; object-fit: contain; }
+.policy-kicker { margin: 0; color: var(--brand); font-size: 0.85rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.policy-head h1 { margin: 0; font-size: min(2.1rem, 11vw); line-height: 1.15; }
+.policy-date { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.95rem; }
+.policy-alert { margin: 0 0 1.25rem; padding: 0.75rem 1rem; border: 1px solid var(--warn-ink); border-left-width: 6px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-ink); line-height: 1.45; text-wrap: pretty; }
+.policy { counter-reset: policy; padding: 0.25rem min(1.1rem, 4vw); border: 1px solid var(--line); border-radius: 16px; background: var(--card); overflow-wrap: anywhere; }
+.policy section { counter-increment: policy; padding: 1rem 0; border-top: 1px solid var(--line); }
+.policy section:first-child { border-top: none; }
+.policy h2 { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.45rem; padding: 0; border: none; color: var(--teal); font-size: 1.2rem; line-height: 1.25; }
+/* The number is for the eye; screen readers hear only the heading. */
+.policy h2::before { content: counter(policy); content: counter(policy) / ""; flex: none; display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--teal); color: var(--teal-ink); font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.policy p { margin: 0; line-height: 1.55; text-wrap: pretty; }
+.policy a { color: var(--teal); font-weight: 700; }
+.policy-parties { margin: 0; }
+.policy-parties > div { margin-top: 0.6rem; padding: 0.1rem 0 0.1rem 0.75rem; border-left: 3px solid var(--line); }
+.policy-parties > div:first-child { margin-top: 0; }
+.policy-parties dt { font-weight: 700; }
+.policy-parties dd { margin: 0.1rem 0 0; line-height: 1.5; }
 
 /* Two blocks, on My medicines and the staff page:
    allergies in a box nobody can miss, then medicines. */

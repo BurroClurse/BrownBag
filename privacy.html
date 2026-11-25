@@ -15,59 +15,67 @@
 <body>
   <main class="screen-privacy">
     <div class="screen-top"><a class="button secondary big" id="privacy-back" href="./">Back</a></div>
-    <h1>Privacy</h1>
-    <p>Brown Bag is a student project by Tyler Beattie. It uses test patients only. <strong>Don't enter real health information.</strong></p>
+    <header class="policy-head">
+      <img class="policy-logo" src="icons/logo-trimmed.png" alt="" width="56" height="56">
+      <div>
+        <p class="policy-kicker">Brown Bag</p>
+        <h1>Privacy</h1>
+        <p class="policy-date">Last changed: November 24, 2026</p>
+      </div>
+    </header>
 
-    <section>
-      <h2>What stays on your phone</h2>
-      <p>Your list, what you add, and your sign-in are saved locked. While Brown Bag is open, your browser also holds your sign-in.</p>
-    </section>
+    <p class="policy-alert" role="note">Brown Bag is a student project by Tyler Beattie. It uses test patients only. <strong>Don't enter real health information.</strong></p>
 
-    <section>
-      <h2>What Brown Bag's maker gets</h2>
-      <p>Nothing from your list. There is no Brown Bag server, account, ads or tracking.</p>
-    </section>
+    <article class="policy">
+      <section>
+        <h2>What stays on your phone</h2>
+        <p>Your list, what you add, and your sign-in are saved locked. While Brown Bag is open, your browser also holds your sign-in.</p>
+      </section>
 
-    <section>
-      <h2>Who else is contacted</h2>
-      <ul>
-        <li><strong>Your health records:</strong> for your medicines, allergies and insurance fills.</li>
-        <li><strong>The National Library of Medicine:</strong> gets medicine names you type and drug codes, but not your name.</li>
-        <li><strong>GitHub:</strong> hosts the app, and can see your internet address.</li>
-      </ul>
-    </section>
+      <section>
+        <h2>What Brown Bag's maker gets</h2>
+        <p>Nothing from your list. There is no Brown Bag server, account, ads or tracking.</p>
+      </section>
 
-    <section>
-      <h2>When you share</h2>
-      <p>Your QR code is locked with 6 digits. Anyone with both can read it, and it doesn't expire. Someone with a picture of the code could work out the digits by trying them all. The person who opens it can save it as a file that isn't locked. You can save that file too. Share it only with people you trust.</p>
-    </section>
+      <section>
+        <h2>Who else is contacted</h2>
+        <dl class="policy-parties">
+          <div><dt>Your health records</dt><dd>For your medicines, allergies and insurance fills.</dd></div>
+          <div><dt>The National Library of Medicine</dt><dd>Gets medicine names you type and drug codes, but not your name.</dd></div>
+          <div><dt>GitHub</dt><dd>Hosts the app, and can see your internet address.</dd></div>
+        </dl>
+      </section>
 
-    <section>
-      <h2>Backups</h2>
-      <p>Backups are locked. Where you save one is up to you.</p>
-    </section>
+      <section>
+        <h2>When you share</h2>
+        <p>Your QR code is locked with 6 digits. Anyone with both can read it, and it doesn't expire. Someone with a picture of the code could work out the digits by trying them all. The person who opens it can save it as a file that isn't locked. You can save that file too. Share it only with people you trust.</p>
+      </section>
 
-    <section>
-      <h2>Deleting it</h2>
-      <p>Sign out ends the sign-in on this phone and keeps your list, locked. Start over erases Brown Bag on this phone. Delete your backups yourself.</p>
-    </section>
+      <section>
+        <h2>Backups</h2>
+        <p>Backups are locked. Where you save one is up to you.</p>
+      </section>
 
-    <section>
-      <h2>HIPAA</h2>
-      <p>HIPAA protects your records at your doctor and insurer. It doesn't cover the copy in Brown Bag.</p>
-    </section>
+      <section>
+        <h2>Deleting it</h2>
+        <p>Sign out ends the sign-in on this phone and keeps your list, locked. Start over erases Brown Bag on this phone. Delete your backups yourself.</p>
+      </section>
 
-    <section>
-      <h2>If something goes wrong</h2>
-      <p>If we learn your information was exposed, we'll say so here. Brown Bag has no way to contact you.</p>
-    </section>
+      <section>
+        <h2>HIPAA</h2>
+        <p>HIPAA protects your records at your doctor and insurer. It doesn't cover the copy in Brown Bag.</p>
+      </section>
 
-    <section>
-      <h2>Questions</h2>
-      <p><a href="https://github.com/BurroClurse/BrownBag/issues">Open an issue on GitHub</a>. Don't include health information.</p>
-    </section>
+      <section>
+        <h2>If something goes wrong</h2>
+        <p>If we learn your information was exposed, we'll say so here. Brown Bag has no way to contact you.</p>
+      </section>
 
-    <p class="who">Last changed: November 24, 2026</p>
+      <section>
+        <h2>Questions</h2>
+        <p><a href="https://github.com/BurroClurse/BrownBag/issues">Open an issue on GitHub</a>. Don't include health information.</p>
+      </section>
+    </article>
   </main>
   <script>
     // Back to the screen they came from. Opened by itself (a search result, a

@@ -36,7 +36,7 @@ test("it says the parts a patient would want said", () => {
   for (const line of [
     "Don't enter real health information.",
     "Your list, what you add, and your sign-in are saved locked.",
-    "gets medicine names you type and drug codes, but not your name.",
+    "Gets medicine names you type and drug codes, but not your name.",
     "it doesn't expire",
     "could work out the digits by trying them all",
     "Sign out ends the sign-in on this phone and keeps your list, locked.",
