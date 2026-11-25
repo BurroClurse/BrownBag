@@ -2,7 +2,9 @@
 // What it says and what an answer keeps; the screen itself is in app.js.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { checkText, choicesFor, answerFor, questionText, reviewButton, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
+import { checkText, choicesFor, answerFor, applyAnswer, questionText, reviewButton, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
+import { isMarkFingerprint } from "../js/reconcile.js";
+import { readFileSync } from "node:fs";
 import { arrangeList } from "../js/view.js";
 
 const CLINIC = "Valley Clinic (test records)";
@@ -195,10 +197,131 @@ test("the review spot never throws when storage is blocked", () => {
 // own; an answered one can be changed.
 test("a card's own review button", () => {
   const open = asked(lisinopril());
-  assert.deepEqual(reviewButton(open), { text: "Check this", label: "Check this: Lisinopril" });
-  assert.deepEqual(reviewButton(asked(atorvastatin())), { text: "Check this", label: "Check this: atorvastatin 20 MG Oral Tablet" });
+  assert.deepEqual(reviewButton(open), { text: "Check this", label: "Check this: Lisinopril", id: "card-review-29046" });
+  assert.deepEqual(reviewButton(asked(atorvastatin())), { text: "Check this", label: "Check this: atorvastatin 20 MG Oral Tablet", id: "card-review-83367" });
   const answers = [answerFor(open, "valley-clinic-demo", "2026-11-25")];
   const answered = arrangeList({ current: [lisinopril()], older: [] }, { answers }).current[0];
-  assert.deepEqual(reviewButton(answered), { text: "Change", label: "Change: lisinopril 20 MG Oral Tablet" });
+  assert.deepEqual(reviewButton(answered), { text: "Change", label: "Change: lisinopril 20 MG Oral Tablet", id: "card-review-29046" });
+  // A key as a group id still makes a usable id.
+  const marked = asked({ key: "rx:1", name: "Lisinopril", status: "current", source: "SMART sandbox", lastDate: "2026-10-02" }, { stopped: { "rx:1": "2026-03-03" } });
+  assert.equal(reviewButton(marked).id, "card-review-rx-1");
   assert.equal(reviewButton({ key: "rx:9", name: "Metformin", status: "current" }), null);
+});
+
+// The answer logic, in one place with no page (review fix 3). The six mark
+// cases: a newer prescription (no group) and a mark on one source's copy,
+// each answered taking, not taking and not sure.
+const TODAY = "2026-11-25";
+const lone = () => ({ key: "rx:1", otherKeys: ["fill:1"], name: "Lisinopril", status: "current", source: "SMART sandbox", lastDate: "2026-10-02" });
+const oneSide = () => Object.assign(lisinopril(), { group: Object.assign(lisinopril().group, { verdicts: [] }) });
+const arrange = (card, data) => arrangeList({ current: [card], older: [] }, data);
+
+test("a newer prescription answered Yes takes the marks away and saves nothing", () => {
+  const data = { stopped: { "rx:1": "2026-03-03", "fill:1": "2026-03-03" }, asNeeded: {}, answers: [] };
+  const after = applyAnswer(data, asked(lone(), data), "taking", TODAY);
+  assert.deepEqual(after.stopped, {});
+  assert.deepEqual(after.answers, []);
+  assert.deepEqual(arrange(lone(), after).current.map((c) => [c.key, c.question, c.answer]), [["rx:1", undefined, undefined]]);
+  // Nothing changed in what was passed in.
+  assert.deepEqual(data.stopped, { "rx:1": "2026-03-03", "fill:1": "2026-03-03" });
+});
+
+test("a newer prescription answered No keeps it stopped, marked under every key", () => {
+  const data = { stopped: { "rx:1": "2026-03-03" }, asNeeded: {}, answers: [] };
+  const card = asked(lone(), data);
+  const after = applyAnswer(data, card, "not-taking", TODAY);
+  assert.deepEqual(after.stopped, { "rx:1": "2026-03-03", "fill:1": "2026-03-03" });
+  assert.deepEqual(after.answers, [answerFor(card, "not-taking", TODAY)]);
+  const arranged = arrange(lone(), after);
+  assert.deepEqual(arranged.toCheck, []);
+  assert.equal(arranged.stopped[0].answer.choice, "not-taking");
+});
+
+test("a newer prescription answered Not sure stays on the list, asked no more", () => {
+  const data = { stopped: { "rx:1": "2026-03-03" }, asNeeded: {}, answers: [] };
+  const after = applyAnswer(data, asked(lone(), data), "not-sure", TODAY);
+  assert.deepEqual(after.stopped, { "rx:1": "2026-03-03" });
+  const arranged = arrange(lone(), after);
+  assert.deepEqual(arranged.toCheck, []);
+  assert.equal(arranged.current[0].answer.choice, "not-sure");
+});
+
+test("a mark on one copy answered Yes takes every copy's mark away", () => {
+  const data = { stopped: { "rx:314076": "2026-03-03" }, asNeeded: {}, answers: [] };
+  const after = applyAnswer(data, asked(oneSide(), data), "taking", TODAY);
+  assert.deepEqual(after.stopped, {});
+  assert.deepEqual(after.answers, []);
+  assert.deepEqual(arrange(oneSide(), after).toCheck, []);
+});
+
+test("a mark on one copy answered No marks every copy and clears As needed", () => {
+  const data = { stopped: { "rx:314076": "2026-03-03" }, asNeeded: { "rx:314077": "2026-11-01" }, answers: [] };
+  const card = asked(oneSide(), data);
+  const after = applyAnswer(data, card, "not-taking", TODAY);
+  assert.deepEqual(after.stopped, { "rx:314076": "2026-03-03", "rx:314077": "2026-03-03" });
+  assert.deepEqual(after.asNeeded, {});
+  assert.deepEqual(data.asNeeded, { "rx:314077": "2026-11-01" });
+  const arranged = arrange(oneSide(), after);
+  assert.deepEqual(arranged.toCheck, []);
+  assert.equal(arranged.stopped.length, 1);
+  assert.equal(arranged.stopped[0].answer.choice, "not-taking");
+});
+
+test("a mark on one copy answered Not sure keeps the marks and the card", () => {
+  const data = { stopped: { "rx:314076": "2026-03-03" }, asNeeded: {}, answers: [] };
+  const after = applyAnswer(data, asked(oneSide(), data), "not-sure", TODAY);
+  assert.deepEqual(after.stopped, { "rx:314076": "2026-03-03" });
+  const arranged = arrange(oneSide(), after);
+  assert.deepEqual(arranged.toCheck, []);
+  assert.equal(arranged.current[0].answer.choice, "not-sure");
+});
+
+test("a chosen side replaces the group's old answer, and leaves the marks", () => {
+  const old = { groupId: "29046", fingerprint: "old", sides: [], choice: "not-sure", answeredAt: "2026-10-01" };
+  const other = { groupId: "1998", fingerprint: "x", sides: [], choice: "not-sure", answeredAt: "2026-10-01" };
+  const data = { stopped: {}, asNeeded: { "rx:314077": "2026-11-01" }, answers: [old, other] };
+  const card = asked(lisinopril(), data);
+  const after = applyAnswer(data, card, "valley-clinic-demo", TODAY);
+  assert.deepEqual(after.answers, [other, answerFor(card, "valley-clinic-demo", TODAY)]);
+  assert.deepEqual(after.asNeeded, { "rx:314077": "2026-11-01" });
+  assert.deepEqual(after.stopped, {});
+  assert.deepEqual(data.answers, [old, other]);
+});
+
+test("data saved before answers or marks existed still takes an answer", () => {
+  const after = applyAnswer({ additions: [] }, asked(lisinopril()), "not-sure", TODAY);
+  assert.equal(after.answers.length, 1);
+  assert.deepEqual(after.additions, []);
+});
+
+// Review fixes 2, 6 and 7, in app.js and the other files' own code.
+const source = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
+
+test("a second tap on Save is ignored", () => {
+  const app = source("js/app.js");
+  assert.match(app, /function keepAnswer\(card, value\) \{\n  if \(!state\.review \|\| state\.review\.saving\) return;\n  state\.review\.saving = true;/);
+  assert.match(app, /saveButton\.disabled = true;\n    if \(picked\) keepAnswer/);
+});
+
+test("a saved review spot is used or cleared on every way in", () => {
+  const app = source("js/app.js");
+  const body = (name) => app.slice(app.indexOf("async function " + name), app.indexOf("\n}\n", app.indexOf("async function " + name)));
+  assert.match(body("openSavedList"), /clearSpot\(sessionStorage\)/);
+  assert.match(body("signInUnavailable"), /resumeReview\(\);\n    render\(\);/);
+});
+
+test("one helper says whether an answer is about a mark", () => {
+  assert.equal(isMarkFingerprint("mark:2026-03-03>2026-10-02"), true);
+  assert.equal(isMarkFingerprint("[{}]"), false);
+  assert.equal(isMarkFingerprint(undefined), false);
+  for (const file of ["js/review.js", "js/card.js", "js/share.js", "js/view.js"]) {
+    assert.doesNotMatch(source(file), /indexOf\("mark:"\)/, file);
+  }
+  // The day and newest-date helpers are view.js's own.
+  assert.doesNotMatch(source("js/review.js"), /function dayOf|function newer\b/);
+  assert.match(source("js/review.js"), /import \{[^}]*\bdayOf\b[^}]*\bnewer\b[^}]*\} from "\.\/view\.js";/);
+});
+
+test("the review opens with no signal", () => {
+  assert.ok(source("sw.js").includes('"./js/review.js"'));
 });

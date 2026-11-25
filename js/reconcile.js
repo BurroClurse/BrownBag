@@ -507,6 +507,12 @@ function fingerprintOf(entries) {
   }).sort(function (a, b) { return a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0; }));
 }
 
+// Whether an answer or question is about the patient's own Not taking mark
+// against a record (ruling R2): its fingerprint is "mark:<marked>><newest>".
+export function isMarkFingerprint(fingerprint) {
+  return String(fingerprint || "").indexOf("mark:") === 0;
+}
+
 // One side in words, the same everywhere it's shown: its dose and how
 // often. The strength goes first when the dose doesn't say it, so a 10 MG
 // and a 20 MG side never read the same, even with nothing else to say.

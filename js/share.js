@@ -8,7 +8,7 @@
 import { fillNote, completedNote, suggestNote } from "./claims.js";
 import { holdText } from "./meds.js";
 import { olderText, dateText, monthText, fillRowsFrom, isDirections, takeRows } from "./card.js";
-import { isOwnSide, sideWords } from "./reconcile.js";
+import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -165,7 +165,7 @@ function currentStatements(item, level, dated) {
   // The records disagree with each other, whatever the patient marked.
   var asked = Boolean(sides) && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
   var out;
-  if (question && isMark(question.fingerprint)) {
+  if (question && isMarkFingerprint(question.fingerprint)) {
     var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE], dated) : [recordStatement(item, level)];
     // Linked to the mark, so even records that agree aren't an ordinary row.
     if (!asked) records[0].note.splice(1, 0, { text: DISAGREE_NOTE });
@@ -193,11 +193,6 @@ function currentStatements(item, level, dated) {
   }
   out.forEach(function (one) { addGroupNotes(one, item); });
   return out;
-}
-
-// A mark question's fingerprint is "mark:<marked on>><newest record>" (ruling R2).
-function isMark(fingerprint) {
-  return String(fingerprint || "").indexOf("mark:") === 0;
 }
 
 function markedAt(fingerprint) {

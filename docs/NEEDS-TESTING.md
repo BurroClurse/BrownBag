@@ -64,6 +64,16 @@ Riley. On both virtual phones:
   card alone ("1 of 1"); Do this later comes back to My medicines.
 - Answering atorvastatin "No, I stopped" says "You said: No, I stopped";
   "I don't take this anymore" on lisinopril says the same words back.
+- A Not taking mark against a newer prescription (mark one Not taking,
+  then set the phone's date back a few months before marking, or use a list
+  where the mark is older than the record): the card is back on the list
+  with "You marked Not taking on …". **Yes, I take it** takes the Not taking
+  mark away and the card stays on the list with no question; **No, I
+  stopped** keeps the mark, the card goes under Not taking with "You said:
+  No, I stopped", and an As needed mark on it is gone.
+- Do this later from **Check this** or **Change** puts focus back on that
+  card's own button.
+- A double tap on Save moves on one card, never two ("2 of 3", not "3 of 4").
 - Each answered card says "You said: … (Nov 25)" with **Change**. Change on
   lisinopril opens it as "1 of 1"; Do this later keeps the old answer; saving
   10 MG shows the 10 MG card.

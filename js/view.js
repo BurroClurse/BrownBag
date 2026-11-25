@@ -4,7 +4,7 @@
 
 import { listDate } from "./offline.js";
 import { dayText, monthText } from "./card.js";
-import { isOwnSide, sideWords } from "./reconcile.js";
+import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
@@ -111,7 +111,9 @@ function after(a, b) {
   return a > b;
 }
 
-function dayOf(date) {
+// "2026-10-05" from a date or datetime, or its month or year when that's all
+// it has; null for none.
+export function dayOf(date) {
   var found = typeof date === "string" && /^\d{4}(?:-\d{2}(?:-\d{2})?)?/.exec(date);
   return found ? found[0] : null;
 }
@@ -194,7 +196,8 @@ function later(mark, latest) {
   return a && (!b || a > b) ? mark : latest;
 }
 
-function newer(a, b) {
+// The newer of two dates; an undated one loses.
+export function newer(a, b) {
   var dayA = dayOf(a);
   var dayB = dayOf(b);
   if (!dayA) return dayB ? b : null;
@@ -212,7 +215,7 @@ function verdictQuestion(entry, answers) {
   var kind = ASKED.filter(function (verdict) { return entry.group.verdicts.indexOf(verdict) !== -1; })[0];
   if (!kind) return null;
   // A mark's answer was about the mark, not what the sources say.
-  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id && String(answer.fingerprint).indexOf("mark:") !== 0; }).pop();
+  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id && !isMarkFingerprint(answer.fingerprint); }).pop();
   return { kind: kind, why: before ? changedText(before.sides || [], entry.group.sides) : null, fingerprint: entry.group.fingerprint };
 }
 

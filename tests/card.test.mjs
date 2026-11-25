@@ -388,3 +388,16 @@ test("a combination's dose question names every ingredient", () => {
   assert.equal(cardName(three), "Acetaminophen / Aspirin / Caffeine");
   assert.equal(cardName(asked("dose")), "Lisinopril");
 });
+
+// Review fix: one ingredient keeps every word of its name, so two insulins
+// or two salts of metoprolol never read the same.
+test("a dose question keeps the whole ingredient name", () => {
+  const named = (name) => cardName(Object.assign({}, asked("dose"), { name }));
+  assert.equal(named("insulin glargine 100 UNT/ML Injectable Solution"), "Insulin glargine");
+  assert.equal(named("folic acid 1 MG Oral Tablet"), "Folic acid");
+  assert.equal(named("metoprolol tartrate 25 MG Oral Tablet"), "Metoprolol tartrate");
+  assert.equal(named("metoprolol succinate 25 MG Extended Release Oral Tablet"), "Metoprolol succinate");
+  assert.equal(named("lisinopril 20 MG Oral Tablet"), "Lisinopril");
+  // No strength to stop at: the plain name as before.
+  assert.equal(named("Tylenol"), "Tylenol");
+});

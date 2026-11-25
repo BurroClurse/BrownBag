@@ -80,8 +80,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   taken, the medicine is one card with each source's version and date, and a
   box under Allergies says "Your records don't agree on 2 things" with **Check
   them**; each such card also has **Check this**, for that card alone. While
-  "How much do you take?" is open, the card goes by its plain name
-  ("Lisinopril"), never one source's strength. The review asks one card per
+  "How much do you take?" is open, the card goes by its plain name, every
+  ingredient's whole name ("Lisinopril", "Insulin glargine",
+  "Hydrochlorothiazide / Lisinopril"), never one source's strength. The review asks one card per
   screen ("1 of 2"): "How much do you
   take?", "How often do you take it?" or "Do you still take it?", with each
   source's version, its source and month, "I don't take this anymore" and "Not
@@ -90,8 +91,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   but never answers it. **Do this later** closes it, and the box stays. A card
   that's answered says what was picked, "You said: 20 mg, once a day (Nov 25)"
   or "You said: No, I stopped (Nov 25)", with **Change**.
-  It's asked again only when a source says something new. The review comes
-  back at the same card after the 5-minute lock.
+  It's asked again only when a source says something new. The whole review
+  comes back at the same card after the 5-minute lock; a single card opened
+  with **Check this** or **Change** doesn't, and the box is there instead.
 - **As needed** and **Not taking** move a medicine to its own part, with Undo.
   A prescription dated after a Not taking mark, or a source whose copy wasn't
   marked, puts the medicine back on the list, and the review asks "Do you still

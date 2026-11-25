@@ -4,7 +4,7 @@
 
 import { claimsLabel, completedLine } from "./claims.js";
 import { doseChange, holdText } from "./meds.js";
-import { isOwnSide, sideWords } from "./reconcile.js";
+import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 import { displayName } from "./add-check.js";
 
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -145,7 +145,7 @@ var CARD_LINES = {
 // A mark's question is the patient's mark against a record, not two
 // records, so it has only its own words.
 function questionLines(question) {
-  var mark = String(question.fingerprint || "").indexOf("mark:") === 0;
+  var mark = isMarkFingerprint(question.fingerprint);
   return [mark ? null : CARD_LINES[question.kind], question.why];
 }
 
@@ -161,12 +161,12 @@ function aboutStopping(sides) {
   return sides.some(function (one) { return one.status === "not-current"; });
 }
 
-// The plain name: "Lisinopril", or for a combination every ingredient,
-// "Hydrochlorothiazide / Lisinopril": the words before each strength.
+// The plain name: every ingredient's whole name, the words before its
+// strength, so "insulin glargine 100 UNT/ML …" is "Insulin glargine" and two
+// insulins never read the same; a combination's joined with " / ". A name
+// with no strength is said as add-check.js says it.
 function plainName(name) {
-  var parts = String(name || "").split(" / ");
-  if (parts.length < 2) return displayName(name);
-  return parts.map(function (part) {
+  return String(name || "").split(" / ").map(function (part) {
     var before = /^(.*?)\s+\d/.exec(part.trim());
     var words = before && before[1] ? before[1] : displayName(part);
     return words.charAt(0).toUpperCase() + words.slice(1);
@@ -202,7 +202,7 @@ function answerWords(entry) {
 // Worked out from what's saved, so answers saved before this need nothing new.
 function askedAboutStopping(entry) {
   var answer = entry.answer;
-  if (String(answer.fingerprint || "").indexOf("mark:") === 0) return true;
+  if (isMarkFingerprint(answer.fingerprint)) return true;
   if (entry.group && Array.isArray(entry.group.verdicts)) return entry.group.verdicts.indexOf("status") !== -1;
   return aboutStopping(answer.sides || []);
 }

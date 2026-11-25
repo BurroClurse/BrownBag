@@ -4,7 +4,8 @@
 // check it; the screen is in app.js.
 
 import { cardName, monthText } from "./card.js";
-import { sideWords } from "./reconcile.js";
+import { isMarkFingerprint, sideWords } from "./reconcile.js";
+import { dayOf, keysOf, newer } from "./view.js";
 
 // Where the patient is in the review, so it comes back after the 5-minute
 // lock (which reloads the page). Only the card's number, 1 for the first.
@@ -30,11 +31,6 @@ export function questionText(card) {
   return QUESTIONS[card.question.kind];
 }
 
-// A mark's question is the patient's own mark against a record (ruling R2).
-function isMark(question) {
-  return String(question.fingerprint || "").indexOf("mark:") === 0;
-}
-
 var NOT_TAKING = { value: "not-taking", label: "I don't take this anymore", detail: "" };
 var NOT_SURE = { value: "not-sure", label: "Not sure, ask my doctor", detail: "" };
 
@@ -51,7 +47,8 @@ export function choicesFor(card, today) {
     }).concat(NOT_TAKING, NOT_SURE);
   }
   var fill = fillText(card, today);
-  if (isMark(question)) {
+  // A mark's question is the patient's own mark against a record (R2).
+  if (isMarkFingerprint(question.fingerprint)) {
     // "taking" is never saved: the marks go instead (R2).
     return [
       { value: "taking", label: "Yes, I take it", detail: withFill(listedCurrent(card), fill) },
@@ -74,7 +71,38 @@ export function choicesFor(card, today) {
 // is open, "Change" once it's answered, else none. Its label names the card.
 export function reviewButton(entry) {
   var text = entry.answer ? "Change" : entry.question ? "Check this" : null;
-  return text ? { text: text, label: text + ": " + cardName(entry) } : null;
+  if (!text) return null;
+  // Its own id, so Do this later can put focus back on it.
+  var groupId = entry.answer ? entry.answer.groupId : entry.question.groupId;
+  return { text: text, label: text + ": " + cardName(entry), id: "card-review-" + String(groupId).replace(/[^A-Za-z0-9_-]/g, "-") };
+}
+
+// The patient's data after an answer, as a new copy; what was passed in is
+// left alone. The group's old answer goes (a Change replaces it). For a
+// mark's question (R2), "taking" takes away the Not taking marks under every
+// key the card answers to and saves no answer; "not-taking" saves the answer
+// and marks every key with the mark's own date, so the answer keeps matching
+// its question, and clears As needed there, as the Not taking button does.
+// "not-sure" and a source's id only save the answer.
+export function applyAnswer(data, card, value, today) {
+  var question = card.question;
+  var keys = keysOf(card);
+  var stopped = Object.assign({}, data.stopped || {});
+  var asNeeded = Object.assign({}, data.asNeeded || {});
+  var answers = (data.answers || []).filter(function (answer) { return answer.groupId !== question.groupId; });
+  var mark = isMarkFingerprint(question.fingerprint) && question.mark;
+  if (value === "taking") {
+    keys.forEach(function (key) { delete stopped[key]; });
+  } else {
+    answers.push(answerFor(card, value, today));
+    if (value === "not-taking" && mark) {
+      keys.forEach(function (key) {
+        stopped[key] = mark.at;
+        delete asNeeded[key];
+      });
+    }
+  }
+  return Object.assign({}, data, { stopped: stopped, asNeeded: asNeeded, answers: answers });
 }
 
 // What the patient chose, as it's saved (spec, section 7). A mark's question
@@ -137,15 +165,10 @@ function withFill(detail, fill) {
   return [detail, fill].filter(Boolean).join(". ");
 }
 
-// The newest dated one; with none dated, the first.
+// The newest dated one, the first of a tie; with none dated, the first.
 function newestOf(sides) {
-  return sides.reduce(function (best, side) {
-    return !best || dayOf(side.asOf) > dayOf(best.asOf) ? side : best;
-  }, null);
-}
-
-function dayOf(date) {
-  return String(date || "").slice(0, 10);
+  var date = sides.reduce(function (latest, side) { return newer(side.asOf, latest); }, null);
+  return sides.filter(function (side) { return dayOf(side.asOf) === dayOf(date); })[0] || sides[0] || null;
 }
 
 // The record that still lists it, for a mark's question: the one its

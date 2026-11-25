@@ -36,7 +36,7 @@ import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 import { olderQuestion, takenOlder } from "./older.js";
-import { answerFor, checkText, choicesFor, clearSpot, questionText, reviewButton, saveSpot, spotFrom } from "./review.js";
+import { applyAnswer, checkText, choicesFor, clearSpot, questionText, reviewButton, saveSpot, spotFrom } from "./review.js";
 import { draftFromOlder, olderFrom, draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
@@ -261,6 +261,9 @@ async function start() {
 
 // The list saved on this phone, if any, without updating it.
 async function openSavedList() {
+  // This opens on the connections screen, not the list: a review left by
+  // the lock doesn't come back here.
+  clearSpot(sessionStorage);
   try {
     var saved = await loadLastRecords(localStorage, state.key);
     if (!saved) return;
@@ -625,6 +628,8 @@ async function signInUnavailable(error, where) {
     console.error("Sign-in didn't finish", error);
   }
   if (saved && (!where || where === "home")) {
+    // Locked in the middle of the review: back to the same card, as with a pass.
+    resumeReview();
     render();
     return;
   }
@@ -1863,7 +1868,7 @@ function drawCheckBox(parent, arranged) {
 // Answered cards leave the list, so the next card is the first one left.
 // REVIEW_SPOT keeps the card's number through the lock, which reloads.
 function openReview(from, one) {
-  state.review = { from: from, done: 0, seen: [], change: (one && one.change) || null, only: (one && one.only) || null };
+  state.review = { from: from, done: 0, seen: [], change: (one && one.change) || null, only: (one && one.only) || null, returnTo: (one && one.returnTo) || null };
   if (!reviewCard()) {
     state.review = null;
     return;
@@ -1933,6 +1938,8 @@ function drawReview() {
     setTimeout(function () { reviewDone("medicines", "medicines-heading", ""); });
     return;
   }
+  // A new card, so Save can be tapped again.
+  state.review.saving = false;
   var number = oneCard() ? 1 : state.review.done + 1;
   var total = oneCard() ? 1 : state.review.done + reviewLeft().length;
   var top = add(root, "div", null, "review-top");
@@ -1974,10 +1981,12 @@ function drawReview() {
   form.addEventListener("submit", function (event) {
     event.preventDefault();
     var picked = form.querySelector("input[name=review-choice]:checked");
+    // Once: a second tap while it saves would count the card twice.
+    saveButton.disabled = true;
     if (picked) keepAnswer(card, picked.value);
   });
   button(actions, "Do this later", "link-button", function () {
-    reviewDone(state.review.from, laterFocus(state.review.from), "");
+    reviewDone(state.review.from, laterFocus(state.review), "");
   }).id = "review-later";
 }
 
@@ -1985,21 +1994,18 @@ function drawReview() {
 // the last. A mark's "Yes, I take it" takes its Not taking marks away and
 // saves no answer; its "No, I stopped" marks every source's copy (R2).
 function keepAnswer(card, value) {
+  if (!state.review || state.review.saving) return;
+  state.review.saving = true;
   var question = card.question;
   var name = cardName(card);
-  var answers = (state.data.answers || []).filter(function (answer) { return answer.groupId !== question.groupId; });
-  if (value === "taking") {
-    keysOf(card).forEach(function (key) { delete state.data.stopped[key]; });
-    recordChange("unstopped", name);
-  } else {
-    answers.push(answerFor(card, value, today()));
-    if (value === "not-taking" && question.mark) {
-      // The mark's own date, so the answer still matches its question.
-      keysOf(card).forEach(function (key) { state.data.stopped[key] = question.mark.at; });
-      recordChange("stopped", name);
-    }
+  var before = state.data;
+  // What changes is worked out in js/review.js; only the change log is here.
+  state.data = applyAnswer(before, card, value, today());
+  if (question.mark && value === "taking") recordChange("unstopped", name);
+  if (question.mark && value === "not-taking") {
+    if (keysOf(card).some(function (key) { return (before.asNeeded || {})[key]; })) recordChange("regular", name);
+    recordChange("stopped", name);
   }
-  state.data.answers = answers;
   if (!oneCard()) {
     state.review.done += 1;
     state.review.seen.push(seenKey(card));
@@ -2033,14 +2039,17 @@ function reviewDone(screen, focusId, announce) {
 // The phone's Back button on the review, or the step back from Do this later.
 function showAfterReview() {
   var from = state.review ? state.review.from : "medicines";
-  leaveReview(state.reviewAfter || { screen: from, focusId: laterFocus(from), announce: "" });
+  leaveReview(state.reviewAfter || { screen: from, focusId: laterFocus(state.review || { from: from }), announce: "" });
   render();
   window.scrollTo(0, 0);
 }
 
-// Back on what opened the review: the line or box, while it's still there
-// (a Change can close with nothing left to check).
-function laterFocus(from) {
+// Back on what opened the review: the card's own Check this or Change, or
+// the line or box while it's still there (a Change can close with nothing
+// left to check).
+function laterFocus(review) {
+  if (review.returnTo) return review.returnTo;
+  var from = review.from;
   var left = reviewList().length && (from !== "home" || !medicinesPartial(state));
   if (from === "home") return left ? "open-review" : "open-medicines";
   return left ? "check-open" : "medicines-heading";
@@ -2564,9 +2573,9 @@ function medRow(list, entry) {
   var review = reviewButton(entry);
   if (review) {
     button(add(row, "div", null, "card-actions"), review.text, "secondary", function () {
-      if (entry.answer) openReview("medicines", { change: entry.answer });
-      else openReview("medicines", { only: entry.question });
-    }, review.label);
+      if (entry.answer) openReview("medicines", { change: entry.answer, returnTo: review.id });
+      else openReview("medicines", { only: entry.question, returnTo: review.id });
+    }, review.label).id = review.id;
   }
   return row;
 }
