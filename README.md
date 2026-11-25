@@ -268,8 +268,9 @@ mark. An answered one is the chosen version, with the others as notes. A source
 other than the first that didn't load is named in a `source-not-loaded` tag.
 Brown Bag's own tags carry their value in `display` and mean nothing to another
 system, so an older staff page still shows every version, each with its notes.
-When the list is long, codes go first, then the other versions' notes shorten
-to the source and month; a version is never left out, and the list is too long
+Each unsettled version also says its record's date. When the list is long,
+codes go first, then the other versions' notes shorten to the source and month,
+then the record dates go; a version is never left out, and the list is too long
 for one QR code first. The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.

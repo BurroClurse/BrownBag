@@ -550,3 +550,21 @@ test("what changed is never read from a mark's answer", () => {
   assert.equal(arranged.toCheck.length, 1);
   assert.equal(arranged.toCheck[0].question.why, null);
 });
+
+// Two sources with the same code share a key. Only the card's own record
+// answers to its other keys, so a mark under one of them never stops the
+// other source's copy.
+test("a mark counts each side with the same key separately", () => {
+  const card = twoSources([], [
+    side("rx:1", "clinic-a", "Valley Clinic", { asOf: "2026-09-01" }),
+    side("rx:1", "clinic-b", "Mercy Health", { asOf: "2026-10-01" })
+  ]);
+  const shown = Object.assign({}, card, { key: "rx:1", sourceId: "clinic-b", source: "Mercy Health", otherKeys: ["fill:9"], lastDate: "2026-10-01" });
+  const arranged = arrangeList({ current: [shown], older: [] }, { stopped: { "fill:9": "2026-11-01" } });
+  assert.equal(arranged.stopped.length, 0, "Valley Clinic's copy wasn't marked");
+  assert.equal(arranged.toCheck[0].question.why, "You marked this Not taking on Nov 1. Valley Clinic lists it current, Sep 2026.");
+  // A side's own date, never the shown record's.
+  const older = Object.assign({}, shown, { otherKeys: [], lastDate: "2026-11-20" });
+  const renewed = arrangeList({ current: [older], older: [] }, { stopped: { "rx:1": "2026-11-01" } });
+  assert.equal(renewed.toCheck[0].question.why, "You marked Not taking on Nov 1. Your records have a newer prescription, Nov 20.");
+});

@@ -4,7 +4,7 @@
 
 import { claimsLabel, completedLine } from "./claims.js";
 import { doseChange, holdText } from "./meds.js";
-import { sideWords } from "./reconcile.js";
+import { isOwnSide, sideWords } from "./reconcile.js";
 
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -79,7 +79,7 @@ export function patientCard(entry, claimsLoaded) {
   // A side the patient chose from another source than the shown record:
   // the shown record's prescriber, dates and history aren't that side's.
   var chosen = entry.answer ? chosenSide(entry) : null;
-  var otherRecord = Boolean(chosen) && chosen.key !== entry.key;
+  var otherRecord = Boolean(chosen) && !isOwnSide(entry, chosen);
   var change = otherRecord ? null : doseChange(entry);
   if (fromRecords && !otherRecord) {
     say("Prescribed by", entry.prescriber);

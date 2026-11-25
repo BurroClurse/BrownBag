@@ -203,3 +203,16 @@ test("Jordan's clinic file held some back", () => {
   const amlodipine = only(split, /^amlodipine/);
   assert.deepEqual(amlodipine.group.verdicts, []);
 });
+
+// Riley's atorvastatin and methotrexate have the same code in both sources:
+// the card says which source is its own record.
+test("a joined card knows its own source, even when the code is the same", async () => {
+  const { isOwnSide } = await import("../js/reconcile.js");
+  const { split } = signedIn("brownbag-recon-riley");
+  for (const pattern of [/^atorvastatin/, /^methotrexate/]) {
+    const card = only(split, pattern);
+    assert.equal(new Set(card.group.sides.map((side) => side.key)).size, 1, "the same key");
+    assert.equal(card.group.sides.filter((side) => isOwnSide(card, side)).length, 1, String(pattern));
+    assert.ok(card.group.sides.some((side) => side.sourceId === card.sourceId));
+  }
+});

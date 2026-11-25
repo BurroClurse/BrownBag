@@ -331,3 +331,19 @@ test("a chosen side that is the shown record keeps the card as it is", () => {
   assert.deepEqual(card.facts.slice(0, 4), [["Prescribed by", "Dr Valley"], ["Since", "Oct 5, 2026"], ["Until", "Oct 5, 2027"], ["Dose change", "10 MG to 20 MG, Oct 5, 2026"]]);
   assert.ok(card.facts.some(([label, text]) => label === "Source" && text === "Valley Clinic (test records)"));
 });
+
+// Two sources often give the same code, so the same key. The source decides
+// which side is the card's own record, never the key alone.
+test("an answer of the second source with the same code shows that source's dose", () => {
+  const sides = [Object.assign({}, SIDES[0], { key: "rx:314077" }), SIDES[1]];
+  const shown = item({ key: "rx:314077", sourceId: "smart-sandbox", source: "SMART sandbox", dose: "10 mg", route: null, prescriber: "Dr. Patel",
+    group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], sides, fingerprint: "fp", notes: [] } });
+  const answer = { groupId: "29046", fingerprint: "fp", sides, choice: "valley-clinic-demo", answeredAt: "2026-11-25" };
+  const card = patientCard(Object.assign({}, shown, { answer }), true);
+  assert.deepEqual(card.take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+  assert.deepEqual(card.facts.filter(([label]) => label === "Source"), [["Source", "Valley Clinic (test records)"]]);
+  assert.ok(!card.facts.some(([label]) => label === "Prescribed by"), "not the shown record's prescriber");
+  // The card's own source chosen: its own details.
+  const own = patientCard(Object.assign({}, shown, { answer: Object.assign({}, answer, { choice: "smart-sandbox" }) }), true);
+  assert.deepEqual(own.facts.filter(([label]) => label === "Prescribed by" || label === "Source"), [["Prescribed by", "Dr. Patel"], ["Source", "SMART sandbox"]]);
+});

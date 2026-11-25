@@ -147,16 +147,19 @@ const bothSides = (bundle) => {
 
 test("a disagreement is never trimmed away", async () => {
   const { fitsInQr } = await import("../js/share.js");
-  const fits = async (l, level) => { const p = await packShare(buildShareBundle(l, NOW, {}, level), BASE); return fitsInQr(p.prefix, p.digits); };
+  // Level -1 is level 0 without the sides' dates, the last thing trimmed.
+  const build = (l, level) => level < 0 ? buildShareBundle(l, NOW, {}, 0, true) : buildShareBundle(l, NOW, {}, level);
+  const fits = async (l, level) => { const p = await packShare(build(l, level), BASE); return fitsInQr(p.prefix, p.digits); };
   let count = 40;
   while (await fits(list([GROUPED].concat(many(count))), 2)) count += 1;
-  // Just over the limit with codes: fewer codes, and both sides, until nothing fits.
+  // Just over the limit with codes: fewer codes, then no dates, and both
+  // sides, until nothing fits.
   let seen = 0;
   for (; ; count += 1) {
     const l = list([GROUPED].concat(many(count)));
     const fitting = [];
-    for (const level of [2, 1, 0]) {
-      const bundle = buildShareBundle(l, NOW, {}, level);
+    for (const level of [2, 1, 0, -1]) {
+      const bundle = build(l, level);
       assert.ok(bothSides(bundle), "level " + level);
       if (await fits(l, level)) fitting.push(level);
     }
@@ -174,4 +177,24 @@ test("a disagreement is never trimmed away", async () => {
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
   assert.match(app, /var fits = fitsInQr\(packed\.prefix, packed\.digits\);/);
   assert.match(app, /fits \? "Show this to the person checking your medicines" : "Your list is too long for one QR code"/);
+});
+
+// The dates go last, and only when the code wouldn't fit with them.
+test("a side's date is dropped only when level 0 doesn't fit", async () => {
+  const { fitsInQr } = await import("../js/share.js");
+  const dated = (bundle) => bundle.entry.filter((e) => (e.resource.note || []).some((n) => /^Record date: /.test(n.text))).length;
+  const fits = async (bundle) => { const p = await packShare(bundle, BASE); return fitsInQr(p.prefix, p.digits); };
+  let seed = 3; const letter = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return "abcdefghijklmnopqrstuvwxyz"[seed % 26]; };
+  // One letter of name at a time, until level 0 with dates is just too long.
+  let count = 40;
+  while (await fits(buildShareBundle(list([GROUPED].concat(many(count))), NOW, {}, 0))) count += 1;
+  count -= 1;
+  let name = "Avery Brownbag ";
+  const at = (n) => list([GROUPED].concat(many(count)), { patient: { name: n, birthDate: "1950-03-14" } });
+  assert.equal(dated(await shareBundleFor(at(name), NOW, {}, BASE)), 2, "fits with its dates");
+  while (await fits(buildShareBundle(at(name), NOW, {}, 0))) name += letter();
+  const bundle = await shareBundleFor(at(name), NOW, {}, BASE);
+  assert.equal(dated(bundle), 0, "dates dropped");
+  assert.ok(bothSides(bundle), "never a side");
+  assert.ok(await fits(bundle));
 });

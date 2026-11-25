@@ -661,7 +661,7 @@ test("an unanswered disagreement is two linked statements", async () => {
   const meds = statementsOf(bundle);
   assert.equal(meds.length, 2);
   // The shown record keeps everything it said; the other side only its own.
-  assert.deepEqual(meds.map(notesOf), [["From records: SMART sandbox", "Records disagree"], ["From records: Valley Clinic (test records)", "Records disagree", "Prescribed by Dr. Patel"]]);
+  assert.deepEqual(meds.map(notesOf), [["From records: SMART sandbox", "Records disagree", "Record date: 2026-03"], ["From records: Valley Clinic (test records)", "Records disagree", "Record date: 2026-10", "Prescribed by Dr. Patel"]]);
   assert.deepEqual(meds.map((m) => m.dosage[0].text), ["10 mg · once a day", "20 mg · once a day"]);
   assert.deepEqual(meds.map((m) => m.medicationCodeableConcept.text), ["lisinopril 10 MG Oral Tablet", "lisinopril 20 MG Oral Tablet"]);
   for (const m of meds) assert.equal(m.informationSource, undefined, "the record's, not the patient's");
@@ -829,8 +829,8 @@ test("sides with the same code keep their own words", async () => {
   const card = grouped({ group: Object.assign({}, grouped().group, { verdicts: ["schedule"], sides: [weekly, SIDES[1]] }) });
   const meds = statementsOf(await shared([card]));
   assert.deepEqual(meds.map((m) => [m.dosage[0].text, notesOf(m)]), [
-    ["20 mg · once a week", ["From records: SMART sandbox", "Records disagree"]],
-    ["20 mg · once a day", ["From records: Valley Clinic (test records)", "Records disagree", "Prescribed by Dr. Patel"]]
+    ["20 mg · once a week", ["From records: SMART sandbox", "Records disagree", "Record date: 2026-03"]],
+    ["20 mg · once a day", ["From records: Valley Clinic (test records)", "Records disagree", "Record date: 2026-10", "Prescribed by Dr. Patel"]]
   ]);
   // A status side that's stopped says so in FHIR's own word, not the patient's.
   const status = grouped({ group: Object.assign({}, grouped().group, { verdicts: ["status"], sides: [Object.assign({}, weekly, { frequency: "once a day", status: "not-current", recordStatus: "stopped" }), SIDES[1]] }) });
@@ -838,4 +838,22 @@ test("sides with the same code keep their own words", async () => {
   assert.deepEqual(statementsOf(both).map((m) => m.status), ["completed", "active"]);
   assert.deepEqual(groupShareBundle(both).disagree[0].sides.map((row) => row.status), ["completed", "active"]);
   assert.deepEqual(groupShareBundle(both).patientSaysStopped, []);
+});
+
+// Ruling on concern 3: staff see how new each side is.
+test("the lisinopril pair carries both dates and reads them back", async () => {
+  const bundle = await shared([grouped()]);
+  assert.deepEqual(statementsOf(bundle).map((m) => notesOf(m).filter((t) => t.startsWith("Record date: "))), [["Record date: 2026-03"], ["Record date: 2026-10"]]);
+  assert.deepEqual(statementsOf(bundle).map((m) => notesOf(m).slice(0, 3)), [["From records: SMART sandbox", "Records disagree", "Record date: 2026-03"], ["From records: Valley Clinic (test records)", "Records disagree", "Record date: 2026-10"]]);
+  const sides = groupShareBundle(bundle).disagree[0].sides;
+  assert.deepEqual(sides.map((row) => row.facts.filter(([label]) => label === "Record date")), [[["Record date", "Mar 2026"]], [["Record date", "Oct 2026"]]]);
+  // Only the year when that's all there is; no date, no note.
+  const odd = grouped({ group: Object.assign({}, grouped().group, { sides: [Object.assign({}, SIDES[0], { asOf: "2026" }), Object.assign({}, SIDES[1], { asOf: null })] }) });
+  const oddBundle = await shared([odd]);
+  assert.deepEqual(statementsOf(oddBundle).map((m) => notesOf(m).filter((t) => t.startsWith("Record date"))), [["Record date: 2026"], []]);
+  assert.deepEqual(groupShareBundle(oddBundle).disagree[0].sides[0].facts.filter(([label]) => label === "Record date"), [["Record date", "2026"]]);
+  // At level 0 the date stays.
+  const { arrangeList, shareListFrom } = await import("../js/view.js");
+  const level0 = buildShareBundle(shareListFrom(PATIENT, arrangeList({ current: [grouped()], older: [] }, {}), []), NOW, {}, 0);
+  assert.equal(statementsOf(level0).filter((m) => notesOf(m).some((t) => t.startsWith("Record date: "))).length, 2);
 });

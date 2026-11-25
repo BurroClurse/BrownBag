@@ -4,7 +4,7 @@
 
 import { listDate } from "./offline.js";
 import { dayText, monthText } from "./card.js";
-import { sideWords } from "./reconcile.js";
+import { isOwnSide, sideWords } from "./reconcile.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
@@ -119,7 +119,7 @@ function markState(entry, marks) {
   if (entry.group) {
     members = entry.group.sides.map(function (side) {
       // The card's own record also answers to its other keys and its date.
-      var own = side.key === entry.key;
+      var own = isOwnSide(entry, side);
       return { side: side, current: side.status === "current", keys: own ? keysOf({ key: side.key, otherKeys: entry.otherKeys }) : [side.key], date: newer(side.asOf, own ? entry.lastDate : null) };
     });
   } else {

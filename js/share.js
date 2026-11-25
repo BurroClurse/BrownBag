@@ -7,8 +7,8 @@
 
 import { fillNote, completedNote } from "./claims.js";
 import { holdText } from "./meds.js";
-import { olderText, dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
-import { sideWords } from "./reconcile.js";
+import { olderText, dateText, monthText, fillRowsFrom, isDirections, takeRows } from "./card.js";
+import { isOwnSide, sideWords } from "./reconcile.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -55,7 +55,8 @@ export var AS_NEEDED_NOTE = "Patient says: takes only when needed";
 
 // level: how much of what the record says in codes goes. 2: all of it. 1: no
 // NDC codes. 0: none, as before codes were kept. The words are always the same.
-export function buildShareBundle(list, now, warnings = {}, level = 0) {
+// undated: no "Record date" on the sides, the last thing trimmed.
+export function buildShareBundle(list, now, warnings = {}, level = 0, undated = false) {
   var entries = [{
     resource: {
       resourceType: "Patient",
@@ -74,12 +75,12 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
     if (at.length > 1) differs.push(at.join(" "));
   }
   list.current.forEach(function (item) {
-    addAll(currentStatements(item, level));
+    addAll(currentStatements(item, level, !undated));
   });
   // A card to check that isn't current still reaches staff.
   var shown = list.current.map(function (item) { return item.key; });
   (list.toCheck || []).forEach(function (item) {
-    if (shown.indexOf(item.key) === -1) addAll(currentStatements(item, level));
+    if (shown.indexOf(item.key) === -1) addAll(currentStatements(item, level, !undated));
   });
   list.additions.forEach(function (addition) {
     var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", withUnitCode(addition, level));
@@ -157,19 +158,19 @@ var ASKED_VERDICTS = ["status", "dose", "schedule"];
 // One current card's statements. Until the patient answers, or when they
 // aren't sure, each side is its own statement, so nothing one source says is
 // lost. A Not taking mark against a record is the record and the mark.
-function currentStatements(item, level) {
+function currentStatements(item, level, dated) {
   var answer = item.answer || null;
   var question = answer ? null : item.question;
   var sides = item.group && item.group.sides.length > 1 ? item.group.sides : null;
   var out;
   if (question && isMark(question.fingerprint)) {
     var asked = sides && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
-    var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE]) : [recordStatement(item, level)];
+    var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE], dated) : [recordStatement(item, level)];
     out = records.concat(stoppedStatement(item, markedAt(question.fingerprint), level));
   } else if (question && sides) {
-    out = sideStatements(item, sides, level, [DISAGREE_NOTE]);
+    out = sideStatements(item, sides, level, [DISAGREE_NOTE], dated);
   } else if (answer && answer.choice === "not-sure" && sides && !isMark(answer.fingerprint)) {
-    out = sideStatements(item, sides, level, [DISAGREE_NOTE, UNSURE_NOTE]);
+    out = sideStatements(item, sides, level, [DISAGREE_NOTE, UNSURE_NOTE], dated);
   } else if (answer && answer.choice === "not-sure") {
     out = [recordStatement(item, level)];
     addNote(out[0], UNSURE_NOTE);
@@ -205,34 +206,36 @@ function chosenSide(item) {
   return (item.group && find(item.group.sides)) || find(item.answer.sides) || null;
 }
 
-// The staff notes go right after each side's source.
-function sideStatements(item, sides, level, notes) {
+// The staff notes go right after each side's source, then the side's own
+// date, so staff can see which is newer.
+function sideStatements(item, sides, level, notes, dated) {
   return sides.map(function (side) {
     var statement = sideStatement(item, side, level);
-    statement.note.splice.apply(statement.note, [1, 0].concat(notes.map(function (text) { return { text: text }; })));
+    var when = dated ? recordDate(side) : null;
+    var texts = notes.concat(when ? RECORD_DATE + when : []);
+    statement.note.splice.apply(statement.note, [1, 0].concat(texts.map(function (text) { return { text: text }; })));
     return statement;
   });
+}
+
+var RECORD_DATE = "Record date: ";
+
+// "<YYYY-MM>", or the year when that's all the record has.
+function recordDate(side) {
+  var found = /^\d{4}(?:-\d{2})?/.exec(String(side.asOf || ""));
+  return found ? found[0] : null;
 }
 
 // The card's own record has everything it said. Another source's has only
 // what its side says: never the shown record's codes, prescriber or fills.
 function sideStatement(item, side, level) {
-  if (side === ownSide(item)) return recordStatement(item, level, side.sourceName);
+  if (isOwnSide(item, side)) return recordStatement(item, level, side.sourceName);
   var coded = /^rx:(\d+)/.exec(String(side.key || ""));
   var statement = statementFor(side.name || item.name, coded ? coded[1] : null, dosageText(side), sideStatus(side), null, dosageParts(side, 0));
   statement.note = [{ text: "From records: " + side.sourceName }];
   // The patient's As needed mark is on the card, so on every side.
   if (item.asNeededAt) asNeeded(statement, AS_NEEDED_NOTE);
   return statement;
-}
-
-// The side that is the card's own record. Two sources with the same code
-// share a key, so the source has to match too; failing that, a key only one
-// side has.
-function ownSide(item) {
-  var sides = (item.group && item.group.sides) || [];
-  var same = sides.filter(function (side) { return side.key === item.key; });
-  return same.filter(function (side) { return side.sourceName === item.source; })[0] || (same.length === 1 ? same[0] : null);
 }
 
 // "completed", not "stopped": a stopped statement is the patient's own mark
@@ -247,8 +250,8 @@ function sideStatus(side) {
 // "Other record: <Source>, <words>, <YYYY-MM>". At level 0, where the list
 // is longest, only the source and month.
 function otherRecordNote(side, level) {
-  var month = /^\d{4}(?:-\d{2})?/.exec(String(side.asOf || ""));
-  return "Other record: " + [side.sourceName].concat(level ? sideWords(side) : [], month ? month[0] : []).join(", ");
+  var month = recordDate(side);
+  return "Other record: " + [side.sourceName].concat(level ? sideWords(side) : [], month || []).join(", ");
 }
 
 function addGroupNotes(statement, item) {
@@ -693,12 +696,21 @@ export async function unpackShare(fragment, code) {
 export async function shareBundleFor(list, now, warnings, baseUrl) {
   for (var level = 2; level > 0; level -= 1) {
     var bundle = buildShareBundle(list, now, warnings, level);
-    // The same length as the real one, without the second the locking takes.
-    var packed = await transform(new TextEncoder().encode(JSON.stringify(bundle)), new CompressionStream("deflate-raw"));
-    var bytes = SECRET_BYTES + IV_BYTES + packed.length + TAG_BYTES;
-    if (bitsIn(baseUrl + "share.html#" + PREFIX, Math.ceil(bytes * 4 / 3) * 2) <= CODED_MAX_BITS) return bundle;
+    if (await bitsFor(bundle, baseUrl) <= CODED_MAX_BITS) return bundle;
   }
-  return buildShareBundle(list, now, warnings, 0);
+  // Then the sides' dates, only when the code wouldn't fit at all. A side
+  // itself is never left out: past this, the list is too long for one code.
+  var plain = buildShareBundle(list, now, warnings, 0);
+  if (await bitsFor(plain, baseUrl) <= QR_MAX_BITS) return plain;
+  var undated = buildShareBundle(list, now, warnings, 0, true);
+  return await bitsFor(undated, baseUrl) <= QR_MAX_BITS ? undated : plain;
+}
+
+// The same length as the real code, without the second the locking takes.
+async function bitsFor(bundle, baseUrl) {
+  var packed = await transform(new TextEncoder().encode(JSON.stringify(bundle)), new CompressionStream("deflate-raw"));
+  var bytes = SECRET_BYTES + IV_BYTES + packed.length + TAG_BYTES;
+  return bitsIn(baseUrl + "share.html#" + PREFIX, Math.ceil(bytes * 4 / 3) * 2);
 }
 
 // Counts the bits of a QR code made of two parts: the web address as text
@@ -829,6 +841,7 @@ function cardFrom(resource, added) {
     else if ((found = /^From an older prescription, (\d{4}\S*)$/.exec(text))) card.facts.push(["From", olderText(found[1])]);
     else if ((found = /^From records: (.+)$/.exec(text))) source.push(["Source", found[1]]);
     else if ((found = /^Prescribed by (.+)$/.exec(text))) card.facts.push(["Prescribed by", found[1]]);
+    else if ((found = /^Record date: (\d{4}(?:-\d{2})?)$/.exec(text))) card.facts.push(["Record date", monthText(found[1])]);
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
     else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
     else if (text === "No fill found in claims") card.facts.push(["Filled", text]);

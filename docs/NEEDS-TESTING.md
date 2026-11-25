@@ -50,7 +50,7 @@ certificate); screenshots `task-7-riley-*.png` in
   first, with two rows each for atorvastatin, lisinopril (10 MG from SMART
   sandbox, 20 MG from Valley Clinic (test records)) and methotrexate ("once a
   week" from SMART sandbox, "once a day" from Valley Clinic), each saying
-  "Records disagree" and its own source. Then From records (6); sertraline's
+  "Records disagree", its own source and its own "Record date". Then From records (6); sertraline's
   source is "SMART sandbox, Valley Clinic (test records)".
 - The staff page, opened from the scan with the 6 digits, shows the same.
   The rows wrap well on the iPhone SE size, and VoiceOver and TalkBack read
