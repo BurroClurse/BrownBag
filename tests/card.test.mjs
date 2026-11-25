@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { dateText, dayText, monthText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
+import { cardName, dateText, dayText, monthText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
 import { buildShareBundle, fitsInQr, groupShareBundle, packShare } from "../js/share.js";
 import { drawShareList } from "../js/share-list.js";
 import { makeAddition } from "../js/view.js";
@@ -298,5 +298,36 @@ test("an answer of one side names that side's medicine", () => {
   assert.equal(card.name, "lisinopril 10 MG Oral Tablet");
   assert.deepEqual(card.take[0], ["Dose", "1 tablet"]);
   assert.equal(patientCard(asked("dose"), true).name, undefined, "no name of its own before an answer");
-  assert.match(readFileSync(new URL("../js/app.js", import.meta.url), "utf8"), /drawCard\(row, card\.name \|\| entry\.name, card\)/);
+  assert.equal(cardName(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer })), "lisinopril 10 MG Oral Tablet");
+  assert.equal(cardName(asked("dose")), "lisinopril 20 MG Oral Tablet");
+});
+
+// What a screen reader hears on the buttons is the name the card shows.
+test("My medicines names a card the same way on the card, its buttons and what's said", () => {
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /drawCard\(row, cardName\(entry\), patientCard\(entry, /);
+  assert.doesNotMatch(app, /": " \+ entry\.name\)/, "button labels");
+  assert.doesNotMatch(app, /announce = entry\.name \+/, "announcements");
+});
+
+// The facts go with the record the dose came from: never another source's
+// prescriber or dates beside the chosen side's dose.
+const CHOSEN = (choice) => Object.assign({}, GROUPED, {
+  prescriber: "Dr Valley", start: "2026-10-05", end: "2027-10-05",
+  doseHistory: [{ name: "lisinopril 10 MG Oral Tablet", date: "2025-01-01" }, { name: "lisinopril 20 MG Oral Tablet", date: "2026-10-05" }],
+  answer: { groupId: "29046", fingerprint: "fp", sides: SIDES, choice, answeredAt: "2026-11-25" }
+});
+test("a chosen side from another source keeps only its own facts", () => {
+  const facts = patientCard(CHOSEN("smart-sandbox"), true).facts;
+  const labels = facts.map(([label]) => label);
+  for (const label of ["Prescribed by", "Since", "Until", "Dose change"]) assert.ok(!labels.includes(label), label);
+  assert.deepEqual(facts.filter(([label]) => label === "Source"), [["Source", "SMART sandbox"]]);
+  assert.deepEqual(facts.at(-1), ["You said", "10 mg, once a day (Nov 25)"]);
+});
+
+test("a chosen side that is the shown record keeps the card as it is", () => {
+  const card = patientCard(CHOSEN("valley-clinic-demo"), true);
+  assert.equal(card.name, undefined);
+  assert.deepEqual(card.facts.slice(0, 4), [["Prescribed by", "Dr Valley"], ["Since", "Oct 5, 2026"], ["Until", "Oct 5, 2027"], ["Dose change", "10 MG to 20 MG, Oct 5, 2026"]]);
+  assert.ok(card.facts.some(([label, text]) => label === "Source" && text === "Valley Clinic (test records)"));
 });

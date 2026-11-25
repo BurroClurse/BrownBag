@@ -75,8 +75,13 @@ export function patientCard(entry, claimsLoaded) {
   var facts = [];
   var say = function (label, text) { if (text) facts.push([label, text]); };
   var fromRecords = entry.origin !== "claims" && !entry.addedAt;
-  var change = doseChange(entry);
-  if (fromRecords) {
+  var question = entry.answer ? null : entry.question;
+  // A side the patient chose from another source than the shown record:
+  // the shown record's prescriber, dates and history aren't that side's.
+  var chosen = entry.answer ? chosenSide(entry) : null;
+  var otherRecord = Boolean(chosen) && chosen.key !== entry.key;
+  var change = otherRecord ? null : doseChange(entry);
+  if (fromRecords && !otherRecord) {
     say("Prescribed by", entry.prescriber);
     say("Since", entry.start && dateText(entry.start));
     say("Until", entry.end && dateText(entry.end));
@@ -87,12 +92,11 @@ export function patientCard(entry, claimsLoaded) {
   if (claimsLoaded) facts = facts.concat(fillRows(entry.fills));
   say("Added", entry.addedAt && dateText(entry.addedAt));
   say("From", entry.older && olderText(entry.older.date));
-  if (fromRecords) say("Source", entry.source);
+  if (fromRecords) say("Source", otherRecord ? chosen.sourceName : entry.source);
   say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
   if (entry.answer) say("You said", answerWords(entry) + " (" + dayText(entry.answer.answeredAt) + ")");
-  var question = entry.answer ? null : entry.question;
   var lead = question ? questionLines(question).filter(Boolean) : [];
   var card = {
     take: takeOf(entry, question),
@@ -103,9 +107,15 @@ export function patientCard(entry, claimsLoaded) {
   // comes first, as the question it is. Other cards keep today's order.
   if (lead.length) card.lead = lead.length;
   // A chosen side names the card too, so its name and dose are one record's.
-  var chosen = !question && entry.answer ? chosenSide(entry) : null;
-  if (chosen && chosen.name) card.name = chosen.name;
+  if (cardName(entry) !== entry.name) card.name = cardName(entry);
   return card;
+}
+
+// The name a card shows: the side the patient chose, else the record's.
+// Its buttons and what's said about it use the same.
+export function cardName(entry) {
+  var chosen = entry.answer ? chosenSide(entry) : null;
+  return (chosen && chosen.name) || entry.name;
 }
 
 // With no answer yet, or "Not sure", no single dose: what each source says

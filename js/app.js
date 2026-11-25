@@ -20,7 +20,7 @@ import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, ref
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
 import { ALREADY_LISTED, allergiesTitle, closedLine, isSevere, removedUnnamed, removeUnnamedQuestion, readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
-import { dateText, drawCard, patientCard } from "./card.js";
+import { cardName, dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
@@ -1329,7 +1329,7 @@ function drawRecords(parent, arranged) {
       } else if (!state.adding) {
         // One form at a time.
         var actions = add(row, "div", null, "card-actions");
-        var take = button(actions, "I'm taking this", "secondary", function () { askOlder(entry, take); }, "I'm taking this: " + entry.name);
+        var take = button(actions, "I'm taking this", "secondary", function () { askOlder(entry, take); }, "I'm taking this: " + cardName(entry));
       }
     });
   }
@@ -1814,13 +1814,14 @@ function drawStopped(parent, arranged) {
   var list = add(section, "ul", null, "meds");
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
+    var name = cardName(entry);
     button(row, "Undo", "secondary card-action", function () {
       unstop(entry);
-      recordChange("unstopped", entry.name);
-      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      recordChange("unstopped", name);
+      state.announce = name + " moved back to " + backToList(entry).name + ".";
       state.focusId = backToList(entry).focusId;
       save();
-    }, "Undo Not taking: " + entry.name);
+    }, "Undo Not taking: " + name);
   });
 }
 
@@ -2343,8 +2344,7 @@ function afterBackup(said) {
 
 function medRow(list, entry) {
   var row = add(list, "li");
-  var card = patientCard(entry, state.split.claims === "loaded");
-  drawCard(row, card.name || entry.name, card);
+  drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded"));
   return row;
 }
 
@@ -2365,39 +2365,41 @@ function markButtons(row, entry) {
   var actions = add(row, "div", null, "card-actions");
   if (!state.data.asNeeded) state.data.asNeeded = {};
   var keys = keysOf(entry);
+  // The name the card shows, so the buttons say the same.
+  var name = cardName(entry);
   // The records' own can't be moved back.
   if (entry.prn) {
     // Only Not taking.
   } else if (entry.asNeededAt) {
     button(actions, "Undo", "secondary", function () {
       keys.forEach(function (key) { delete state.data.asNeeded[key]; });
-      recordChange("regular", entry.name);
-      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      recordChange("regular", name);
+      state.announce = name + " moved back to " + backToList(entry).name + ".";
       state.focusId = backToList(entry).focusId;
       save();
-    }, "Undo As needed: " + entry.name);
+    }, "Undo As needed: " + name);
   } else {
     button(actions, "As needed", "secondary", function () {
       var at = today();
       keys.forEach(function (key) { state.data.asNeeded[key] = at; });
-      recordChange("as-needed", entry.name);
-      state.announce = entry.name + " moved to As needed.";
+      recordChange("as-needed", name);
+      state.announce = name + " moved to As needed.";
       state.focusId = "as-needed-heading";
       save();
-    }, "As needed: " + entry.name);
+    }, "As needed: " + name);
   }
   button(actions, "Not taking", "stop", function () {
     if (keys.some(function (key) { return state.data.asNeeded[key]; })) {
       keys.forEach(function (key) { delete state.data.asNeeded[key]; });
-      recordChange("regular", entry.name);
+      recordChange("regular", name);
     }
     var at = today();
     keys.forEach(function (key) { state.data.stopped[key] = at; });
-    recordChange("stopped", entry.name);
-    state.announce = entry.name + " moved to Not taking.";
+    recordChange("stopped", name);
+    state.announce = name + " moved to Not taking.";
     state.focusId = "stopped-heading";
     save();
-  }, "Not taking: " + entry.name);
+  }, "Not taking: " + name);
 }
 
 // Fills the insurer paid for that the health record doesn't list.

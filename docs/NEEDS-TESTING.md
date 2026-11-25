@@ -42,10 +42,12 @@ certificate). Needs the home server started with
 signed in as Loria Jenkins:
 
 - My medicines (5): metoprolol shows "Your records don't agree on how much
-  you take." under its name, above both sides, "SMART sandbox, Aug 1992: 100 MG, 1, once a
-  day" and "Valley Clinic (test records), Oct 2026: 100 MG, 2, once a
-  day". Simvastatin says "Your records don't agree on whether you still
-  take it.", its sides ending ", current" and ", stopped". Lasix is one card; lisinopril (Valley Clinic only) is there.
+  you take." under its name, above both sides, "SMART sandbox, Aug 1992:
+  100 MG, 1, once a day" and "Valley Clinic (test records), Oct 2026:
+  100 MG, 2, once a day". Simvistatin (the sandbox's spelling) says "Your
+  records don't agree on whether you still take it.", its sides ending
+  ", current" and ", stopped". Lasix is one card; lisinopril (Valley
+  Clinic only) is there.
 - Open the app again at `/?demo=someone-else` and unlock: after the update,
   "Records from Valley Clinic (test records) are for someone else, so they
   aren't on your list." and My medicines (4).
