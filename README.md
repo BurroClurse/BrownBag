@@ -172,7 +172,13 @@ drug code) are left out; a note on My medicines and the staff page counts them.
 An IPS "no medication" entry (`no-medication-info`, `no-known-medications`) is
 never a medicine: it's kept as that source's line, unless that source lists a
 medicine too. Without RxNav, a code counts only when its name reads as a
-product (a strength and a form); any other is taken as an ingredient's. An allergy entry that doesn't say
+product (a strength and a form); any other is taken as an ingredient's. So
+does a code RxNav types as anything but a product, except a strength alone
+(SCDC) when the record's own words name the form. A form needs a dose-form
+word (tablet, injection, ophthalmic solution); release and salt words only
+narrow it. A coded medicine with no name still shows, as "Unnamed medicine
+(RxNorm <code>)". Each code is looked up once, and a record's lookups stop
+at its first product. An allergy entry that doesn't say
 what it's to gets its own row, or a note for staff, with everything else it says.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the

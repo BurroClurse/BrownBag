@@ -20,21 +20,24 @@ var PLACEHOLDER = /^(medication|medications|medicine|medicines|drug|unknown|unkn
 var ABSENT_UNKNOWN = "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips";
 var NO_MEDICINES = { "no-medication-info": "no-info", "no-known-medications": "none-known" };
 
-// RxNorm term types, most specific first. A product is what the patient
-// takes; the rest only say part of it. Ingredient and brand-name codes
-// (IN, PIN, MIN, BN) fit many products, so a record coded only that way
-// never joins another by code.
+// RxNorm term types. A product (SCD, SBD, GPCK, BPCK) is what the patient
+// takes. Every other type fits many products, so a record coded only that
+// way never joins another by code: ingredients and brand names, dose-form
+// groups ("metoprolol Oral Product" is tartrate and succinate alike), and any
+// type not listed here. A strength without a form (SCDC, "bupropion
+// hydrochloride 150 MG", SR and XL alike) counts only when the record's own
+// words name the form, and then that form has to agree too.
 var PRODUCT_TYPES = ["SCD", "SBD", "GPCK", "BPCK"];
-var PART_TYPES = ["SCDC", "SBDF", "SCDF", "SBDG", "SCDG", "SBDC"];
-var INGREDIENT_TYPES = ["MIN", "PIN", "IN", "BN"];
+var PART_RANK = 10;
 var INGREDIENT_RANK = 100;
 
 // A record with no real drug in it: no RxNorm code and only a placeholder
 // word (or nothing) for a name. Seen in the SMART sandbox, where some
 // statements are just { text: "Medication" }. There's nothing to show or
-// stop, so the list leaves these out and says how many there were.
+// stop, so the list leaves these out and says how many there were. A record
+// with any RxNorm code names a medicine, so it always shows.
 export function isPlaceholderDrug(item) {
-  return !item.rxcui && PLACEHOLDER.test(String(item.name || "").trim());
+  return !item.rxcui && !item.ingredientOnly && PLACEHOLDER.test(String(item.name || "").trim());
 }
 
 // medications: the Medication records a reference can point to
@@ -287,12 +290,13 @@ function mergeIngredientGroup(members) {
 // "1000 IU", "100u/ml". One pattern, so the strength and the form after it
 // are cut at the same place.
 var NUMBER = "(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?|\\.\\d+";
-var UNIT = "MCG|MG|UG|\u00b5G|\u03bcG|\\?G|MUG|MICROGRAMS?|G|UNITS?|UNT|UT|IU|IE|\\[IU\\]|U|MEQ|ML|%";
+var UNIT = "MCG|MG|UG|\u00b5G|\u03bcG|\\?G|MUG|MICROGRAMS?|GRAMS?|GM|G|UNITS?|UNT|UT|IU|IE|\\[IU\\]|U|MEQ|ML|%";
 var STRENGTH = "(?:" + NUMBER + ")\\s*(?:" + UNIT + ")(?![A-Z])(?:\\/(?:\\d+(?:\\.\\d+)?\\s*)?(?:ML|HR|ACTUAT(?:ION)?S?))?";
 // RxNorm's own unit for each other spelling (\u00b5 is the micro sign, \u03bc
 // the Greek letter; records use both).
 var UNIT_NAMES = {
   ug: "MCG", "\u00b5g": "MCG", "\u03bcg": "MCG", "?g": "MCG", mug: "MCG", microgram: "MCG", micrograms: "MCG",
+  gm: "G", gram: "G", grams: "G",
   unit: "UNT", units: "UNT", ut: "UNT", iu: "UNT", ie: "UNT", "[iu]": "UNT", u: "UNT"
 };
 // "250-250-65 MG" is three strengths, one per ingredient.
@@ -326,26 +330,49 @@ export function strengthsOf(name) {
 }
 
 // Release type, its time ("12 HR"), and salt, wherever the name says them:
-// Epic writes "metoprolol succinate XL (TOPROL-XL) 25 MG tablet".
+// Epic writes "metoprolol succinate XL (TOPROL-XL) 25 MG tablet". They only
+// narrow a form. Sodium, potassium, calcium and magnesium are left out: they
+// are often the medicine itself (potassium chloride).
 var FORM_WORDS = new RegExp("\\b(?:\\d+\\s*HR|XL|XR|ER|SR|CR|DR|LA|ODT|EXTENDED[\\s-]+RELEASE|DELAYED[\\s-]+RELEASE|" +
-  "TARTRATE|SUCCINATE|HYDROCHLORIDE|HCL|HYDROBROMIDE|BITARTRATE|SODIUM|DISODIUM|POTASSIUM|CALCIUM|MAGNESIUM|MALEATE|MESYLATE|" +
+  "TARTRATE|SUCCINATE|HYDROCHLORIDE|HCL|HYDROBROMIDE|BITARTRATE|DISODIUM|MALEATE|MESYLATE|" +
   "BESYLATE|FUMARATE|CITRATE|SULFATE|BISULFATE|PHOSPHATE|ACETATE|HYCLATE|PROPIONATE|DIPROPIONATE|FUROATE|VALERATE|XINAFOATE|" +
   "TROMETHAMINE|TOSYLATE|PAMOATE|LACTATE|GLUCONATE|BROMIDE|NITRATE|MONOHYDRATE|DIHYDRATE|ANHYDROUS)\\b", "gi");
 
-// The words after the last strength ("oral tablet", "extended release oral
-// tablet"), led by the release and salt words said before it. A brand in
-// brackets is left off. Null when the name says no form.
+// Words that say what the medicine is to take or use: a form needs one.
+var DOSE_FORMS = "\\b(?:TABLETS?|TABS?|CAPLETS?|CAPSULES?|CAPS?|SOLUTION|SOLN|SUSPENSION|SUSP|EMULSION|INJECTION|INJECTABLE|INJ|" +
+  "SYRINGE|AUTO-?INJECTOR|PEN|CARTRIDGE|VIAL|INHALER|INHALATION|INHALANT|NEBULI[SZ]ER|AEROSOL|SPRAY|POWDER|GRANULES|CREAM|" +
+  "OINTMENT|OINT|GEL|LOTION|FOAM|SHAMPOO|PASTE|PATCH|TRANSDERMAL|FILM|STRIP|LOZENGE|TROCHE|GUM|SUPPOSITORY|ENEMA|DROPS?|" +
+  "ELIXIR|SYRUP|LIQUID|TINCTURE|IMPLANT|RING|INSERT|PELLET|WAFER|PAD|KIT|PACK|OPHTHALMIC|OTIC|NASAL|TOPICAL|RECTAL|VAGINAL|" +
+  "ORAL|SUBLINGUAL|BUCCAL|CHEWABLE|DISINTEGRATING|MOUTHWASH|RINSE|IRRIGATION)\\b";
+
+function saysDoseForm(text) {
+  return new RegExp(DOSE_FORMS, "i").test(String(text || ""));
+}
+
+// The form, as the name says it: its dose-form words ("oral tablet",
+// "ophthalmic solution"), led by any release and salt words. They're the
+// words after the last strength, or, with no strength, from the first
+// dose-form word on (Epic's "azaTHIOprine (IMURAN) tablet"). A brand in
+// brackets is left off. Null when the name says no dose form: release and
+// salt words alone never make one.
 export function formOf(name) {
   var parts = atLastStrength(name);
+  var lead = parts.before;
+  var tail = parts.after;
+  if (!parts.found) {
+    var at = new RegExp(DOSE_FORMS, "i").exec(lead);
+    tail = at ? lead.slice(at.index) : "";
+    lead = at ? lead.slice(0, at.index) : lead;
+  }
+  if (!saysDoseForm(tail)) return null;
   // A strength's own "/24HR" isn't a release time.
-  var before = parts.before.replace(new RegExp(STRENGTH, "gi"), " ");
+  var before = lead.replace(new RegExp(STRENGTH, "gi"), " ");
   var said = [];
   Array.from(before.matchAll(FORM_WORDS)).forEach(function (match) {
     var word = match[0].toLowerCase().replace(/[\s-]+/g, " ").replace(/^(\d+) ?hr$/, "$1 hr");
     if (said.indexOf(word) === -1) said.push(word);
   });
-  var form = said.concat(parts.after ? [parts.after.toLowerCase()] : []).join(" ");
-  return form || null;
+  return said.concat([tail.trim().toLowerCase().replace(/\s+/g, " ")]).join(" ");
 }
 
 // The name cut at its last strength: what's before it, and the words after.
@@ -353,8 +380,8 @@ function atLastStrength(name) {
   var text = expandCombined(String(name || "").replace(/\s*\[[^\]]*\]/g, ""));
   var all = Array.from(text.matchAll(new RegExp(STRENGTH, "gi")));
   var last = all[all.length - 1];
-  if (!last) return { before: text, after: "" };
-  return { before: text.slice(0, last.index), after: text.slice(last.index + last[0].length).trim() };
+  if (!last) return { before: text, after: "", found: false };
+  return { before: text.slice(0, last.index), after: text.slice(last.index + last[0].length).trim(), found: true };
 }
 
 function isNewer(a, b) {
@@ -367,7 +394,8 @@ function makeItem(parts) {
   var item = {
     // Medicines with no name and no code can't be told apart, so each keeps
     // its own line instead of merging into one "Unnamed medicine".
-    key: rxcui ? "rx:" + rxcui : (name ? "text:" + name.toLowerCase() + doseKey(parts) : "unnamed:" + (unnamedCount += 1)),
+    // A strength-only code (SCDC) is one medicine only in one form.
+    key: rxcui ? "rx:" + rxcui + (parts.drug.partCode ? "|" + formOf(name) : "") : (name ? "text:" + name.toLowerCase() + doseKey(parts) : "unnamed:" + (unnamedCount += 1)),
     rxcui: rxcui,
     name: name || "Unnamed medicine",
     dose: parts.dosage.dose,
@@ -394,6 +422,7 @@ function makeItem(parts) {
     count: 1
   };
   if (parts.drug.ingredientOnly) item.ingredientOnly = true;
+  if (parts.drug.partCode) item.partCode = true;
   return item;
 }
 
@@ -416,17 +445,21 @@ function readDrug(resource, medications, types) {
   }
   var codings = (Array.isArray(concept.coding) ? concept.coding : []).filter(Boolean);
   var rxnorm = codings.filter(function (coding) { return coding.system === RXNORM && coding.code; });
-  var chosen = pickCode(rxnorm, types);
-  var ingredientOnly = Boolean(chosen) && rankOf(chosen, types) >= INGREDIENT_RANK;
+  var text = concept.text && !PLACEHOLDER.test(concept.text.trim()) ? concept.text : null;
+  var chosen = pickCode(rxnorm, types, text);
+  var rank = chosen ? rankOf(chosen, types, text) : null;
+  var ingredientOnly = Boolean(chosen) && rank >= INGREDIENT_RANK;
   var rxcui = chosen && !ingredientOnly ? currentCode(String(chosen.code), types) : null;
   var named = (chosen && chosen.display) || (rxnorm[0] && rxnorm[0].display);
+  // A coded medicine always has a name, so it's never taken for a placeholder.
+  var unnamed = chosen ? "Unnamed medicine (RxNorm " + (rxcui || chosen.code) + ")" : null;
   var drug = {
     // A placeholder text like "Medication" gives way to the coded name.
-    name: (concept.text && !PLACEHOLDER.test(concept.text.trim()) ? concept.text : null) ||
-      named || (codings[0] && codings[0].display) || concept.text || null,
+    name: text || named || (codings[0] && codings[0].display) || unnamed || concept.text || null,
     rxcui: rxcui,
     codes: shareable(codings, rxcui)
   };
+  if (rank === PART_RANK) drug.partCode = true;
   if (ingredientOnly) {
     drug.ingredientOnly = true;
     drug.rxnorm = rxnorm.map(function (coding) { return String(coding.code); }).sort();
@@ -435,27 +468,32 @@ function readDrug(resource, medications, types) {
 }
 
 // The code the record is: the one the prescriber picked, else its most
-// specific product (Epic lists the ingredients' codes first).
-function pickCode(rxnorm, types) {
-  var picked = rxnorm.filter(function (coding) { return coding.userSelected === true && rankOf(coding, types) < INGREDIENT_RANK; })[0];
+// specific product (Epic lists the ingredients' codes first). text is the
+// record's own words.
+function pickCode(rxnorm, types, text) {
+  var picked = rxnorm.filter(function (coding) { return coding.userSelected === true && rankOf(coding, types, text) < INGREDIENT_RANK; })[0];
   if (picked) return picked;
-  return rxnorm.slice().sort(function (a, b) { return rankOf(a, types) - rankOf(b, types); })[0] || null;
+  return rxnorm.slice().sort(function (a, b) { return rankOf(a, types, text) - rankOf(b, types, text); })[0] || null;
 }
 
 // Lower is more specific. With no term type from RxNav, a code counts only
-// when its name reads as a product: a strength and a form after it. Any
-// other is taken as ingredient-level, a code with no name too: Epic puts
-// the ingredient's code first, often with no name.
-function rankOf(coding, types) {
+// when its name reads as a product: a strength and a dose form after it.
+// Any other is taken as ingredient-level, a code with no name too: Epic
+// puts the ingredient's code first, often with no name.
+function rankOf(coding, types, text) {
   var type = types && types.get(String(coding.code));
   var tty = type && type.tty;
   if (tty) {
     if (PRODUCT_TYPES.indexOf(tty) !== -1) return PRODUCT_TYPES.indexOf(tty);
-    if (PART_TYPES.indexOf(tty) !== -1) return 10 + PART_TYPES.indexOf(tty);
-    return INGREDIENT_TYPES.indexOf(tty) !== -1 ? INGREDIENT_RANK : 50;
+    return tty === "SCDC" && formOf(text) ? PART_RANK : INGREDIENT_RANK;
   }
-  var display = String(coding.display || "").trim();
-  return strengthOf(display) && atLastStrength(display).after ? 5 : INGREDIENT_RANK;
+  return isProductName(coding.display) ? PRODUCT_TYPES.length : INGREDIENT_RANK;
+}
+
+// A strength and a dose form after it: "lisinopril 10 MG Oral Tablet".
+export function isProductName(name) {
+  var parts = atLastStrength(String(name || "").trim());
+  return parts.found && saysDoseForm(parts.after);
 }
 
 // A code RxNorm retired for one current code is matched as that code.
@@ -503,12 +541,18 @@ export function medicationsFrom(entries) {
   return map;
 }
 
-// The record's RxNorm codes, for looking their term types up.
+// The record's RxNorm codes, for looking their term types up, likeliest
+// product first: the one the prescriber picked, then names that read as a
+// product, then the rest from the last (Epic lists ingredients first).
 export function rxnormCodesOf(resource, medications) {
   var concept = conceptOf(resource, medications);
-  return (concept && Array.isArray(concept.coding) ? concept.coding : []).filter(function (coding) {
+  var rxnorm = (concept && Array.isArray(concept.coding) ? concept.coding : []).filter(function (coding) {
     return Boolean(coding) && coding.system === RXNORM && coding.code;
-  }).map(function (coding) { return String(coding.code); });
+  });
+  var score = function (coding) { return coding.userSelected === true ? 0 : isProductName(coding.display) ? 1 : 2; };
+  return rxnorm.map(function (coding, index) { return { coding: coding, index: index }; }).sort(function (a, b) {
+    return score(a.coding) - score(b.coding) || b.index - a.index;
+  }).map(function (one) { return String(one.coding.code); }).filter(function (code, i, all) { return all.indexOf(code) === i; });
 }
 
 // "no-info" or "none-known" for an IPS "no medicines" entry, else null.

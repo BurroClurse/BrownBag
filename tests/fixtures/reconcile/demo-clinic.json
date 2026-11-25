@@ -24,8 +24,8 @@
       "status": "stopped",
       "intent": "order",
       "medicationCodeableConcept": {
-        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "316672", "display": "Simvistatin 10 MG" }],
-        "text": "Simvistatin 10 MG"
+        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314231", "display": "simvastatin 10 MG Oral Tablet" }],
+        "text": "simvastatin 10 MG Oral Tablet"
       },
       "authoredOn": "2026-09-12",
       "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 1 } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
@@ -36,8 +36,8 @@
       "status": "active",
       "intent": "order",
       "medicationCodeableConcept": {
-        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "315971", "display": "Lasix 40mg" }],
-        "text": "Lasix 40mg"
+        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "313988", "display": "furosemide 40 MG Oral Tablet" }],
+        "text": "furosemide 40 MG Oral Tablet"
       },
       "authoredOn": "2026-08-20",
       "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 1 } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]

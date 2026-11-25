@@ -41,9 +41,14 @@ certificate). Run `node tools/reconcile-patients.mjs` first, then
 `git checkout -- tests/fixtures/reconcile/clinics` when done. On both virtual
 phones:
 
-- Loria Jenkins and Riley Reconcile read the same as before this change
-  (Loria: My medicines (5), 8 older; Riley: My medicines (9), 1 older). The
-  medicines now load as whole pages, so check every card is still there.
+- Riley Reconcile reads the same as before this change: My medicines (9), 1
+  older. The medicines now load as whole pages, so check every card is still
+  there.
+- Loria Jenkins with the test clinic: My medicines (6), 9 older. Her own
+  "Simvistatin 10 MG" and "Lasix 40mg" are coded only by strength, so they no
+  longer join the clinic's (now "simvastatin 10 MG Oral Tablet", stopped,
+  under Older, and "furosemide 40 MG Oral Tablet"): no simvastatin question,
+  and Lasix and furosemide are two cards. Metoprolol still asks how much.
 - The "no information" line: save a clinic file for Loria at
   `tests/fixtures/reconcile/clinics/e7de504a-311d-49be-b2bc-566a328bcc72.json`
   holding only the `noInfo` statement from
@@ -97,13 +102,12 @@ certificate). Needs the home server started with
 `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. On both virtual phones,
 signed in as Loria Jenkins:
 
-- My medicines (5): metoprolol shows "Your records don't agree on how much
+- My medicines (6): metoprolol shows "Your records don't agree on how much
   you take." under its name, above both sides, "SMART sandbox, Aug 1992:
   100 MG, 1, once a day" and "Valley Clinic (test records), Oct 2026:
-  100 MG, 2, once a day". Simvistatin (the sandbox's spelling) says "Your
-  records don't agree on whether you still take it.", its sides ending
-  ", current" and ", stopped". Lasix is one card; lisinopril (Valley
-  Clinic only) is there.
+  100 MG, 2, once a day". Since Task 6c, Simvistatin and Lasix no longer
+  join the clinic's (see "Medicines as real sources write them" above), so
+  it's My medicines (6); lisinopril (Valley Clinic only) is there.
 - Open the app again at `/?demo=someone-else` and unlock: after the update,
   "Records from Valley Clinic (test records) are for someone else, so they
   aren't on your list." and My medicines (4).

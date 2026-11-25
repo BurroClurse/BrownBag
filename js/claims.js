@@ -166,7 +166,7 @@ export function attachFills(split, fills, ingredientOf, now) {
   var all = current.concat(older);
   var unmatched = [];
   (fills || []).forEach(function (fill) {
-    var exact = all.filter(function (i) { return fill.rxcui && i.rxcui === fill.rxcui; });
+    var exact = all.filter(function (i) { return fill.rxcui && i.rxcui === fill.rxcui && (!i.partCode || sameForm(fill, i, ingredientOf)); });
     var key = ingredientKey(ingredientOf, fill.rxcui);
     var byIngredient = key ? all.filter(function (i) { return ingredientKey(ingredientOf, i.rxcui) === key && sameForm(fill, i, ingredientOf); }) : [];
     var target = exact.length ? latestStart(exact) : (byIngredient.length ? latestStart(currentFirst(byIngredient)) : null);

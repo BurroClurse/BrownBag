@@ -473,3 +473,96 @@ test("an RxNav answer that isn't JSON leaves that code out instead of failing th
   const fetchFn = async () => ({ ok: true, json: async () => null });
   assert.equal((await ingredientsFor(["866924"], fetchFn, { types: new Map() })).size, 0);
 });
+
+// Review, fix round 2 (2026-11-25).
+test("release and salt words alone never make a form: eye drops, injections and tablets stay apart", async () => {
+  const types = await typesFor(["1116927", "226343", "892582", "1728800"]);
+  const map = await ingredientsFor(["1116927", "226343", "892582", "1728800"], rxnav());
+  const record = (resource) => fromMedicationRequest(Object.assign({}, resource, { status: "active" }), "S", new Map(), types);
+  assert.equal(matchOf(record(FORMS.dexamethasoneInjection), record(FORMS.dexamethasoneEyeSolution), map), "form");
+  assert.equal(matchOf(record(FORMS.morphineTablet), record(FORMS.morphineInjection), map), "form");
+  assert.equal(formOf("levothyroxine sodium"), null);
+  assert.equal(formOf("potassium chloride 20 mEq ER tablet"), "er tablet");
+  assert.equal(formOf("azaTHIOprine (IMURAN) tablet"), "tablet");
+  // One source never folds them into one line.
+  const split = await listFromSearch(asRequests([FORMS.dexamethasoneInjection, FORMS.dexamethasoneEyeSolution]), "Clinic", rxnav());
+  assert.equal(cardsOf(split).length, 2);
+  // Nor does an injection fill bring back finished tablets.
+  const tablets = await listFromSearch(asRequests([FORMS.morphineTablet]), "Clinic", rxnav());
+  const fill = { rxcui: "1728800", name: "morphine sulfate injection", date: "2026-10-01", insurer: "Test Health Plan", cash: false };
+  const out = attachFills(tablets, [fill], map, NOW);
+  assert.equal(out.older.length, 1);
+  assert.equal(out.older[0].fills.count, 0);
+});
+
+test("a coded medicine with no name is shown, never dropped as a placeholder", async () => {
+  const coded = (concept) => fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", medicationCodeableConcept: concept }, "S");
+  const bare = coded({ coding: [{ system: RX, code: "197884" }] });
+  assert.equal(isPlaceholderDrug(bare), false);
+  assert.equal(bare.name, "Unnamed medicine (RxNorm 197884)");
+  assert.equal(isPlaceholderDrug(coded({ coding: [{ system: RX, code: "29046" }] })), false);
+  const placeholderText = coded({ text: "Medication", coding: [{ system: RX, code: "197884" }] });
+  assert.equal(isPlaceholderDrug(placeholderText), false);
+  assert.equal(placeholderText.name, "Unnamed medicine (RxNorm 197884)");
+  assert.equal(coded({ text: "Medication", coding: [{ system: RX, code: "197884", display: "lisinopril 40 MG Oral Tablet" }] }).name, "lisinopril 40 MG Oral Tablet");
+  // Still on the list, and in the QR code.
+  const split = await listFromSearch(asRequests([{ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-01-01", medicationCodeableConcept: { coding: [{ system: RX, code: "29046" }] } }]), "Clinic", rxnav());
+  assert.equal(split.placeholders, 0);
+  assert.equal(split.current.length, 1);
+  const bundle = buildShareBundle({ patient: { name: "Pat Example", birthDate: "1960-01-01" }, current: split.current, additions: [], stopped: [] }, NOW, {});
+  assert.equal(bundle.entry.filter((entry) => entry.resource.resourceType === "MedicationStatement").length, 1);
+});
+
+test("1 GM is a gram, so a tenfold dose is asked about", () => {
+  assert.equal(strengthOf("cefazolin 1 GM injection"), "1 G");
+  assert.equal(strengthOf("ceftriaxone 2 grams"), "2 G");
+  const side = (name) => ({ kind: "request", recordStatus: "active", status: "current", name });
+  assert.deepEqual(verdictsFor(FORMS.cefazolin.map(side)), ["dose"]);
+});
+
+test("part-level codes never join by code (R26)", async () => {
+  const types = new Map([["1", { tty: "SCDF" }], ["2", { tty: "SCDG" }], ["3", { tty: "SBDF" }], ["4", { tty: "SBDG" }], ["5", { tty: "DF" }], ["6", { tty: "SCDGP" }], ["7", { tty: "SCDC" }]]);
+  const coded = (code, text) => fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", medicationCodeableConcept: { text, coding: [{ system: RX, code }] } }, "S", new Map(), types);
+  ["1", "2", "3", "4", "5", "6", "7"].forEach((code) => assert.equal(coded(code, "metoprolol 25 MG").ingredientOnly, true, code));
+  // A strength-only code with words that name the form: the form decides.
+  assert.equal(coded("7", "metoprolol tartrate 25 MG tablet").rxcui, "7");
+  // Bupropion SR and XL, both coded SCDC "bupropion hydrochloride 150 MG".
+  const split = await listFromSearch(asRequests([FORMS.bupropionSrScdc, FORMS.bupropionXlScdc]), "Clinic", rxnav());
+  assert.equal(split.current.length, 2);
+  const [sr, xl] = [named(split, "sr")[0], named(split, "xl")[0]];
+  assert.notEqual(matchOf(sr, xl, split.ingredientOf), "rxcui");
+  const across = await joined([await source("a", "Clinic A", asRequests([FORMS.bupropionSrScdc])), await source("b", "Clinic B", asRequests([FORMS.bupropionXlScdc]))]);
+  assert.equal(cardsOf(across).length, 2);
+  // SCDG "metoprolol Oral Product" doesn't make tartrate and succinate one.
+  const metoprolol = await listFromSearch(asRequests([FORMS.metoprololTartrateScdg, FORMS.metoprololSuccinateScdg]), "Clinic", rxnav());
+  assert.equal(cardsOf(metoprolol).length, 2);
+  assert.ok(cardsOf(metoprolol).every((card) => card.ingredientOnly && card.rxcui === null));
+});
+
+test("each code is looked up once, a record stops at its first product, and 30 Epic medicines load in time", async () => {
+  // 30 medicines the way Epic codes them: three ingredient codes shared
+  // across the list, then SBD, SCD and MIN, with no names on the codes.
+  const records = Array.from({ length: 30 }, (unused, i) => ({
+    resourceType: "MedicationRequest", id: "m" + i, status: "active", authoredOn: "2026-01-01",
+    medicationCodeableConcept: { text: "medicine " + i + " 10 MG tablet", coding: ["9" + (i % 8), "9" + ((i + 1) % 8), "9" + ((i + 2) % 8), "5" + i + "1", "5" + i + "2", "5" + i + "3"].map((code) => ({ system: RX, code })) }
+  }));
+  const ttyOf = (code) => /^9/.test(code) ? "IN" : code.slice(-1) === "1" ? "SBD" : code.slice(-1) === "2" ? "SCD" : "MIN";
+  let requests = 0;
+  const DELAY = 200;
+  const fetchFn = async (url) => {
+    requests += 1;
+    await new Promise((resolve) => setTimeout(resolve, DELAY));
+    const code = /\/rxcui\/(\d+)\//.exec(url)[1];
+    if (url.includes("historystatus")) return { ok: true, json: async () => ({ rxcuiStatusHistory: { metaData: { status: "Active" }, attributes: { rxcui: code, tty: ttyOf(code) } } }) };
+    return { ok: true, json: async () => ({ relatedGroup: { conceptGroup: [{ tty: "IN", conceptProperties: [{ rxcui: "9" + (Number(code) % 8), name: "ingredient" }] }] } }) };
+  };
+  const started = Date.now();
+  const split = await listFromSearch(asRequests(records), "Epic", fetchFn);
+  const took = Date.now() - started;
+  assert.equal(split.current.length, 30);
+  assert.ok(split.current.every((card) => /2$/.test(card.rxcui)), "each goes by its SCD");
+  // 180 codings, 98 different codes; asked: each record's MIN, then its SCD.
+  assert.equal(requests, 120);
+  assert.ok(took < 12000, "inside the medicines' 12-second limit: " + took + " ms");
+  console.log("# lookup: " + requests + " requests for 30 medicines, " + took + " ms at " + DELAY + " ms each");
+});

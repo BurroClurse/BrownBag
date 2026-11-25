@@ -20,7 +20,7 @@ const LORIA_PATIENT = { resourceType: "Patient", name: [{ use: "official", famil
 
 // The term types RxNav gives these codes (checked 2026-11-25), as the app
 // has them when it builds each list.
-const TYPES = new Map([["315971", "SCDC"], ["316672", "SCDC"], ["235389", "MIN"], ["749882", "BPCK"], ["314076", "SCD"], ["866414", "SBD"], ["1094107", "SCD"], ["1719286", "SCD"], ["309043", "SCD"], ["310965", "SCD"], ["311989", "SCD"], ["313782", "SCD"], ["857005", "SCD"]].map(([code, tty]) => [code, { tty }]));
+const TYPES = new Map([["315971", "SCDC"], ["316672", "SCDC"], ["314231", "SCD"], ["313988", "SCD"], ["235389", "MIN"], ["749882", "BPCK"], ["314076", "SCD"], ["866414", "SBD"], ["1094107", "SCD"], ["1719286", "SCD"], ["309043", "SCD"], ["310965", "SCD"], ["311989", "SCD"], ["313782", "SCD"], ["857005", "SCD"]].map(([code, tty]) => [code, { tty }]));
 
 // The way loadMedicines in app.js builds the sandbox's split.
 function sandbox(requests) {
@@ -91,18 +91,21 @@ test("the demo clinic against Loria's own records", () => {
     "SMART sandbox: 100 MG, 1, once a day",
     "Valley Clinic (test records): 100 MG, 2, once a day"
   ]);
+  // Task 6c, ruling R26: her simvastatin and Lasix are coded only by
+  // strength (SCDC, "Simvistatin 10 MG", "Lasix 40mg"), with no form, so they
+  // never join the clinic's tablets by code; each is its own card.
   const simvastatin = only(out, /Simvistatin/);
-  assert.deepEqual(simvastatin.group.verdicts, ["status"]);
+  assert.equal(simvastatin.group, undefined);
   assert.equal(simvastatin.status, "current");
-  const lasix = only(out, /Lasix/);
-  assert.deepEqual(lasix.group.verdicts, []);
-  assert.deepEqual(lasix.group.sources, ["SMART sandbox", "Valley Clinic (test records)"]);
+  assert.equal(only(out, /simvastatin 10 MG Oral Tablet/).status, "older");
+  assert.equal(only(out, /Lasix/).group, undefined);
+  assert.equal(only(out, /furosemide 40 MG/).source, "Valley Clinic (test records)");
   const lisinopril = only(out, /lisinopril/);
   assert.equal(lisinopril.group, undefined);
   assert.equal(lisinopril.source, "Valley Clinic (test records)");
   assert.equal(LORIA.some((r) => /lisinopril/i.test(JSON.stringify(r))), false, "she has none of her own");
   const asked = arrangeList(out, {}).toCheck.map((entry) => [entry.name, entry.question.kind]);
-  assert.deepEqual(asked, [["24 HR metoprolol succinate 100 MG Extended Release Oral Tablet [Toprol]", "dose"], ["Simvistatin 10 MG", "status"]]);
+  assert.deepEqual(asked, [["24 HR metoprolol succinate 100 MG Extended Release Oral Tablet [Toprol]", "dose"]]);
 });
 
 test("only a 200 from the home server adds it", async () => {

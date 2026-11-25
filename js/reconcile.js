@@ -78,7 +78,12 @@ export function matchOf(a, b, ingredientOf) {
   var word = firstWordOf(a.name);
   var nameOnly = word !== "" && word === firstWordOf(b.name) ? "name-only" : null;
   if (a.ingredientOnly || b.ingredientOnly) return nameOnly;
-  if (a.rxcui && a.rxcui === b.rxcui) return "rxcui";
+  if (a.rxcui && a.rxcui === b.rxcui) {
+    // A strength-only code (SCDC) is SR and XL alike: the names' forms decide.
+    if (!a.partCode && !b.partCode) return "rxcui";
+    var named = formOf(a.name);
+    return named !== null && named === formOf(b.name) ? "rxcui" : "form";
+  }
   var plain = plainName(a.name);
   if (plain && plain === plainName(b.name)) return "name";
   var keyA = ingredientKey(ingredientOf, a.rxcui);

@@ -19,11 +19,48 @@ export function entriesOf(result) {
   }, []);
 }
 
-// Each record's codes, looked up once: ingredients and term types, then the
-// current codes any retired ones became.
-async function lookUp(codes, fetchFn) {
+var PRODUCT_TYPES = ["SCD", "SBD", "GPCK", "BPCK"];
+var MAX_PARALLEL = 4;
+
+// Each record's codes (lists, likeliest product first), each code looked up
+// once whichever records share it: ingredients and term types. A record
+// stops at its first product, so Epic's ingredient codes are seldom asked.
+// Then the current codes any retired ones became.
+async function lookUp(lists, fetchFn) {
   var types = new Map();
-  var ingredients = codes.length ? await ingredientsFor(codes, fetchFn, { types: types }) : new Map();
+  var ingredients = new Map();
+  var asked = new Map();
+  var running = 0;
+  var waiting = [];
+  function slot() {
+    if (running < MAX_PARALLEL) {
+      running += 1;
+      return Promise.resolve();
+    }
+    return new Promise(function (resolve) { waiting.push(resolve); });
+  }
+  function free() {
+    var next = waiting.shift();
+    if (next) next();
+    else running -= 1;
+  }
+  function ask(code) {
+    if (!asked.has(code)) {
+      asked.set(code, slot().then(function () {
+        return ingredientsFor([code], fetchFn, { types: types });
+      }).then(function (found) {
+        found.forEach(function (value, key) { ingredients.set(key, value); });
+      }).finally(free));
+    }
+    return asked.get(code);
+  }
+  await Promise.all(lists.map(async function (codes) {
+    for (var i = 0; i < codes.length; i += 1) {
+      await ask(codes[i]);
+      var type = types.get(codes[i]);
+      if (type && PRODUCT_TYPES.indexOf(type.tty) !== -1) return;
+    }
+  }));
   var remapped = [];
   types.forEach(function (type) {
     if (type.remappedTo && !types.has(type.remappedTo) && remapped.indexOf(type.remappedTo) === -1) remapped.push(type.remappedTo);
@@ -63,8 +100,7 @@ export async function listFromSearch(results, sourceName, fetchFn = globalThis.f
     return !kind;
   });
 
-  var codes = records.reduce(function (all, one) { return all.concat(rxnormCodesOf(one.resource, one.medications)); }, []);
-  var looked = await lookUp(Array.from(new Set(codes)), fetchFn);
+  var looked = await lookUp(records.map(function (one) { return rxnormCodesOf(one.resource, one.medications); }), fetchFn);
   var items = [];
   var placeholders = 0;
   records.forEach(function (one) {
