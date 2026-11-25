@@ -398,11 +398,12 @@ function makeItem(parts) {
 }
 
 // Cerner codes lisinopril 5 mg and 40 mg both as plain "lisinopril", with
-// the strength only in the dose. Coded only by ingredient, a record's dose
-// is part of its key, so two strengths in one source stay two lines.
+// the strength only in the dose. Coded only by ingredient, a record's codes
+// and dose are part of its key, so two strengths in one source stay two
+// lines, and two codes never become one.
 function doseKey(parts) {
   if (!parts.drug.ingredientOnly) return "";
-  var said = [parts.dosage.dose, parts.dosage.frequency].filter(Boolean);
+  var said = [parts.drug.rxnorm.join("+"), parts.dosage.dose, parts.dosage.frequency].filter(Boolean);
   return said.length ? "|" + said.join("|").toLowerCase() : "";
 }
 
@@ -426,7 +427,10 @@ function readDrug(resource, medications, types) {
     rxcui: rxcui,
     codes: shareable(codings, rxcui)
   };
-  if (ingredientOnly) drug.ingredientOnly = true;
+  if (ingredientOnly) {
+    drug.ingredientOnly = true;
+    drug.rxnorm = rxnorm.map(function (coding) { return String(coding.code); }).sort();
+  }
   return drug;
 }
 
@@ -438,10 +442,10 @@ function pickCode(rxnorm, types) {
   return rxnorm.slice().sort(function (a, b) { return rankOf(a, types) - rankOf(b, types); })[0] || null;
 }
 
-// Lower is more specific. With no term type from RxNav, the code's name
-// says: a strength and a form (or a pack) is a product, a strength alone is
-// part of one, and a bare name is an ingredient or brand. A code with no name can't
-// be judged, so it's taken as it is.
+// Lower is more specific. With no term type from RxNav, a code counts only
+// when its name reads as a product: a strength and a form after it. Any
+// other is taken as ingredient-level, a code with no name too: Epic puts
+// the ingredient's code first, often with no name.
 function rankOf(coding, types) {
   var type = types && types.get(String(coding.code));
   var tty = type && type.tty;
@@ -451,9 +455,7 @@ function rankOf(coding, types) {
     return INGREDIENT_TYPES.indexOf(tty) !== -1 ? INGREDIENT_RANK : 50;
   }
   var display = String(coding.display || "").trim();
-  if (!display) return 50;
-  if (display.charAt(0) === "{" || /\bpack\b/i.test(display) || (strengthOf(display) && atLastStrength(display).after)) return 5;
-  return strengthOf(display) ? 15 : INGREDIENT_RANK;
+  return strengthOf(display) && atLastStrength(display).after ? 5 : INGREDIENT_RANK;
 }
 
 // A code RxNorm retired for one current code is matched as that code.

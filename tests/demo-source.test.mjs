@@ -18,10 +18,14 @@ const SIGNED_IN = { name: [{ text: "Loria Jenkins" }], birthDate: "1971-05-01" }
 const LORIA = read("./fixtures/e7de504a-311d-49be-b2bc-566a328bcc72-requests.json").entry.map((entry) => entry.resource);
 const LORIA_PATIENT = { resourceType: "Patient", name: [{ use: "official", family: "Jenkins", given: ["Loria"], prefix: ["Mrs."] }, { use: "maiden", family: "Crooks", given: ["Loria"] }], birthDate: "1937-07-15" };
 
+// The term types RxNav gives these codes (checked 2026-11-25), as the app
+// has them when it builds each list.
+const TYPES = new Map([["315971", "SCDC"], ["316672", "SCDC"], ["235389", "MIN"], ["749882", "BPCK"], ["314076", "SCD"], ["866414", "SBD"], ["1094107", "SCD"], ["1719286", "SCD"], ["309043", "SCD"], ["310965", "SCD"], ["311989", "SCD"], ["313782", "SCD"], ["857005", "SCD"]].map(([code, tty]) => [code, { tty }]));
+
 // The way loadMedicines in app.js builds the sandbox's split.
 function sandbox(requests) {
   const items = requests.filter((r) => r.resourceType === "MedicationRequest" && usableRecord(r))
-    .map((r) => fromMedicationRequest(r, "SMART sandbox")).filter((item) => !isPlaceholderDrug(item));
+    .map((r) => fromMedicationRequest(r, "SMART sandbox", new Map(), TYPES)).filter((item) => !isPlaceholderDrug(item));
   const split = Object.assign(splitByStatus(groupByIngredient(dedupe(items), new Map())), { failed: false, heldBack: false, placeholders: 0 });
   return { id: "smart-sandbox", name: "SMART sandbox", kind: "records", refreshes: true, patient: LORIA_PATIENT, split };
 }
@@ -80,7 +84,7 @@ test("with ?demo=someone-else the test source is a day off and stays out", () =>
 
 // Her real records against the test clinic's: one of each kind.
 test("the demo clinic against Loria's own records", () => {
-  const out = reconcile([sandbox(LORIA), demoSource(DEMO, LORIA_PATIENT, "")], new Map());
+  const out = reconcile([sandbox(LORIA), demoSource(DEMO, LORIA_PATIENT, "", TYPES)], new Map());
   const metoprolol = only(out, /metoprolol/);
   assert.deepEqual(metoprolol.group.verdicts, ["dose"]);
   assert.deepEqual(metoprolol.group.sides.map((side) => side.sourceName + ": " + sideWords(side)), [

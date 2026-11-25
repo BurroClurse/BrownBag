@@ -41,6 +41,17 @@ function datedBy(resource, asOf) {
   return Object.assign({}, resource, resource.resourceType === "MedicationRequest" ? { authoredOn: asOf } : { dateAsserted: asOf });
 }
 
+// Brown Bag's own list carries only the product code it picked for each
+// medicine, so with no RxNav to ask, its codes still count as products.
+function chosenCodes(resource) {
+  var concept = resource.medicationCodeableConcept;
+  var types = new Map();
+  ((concept && concept.coding) || []).forEach(function (coding) {
+    if (coding && coding.code) types.set(String(coding.code), { tty: "SCD" });
+  });
+  return types;
+}
+
 // bundle is a FHIR Bundle of type collection or document, or the result is
 // null. name is what the patient calls the source.
 export function snapshotSource(bundle, name) {
@@ -68,7 +79,7 @@ export function snapshotSource(bundle, name) {
       if (!noMedicines.some(function (said) { return said.kind === kind; })) noMedicines.push({ source: name, kind: kind });
       return;
     }
-    var item = convert(datedBy(resource, asOf), name, medications);
+    var item = convert(datedBy(resource, asOf), name, medications, own ? chosenCodes(resource) : null);
     if (isPlaceholderDrug(item)) placeholders += 1;
     else items.push(item);
   });
@@ -78,7 +89,8 @@ export function snapshotSource(bundle, name) {
   split.failed = false;
   split.heldBack = false;
   split.placeholders = placeholders;
-  split.noMedicines = noMedicines;
+  // Only from a list that names no medicine (med-list.js).
+  split.noMedicines = items.length ? [] : noMedicines;
   return {
     id: "snapshot:" + asOf + ":" + name,
     name: name,

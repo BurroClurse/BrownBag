@@ -77,7 +77,9 @@ export async function listFromSearch(results, sourceName, fetchFn = globalThis.f
   split.failed = failed;
   split.heldBack = leftOut;
   split.placeholders = placeholders;
-  split.noMedicines = noMedicines;
+  // A source that lists a medicine has said something about them, so "no
+  // information" or "none known" from it would contradict itself.
+  split.noMedicines = items.length ? [] : noMedicines;
   split.ingredientOf = looked.ingredients;
   return split;
 }

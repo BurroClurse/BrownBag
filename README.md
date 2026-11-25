@@ -60,8 +60,8 @@ screen to make that work.
   release type (12 or 24 hour, XL), salt (tartrate, succinate) or form (eye drops,
   tablets) is its own line, and so is a combination such as Excedrin beside
   Tylenol.
-- A source that says it has no information about the patient's medicines, or
-  knows of none, gets a line of its own ("<Source> has no information about your
+- A source that lists no medicine and says it has no information about the
+  patient's medicines, or knows of none, gets a line of its own ("<Source> has no information about your
   medicines." or "<Source> says: no medicines known."), never a card, and the
   list never reads as none.
 - **As needed** and **Not taking** move a medicine to its own part, with Undo.
@@ -170,7 +170,9 @@ the name says them, and a form the name doesn't say never matches.
 Records that name no medicine ("Medication", "Unknown medication", "None", no
 drug code) are left out; a note on My medicines and the staff page counts them.
 An IPS "no medication" entry (`no-medication-info`, `no-known-medications`) is
-never a medicine: it's kept as that source's line. An allergy entry that doesn't say
+never a medicine: it's kept as that source's line, unless that source lists a
+medicine too. Without RxNav, a code counts only when its name reads as a
+product (a strength and a form); any other is taken as an ingredient's. An allergy entry that doesn't say
 what it's to gets its own row, or a note for staff, with everything else it says.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the

@@ -118,11 +118,12 @@ test("case 3: the most specific product code is the record's code", async () => 
   const brand = recordWith(CODES.brandThenGeneric, types);
   assert.equal(brand.rxcui, "866412");
   assert.equal(matchOf(brand, recordWith({ coding: [{ system: RX, code: "866412" }] }, types), new Map()), "rxcui");
-  // Without RxNav, the coding whose name reads like a product (or a pack,
-  // as the SMART sandbox names one); a bare name is an ingredient.
+  // Without RxNav, only a coding whose name reads as a product (a strength
+  // and a form) counts; any other is an ingredient's.
   assert.equal(recordWith(CODES.ingredientThenProduct).rxcui, "866412");
-  assert.equal(recordWith({ coding: [{ system: RX, code: "749882", display: "Norinyl 1+50 28 Day Pack" }] }).rxcui, "749882");
   assert.equal(recordWith({ coding: [{ system: RX, code: "29046", display: "Lisinopril" }] }).ingredientOnly, true);
+  assert.equal(recordWith({ coding: [{ system: RX, code: "316672", display: "Simvistatin 10 MG" }] }).ingredientOnly, true);
+  assert.equal(recordWith({ coding: [{ system: RX, code: "749882", display: "Norinyl 1+50 28 Day Pack" }] }).ingredientOnly, true);
   // The one the prescriber picked wins.
   const picked = { coding: [CODES.brandThenGeneric.coding[0], Object.assign({ userSelected: true }, CODES.brandThenGeneric.coding[1])] };
   assert.equal(recordWith(picked, types).rxcui, "866412");
@@ -132,8 +133,21 @@ test("case 3: the most specific product code is the record's code", async () => 
   const onlyIngredient = recordWith({ coding: [CODES.ingredientThenProduct.coding[0]] }, types);
   assert.equal(onlyIngredient.rxcui, null);
   assert.equal(onlyIngredient.ingredientOnly, true);
-  assert.equal(onlyIngredient.key, "text:metoprolol");
+  assert.equal(onlyIngredient.key, "text:metoprolol|6918");
   assert.equal(matchOf(onlyIngredient, recordWith({ coding: [CODES.ingredientThenProduct.coding[0]] }, types), new Map()), "name-only");
+});
+
+test("case 3, offline: an Epic ingredient code with no name never becomes the record's code", () => {
+  const offline = (coding, text) => fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", medicationCodeableConcept: { text, coding } }, "S");
+  const excedrin = offline([{ system: RX, code: "161" }, { system: RX, code: "308297", display: "acetaminophen 250 MG / aspirin 250 MG / caffeine 65 MG Oral Tablet" }]);
+  assert.equal(excedrin.rxcui, "308297");
+  const alone = offline([{ system: RX, code: "161" }], "aspirin-acetaminophen-caffeine (EXCEDRIN MIGRAINE) 250-250-65 MG per tablet");
+  assert.equal(alone.rxcui, null);
+  assert.equal(alone.ingredientOnly, true);
+  // So it can't join a Tylenol coded the same way.
+  const tylenol = offline([{ system: RX, code: "161" }, { system: RX, code: "198440" }], "acetaminophen (TYLENOL) 500 MG tablet");
+  assert.equal(matchOf(alone, tylenol, new Map()), null);
+  assert.notEqual(alone.key, tylenol.key);
 });
 
 // 4
@@ -407,6 +421,28 @@ test("case 32: IPS no-known-medications is a statement, in the QR code as a tag,
   const file = JSON.stringify(patientSummary(JSON.parse(JSON.stringify(saveable)), { now: NOW, uuid: () => "00000000-0000-4000-8000-" + String(n += 1).padStart(12, "0") }));
   assert.ok(file.includes("Summary: no medicines known"));
   assert.ok(!/null<\/p>|>null/.test(file));
+});
+
+test("a source that lists a medicine never also says it has none, anywhere", async () => {
+  const lisinopril = REFS.contained[0];
+  const split = await listFromSearch({ MedicationRequest: [lisinopril], MedicationStatement: [NONE.noInfo, NONE.noneKnown] }, "Summary", rxnav());
+  assert.equal(split.current.length, 1);
+  assert.deepEqual(split.noMedicines, []);
+  assert.ok(!sourceNotices(split).some((line) => /no information|no medicines known/.test(line)));
+  // An older one counts too: the source has spoken about the patient's medicines.
+  const older = await listFromSearch({ MedicationRequest: [Object.assign({}, lisinopril, { status: "completed" })], MedicationStatement: [NONE.noInfo] }, "Summary", rxnav());
+  assert.deepEqual(older.noMedicines, []);
+  // Joined with others, in the QR code and on the staff page.
+  const other = await source("b", "Clinic", asStatements([NONE.noneKnown]));
+  const list = await joined([{ id: "a", name: "Summary", kind: "records", refreshes: true, patient: PATIENT, split }, other]);
+  assert.deepEqual(list.noMedicines, [{ source: "Clinic", kind: "none-known" }]);
+  const bundle = buildShareBundle({ patient: { name: "Pat Example", birthDate: "1960-01-01" }, current: list.current, additions: [], stopped: [] }, NOW, { noMedicines: list.noMedicines });
+  assert.deepEqual(bundle.meta.tag.filter((tag) => tag.code === "no-medicines").map((tag) => tag.display), ["none-known:Clinic"]);
+  assert.deepEqual(medicineNotices(groupShareBundle(bundle)), ["Clinic: no medicines known"]);
+  // An IPS file and the test clinic follow the same rule.
+  const document = { resourceType: "Bundle", type: "collection", timestamp: "2026-10-01T00:00:00Z", entry: [{ resource: NONE.noInfo }, { resource: CODES.pharmacyTylenol[0] }] };
+  assert.deepEqual(snapshotSource(document, "Discharge summary").split.noMedicines, []);
+  assert.deepEqual(demoSource({ patient: PATIENT, requests: CODES.pharmacyTylenol, statements: [NONE.noInfo] }, PATIENT, "").split.noMedicines, []);
 });
 
 test("the home server's test clinic can say it has no medicines too", () => {

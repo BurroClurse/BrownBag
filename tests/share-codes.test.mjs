@@ -14,7 +14,7 @@ const NOW = new Date("2026-11-24T12:00:00Z");
 const PATIENT = { name: "Avery Brownbag", birthDate: "1950-03-14" };
 const BASE = "https://burroclurse.github.io/BrownBag/";
 const DOSAGE = { sequence: 1, route: { text: "Oral", coding: [{ system: "http://snomed.info/sct", code: "26643006" }] }, timing: { repeat: { frequency: 2, period: 1, periodUnit: "d" } }, doseAndRate: [{ type: { text: "ordered" }, doseQuantity: { value: 1, unit: "tablet", system: UCUM, code: "{tbl}" } }] };
-const med = (o) => fromMedicationRequest(Object.assign({ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-09-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: NDC, code: "00093-1111-01" }, { system: RX, code: "314076" }, { system: "http://snomed.info/sct", code: "386873009" }, { code: "none" }] }, dosageInstruction: [DOSAGE] }, o), "SMART sandbox");
+const med = (o) => fromMedicationRequest(Object.assign({ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-09-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: NDC, code: "00093-1111-01" }, { system: RX, code: "314076", display: "lisinopril 10 MG Oral Tablet" }, { system: "http://snomed.info/sct", code: "386873009" }, { code: "none" }] }, dosageInstruction: [DOSAGE] }, o), "SMART sandbox");
 const list = (current, o) => Object.assign({ patient: PATIENT, current, additions: [], stopped: [] }, o);
 const first = (item, level = 2) => buildShareBundle(list([item]), NOW, {}, level).entry[1].resource;
 const directions = (dosage) => { const { text, ...rest } = first(med({ dosageInstruction: [dosage] })).dosage[0]; return rest; };
@@ -60,7 +60,7 @@ test("anything else in the direction means no coded directions", () => {
 });
 
 test("only the shown record's codes travel, never two records' mixed", () => {
-  const one = dedupe([med(), med({ authoredOn: "2026-10-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: RX, code: "314076" }, { system: NDC, code: "newer" }] }, dosageInstruction: [{ text: "1 daily" }] })])[0];
+  const one = dedupe([med(), med({ authoredOn: "2026-10-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: RX, code: "314076", display: "lisinopril 10 MG Oral Tablet" }, { system: NDC, code: "newer" }] }, dosageInstruction: [{ text: "1 daily" }] })])[0];
   const resource = first(one);
   assert.deepEqual(resource.medicationCodeableConcept.coding.map((c) => c.code), ["314076", "newer"]);
   assert.equal(resource.dosage[0].timing && resource.dosage[0].timing.repeat, undefined);
@@ -107,7 +107,7 @@ async function squares(bundle) {
 // Names that don't shrink, so each size is reached with few medicines.
 function many(count) {
   let seed = 7; const word = () => Array.from({ length: 16 }, () => { seed = (seed * 1103515245 + 12345) % 2147483648; return "abcdefghijklmnopqrstuvwxyz"[seed % 26]; }).join("");
-  return Array.from({ length: count }, (_, i) => med({ medicationCodeableConcept: { text: word(), coding: [{ system: RX, code: String(100000 + i * 7919) }, { system: NDC, code: String(10000000000 + i * 7919131) }] } }));
+  return Array.from({ length: count }, (_, i) => med({ medicationCodeableConcept: { text: word(), coding: [{ system: RX, code: String(100000 + i * 7919), display: "drug 10 MG Oral Tablet" }, { system: NDC, code: String(10000000000 + i * 7919131) }] } }));
 }
 
 test("codes are dropped before the code gets too dense, and a medicine never is", async () => {

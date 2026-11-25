@@ -4,7 +4,8 @@
 // started for it; the published app never asks. No DOM here, so Node's test
 // runner can check it.
 
-import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus, noMedicinesKind } from "./meds.js";
+import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus, noMedicinesKind, rxnormCodesOf } from "./meds.js";
+import { ingredientsFor } from "./rxnorm.js";
 
 export var DEMO_ID = "valley-clinic-demo";
 export var DEMO_NAME = "Valley Clinic (test records)";
@@ -27,8 +28,9 @@ function dayAfter(date) {
 // json is { patient, requests, statements, heldBack? }. The records are
 // made up, so they're given the signed-in patient's name and birth date to
 // join that list; ?demo=someone-else in the address makes the birth date a
-// day off.
-export function demoSource(json, patient, search) {
+// day off. types: RxNav's term types for its codes (ingredientsFor), so its
+// codes count as a real source's do.
+export function demoSource(json, patient, search, types) {
   var someoneElse = new URLSearchParams(search || "").get("demo") === "someone-else";
   var birthDate = patient && patient.birthDate;
   var items = [];
@@ -42,7 +44,7 @@ export function demoSource(json, patient, search) {
         if (!noMedicines.some(function (said) { return said.kind === kind; })) noMedicines.push({ source: DEMO_NAME, kind: kind });
         return;
       }
-      var item = pair[1](resource, DEMO_NAME);
+      var item = pair[1](resource, DEMO_NAME, new Map(), types || null);
       if (isPlaceholderDrug(item)) placeholders += 1;
       else items.push(item);
     });
@@ -53,7 +55,8 @@ export function demoSource(json, patient, search) {
   // A clinic file can say it sent only some records, as a real source can.
   split.heldBack = json.heldBack === true;
   split.placeholders = placeholders;
-  split.noMedicines = noMedicines;
+  // Only from a clinic that lists no medicine (med-list.js).
+  split.noMedicines = items.length ? [] : noMedicines;
   return {
     id: DEMO_ID,
     name: DEMO_NAME,
@@ -78,7 +81,13 @@ export async function loadDemoSource(location, patient, patientId, fetchFn) {
     if (!response.ok || response.status !== 200) return null;
     var json = await response.json();
     if (!json || !json.patient || !Array.isArray(json.requests)) return null;
-    return demoSource(json, patient, location.search);
+    // Without the types its codes would count only by their names.
+    var types = new Map();
+    var codes = json.requests.concat(Array.isArray(json.statements) ? json.statements : []).reduce(function (all, resource) {
+      return resource ? all.concat(rxnormCodesOf(resource)) : all;
+    }, []);
+    if (codes.length) await ingredientsFor(codes, fetchFn, { types: types });
+    return demoSource(json, patient, location.search, types);
   } catch (error) {
     return null;
   }

@@ -15,7 +15,7 @@ import { patientSummary } from "../js/ips.js";
 const RX = "http://www.nlm.nih.gov/research/umls/rxnorm";
 const NOW = new Date("2026-11-24T12:00:00Z");
 const PATIENT = { name: "Avery Brownbag", birthDate: "1950-03-14" };
-const med = (dosageInstruction, o = {}) => fromMedicationRequest({ resourceType: "MedicationRequest", id: "r", status: "active", authoredOn: "2026-09-01", medicationCodeableConcept: { text: "albuterol", coding: [{ system: RX, code: "745679" }] }, dosageInstruction, ...o }, "SMART sandbox");
+const med = (dosageInstruction, o = {}) => fromMedicationRequest({ resourceType: "MedicationRequest", id: "r", status: "active", authoredOn: "2026-09-01", medicationCodeableConcept: { text: "albuterol", coding: [{ system: RX, code: "745679", display: "200 ACTUAT albuterol 0.09 MG/ACTUAT Metered Dose Inhaler" }] }, dosageInstruction, ...o }, "SMART sandbox");
 const DAILY = { timing: { repeat: { frequency: 1, period: 1, periodUnit: "d" } } };
 const PRN = { asNeededBoolean: true };
 const share = (list, level) => groupShareBundle(JSON.parse(JSON.stringify(buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [], ...list }, NOW, {}, level))));
