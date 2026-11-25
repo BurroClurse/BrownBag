@@ -151,3 +151,18 @@ an idea becomes a plan only after its own design.
     last read it and what it read (medicines, allergies, fills), kept on the phone
     with the list. Only Brown Bag's own reads: it can't see who else reads the
     record.
+- [ ] **22. Reconciliation has never met a real second health system.** Its second
+  source is the home server's test clinic, a file served beside the app.
+  - Now: the test clinic follows the signed-in sandbox patient (Loria Jenkins,
+    or the made-up Riley Reconcile and Jordan Partial from
+    `tools/reconcile-patients.mjs`).
+  - Careful: two vendors' sandboxes have different made-up patients, so
+    Brown Bag's same-person check would keep them apart, and connecting Epic's
+    sandbox beside the SMART sandbox would only ever show "someone else".
+    Anpheros' sandbox (looked at 2026-11-25) is also European and ATC-coded,
+    and US sources only is the scope for now (Tyler, 2026-11-25).
+  - Idea: two records for the same made-up person on the SMART sandbox, which
+    lets us add patients (same name and birth date, different ids, different
+    medicines), connected as two separate sign-ins. That's how one person ends
+    up with two charts in real life. It needs Brown Bag to hold more than one
+    connection, which comes with Medicare (connections design).

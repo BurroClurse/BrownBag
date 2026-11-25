@@ -231,6 +231,9 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   a server to hold the encrypted file, so when they arrive Brown Bag becomes built
   for server deployment, and the privacy page says what that server keeps, for how
   long, and how it's deleted.
+- **Two sign-ins for one person** (idea): two sandbox records for the same
+  made-up person, connected separately, so reconciliation meets a real second
+  health system. Needs more than one connection, which comes with Medicare.
 - **Sending changes back to the clinic** (idea), with the clinic's permission.
 - **HL7's validator on every push** (idea): a GitHub Action checks the test files
   and the FHIR file Brown Bag makes against HL7's own FHIR and IPS rules.
