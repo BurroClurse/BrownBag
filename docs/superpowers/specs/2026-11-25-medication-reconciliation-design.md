@@ -1,8 +1,11 @@
 # Brown Bag: when sources disagree about a medicine
 
 Status: draft for Tyler's approval, 2026-11-25. Not built. A builder check
-ran on 2026-11-25; its questions are settled below, marked "from the
-builder check", or answered by Tyler.
+ran on 2026-11-25; its questions are settled below. Tyler answered each of
+Claude's calls one at a time on 2026-11-25: he confirmed every one marked
+"Claude's call" that's still in this document, and changed three (the fill
+hint is in v1 for staff, home gets a line, and the FHIR file gets a
+`DetectedIssue`).
 
 ## Why
 
@@ -123,7 +126,8 @@ design") both wait on this design.
   MedicationStatement and AllergyIntolerance, within version 40-M, prefix
   `v3.`.
 - **The FHIR file** stays IPS 2.0.1, made by `js/ips.js` from the QR
-  Bundle, with no new resource types.
+  Bundle. Its one new resource type is `DetectedIssue` (section 9), checked
+  with HL7's validator. The QR Bundle that `ips.js` reads gets none.
 - **Content security policy:** no new addresses. RxNav is already
   allowed, and SMART Health Link fetching is later work.
 - **Unknown is never none:** a source that didn't load is named on every
@@ -298,8 +302,11 @@ is: a not-current prescription filled within a year and after it was
 written shows as current with its "Marked completed in your records, but
 filled ..." line. A fill's quantity divided by its days supply (60 tablets
 for 30 days: about 2 a day) can go to staff as "Fill suggests about 2 a
-day", never to the patient, never as a verdict. (Claude's call: not in v1;
-the sandbox claims don't carry days supply.)
+day", never to the patient, never as a verdict. In v1 (Tyler, 2026-11-25),
+staff only, from the claim's quantity and days supply when both are there
+(CARIN Blue Button `supportingInfo` categories `dayssupply`, and the item's
+`quantity`); tested with made-up claims, since the sandbox's may not carry
+days supply.
 
 **The patient's own additions** match groups the same way, but never
 create a verdict: add-check.js already asks the patient when they add one
@@ -381,8 +388,9 @@ Do you still take it?
 - Saved answers show on the medicine's card: "You said: 20 mg, once a
   day (Nov 25)", with "Change" reopening the card.
 - Where the patient is in the review survives the 5-minute lock.
-- No home screen change (Claude's call: home stays three buttons; the
-  count lives on My medicines).
+- Home also gets a line under its buttons, "Your records don't agree on 2
+  things", that opens the review (Tyler, 2026-11-25). Home keeps its three
+  buttons.
 
 ### 7. Answers, and when they're asked again
 
@@ -483,13 +491,19 @@ on the joined card cover all").
   side is its own MedicationStatement with its "Records disagree" and
   "Other record" notes, and the Medications section's readable text and
   title say it, as the file already does for its other cautions
-  ("Medications (records disagree on 2)"). Every statement keeps a shape
-  `js/ips.js` already accepts: no new resource types, statuses or fields.
-  A `DetectedIssue` that points at both statements would be the standard
-  way to say this (Claude's call: not in v1). It costs QR space, and
-  `ips.js` `readBundle` accepts only Patient, MedicationStatement and
-  AllergyIntolerance, so it would need its own change to the reader and
-  the IPS Composition.
+  ("Medications (records disagree on 2)"). Every statement in the QR
+  Bundle keeps a shape `js/ips.js` already accepts: no new resource types,
+  statuses or fields there.
+  **In v1, the file also gets a `DetectedIssue`** for each unresolved
+  group (Tyler, 2026-11-25), never the QR code, which stays as above:
+  `status` `preliminary`, `code` text "Records disagree" with the verdicts
+  in `detail`, `implicated` pointing at each side's MedicationStatement,
+  `patient` the file's Patient, and `mitigation` saying "Patient isn't
+  sure" when that was the answer. `ips.js` builds it from the `differs`
+  tags it reads, and the Medications section lists it after the
+  statements. The builder checks with HL7's FHIR validator (as the FHIR
+  file design did) that IPS 2.0.1 accepts it there, and if it doesn't,
+  says so before choosing another place.
 
 ### 10. Snapshots (SMART Health Links, IPS files) in the core
 
