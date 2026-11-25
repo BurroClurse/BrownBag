@@ -713,8 +713,10 @@ homeLogo.src = "icons/logo-trimmed.png";
 homeLogo.alt = "";
 
 function drawHome(arranged) {
-  drawNotices();
+  // The name first, so a note coming or going ("Updating your list…") never
+  // moves it; the bag below gives up the room.
   add(root, "h1", shortName(state.patient.name), "home-name");
+  drawNotices();
   var bag = add(root, "button", null, "home-bag");
   bag.type = "button";
   bag.id = "home-bag";
