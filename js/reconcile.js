@@ -243,13 +243,14 @@ function stopCounts(current, stopped) {
 }
 
 // A snapshot only says what it said then, so against a list that refreshes
-// it can't call the record stopped, or current again, on date alone. Its
-// stop counts only when it's the newer word; its "current" never does.
+// it can't make a status verdict while it's clearly the older word, either
+// way round. Undated or tied, it asks.
 function snapshotAllowsStop(current, stopped) {
   if (Boolean(current.fromSnapshot) === Boolean(stopped.fromSnapshot)) return true;
-  if (current.fromSnapshot) return false;
-  var when = day(asOfItem(stopped));
-  var against = day(asOfItem(current));
+  var snapshot = current.fromSnapshot ? current : stopped;
+  var other = current.fromSnapshot ? stopped : current;
+  var when = day(asOfItem(snapshot));
+  var against = day(asOfItem(other));
   return !(when && against && before(when, against));
 }
 

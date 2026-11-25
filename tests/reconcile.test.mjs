@@ -509,3 +509,12 @@ test("an odd bundle is refused", () => {
   assert.equal(snapshotSource(bundle, "x"), null);
   assert.equal(snapshotSource(null, "x"), null);
 });
+
+test("a newer snapshot that says current asks about a stop", () => {
+  var bundle = fixture("ips-snapshot");
+  bundle.entry[0].resource.date = "2026-10-01";
+  var stopped = sandbox(SANDBOX_REQUESTS.filter(function (r) { return r.id !== "a-atorvastatin"; })
+    .concat([stoppedOn("a-atorvastatin", "617310", "atorvastatin 20 MG Oral Tablet", "2026-06-01")]));
+  var statin = only(reconcile([stopped, snapshotSource(bundle, "Mercy Health")], MAP), /^atorvastatin/);
+  assert.deepEqual(statin.group.verdicts, ["status"]);
+});
