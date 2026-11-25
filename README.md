@@ -16,7 +16,7 @@ to patient apps. It adds pharmacy fills from insurance claims, showing what
 was actually picked up. Today it connects to the SMART Health IT sandbox
 (test patients only), whose claims stand in for an insurer's.
 
-Sign in also names, under **Not connected**, what Brown Bag may add later:
+The connections screen also names, under **Not connected**, what Brown Bag may add later:
 Epic, Oracle Health and MEDITECH (health systems), Medicare and Medicaid
 (insurance), and pharmacy fills. The test systems looked at so far, and why each
 fits or doesn't, are in [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
@@ -24,16 +24,19 @@ fits or doesn't, are in [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
 It's static pages with no backend server, built to be simple: one main screen,
 big buttons, plain words, and made to WCAG 2.2 AA.
 
-**Live:** <https://burroclurse.github.io/BrownBag/launch.html> (sandbox data
+**Live:** <https://burroclurse.github.io/BrownBag/> (sandbox data
 only, no real patients). To open it as a certain patient, see
 [Test patients](#test-patients).
 
 ## What the patient sees
 
 **Signing in**
-- **Sign in** lists the sources. The SMART sandbox opens a list of 20 test patients.
-- After the first sign-in, Face ID, a fingerprint or a 6-digit PIN opens Brown
-  Bag and the list updates by itself. It locks after 5 minutes without a tap or
+- **First run:** set up the lock (Face ID, a fingerprint or a 6-digit PIN), then
+  **Connect your health records** lists the sources. **Connect** on the SMART
+  sandbox opens a list of 20 test patients. After each sign-in the patient
+  unlocks and comes back to that screen to connect the next; **Done** goes home.
+  The same screen is **Health records** under More options.
+- After that, the lock opens Brown Bag and the list updates by itself. It locks after 5 minutes without a tap or
   away, and the connection ends after 30 days unused.
 - **Sign out** is for everyone on the phone. Saved lists stay, locked.
 
@@ -84,7 +87,7 @@ contact: the app, only the sandbox and the drug name service; the staff page, no
 
 ## How it uses SMART and FHIR
 
-**Launch.** `launch.html` lists the sources. Choosing the sandbox, then a test patient (or a link
+**Launch.** The app's connections screen lists the sources. Connect on the sandbox opens `launch.html`'s test patients; choosing one (or a link
 that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
@@ -153,7 +156,7 @@ The list never passes through a server.
 
 | File | Purpose |
 | --- | --- |
-| `launch.html`, `js/launch.js` | The list of sources, then the patient standalone launch. |
+| `launch.html`, `js/launch.js` | The sandbox's test patients, then the patient standalone launch. A plain `launch.html` goes to the connections screen. |
 | `index.html` | The app: lock, sign-in return, home, My medicines, QR code. |
 | `share.html` | The page staff see after scanning. |
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |

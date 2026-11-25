@@ -2,7 +2,8 @@
 
 Status: Tyler handed the remaining choices to Claude, 2026-11-25 ("I'll let
 you choose the best options until this is complete, just tell me at the end
-what you chose and why").
+what you chose and why"). Built 2026-11-25, plan
+`docs/superpowers/plans/2026-11-25-connections.md`.
 
 ## Why
 
