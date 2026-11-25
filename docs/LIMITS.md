@@ -133,3 +133,21 @@ an idea becomes a plan only after its own design.
   - When it comes: its own design (shared with reading incoming SMART Health
     Links); the privacy page says what the store keeps, for how long, and how
     it's deleted; and the README says Brown Bag is built for server deployment.
+- [ ] **20. Nothing checks Brown Bag's FHIR against HL7's own rules on every change.**
+  The tests check Brown Bag's rules, not the FHIR standard's, so a shape HL7
+  wouldn't accept can slip in.
+  - Now: HL7's FHIR validator is run by hand on test data when a design asks for
+    it (the FHIR file design, and the IPS file's `DetectedIssue`).
+  - Idea (Tyler, 2026-11-25, from looking at github.com/anpheros): a GitHub Action
+    that runs HL7's validator (`validator_cli.jar`, FHIR 4.0.1, IPS 2.0.1) on every
+    push, against the test fixtures and the IPS file Brown Bag makes from them.
+    Run it on GitHub, not through someone else's validation service, so the files
+    never leave GitHub.
+- [ ] **21. The patient can't see when each source was last read.**
+  - Now: Health records under More options shows when the medicines, allergies and
+    insurance fills last updated, for the one connected source.
+  - Idea (Tyler, 2026-11-25, from looking at github.com/anpheros, whose patients see
+    an access log): with several sources, a short per-source line of when Brown Bag
+    last read it and what it read (medicines, allergies, fills), kept on the phone
+    with the list. Only Brown Bag's own reads: it can't see who else reads the
+    record.
