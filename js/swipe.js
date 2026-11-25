@@ -44,10 +44,17 @@ export function swipeAway(overlay, close) {
     drag = null;
     swiping = false;
   }
+  // Once swiping, kept to the way it started.
+  function follow(dx, dy) {
+    if (!swiping) drag = dragOf(start, dx, dy);
+    else drag = swiping === "x" ? { x: dx, y: 0 } : { x: 0, y: way * Math.max(way * dy, 0) };
+  }
   // Once it's open, its opening animation no longer holds it in place.
   overlay.addEventListener("animationend", function (event) {
     if (event.target === overlay && /^qr-(in|fade-in)$/.test(event.animationName)) overlay.classList.add("open");
   });
+  // A stalled phone may never say it ended.
+  setTimeout(function () { overlay.classList.add("open"); }, 600);
   overlay.addEventListener("touchstart", function (event) {
     if (event.touches.length > 1) {
       settle();
@@ -56,7 +63,7 @@ export function swipeAway(overlay, close) {
     var zoomed = window.visualViewport && window.visualViewport.scale > 1.01;
     if (zoomed || !overlay.classList.contains("open")) return;
     var touch = event.touches[0];
-    start = { x: touch.clientX, y: touch.clientY, width: innerWidth, atTop: nearTop(overlay.scrollTop), atBottom: nearBottom(overlay), at: Date.now() };
+    start = { x: touch.clientX, y: touch.clientY, width: innerWidth, atTop: nearTop(overlay.scrollTop), atBottom: nearBottom(overlay), at: event.timeStamp || Date.now() };
   }, { passive: true });
   overlay.addEventListener("touchmove", function (event) {
     if (!start || event.touches.length > 1) return;
@@ -76,18 +83,17 @@ export function swipeAway(overlay, close) {
       swiping = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
       overlay.classList.add("dragging");
     }
-    // Kept to the way it started.
-    drag = swiping === "x" ? { x: dx, y: 0 } : { x: 0, y: way * Math.max(way * dy, 0) };
+    follow(dx, dy);
     if (event.cancelable) event.preventDefault();
     overlay.style.setProperty("--drag-x", drag.x + "px");
     overlay.style.setProperty("--drag-y", drag.y + "px");
   }, { passive: false });
   overlay.addEventListener("touchend", function (event) {
     if (!start) return;
-    // A very quick flick reports only where it started and ended.
+    // Where the finger lifted decides: a busy phone skips the moves before it.
     var last = event.changedTouches && event.changedTouches[0];
-    if (!swiping && last) drag = dragOf(start, last.clientX - start.x, last.clientY - start.y);
-    if (endsIt(drag, Date.now() - start.at)) {
+    if (last) follow(last.clientX - start.x, last.clientY - start.y);
+    if (endsIt(drag, (event.timeStamp || Date.now()) - start.at)) {
       // It closes from where the finger left it.
       start = null;
       swiping = false;

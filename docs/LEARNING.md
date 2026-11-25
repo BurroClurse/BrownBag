@@ -1789,6 +1789,24 @@ that rule from changing by accident, and the limits list says what's left.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+---
+
+## Step 61: A paper ball, and phones that fall behind
+
+**What changed:** closing the QR code crumples it into a paper ball that drops into
+the bag. With Reduce Motion on, it only fades.
+
+**Why:** the picture is cut into 120 folds. Each one moves to its place in a ball,
+a little out of step, with its own shade, and that reads as paper. The 6 digits are
+left out of the picture.
+
+**A slow phone:** drawn sharply from the start, the virtual Android phone showed 5
+pictures in the second. So it starts plain and turns sharp only after four quick
+ones. Testing there also found swipes ignored when the phone never said the opening
+animation had ended. Waiting for a signal needs a time limit too.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

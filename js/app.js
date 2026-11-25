@@ -25,6 +25,7 @@ import { drawNotConnected } from "./source-list.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
 import { swipeAway } from "./swipe.js";
+import { crumpleInto } from "./crumple.js";
 import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
 import { saveToDevice } from "./save-file.js";
 import { allergyBox, medicinesBlock } from "./share-list.js";
@@ -1611,8 +1612,8 @@ function drawAsNeeded(parent, arranged, additions) {
   added.forEach(function (addition) { drawAddition(list, addition); });
 }
 
-// The QR code covers the screen: it swooshes up out of the bag and tucks
-// back in on Close (css/brownbag.css; a fade with Reduce Motion). It shows
+// The QR code covers the screen: it swooshes up out of the bag, and closing it
+// crumples it back in (js/crumple.js; a fade with Reduce Motion). It shows
 // only See what's inside, the code, the 6 digits and Close. Focus stays inside it, Escape
 // closes it, and focus goes back to "Show my QR code".
 // Making the code takes about a second (the list is encrypted first). A
@@ -1824,6 +1825,18 @@ function closeQr(fromHistory) {
     overlay.remove();
     var back = document.getElementById("show-qr");
     if (back) back.focus();
+  }
+  // Into the bag as a paper ball; a fade with Reduce Motion, or if it can't be drawn.
+  var calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  try {
+    if (!calm && crumpleInto(overlay, document.querySelector("#home-bag img"), finish)) {
+      overlay.classList.add("crumpled");
+      setTimeout(finish, 1800);
+      return;
+    }
+  } catch (error) {
+    overlay.style.visibility = "";
+    document.querySelectorAll(".crumple").forEach(function (left) { left.remove(); });
   }
   // Only the closing animation ends it; the opening one may still be
   // finishing if Close was pressed quickly.

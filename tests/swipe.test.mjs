@@ -78,7 +78,29 @@ test("the first small move of a swipe is kept from scrolling", () => {
   send("touchstart", 400);
   heard.touchend({ touches: [], changedTouches: [{ clientX: 200, clientY: 401 }] });
   assert.equal(closed, 3);
+  // A busy phone: the last move it reports is short, and it runs late. Where and
+  // when the finger lifted decide.
+  set.delete("dragging");
+  send("touchstart", 400);
+  heard.touchmove({ touches: [{ clientX: 200, clientY: 370 }], cancelable: true, preventDefault() {} });
+  heard.touchend({ touches: [], changedTouches: [{ clientX: 200, clientY: 290 }] });
+  assert.equal(closed, 4);
+  set.delete("dragging");
+  heard.touchstart({ touches: [{ clientX: 200, clientY: 400 }], timeStamp: 1000 });
+  heard.touchend({ touches: [], changedTouches: [{ clientX: 200, clientY: 340 }], timeStamp: 1090 });
+  assert.equal(closed, 5);
   overlay.scrollHeight = 1200;
   send("touchstart", 400);
   assert.equal(send("touchmove", 398), false);
+});
+
+// A stalled phone may never say the opening animation ended, and then every
+// swipe was ignored.
+test("swiping turns on even when the opening animation never says it ended", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const set = new Set();
+  swipeAway({ style: {}, classList: { add: (c) => set.add(c), remove() {}, contains: (c) => set.has(c) }, addEventListener() {} }, () => {});
+  assert.equal(set.has("open"), false);
+  t.mock.timers.tick(700);
+  assert.equal(set.has("open"), true);
 });
