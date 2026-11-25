@@ -43,7 +43,7 @@ only, no real patients). To open it as a certain patient, see
 **My medicines**
 - **Allergies** come first, in their own box, with each reaction and who says
   so. The patient can add one, add or change their reaction, or say they have none
-  known. A record that names no allergen shows as a note; after adding an allergy
+  known. A record that names no allergen is the last row; after adding an allergy
   that could be it, the patient can say it is. Staff still see the record.
 - **Medicines** from the records: repeats merged, strengths of one drug grouped,
   directions in full, on-hold ones marked, older prescriptions folded away.
@@ -118,7 +118,7 @@ Nothing is written to the health record. Nothing runs on a schedule.
 
 Records that name no medicine ("Medication", no drug code) are left out; a note
 on My medicines and the staff page counts them. An allergy entry that doesn't say
-what it's to gets a note too, with everything else it says.
+what it's to gets its own row, or a note for staff, with everything else it says.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the
 patient's own additions couldn't be loaded, or the server says it left

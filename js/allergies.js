@@ -36,7 +36,7 @@ export function isUnspecified(resource) {
   return (coded || words(resource.code).toLowerCase() === UNSPECIFIED_NAME.toLowerCase()) && !(resource.reaction || []).length;
 }
 
-// The sentence both screens use: whose records, and who to ask.
+// The sentence the staff page and the popup use: whose records, and who to ask.
 // unnamed: what else each entry says (unnamedDetails), in the same order.
 export function unspecifiedSentence(count, listed, records, ask, unnamed) {
   if (!count) return null;
@@ -46,8 +46,10 @@ export function unspecifiedSentence(count, listed, records, ask, unnamed) {
   return records + (listed ? " also" : "") + " have " + (count === 1 ? "an unnamed allergy" : count + " unnamed allergies") + details + ". " + ask;
 }
 
-export function unspecifiedText(count, listed, unnamed) {
-  return unspecifiedSentence(count, listed, "Your records", "Ask your care team.", unnamed);
+// The same entry as a row on My medicines.
+export function unnamedRow(entry) {
+  var details = entry.details ? [entry.details.charAt(0).toUpperCase() + entry.details.slice(1)] : [];
+  return { name: "Unnamed allergy", lines: details.concat("In your records. Ask your care team.") };
 }
 
 // Everything an entry with no allergen does say, to help them remember. Not low
@@ -476,9 +478,9 @@ export function unnamedQuestion(name, entries) {
     title: "Is " + shortened(name) + " the unnamed allergy?",
     lines: [
       unspecifiedSentence(entries.length, 0, "Your records", "", entries.map(function (entry) { return entry.details; })).trim(),
-      "If it is, the note comes off My medicines. Staff still see the record, with your answer."
+      "If it is, its line comes off My medicines. Staff still see the record, with your answer."
     ],
-    yes: entries.length === 1 ? ["Yes, remove the note"] : entries.map(function (_, i) { return "Yes, it's number " + (i + 1); })
+    yes: entries.length === 1 ? ["Yes, it's the same one"] : entries.map(function (_, i) { return "Yes, it's number " + (i + 1); })
   };
 }
 
@@ -537,12 +539,13 @@ export function longDate(date) {
   return MONTHS[parts[1] - 1] + " " + parts[2] + ", " + parts[0];
 }
 
-export function detailLines(card) {
+// The lines under an allergy's name: what happened and who says so, then any
+// marks in the record.
+export function allergyLines(card) {
+  var happened = reactionLine(card).replace(/^Reaction: not known/, "Reaction not known").replace(/^Reaction: /, "");
   return [
-    card.highRisk ? "Marked high risk" : null,
-    card.intolerance ? "Intolerance" : null,
-    card.unconfirmed ? "Not confirmed" : null,
-    card.origin === "added" ? "Added by me · " + longDate(card.mine.addedAt) : (card.source ? "Source: " + card.source : null),
+    [happened, card.origin === "added" ? "Added by me" : (card.source ? "Source: " + card.source : null)].filter(Boolean).join(" · "),
+    [card.highRisk ? "Marked high risk" : null, card.intolerance ? "Intolerance" : null, card.unconfirmed ? "Not confirmed" : null].filter(Boolean).join(" · "),
     (card.unnamedKeys || []).length ? "You said this is the unnamed allergy in your records." : null
   ].filter(Boolean);
 }
@@ -560,7 +563,8 @@ export function allergyNotes(allergies, now) {
   if (allergies.status === "not-loaded") {
     return [{ text: "Your allergies haven't been loaded yet.", signIn: false }];
   }
-  return from ? [{ text: from, signIn: false }] : [];
+  // Plain: nothing is wrong, it's only the date.
+  return from ? [{ text: from, signIn: false, plain: true }] : [];
 }
 
 export function allergyDraftStarted(draft) {

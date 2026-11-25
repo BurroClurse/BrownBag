@@ -24,5 +24,12 @@ Asked for by Tyler 2026-11-24, with the obvious choices left to Claude.
 - **Saving by download** says "Check your downloads" instead of "Saved", because
   Android may still ask.
 
+**Reformatted the same day (Tyler chose one list of three layouts):** one white list,
+a row for each allergy: the name with Edit (or Add reaction) beside it, then the
+reaction and "Source: …" or "Added by me". Record marks get their own line. The date
+added is under Edit. The unnamed allergy is the last row, not a note, so the popup says
+"its line". A saved date is a plain line; warnings keep their yellow box. The staff page
+and the QR code don't change.
+
 **Approaches for the note:** hide the record everywhere (rejected: it would turn
 a guess into a missing allergy) or only the note on the phone (chosen).

@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { arrangeAllergies, couldBe, fromAllergyRecords, keepAllergies, removeMine, putBack, unnamedQuestion, unspecifiedText } from "../js/allergies.js";
+import { arrangeAllergies, couldBe, fromAllergyRecords, keepAllergies, removeMine, putBack, unnamedQuestion, unspecifiedSentence } from "../js/allergies.js";
 import { allergyNotices, buildShareBundle, groupShareBundle } from "../js/share.js";
 import { patientSummary } from "../js/ips.js";
 import { loadPatientData, savePatientData } from "../js/vault.js";
@@ -15,7 +15,7 @@ const read = (...r) => keepAllergies({ status: "loaded", ...fromAllergyRecords(r
 const own = (name) => ({ id: "o-" + name, name, rxcui: null, reaction: "Hives", addedAt: "2026-11-24" });
 const data = (o = {}) => ({ allergies: [], allergyReactions: {}, noKnownAllergies: null, unnamedAre: {}, ...o });
 const keyOf = (a) => a.open[0].key;
-const note = (a) => unspecifiedText(a.open.length, a.count, a.open.map((e) => e.details));
+const note = (a) => unspecifiedSentence(a.open.length, a.count, "Your records", "Ask your care team.", a.open.map((e) => e.details));
 
 test("asked for the same kind, or one in the patient's words; not for another kind", () => {
   const a = arrangeAllergies(read(ENV), data());
@@ -30,8 +30,8 @@ test("the question says what the record says", () => {
   const a = arrangeAllergies(read(ENV), data());
   assert.deepEqual(unnamedQuestion("Latex", couldBe("Latex", a)), {
     title: "Is Latex the unnamed allergy?",
-    lines: ["Your records have an unnamed allergy: environment, recorded Feb 28, 1979.", "If it is, the note comes off My medicines. Staff still see the record, with your answer."],
-    yes: ["Yes, remove the note"]
+    lines: ["Your records have an unnamed allergy: environment, recorded Feb 28, 1979.", "If it is, its line comes off My medicines. Staff still see the record, with your answer."],
+    yes: ["Yes, it's the same one"]
   });
   const two = arrangeAllergies(read(ENV, blank("u2")), data());
   assert.deepEqual(unnamedQuestion("Latex", couldBe("Latex", two)).yes, ["Yes, it's number 1", "Yes, it's number 2"]);
@@ -92,6 +92,6 @@ test("the screen: Done twice, Edit folds the buttons, the popup starts on No", (
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
   const body = (name) => app.slice(app.indexOf("function " + name)).split("\n}\n")[0];
   assert.equal(body("drawMedicines").match(/medicinesDone\(/g).length, 2);
-  assert.match(body("drawAllergyCard"), /"details"/);
+  assert.match(body("drawAllergyCard"), /aria-expanded/);
   assert.match(body("askUnnamed"), /keep\.focus\(\)/);
 });

@@ -101,3 +101,18 @@ an idea becomes a plan only after its own design.
   - When (Tyler, 2026-11-24): with Medicare, its fills first, then joining cards.
   - Ideas: look up the NDC in RxNav by the record's date (Medicare plan, Task 1),
     join only cards with no marks, and make a mark on the joined card cover all.
+- [ ] **17. A medicine or allergy found in two places names only one of them.**
+  - Now: one source is connected, so nothing is missing yet.
+  - When (Tyler, 2026-11-24): with the second source. The card and the QR code
+    say "Source: SMART sandbox and Epic", and the unnamed allergy row names its
+    source too.
+- [ ] **18. Names alone often don't join.** openFDA and DailyMed write one medicine
+  many ways ("LISINOPRIL TABLET", "Lisinopril", strength "40 mg/1"), with package
+  numbers with or without dashes, and brand or generic (looked at 2026-11-24).
+  - Now: one RxNorm code is one card. Without codes both show, so nothing is hidden;
+    `tests/spellings.test.mjs` holds the examples. Typing Tylenol with Acetaminophen
+    listed, and no code or connection, isn't asked about.
+  - Careful: one FDA product can list several RxNorm codes, for different strengths,
+    so the first one can't be taken. Dropping "tablet" and strengths from names could
+    join a regular and an extended-release tablet.
+  - When (Tyler, 2026-11-24): with Medicare, which brings package numbers.

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, detailLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedText, startedDraft, keepDrafts, showsSymbol, saysNoneKnown } from "../js/allergies.js";
+import { fromAllergyRecords, readAllergies, keepAllergies, arrangeAllergies, reactionLine, allergyLines, sameAllergen, ALLERGENS, REACTIONS, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unspecifiedSentence, startedDraft, keepDrafts, showsSymbol, saysNoneKnown } from "../js/allergies.js";
 
 const SNOMED = "http://snomed.info/sct";
 const rec = (o = {}) => Object.assign({
@@ -85,10 +85,15 @@ test("reactionLine never leaves a blank", () => {
   assert.equal(reactionLine(card({ origin: "added", mine: { reaction: "Itching" } })), "Reaction: Itching");
 });
 
-test("detailLines shows only what the record says", () => {
-  assert.deepEqual(detailLines(card()), ["Source: SMART sandbox"]);
-  assert.deepEqual(detailLines(card({ intolerance: true, unconfirmed: true, highRisk: true })), ["Marked high risk", "Intolerance", "Not confirmed", "Source: SMART sandbox"]);
-  assert.deepEqual(detailLines(card({ origin: "added", mine: { addedAt: "2026-11-23" } })), ["Added by me · Nov 23, 2026"]);
+test("a row is the reaction, then who says so; marks get their own line", () => {
+  assert.deepEqual(allergyLines(card()), ["Reaction not in your records · Source: SMART sandbox"]);
+  assert.deepEqual(allergyLines(card({ mine: { reaction: "Itching", addedAt: "2026-11-23" } })), ["Itching (me) · Source: SMART sandbox"]);
+  assert.deepEqual(allergyLines(card({ mine: { reaction: "Not sure", addedAt: "2026-11-23" } })), ["Reaction not known (me) · Source: SMART sandbox"]);
+  assert.deepEqual(allergyLines(card({ origin: "added", source: null, mine: { reaction: "Itching", addedAt: "2026-11-23" } })), ["Itching · Added by me"]);
+  assert.deepEqual(allergyLines(card({ reactions: [{ text: "Hives", severity: "severe" }], intolerance: true, unconfirmed: true, highRisk: true })),
+    ["Hives (severe) · Source: SMART sandbox", "Marked high risk · Intolerance · Not confirmed"]);
+  assert.deepEqual(allergyLines(card({ origin: "added", source: null, unnamedKeys: ["id:u1"], mine: { reaction: "Rash", addedAt: "2026-11-23" } })),
+    ["Rash · Added by me", "You said this is the unnamed allergy in your records."]);
 });
 
 const loaded = (list = [], statements = [], unspecified = 0) => ({ status: "loaded", items: list, statements, unspecified, savedAt: null });
@@ -270,7 +275,7 @@ test("allergyNotes says what didn't load, and when the saved ones are from", () 
   const at = new Date(2026, 10, 21, 8, 0).toISOString();
   const notes = (status, savedAt) => allergyNotes({ status, savedAt, items: [], statements: [] }, now);
   assert.deepEqual(notes("loaded", null), []);
-  assert.deepEqual(notes("loaded", at), [{ text: "These are from Nov 21.", signIn: false }]);
+  assert.deepEqual(notes("loaded", at), [{ text: "These are from Nov 21.", signIn: false, plain: true }]);
   assert.deepEqual(notes("failed", null), [{ text: "Your allergies couldn't be loaded.", signIn: false }]);
   assert.deepEqual(notes("failed", at), [{ text: "Your allergies couldn't be updated. These are from Nov 21.", signIn: false }]);
   assert.deepEqual(notes("refused", null), [{ text: "Sign in again to add your allergies.", signIn: true }]);
@@ -312,6 +317,7 @@ test("an entry that doesn't say what it's to is counted apart, not listed", () =
   assert.equal(arrangeAllergies(loaded([], [], 1), data()).unspecified, 1);
 });
 
+const unspecifiedText = (n, listed, said) => unspecifiedSentence(n, listed, "Your records", "Ask your care team.", said);
 test("unspecifiedText says it, and never beside 'none'", () => {
   assert.equal(unspecifiedText(0, 3), null);
   assert.equal(unspecifiedText(1, 1), "Your records also have an unnamed allergy. Ask your care team.");

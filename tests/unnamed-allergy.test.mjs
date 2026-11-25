@@ -3,7 +3,7 @@
 // what the record says.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { arrangeAllergies, fromAllergyRecords, keepAllergies, unspecifiedText } from "../js/allergies.js";
+import { arrangeAllergies, fromAllergyRecords, keepAllergies, unnamedRow, unspecifiedSentence } from "../js/allergies.js";
 import { allergyNotices, buildShareBundle, groupShareBundle } from "../js/share.js";
 import { patientSummary } from "../js/ips.js";
 
@@ -15,6 +15,7 @@ const blank = (o = {}) => rec("Allergic disposition (finding)", { code: { text: 
 const WHEN = "1979-02-28T04:00:43+00:00";
 const MOLD = rec("Mold (organism)", { recordedDate: WHEN });
 const read = (...r) => keepAllergies({ status: "loaded", ...fromAllergyRecords(r, "SMART sandbox") }, null, NOW);
+const unspecifiedText = (n, listed, said) => unspecifiedSentence(n, listed, "Your records", "Ask your care team.", said);
 const phone = (...r) => { const a = arrangeAllergies(read(...r), { allergies: [], allergyReactions: {} }); return unspecifiedText(a.unspecified, a.count, a.unnamed); };
 const bundle = (...r) => JSON.parse(JSON.stringify(buildShareBundle({ patient: { name: "A", birthDate: "1950-01-01" }, current: [], additions: [], stopped: [], allergies: arrangeAllergies(read(...r), { allergies: [], allergyReactions: {} }) }, NOW, { claims: "loaded", allergies: { status: "loaded", savedAt: null, updatedAt: NOW.toISOString() } })));
 const staff = (...r) => allergyNotices(groupShareBundle(bundle(...r)).allergies);
@@ -69,4 +70,9 @@ test("a list or a code from before this still opens", () => {
   assert.equal(allergyNotices(groupShareBundle(buildShareBundle({ patient: { name: "A", birthDate: "1950" }, current: [], additions: [], stopped: [], allergies: { cards: [], statements: [], saidNone: null, unspecified: 1 } }, NOW, { allergies: { status: "loaded", savedAt: null } })).allergies)[0], "Records have an unnamed allergy. Ask the patient.");
   const saved = { items: [], statements: [], unspecified: 1, unnamed: ["food"], savedAt: "2026-11-21T10:00:00Z" };
   assert.deepEqual(keepAllergies({ status: "failed" , items: [], statements: [] }, saved).unnamed, ["food"]);
+});
+
+test("on the phone it's a row of its own", () => {
+  assert.deepEqual(unnamedRow({ details: "environment, recorded Feb 28, 1979 (same day as Mold)" }), { name: "Unnamed allergy", lines: ["Environment, recorded Feb 28, 1979 (same day as Mold)", "In your records. Ask your care team."] });
+  assert.deepEqual(unnamedRow({ details: "" }), { name: "Unnamed allergy", lines: ["In your records. Ask your care team."] });
 });

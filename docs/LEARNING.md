@@ -1775,6 +1775,20 @@ that takes one tap. Close stays.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+---
+
+## Step 60: One medicine, many spellings
+
+**What changed:** the Allergies box is one list, a row each. And a new test file
+holds how openFDA, DailyMed and RxNorm write the same medicines.
+
+**Why:** "LISINOPRIL TABLET" and "lisinopril 40 MG Oral Tablet" are words, and words
+differ. An RxNorm code is the same everywhere, so Brown Bag joins by code. With no
+code both show, because a medicine twice is safer than one hidden. The test keeps
+that rule from changing by accident, and the limits list says what's left.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

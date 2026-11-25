@@ -82,11 +82,6 @@ ul.meds > li > button.card-action { display: block; width: 100%; min-height: 48p
 /* "As needed" and "Not taking", or "Edit" and "Remove", side by side; they
    stack at large text. */
 .card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
-/* The buttons for something already done: one small word until it's tapped. */
-.screen-medicines .card-more > summary { display: inline-block; min-height: 44px; min-width: 44px; padding: 0.6rem 0.6rem 0.4rem 0; background: none; border: none; border-radius: 6px; font-size: 1rem; font-weight: 400; text-decoration: underline; }
-.screen-medicines .card-more[open] > summary { margin-bottom: 0; }
-.card-more:not([open]) { margin-bottom: -0.5rem; }
-.card-more .card-actions { margin-top: 0.25rem; }
 .card-actions button { flex: 1 1 8rem; min-height: 48px; margin: 0; border-radius: 10px; font-size: 1.1rem; }
 .card-actions button.secondary { background: var(--card); border-color: var(--teal); }
 /* What's in a card, each with its label. How to take it stands out; who
@@ -591,6 +586,19 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .allergy-sign { display: inline-block; margin-right: 0.45rem; vertical-align: -0.1em; }
 .allergy-sign svg { display: block; width: 1em; height: 0.92em; }
 .allergy-box ul.meds > li:last-child { margin-bottom: 0; }
+/* My medicines: one list, a row for each allergy, its button beside the name
+   (under it at large text). */
+.allergy-rows { list-style: none; margin: 0; padding: 0 min(1rem, 4%); background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.allergy-rows > li { padding: 0.6rem 0 0.7rem; }
+.allergy-rows > li + li { border-top: 1px solid var(--line); }
+.allergy-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.75rem; }
+.allergy-head .med-name { flex: 1 1 8rem; min-width: 0; margin: 0; }
+.allergy-rows .med-line { margin: 0.1rem 0 0; }
+.allergy-head button { margin: 0; min-height: 44px; min-width: 44px; padding: 0.25rem 0.75rem; border-radius: 10px; font-size: 1rem; }
+.allergy-head button.row-link { background: none; border-color: transparent; padding: 0.25rem 0 0.25rem 0.75rem; color: var(--ink); font-weight: 400; text-decoration: underline; }
+.allergy-more .card-actions { margin-top: 0.4rem; }
+.allergy-more .card-actions button { padding: 0.55rem min(1rem, 4%); min-width: 0; overflow-wrap: anywhere; }
+.allergy-head:has(.row-link) { margin-bottom: -0.35rem; }
 /* The patient said they have none, and nothing is in doubt: calm, not red. */
 .allergy-none-known { background: #E2EEEE; border: 2px solid #7FA3A8; }
 .allergy-none-known > .block-title, .screen-medicines .allergy-none-known > .block-title { color: var(--teal); margin-bottom: 0.4rem; }
