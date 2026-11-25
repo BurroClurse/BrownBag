@@ -222,3 +222,11 @@ an idea becomes a plan only after its own design.
     synthetic directions (FAERS, openFDA labels, Synthea, the research's
     examples), never real patients'. A pharmacist checks its rules before real
     patients.
+- [ ] **25. Some names can still be read wrong.** The same-person check reads
+  names the way real sources write them (Task 6d), but two cases stay open.
+  - A name given only as text can't tell a compound surname from a middle
+    name: "Ana García López" as text reads as family "López", so it stays apart
+    from a record whose family is "García López" (a wrong split, said).
+  - A middle initial matches any middle name with that letter (R27), so "Amy
+    V." joins "Amy Valerie" as well as "Amy Victoria". Accepted: twins rarely
+    share a first name, and two different full middle names stay apart.

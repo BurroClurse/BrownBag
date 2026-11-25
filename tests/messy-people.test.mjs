@@ -192,3 +192,25 @@ test("the home server's someone-else test clinic is kept out as not matching", (
   const out = reconcile([source("a", "SMART sandbox", signedIn), demoSource(demo, signedIn, "?demo=someone-else")], new Map());
   assert.deepEqual(out.keptOut.map((kept) => kept.why), ["no-match"]);
 });
+
+// R28: suffixes spelled out or as ordinals tell father from son too.
+test("Junior and Senior are two people; 2nd is II", () => {
+  const person = (suffix, family = "Smith") => ({ name: [{ family, given: ["John"], suffix: [suffix] }], birthDate: "1960-03-04" });
+  assert.equal(same(person("Junior"), person("Senior")), false);
+  assert.equal(same(person("JUNIOR."), person("Sr")), false);
+  assert.equal(same(person("2nd"), person("3rd")), false);
+  assert.equal(same(person("2nd"), person("II")), true);
+  assert.equal(same(person("4th."), person("IV")), true);
+  assert.equal(same(person("Junior"), person("Jr.")), true);
+  // Degrees say nothing about who it is.
+  assert.equal(same(person("MD"), person("PhD")), true);
+  assert.equal(same(person("RN"), person("Jr.")), true);
+});
+
+test("an official name with no parts falls through to the usual one", () => {
+  const patient = { name: [{ use: "official" }, { use: "usual", family: "Baxter", given: ["Amy"] }], birthDate: "1987-02-20" };
+  assert.deepEqual(personOf(patient), { family: "Baxter", given: "Amy", birthDate: "1987-02-20" });
+  assert.equal(same(patient, NAMES.baxter), true);
+  // An official name with only a first name falls through too.
+  assert.equal(personOf({ name: [{ use: "official", given: ["Amy"] }, { family: "Baxter", given: ["Amy"] }], birthDate: "1987-02-20" }).family, "Baxter");
+});

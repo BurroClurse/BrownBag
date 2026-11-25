@@ -133,3 +133,51 @@ test("statementOf reads the whole entry: a none code beside words that name some
     assert.deepEqual(names(read({ resourceType: "AllergyIntolerance", id: "x", code: { coding: [{ system: "http://snomed.info/sct", code: "716186003" }], text } })), [text], text);
   }
 });
+
+// R28: words or a code that say none never hide a real code or a reaction.
+test("none words beside a real code are an allergy row, with the allergen's name", () => {
+  const nka = { resourceType: "AllergyIntolerance", id: "pg", code: { coding: [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: "7980", display: "Penicillin G" }], text: "NKA" } };
+  const out = read(nka);
+  assert.deepEqual(out.statements, []);
+  assert.deepEqual(names(out), ["Penicillin G"]);
+  assert.deepEqual(out.items[0].codes, [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: "7980" }]);
+  assert.deepEqual(staffSee(out).fromRecords.map((a) => a.name), ["Penicillin G"]);
+});
+
+test("none words with a reaction are an allergy row that keeps the reaction", () => {
+  const nkda = { resourceType: "AllergyIntolerance", id: "ana", code: { text: "NKDA" }, reaction: [{ manifestation: [{ text: "Anaphylaxis" }], severity: "severe" }] };
+  const out = read(nkda);
+  assert.deepEqual(out.statements, []);
+  assert.equal(out.items.length, 1);
+  assert.deepEqual(out.items[0].reactions, [{ text: "Anaphylaxis", severity: "severe" }]);
+  const staff = staffSee(out);
+  assert.equal(staff.fromRecords.length, 1);
+  assert.match(JSON.stringify(staff.fromRecords[0]), /Anaphylaxis/);
+  // A none code with a reaction too.
+  const coded = read({ resourceType: "AllergyIntolerance", id: "c", code: { coding: [{ system: "http://snomed.info/sct", code: "716186003", display: "No known allergy" }] }, reaction: [{ manifestation: [{ text: "Hives" }] }] });
+  assert.deepEqual(coded.statements, []);
+  assert.deepEqual(coded.items[0].reactions.map((r) => r.text), ["Hives"]);
+});
+
+test("a none code beside a real coding, with no text, is the real allergy", () => {
+  const mixed = { resourceType: "AllergyIntolerance", id: "mix", code: { coding: [
+    { system: "http://snomed.info/sct", code: "716186003", display: "No known allergy (situation)" },
+    { system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: "7980", display: "Penicillin G" }
+  ] } };
+  const out = read(mixed);
+  assert.deepEqual(out.statements, []);
+  assert.deepEqual(names(out), ["Penicillin G"]);
+  assert.deepEqual(staffSee(out).fromRecords.map((a) => a.name), ["Penicillin G"]);
+});
+
+test("a none code with its abbreviation in brackets, or with dots, is a statement", () => {
+  const coded = (text) => read({ resourceType: "AllergyIntolerance", id: "c", code: { coding: [{ system: "http://snomed.info/sct", code: "716186003" }], text } });
+  for (const text of ["No Known Allergies (NKA)", "N.K.A.", "N.K.D.A.", "No known drug allergies (NKDA)"]) {
+    assert.deepEqual(coded(text).statements, ["No known allergy"], text);
+    assert.deepEqual(coded(text).items, [], text);
+  }
+  assert.deepEqual(read(typed("N.K.A.")).statements, ["No known allergy"]);
+  assert.deepEqual(read(typed("N.K.D.A.")).statements, ["No known drug allergy"]);
+  // A bracket that names something is still an allergy.
+  assert.deepEqual(names(coded("No known allergies (penicillin)")), ["No known allergies (penicillin)"]);
+});

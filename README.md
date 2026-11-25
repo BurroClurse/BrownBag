@@ -196,13 +196,16 @@ nullFlavor or data-absent-reason code, or "Allergy to substance"
 allergies" is read from SNOMED's codes (no known allergy, drug, food,
 environmental or latex allergy), IPS `no-known-allergies` by its code alone,
 and from the whole entry's words, any case, with a dot or not: "NKA", "NKDA",
-"NKMA", "No Known Allergies.", "Patient has no known allergies". A none code
-beside words that name something is an allergy.
+"NKMA", "N.K.A.", "No Known Allergies (NKA)", "Patient has no known
+allergies". A none code beside words that name something is an allergy, and
+so is any "none" with a real allergen code beside it ("NKA" over RxNorm
+penicillin shows as the penicillin) or with a reaction, so nothing it says is
+lost.
 
 **The same person.** A second source joins the list only when its patient has
 the same name and birth date as the first source's. The name is the
 `official` one, else the `usual` one, else the first that isn't old, maiden, a
-nickname or anonymous. Text-only names are read as "LAST, FIRST" when there's a
+nickname or anonymous, skipping any without a family and a given name. Text-only names are read as "LAST, FIRST" when there's a
 comma and "First Last" when not, with "van de" and other particles kept in the
 family name. The whole family name must match ("García López" isn't "Garcia"),
 and given names are compared word by word as far as both go: a middle name
@@ -211,7 +214,8 @@ Victoria"), but two different ones don't ("Mary Ann" isn't "Mary Beth", as
 twins can be). Capitals, accents,
 punctuation and Synthea's numbers at the end of a word ("Loria621") don't
 count; letters of any alphabet do, and ü, ö, ä and ß match ue, oe, ae and ss.
-Jr. against Sr., or II against III, is two people; an ending on one side only is
+Jr. against Sr., or II against III, is two people, however they're written
+(Junior, 2nd); an ending on one side only, or a degree such as MD, is
 ignored. A birth date is read as written: a datetime's first 10 characters,
 never moved to local time. 1900-01-01, 1901-01-01, 1800-01-01, 0001-01-01, a
 partial date, and `_birthDate` with a data-absent-reason count as no birth date.

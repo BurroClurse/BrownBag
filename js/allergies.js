@@ -71,8 +71,12 @@ function allergenWords(concept) {
     var plain = plainName(text);
     return plain && PLACE_WORDS.indexOf(plain) === -1 && !codes.some(function (c) { return c && holdsPlace(c) && plainName(c.display) === plain; });
   };
-  if (concept && said(concept.text)) return withoutKind(concept.text);
-  var shown = codesOf(concept).concat(codes).filter(function (c) { return c && c.display && !holdsPlace(c); })[0];
+  // A real code's name before words or a code that say none, so "NKA"
+  // over RxNorm penicillin is shown as the penicillin.
+  var real = codesOf(concept).concat(codes).filter(function (c) { return c && c.display && !holdsPlace(c) && !noneOf(c); })[0];
+  var text = concept && said(concept.text) ? concept.text : "";
+  if (text && !(real && (noneSaid(text) || onlyNoneWords(text)))) return withoutKind(text);
+  var shown = real || codesOf(concept).concat(codes).filter(function (c) { return c && c.display && !holdsPlace(c); })[0];
   return shown ? withoutKind(shown.display) : "";
 }
 
@@ -252,17 +256,29 @@ function isNoneCode(code) {
 // words. A code that says none, beside words that name something, is an
 // allergy, and so are words that say none of one thing and name another
 // ("NKA to food, allergic to penicillin").
+// Only a record with nothing else to say: a real code beside it ("NKA" over
+// RxNorm penicillin) or a reaction (NKDA, anaphylaxis) makes it an allergy.
 export function statementOf(resource, name) {
-  var none = codesOf(resource.code).map(noneOf).filter(Boolean)[0];
+  var codes = codesOf(resource.code);
+  if (codes.some(function (c) { return !noneOf(c) && !holdsPlace(c); }) || (resource.reaction || []).length) return null;
+  var none = codes.map(noneOf).filter(Boolean)[0];
   var said = noneSaid(name);
   if (none && (!name || name === UNNAMED || said || onlyNoneWords(name))) return none;
   return said;
 }
 
 var NONE_KINDS = { nka: "", nkda: "drug", nkma: "medication", nkfa: "food" };
+// The words to read: lower case, no dots ("N.K.A."), and a restatement in
+// brackets left off when it says none too ("No Known Allergies (NKA)").
+function noneText(name) {
+  var text = String(name || "").toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+  var bracket = /^(.+?) ?\(([^()]*)\)$/.exec(text);
+  return bracket && (noneSaid(bracket[2].trim()) || NONE_ONLY.test(bracket[2].replace(/[^a-z]+/g, " ").trim())) ? bracket[1].trim() : text;
+}
+
 // The whole entry, any case, a dot allowed after.
 function noneSaid(name) {
-  var text = String(name || "").trim().replace(/\.$/, "").trim().toLowerCase().replace(/\s+/g, " ");
+  var text = noneText(name);
   var kind = Object.prototype.hasOwnProperty.call(NONE_KINDS, text) ? NONE_KINDS[text] : null;
   var sentence = /^(?:patient has )?no known (?:(drug|medication|food|environmental|latex) )?allerg(?:y|ies)$/.exec(text);
   if (sentence) kind = sentence[1] || "";
@@ -274,7 +290,7 @@ function noneSaid(name) {
 // "allergic to latex", could name an allergen.
 var NONE_ONLY = /^(patient )?(has |reports )?(no|none|nil|denies|denied|negative|nka|nkda|nkma|not known)( known)?( (drug|medication|food|environmental|latex))?( allerg(y|ies))?( on file| reported)?$/;
 function onlyNoneWords(name) {
-  return NONE_ONLY.test(String(name || "").toLowerCase().replace(/[^a-z]+/g, " ").trim());
+  return NONE_ONLY.test(noneText(name).replace(/[^a-z]+/g, " ").trim());
 }
 
 function worst(a, b) {

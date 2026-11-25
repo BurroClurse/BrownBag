@@ -33,23 +33,26 @@ function absentBirthDate(patient) {
   return extensions.some(function (e) { return e && /data-absent-reason$/.test(String(e.url || "")); });
 }
 
-// Which name is the person's now: the official one, else the usual one, else
-// the first that isn't an old, maiden, nickname or anonymous one.
+// The names to try, in order: official ones, then usual ones, then the
+// rest that aren't old, maiden, nickname or anonymous ones. The first that
+// has a family and a given name is the person's.
 var NOT_NOW = ["old", "maiden", "nickname", "anonymous"];
-function currentName(names) {
+function currentNames(names) {
   var list = (Array.isArray(names) ? names : []).filter(function (name) { return name && typeof name === "object"; });
-  var used = function (use) { return list.filter(function (name) { return name.use === use; })[0]; };
-  return used("official") || used("usual") || list.filter(function (name) { return NOT_NOW.indexOf(name.use) === -1; })[0] || null;
+  var used = function (use) { return list.filter(function (name) { return name.use === use; }); };
+  return used("official").concat(used("usual"), list.filter(function (name) { return ["official", "usual"].concat(NOT_NOW).indexOf(name.use) === -1; }));
 }
 
-// Endings that tell a father from a son. Degrees (MSc, PharmD) don't say who.
-var SUFFIX = /[\s,]+(jr|sr|ii|iii|iv)\.?\s*$/i;
+// Endings that tell a father from a son, however they're written. Degrees
+// (MSc, PharmD, MD) don't say who, and a person can gain one between records.
+var SUFFIXES = { jr: "jr", junior: "jr", sr: "sr", senior: "sr", ii: "ii", "2nd": "ii", iii: "iii", "3rd": "iii", iv: "iv", "4th": "iv" };
+var SUFFIX = /[\s,]+(jr|sr|ii|iii|iv|junior|senior|2nd|3rd|4th)\.?\s*$/i;
 function withoutSuffix(text) {
   var rest = String(text || "").trim();
   var found = [];
   var match;
   while ((match = SUFFIX.exec(rest))) {
-    found.unshift(match[1].toLowerCase());
+    found.unshift(SUFFIXES[match[1].toLowerCase()]);
     rest = rest.slice(0, match.index).trim();
   }
   return { rest: rest, suffix: found.join(" ") };
@@ -57,7 +60,8 @@ function withoutSuffix(text) {
 
 function suffixOf(list) {
   return (Array.isArray(list) ? list : [list]).map(function (text) { return String(text || "").toLowerCase().replace(/\./g, "").trim(); })
-    .filter(function (text) { return /^(jr|sr|ii|iii|iv)$/.test(text); }).join(" ");
+    .filter(function (text) { return Object.prototype.hasOwnProperty.call(SUFFIXES, text); })
+    .map(function (text) { return SUFFIXES[text]; }).join(" ");
 }
 
 function nameWords(text) {
@@ -95,9 +99,12 @@ function fromText(text) {
 // given word after the first) and suffix ("jr") when it has them, or null
 // when the name or a whole birth date is missing.
 export function personOf(patient) {
-  var name = patient && currentName(patient.name);
   var birthDate = patient && !absentBirthDate(patient) ? birthDateOf(patient.birthDate) : null;
-  if (!name || !birthDate) return null;
+  if (!birthDate) return null;
+  return currentNames(patient.name).map(function (name) { return nameParts(name, birthDate); }).filter(Boolean)[0] || null;
+}
+
+function nameParts(name, birthDate) {
   var given = (Array.isArray(name.given) ? name.given : [name.given]).map(function (part) { return String(part || ""); }).join(" ");
   var family = withoutSuffix(name.family);
   var parts = { family: family.rest, given: firstNameWord(given), middle: middleOf(given), suffix: [suffixOf(name.suffix), family.suffix].filter(Boolean).join(" ") };
