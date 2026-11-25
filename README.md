@@ -161,6 +161,7 @@ The list never passes through a server.
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
+| `js/connections.js` | The connections screen's choices: where a sign-in comes back to, and what the screen says. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/card.js` | One medicine's card: how to take it, anything to check, then the rest, each labelled. |
 | `js/quiet.js` | Keeps the sign-in library's messages (passes, record addresses) out of the browser's log. |
