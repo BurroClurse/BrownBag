@@ -1,0 +1,94 @@
+{
+  "patient": {
+    "resourceType": "Patient",
+    "id": "valley-loria",
+    "name": [{ "use": "official", "family": "Jenkins", "given": ["Loria"] }],
+    "birthDate": "1937-07-15"
+  },
+  "requests": [
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-lisinopril",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314077", "display": "lisinopril 20 MG Oral Tablet" }] },
+      "authoredOn": "2026-10-05",
+      "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 20, "unit": "mg" } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-metformin",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "861007", "display": "metformin hydrochloride 500 MG Oral Tablet" }] },
+      "authoredOn": "2026-09-01",
+      "dosageInstruction": [{ "text": "Take 1 tablet twice a day with meals" }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-sertraline",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "312940", "display": "sertraline 50 MG Oral Tablet" }] },
+      "authoredOn": "2026-08-12",
+      "dosageInstruction": [{ "text": "Take 1 tablet once a day" }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-methotrexate",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "105585", "display": "methotrexate 2.5 MG Oral Tablet" }] },
+      "authoredOn": "2026-09-20",
+      "dosageInstruction": [{ "text": "Take 1 tablet by mouth daily" }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-lisinopril-hctz",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197886", "display": "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet" }] },
+      "authoredOn": "2026-06-15",
+      "dosageInstruction": [{ "text": "Take 1 tablet once a day" }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-simvastatin",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "312961", "display": "simvastatin 20 MG Oral Tablet" }] },
+      "authoredOn": "2026-07-01",
+      "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 1, "unit": "tablet" } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-amlodipine",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197361", "display": "amlodipine 5 MG Oral Tablet" }] },
+      "authoredOn": "2026-05-10",
+      "dosageInstruction": [{ "text": "Take one tablet daily at bedtime" }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "valley-ondansetron-iv",
+      "status": "active",
+      "intent": "order",
+      "category": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/medicationrequest-category", "code": "inpatient" }] }],
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "1740467", "display": "ondansetron 2 MG/ML Injectable Solution" }] },
+      "authoredOn": "2026-07-02",
+      "dosageInstruction": [{ "text": "4 mg IV every 8 hours as needed for nausea", "route": { "text": "Intravenous" } }]
+    }
+  ],
+  "statements": [
+    {
+      "resourceType": "MedicationStatement",
+      "id": "valley-atorvastatin",
+      "status": "stopped",
+      "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "617310", "display": "atorvastatin 20 MG Oral Tablet" }] },
+      "effectivePeriod": { "start": "2025-06-01", "end": "2026-08-01" },
+      "dateAsserted": "2026-08-01",
+      "dosage": [{ "text": "Take 1 tablet at night" }]
+    }
+  ]
+}

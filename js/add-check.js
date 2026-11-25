@@ -62,7 +62,7 @@ function sameMedicine(candidate, entry, ingredientOf) {
 }
 
 // Words compared loosely: "Twice a day" and "2 times a day" are the same.
-function words(text) {
+export function words(text) {
   return " " + String(text || "").toLowerCase()
     .replace(/1½/g, "1.5").replace(/½/g, "0.5")
     .replace(/\btwice\b/g, "2 times").replace(/\bonce\b/g, "1 time")
