@@ -56,8 +56,10 @@ test("it's a whole page by itself: nothing loads from elsewhere, and Back works 
   assert.match(page(), /href="https:\/\/github\.com\/BurroClurse\/BrownBag\/issues"/);
 });
 
-test("the sign-in list links to it, and it works with no signal", () => {
-  assert.match(read("js/launch.js"), /privacy\.html/);
+test("the connections screen links to it, and it works with no signal", () => {
+  const app = read("js/app.js");
+  const screen = app.slice(app.indexOf("function drawConnections(")).split("\n}\n")[0];
+  assert.match(screen, /privacy\.html/);
   assert.ok(read("sw.js").includes('"./privacy.html"'));
   assert.ok(read("README.md").includes("`privacy.html`"));
 });

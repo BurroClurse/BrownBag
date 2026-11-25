@@ -193,7 +193,7 @@ export function foundText(count) {
 export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, dataFailed, allergiesRefused, installTip, now }) {
   var out = [];
   if (updating) {
-    out.push({ kind: "updating", text: "Updating your list…" });
+    out.push({ kind: "updating", text: "Checking your health records…" });
   } else if (savedAt && offline) {
     out.push({ kind: "offline", text: "No connection. List from " + listDate(savedAt, now) + "." });
   } else if (savedAt && needsSignIn) {
@@ -266,11 +266,21 @@ function logReaction(list, kind, name, extra) {
   return added === -1 ? list.concat(entry(kind)) : list;
 }
 
+// The note that floats over home after an update: a green check while it
+// worked, for long enough to read, then it fades. Nothing when it didn't
+// work: the bar says that, and stays.
+export var UPDATED_SHOWS_MS = 3000;
+export var UPDATED_FADE_MS = 1200;
+export function updatedToast({ offline, needsSignIn, allergyStatus }) {
+  if (offline || needsSignIn) return null;
+  return { kind: "updated", text: updateDoneText(allergyStatus) };
+}
+
 // Said when an update ends with nothing else to say.
 export function updateDoneText(allergyStatus) {
   return allergyStatus === "failed"
     ? "Your medicines are up to date. Your allergies couldn't be updated."
-    : "Your list is up to date.";
+    : "Up to date with your health records.";
 }
 
 function partOf(change) {

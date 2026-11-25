@@ -2,18 +2,18 @@
 // patient's additions, and the QR code. Everything the records or the
 // patient typed goes into the page with textContent, never innerHTML.
 
-import { showLockScreen, restoreBackupText } from "./lock-screen.js";
+import { showLockScreen } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, exportPasswordBackup, importBackup, importOpened, isPasswordBackup } from "./vault.js";
 import { openWithPassword, saveWithPassword } from "./backup-popups.js";
 import { closePopups, openPopup, popupButton, popupLine } from "./popup.js";
-import { LOCK_KEY, hasLock, lockMethod } from "./lock.js";
+import { LOCK_KEY, lockMethod } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText, isAsNeeded } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
-import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
+import { saveRecords, loadLastRecords, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
@@ -22,6 +22,7 @@ import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
+import { connectionsView, keepReturn, takeReturn, wantsConnections } from "./connections.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
 import { swipeAway } from "./swipe.js";
@@ -89,6 +90,11 @@ var state = {
   updating: false,
   offline: false,
   needsSignIn: false,
+  // Which way the connections screen was reached: "setup" (the first run, or
+  // back from a sign-in) or "more" (More options).
+  recordsFrom: "more",
+  // The sign-in that just came back didn't finish.
+  signInFailed: false,
   // Sign out was tapped: nothing may save a pass after this.
   signedOut: false,
   // Signed out, and Open my saved list was tapped.
@@ -130,12 +136,40 @@ function startAutoLock() {
 }
 
 // A status area that stays on the page between redraws, so VoiceOver reads
-// "Updating your list…" and how the update ended.
+// "Checking your health records…" and how the update ended.
 var liveUpdate = document.createElement("p");
 liveUpdate.id = "live-update";
 liveUpdate.className = "visually-hidden";
 liveUpdate.setAttribute("role", "status");
 document.body.appendChild(liveUpdate);
+// The note that floats over the top of home while the list updates, then
+// says it worked. It's out of the layout, so coming and going never moves the
+// screen, and it's one node kept across redraws so its fade isn't restarted.
+// VoiceOver hears the same words from the status area above.
+var updateToast = document.createElement("div");
+updateToast.id = "update-toast";
+updateToast.setAttribute("aria-hidden", "true");
+updateToast.hidden = true;
+var toastTimers = [];
+function showToast(kind, text) {
+  toastTimers.forEach(clearTimeout);
+  toastTimers = [];
+  clear(updateToast);
+  updateToast.className = "update-toast toast-" + kind;
+  if (kind === "updated") add(updateToast, "span", "\u2713", "toast-check");
+  add(updateToast, "span", text);
+  updateToast.hidden = false;
+  if (kind === "updated") {
+    toastTimers.push(setTimeout(function () { updateToast.classList.add("toast-fading"); }, UPDATED_SHOWS_MS));
+    toastTimers.push(setTimeout(hideToast, UPDATED_SHOWS_MS + UPDATED_FADE_MS));
+  }
+}
+function hideToast() {
+  toastTimers.forEach(clearTimeout);
+  toastTimers = [];
+  updateToast.hidden = true;
+}
+
 function sayUpdate(text) {
   liveUpdate.textContent = text;
 }
@@ -156,20 +190,29 @@ async function start() {
   // A reload keeps the last history step; start from home's.
   if (history.state && history.state.bb) history.replaceState(null, "");
   clear(root);
-  // Nothing saved yet: there's nothing for the lock to open, so go straight
-  // to Sign in. The lock comes once, when the sign-in comes back.
-  if (!cameBackFromAuth && !hasSavedList(localStorage)) {
-    drawSignedOut(null);
-    return;
-  }
+  // Where a sign-in that just came back was started (js/connections.js).
+  var where = cameBackFromAuth ? takeReturn(sessionStorage) : null;
+  // Sign out and launch.html come here for the connections screen. The
+  // address is put back, so a reload doesn't ask again.
+  var toConnections = !cameBackFromAuth && wantsConnections(location.search);
+  if (toConnections) history.replaceState(null, "", "./");
+  var signedOut = Boolean(localStorage.getItem(SIGNED_OUT_KEY));
   // Signed out: say so. With no signal, or after a sign-in that couldn't start,
   // they can open the list they saved.
-  if (!cameBackFromAuth && localStorage.getItem(SIGNED_OUT_KEY)) {
+  if (!cameBackFromAuth && signedOut && !toConnections) {
     if (!wantsSaved(location.search)) await savedListAsked();
     state.askedForSaved = true;
   }
+  // The lock comes first (design 2026-11-25): set up on the first run, else
+  // unlock. Coming back from a sign-in unlocks too: leaving dropped the key.
   state.key = await showLockScreen(root);
   startAutoLock();
+  if (toConnections) {
+    // Signed out, the saved list waits for a new sign-in.
+    if (!signedOut) await openSavedList();
+    openConnections("setup");
+    return;
+  }
   // One unlock: with a saved list and a pass, show the list now and update
   // it in place, with no sign-in page.
   if (!cameBackFromAuth && await openWithPass()) {
@@ -177,25 +220,39 @@ async function start() {
   }
   // Signed out, so there's no sign-in to look for.
   if (state.askedForSaved) {
-    await signInUnavailable(null);
+    await signInUnavailable(null, null);
     return;
   }
   var client;
   try {
     client = await FHIR.oauth2.ready();
   } catch (error) {
-    await signInUnavailable(cameBackFromAuth ? error : null);
+    await signInUnavailable(cameBackFromAuth ? error : null, where);
     return;
   }
   drawLoading();
   try {
     await loadFromClient(client);
   } catch (error) {
-    await signInUnavailable(error);
+    await signInUnavailable(error, where);
     return;
   }
   await keepPass(client);
-  render();
+  // Back from a sign-in: the connections screen, unless home's note started it.
+  if (where && where !== "home") openConnections(where);
+  else render();
+}
+
+// The list saved on this phone, if any, without updating it.
+async function openSavedList() {
+  try {
+    var saved = await loadLastRecords(localStorage, state.key);
+    if (!saved) return;
+    useSaved(saved);
+    await loadAdditions();
+  } catch (error) {
+    // Nothing to show yet: the screen offers Connect.
+  }
 }
 
 async function openWithPass() {
@@ -238,7 +295,7 @@ async function keepRotated(client, pass) {
 // the list after "No connection" shows. Only the token server refusing the
 // pass deletes it; anything else keeps it for next time.
 async function updateWithPass(pass) {
-  sayUpdate("Updating your list…");
+  sayUpdate("Checking your health records…");
   var client;
   try {
     client = FHIR.client(clientStateFromPass(pass));
@@ -294,6 +351,12 @@ function finishUpdate() {
   if ((state.offline || state.needsSignIn) && !state.savedAt) state.savedAt = state.updatedAt;
   var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
   sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
+  var toast = updatedToast({ offline: state.offline, needsSignIn: state.needsSignIn, allergyStatus: state.allergies.status });
+  if (toast) {
+    state.signInFailed = false;
+    showToast(toast.kind, toast.text);
+  }
+  else hideToast();
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
   if (mayRedraw()) {
@@ -353,6 +416,7 @@ async function updateNow() {
   var pass = await loadPass(localStorage, state.key, state.patientId).catch(function () { return null; });
   if (!pass || passExpired(pass, Date.now())) {
     state.updating = false;
+    keepReturn(sessionStorage, state.recordsFrom);
     location.href = signInLink(state.patientId);
     return;
   }
@@ -495,10 +559,16 @@ async function clearChanges(part) {
   }
 }
 
-// No sign-in (closed app, no signal, weak Wi-Fi): show the last saved list
-// if there is one, otherwise say what to do. Signed out with a connection, a
-// sign-in that didn't finish doesn't open it.
-async function signInUnavailable(error) {
+// No sign-in (closed app, no signal, weak Wi-Fi, a sign-in that didn't
+// finish): the last saved list if there is one. Signed out with a connection,
+// a sign-in that didn't finish doesn't open it. where: where a sign-in that
+// came back was started (null if none came back). A list opens home, unless a
+// sign-in from the connections screen failed: that screen says so. With no
+// list, the connections screen.
+async function signInUnavailable(error, where) {
+  // fhirclient leaves ?error= or a spent ?code= in the address when it
+  // throws; a reload or the auto-lock would replay it.
+  if (cameBackFromAuth) history.replaceState(null, "", "./");
   var may = mayOpenSaved({
     signedOut: Boolean(localStorage.getItem(SIGNED_OUT_KEY)),
     asked: state.askedForSaved,
@@ -510,12 +580,17 @@ async function signInUnavailable(error) {
     await loadAdditions();
     state.offline = !navigator.onLine;
     state.needsSignIn = navigator.onLine;
-    render();
-  } else if (!navigator.onLine) {
-    drawNoConnection();
-  } else {
-    drawSignedOut(error);
   }
+  if (error) {
+    // The server's own wording is for developers; it goes to the console.
+    console.error("Sign-in didn't finish", error);
+  }
+  if (saved && (!where || where === "home")) {
+    render();
+    return;
+  }
+  state.signInFailed = Boolean(error);
+  openConnections(where === "more" ? "more" : "setup");
 }
 
 function useSaved(saved) {
@@ -610,7 +685,7 @@ function render() {
   } else if (state.screen === "install") {
     drawInstall();
   } else if (state.screen === "records") {
-    drawRecordsFrom();
+    drawConnections();
   } else {
     drawHome(arranged);
   }
@@ -713,9 +788,11 @@ homeLogo.src = "icons/logo-trimmed.png";
 homeLogo.alt = "";
 
 function drawHome(arranged) {
-  // The name first, so a note coming or going ("Updating your list…") never
+  // The name first, so a note coming or going ("Checking your health records…") never
   // moves it; the bag below gives up the room.
   add(root, "h1", shortName(state.patient.name), "home-name");
+  add(root, "div", null, "update-toast-slot").appendChild(updateToast);
+  if (state.updating && !updateToast.classList.contains("toast-updating")) showToast("updating", "Checking your health records…");
   drawNotices();
   var bag = add(root, "button", null, "home-bag");
   bag.type = "button";
@@ -777,7 +854,10 @@ function drawMore() {
     status: recordsStatus(state, timeText),
     homeScreen: Boolean(installTip(navigator.userAgent)) && !isStandalone()
   }), {
-    "open-records": function () { go("records", "records-from-heading"); },
+    "open-records": function () {
+      state.recordsFrom = "more";
+      go("records", "records-from-heading");
+    },
     "save-backup": saveBackup,
     "restore-backup": function () { picker.click(); },
     "open-install": function () { go("install", "install-heading"); },
@@ -824,7 +904,9 @@ function drawAllergies(parent) {
   notes.filter(function (text) { return !text.plain; }).forEach(function (text) {
     add(section, "p", text.text, text.plain ? "med-line" : "notice");
     if (text.signIn) {
-      add(section, "a", "Sign in", "button secondary").href = signInLink(state.patientId);
+      var again = add(section, "a", "Sign in", "button secondary");
+      again.href = signInLink(state.patientId);
+      again.addEventListener("click", function () { keepReturn(sessionStorage, "home"); });
     }
   });
   arranged.statements.forEach(function (text) { add(section, "p", "Your records say: " + text + "."); });
@@ -2009,9 +2091,12 @@ function drawNotices() {
     installTip: hint,
     now: new Date()
   });
+  // Updating floats over the bag instead (updateToast), so the screen
+  // doesn't move when it ends.
+  notes = notes.filter(function (note) { return note.kind !== "updating"; });
   if (!notes.length) return;
   // One card, one short line per note. It's a live area, so VoiceOver
-  // reads "Updating your list…" and what replaces it.
+  // reads "Checking your health records…" and what replaces it.
   var bar = add(root, "div", null, "notice-bar");
   bar.setAttribute("role", "status");
   notes.forEach(function (note) {
@@ -2021,6 +2106,7 @@ function drawNotices() {
       var update = add(row, "a", "Sign in", "button secondary");
       update.id = "notice-sign-in";
       update.href = signInLink(state.patientId);
+      update.addEventListener("click", function () { keepReturn(sessionStorage, "home"); });
     }
     if (note.kind === "install") {
       var actions = add(row, "div", null, "notice-actions");
@@ -2058,37 +2144,92 @@ function drawInstall() {
   }).id = "install-done";
 }
 
-// Where the records come from, for someone signed in: when each part was last
-// updated, a way to update it, and the sources that aren't connected.
-function drawRecordsFrom() {
-  var top = add(root, "div", null, "screen-top");
-  button(top, "Done", "secondary big", function () {
-    history.back();
-  }).id = "records-done";
-  var title = add(root, "h1", "Health records");
+// The connections screen (design 2026-11-25): where the records come from,
+// how current each is, and a way to connect or update it. The first run comes
+// here after the lock, and every sign-in started here comes back here. Under
+// More options it's Health records.
+function drawConnections() {
+  var linked = Boolean(state.patientId);
+  var view = connectionsView({ from: state.recordsFrom, connected: linked, online: navigator.onLine });
+  if (view.done) {
+    var top = add(root, "div", null, "screen-top");
+    button(top, "Done", "secondary big", connectionsDone).id = "records-done";
+  }
+  var title = add(root, "h1", view.heading);
   title.id = "records-from-heading";
   title.tabIndex = -1;
-  var source = connected()[0];
-  var status = recordsStatus(state, timeText);
-  var card = add(root, "section", null, "source-card");
-  add(card, "h2", source.name);
-  add(card, "p", source.note, "med-line");
-  var list = add(card, "dl", null, "facts");
-  status.rows.forEach(function (row) {
-    var pair = add(list, "div");
-    add(pair, "dt", row[0]);
-    add(pair, "dd", row[1]);
+  if (view.intro) add(root, "p", view.intro);
+  if (view.offline) add(root, "p", view.offline, "notice");
+  connected().forEach(function (source) {
+    var card = add(root, "section", null, "source-card");
+    add(card, "h2", source.name);
+    add(card, "p", source.note, "med-line");
+    if (state.signInFailed) add(card, "p", "Sign-in didn't finish. Try again.", "error");
+    if (!linked) {
+      signInButton(card, "Connect", "primary", signInLink()).id = "connect-" + source.id;
+      return;
+    }
+    add(card, "p", "\u2713 Connected", "connected-mark");
+    var status = recordsStatus(state, timeText);
+    var list = add(card, "dl", null, "facts");
+    status.rows.forEach(function (row) {
+      var pair = add(list, "div");
+      add(pair, "dt", row[0]);
+      add(pair, "dd", row[1]);
+    });
+    if (status.note) add(card, "p", status.note, "flag");
+    if (!status.signIn) {
+      var update = button(card, state.updating ? "Updating…" : "Update now", "primary big", updateNow);
+      update.id = "update-now";
+      if (state.updating) update.setAttribute("aria-busy", "true");
+    }
+    signInButton(card, "Sign in again", status.signIn ? "primary" : "secondary", signInLink(state.patientId)).id = "sign-in-again";
   });
-  if (status.note) add(card, "p", status.note, "flag");
-  if (!status.signIn) {
-    var update = button(card, state.updating ? "Updating…" : "Update now", "primary big", updateNow);
-    update.id = "update-now";
-    if (state.updating) update.setAttribute("aria-busy", "true");
-  }
-  var again = add(card, "a", "Sign in again", "button big " + (status.signIn ? "primary" : "secondary"));
-  again.id = "sign-in-again";
-  again.href = signInLink(state.patientId);
   drawNotConnected(root);
+  // Before connecting anything, what Brown Bag does with the records.
+  if (view.intro) add(root, "a", "Privacy", "quiet-link").href = "./privacy.html";
+  // Setting up, the way on is at the end too, after the last connection.
+  if (view.done === "home") {
+    button(add(root, "div", null, "screen-bottom"), "Done", "primary big", connectionsDone).id = "records-done-end";
+  }
+}
+
+// From More options there's a step to go back to. Back from a sign-in, or
+// setting up, there isn't: Done goes home.
+function connectionsDone() {
+  // Nothing loaded (storage cleared, signed out elsewhere): home has nothing
+  // to show, so setting up stays.
+  if (!state.patient) {
+    openConnections("setup");
+    return;
+  }
+  if (history.state && history.state.bb === "records") {
+    history.back();
+  } else {
+    state.signInFailed = false;
+    go("home", "show-qr");
+  }
+}
+
+// Each sign-in started here comes back here.
+function signInButton(parent, text, kind, href) {
+  var link = add(parent, "a", text, "button big " + kind);
+  link.href = href;
+  link.addEventListener("click", function () {
+    state.signInFailed = false;
+    keepReturn(sessionStorage, state.recordsFrom);
+  });
+  return link;
+}
+
+// Opens the connections screen on its own (the first run, back from a
+// sign-in), with no step to go back to.
+function openConnections(from) {
+  state.recordsFrom = from;
+  state.screen = "records";
+  state.focusId = "records-from-heading";
+  render();
+  window.scrollTo(0, 0);
 }
 
 // The backup stays encrypted. It also carries the lock settings (never the
@@ -2241,7 +2382,7 @@ function savedListAsked() {
     title.id = "signed-out-heading";
     title.tabIndex = -1;
     add(root, "p", "Sign in to update your list from your health records.", "screen-text");
-    add(root, "a", "Sign in", "button primary big").href = "./launch.html";
+    add(root, "a", "Sign in", "button primary big").href = "./?open=connections";
     var line = add(root, "p", null, "screen-text");
     var open = button(root, "Open my saved list", "secondary big", function () {
       window.removeEventListener("online", follow);
@@ -2266,66 +2407,13 @@ function savedListAsked() {
   });
 }
 
-function drawSignedOut(error) {
-  plainScreen();
-  add(root, "p", "Sign in to your health records to load your medicines.", "screen-text");
-  if (error) {
-    // The server's own wording is for developers; it goes to the console.
-    console.error("Sign-in didn't finish", error);
-    add(root, "p", "Sign-in didn't finish. Tap Sign in to try again.", "error");
-  }
-  var link = add(root, "a", "Sign in", "button primary big");
-  link.href = "./launch.html";
-  if (!state.key && !hasLock()) {
-    drawRestoreFromSignIn();
-  }
-}
-
-// A new phone or the Home Screen app starts empty, with no lock. Its first
-// screen is Sign in, so restoring a backup starts here too.
-function drawRestoreFromSignIn() {
-  var message = add(root, "p", "", "status");
-  message.setAttribute("role", "status");
-  var picker = add(root, "input");
-  picker.type = "file";
-  picker.accept = ".json,application/json";
-  picker.hidden = true;
-  var restore = button(root, "Restore from a backup", "secondary big", function () { picker.click(); });
-  picker.addEventListener("change", async function () {
-    var file = picker.files && picker.files[0];
-    if (!file) return;
-    try {
-      var text = await file.text();
-      picker.value = "";
-      var key = await restoreBackupText(root, text, restore);
-      // The password was cancelled: the screen is still here.
-      if (key === false) return;
-      if (!key) {
-        drawSignedOut(null);
-        return;
-      }
-      state.key = key;
-      startAutoLock();
-      state.announce = "Your backup is restored. Sign in to load your medicines.";
-      await signInUnavailable(null);
-    } catch (error) {
-      message.textContent = "That file isn't a Brown Bag backup.";
-    }
-  });
-}
-
-function drawNoConnection() {
-  plainScreen();
-  add(root, "p", "No connection, and no saved list on this phone yet. Connect once to save your list.", "notice");
-}
-
 function drawLoading() {
   plainScreen();
   var p = add(root, "p", "Loading your medicines…", "screen-text");
   p.setAttribute("role", "status");
 }
 
-// The sign-in, loading and no-connection screens: the bag at the top as the
+// The signed-out and loading screens: the bag at the top as the
 // screen's heading, so a screen reader still reads "Brown Bag".
 function plainScreen() {
   clear(root);

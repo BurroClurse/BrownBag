@@ -1862,6 +1862,30 @@ the network first, so fixes arrive right away.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 66: A still name, and a note that floats
+
+**What changed:** home's name no longer jumps when the update finishes. "Checking your health
+records…" floats over the top of the bag instead of taking room, then turns into a green check
+that stays 3 seconds and fades.
+
+**Why it moved:** the note was part of the page's layout, so whatever sat under it moved when
+it came and went. A box with no height of its own, holding a note positioned over the bag,
+takes no room, so nothing else moves.
+
+## Step 67: The lock first, then the places your records are
+
+**What changed:** the first run sets up the lock, then shows **Connect your health records**.
+After each sign-in the patient unlocks and comes back to that screen, so they can connect the
+next place before tapping Done. It's also **Health records** under More options.
+
+**Why an unlock after every sign-in:** the lock's key lives only in the open page's memory, and
+the browser can't copy it out. Signing in at a health system leaves the page, so the key is
+gone when the sign-in comes back. Keeping the key somewhere to skip that unlock would let
+anyone holding the phone skip the lock too. Where the patient was headed rides in
+`sessionStorage`, which the browser keeps only for that tab.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

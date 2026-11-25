@@ -34,6 +34,28 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Lock first, then the connections screen** (2026-11-25, design
+`docs/superpowers/specs/2026-11-25-connections-design.md`). Touches sign-in
+and the lock, so it's a test-right-away change, but the virtual phones run on
+Tyler's Mac and this was built in a cloud session. Checked only in headless
+Chromium with a PIN and Chantell Bartell on the live sandbox: first run goes
+lock, then Connect your health records; Connect, the test patients, Back
+(unlock, back on the screen); a full sign-in comes back to the screen with
+Connected and Done; Done goes home; reopening goes home with the update
+check. Still to check on both virtual phones and Tyler's iPhone:
+
+- Face ID set-up first, then the screen; Face ID again after the sandbox.
+- The Home Screen app: the sandbox sign-in comes back into the app, not
+  Safari, and lands on the connections screen.
+- Home's "Sign in" note (expired pass) comes back home, not to the screen.
+- More options, Health records, Sign in again: comes back to Health records,
+  and Done goes home.
+- Cancel at the sandbox's approval page: back on the screen with "Sign-in
+  didn't finish. Try again."
+- Sign out, then Sign in: unlock, then the screen, with no saved list shown.
+- The README's test-patient links on a phone with no lock: lock set-up, then
+  the screen.
+
 **The "?" pills** (2026-11-24): passed in Chrome and on the virtual iPhone. Not yet on the
 Android emulator, nor with high contrast colors on.
 
