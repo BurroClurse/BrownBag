@@ -117,7 +117,7 @@ export function patientCard(entry, claimsLoaded) {
 // take?" is open, its plain name, so no one side's strength is the name
 // (Tyler, 2026-11-25).
 export function cardName(entry) {
-  if (!entry.answer && entry.question && entry.question.kind === "dose") return displayName(entry.name);
+  if (!entry.answer && entry.question && entry.question.kind === "dose") return plainName(entry.name);
   var chosen = entry.answer ? chosenSide(entry) : null;
   return (chosen && chosen.name) || entry.name;
 }
@@ -159,6 +159,18 @@ function sideRow(side, withStatus) {
 
 function aboutStopping(sides) {
   return sides.some(function (one) { return one.status === "not-current"; });
+}
+
+// The plain name: "Lisinopril", or for a combination every ingredient,
+// "Hydrochlorothiazide / Lisinopril": the words before each strength.
+function plainName(name) {
+  var parts = String(name || "").split(" / ");
+  if (parts.length < 2) return displayName(name);
+  return parts.map(function (part) {
+    var before = /^(.*?)\s+\d/.exec(part.trim());
+    var words = before && before[1] ? before[1] : displayName(part);
+    return words.charAt(0).toUpperCase() + words.slice(1);
+  }).join(" / ");
 }
 
 // The side an answer chose, as the records say it now, else as it was

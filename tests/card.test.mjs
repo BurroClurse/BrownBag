@@ -379,3 +379,12 @@ test("a stop is said back in the words that were picked", () => {
   const old = Object.assign({}, GROUPED, { group: undefined, answer: { groupId: "29046", fingerprint: "fp", sides: status, choice: "not-taking", answeredAt: "2026-11-25" } });
   assert.equal(said(old), "No, I stopped (Nov 25)");
 });
+
+// A combination's plain name names every ingredient, never only the first.
+test("a combination's dose question names every ingredient", () => {
+  const combo = Object.assign({}, asked("dose"), { name: "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet" });
+  assert.equal(cardName(combo), "Hydrochlorothiazide / Lisinopril");
+  const three = Object.assign({}, asked("dose"), { name: "acetaminophen 250 MG / aspirin 250 MG / caffeine 65 MG Oral Tablet" });
+  assert.equal(cardName(three), "Acetaminophen / Aspirin / Caffeine");
+  assert.equal(cardName(asked("dose")), "Lisinopril");
+});
