@@ -21,14 +21,21 @@ Epic, Oracle Health and MEDITECH (health systems), Medicare and Medicaid
 (insurance), and pharmacy fills. The test systems looked at so far, and why each
 fits or doesn't, are in [`docs/SANDBOXES.md`](docs/SANDBOXES.md).
 
-It's static pages with no backend server, built to be simple: one main screen,
-big buttons, plain words, and made to WCAG 2.2 AA.
+It's built to be simple: one main screen, big buttons, plain words, and made to
+WCAG 2.2 AA. It's static pages with no Brown Bag server: everything runs on the
+patient's phone, and the staff page in the staff member's browser.
 
 **Live:** <https://burroclurse.github.io/BrownBag/> (sandbox data
 only, no real patients). To open it as a certain patient, see
 [Test patients](#test-patients).
 
-## What the patient sees
+This README has two halves: the **front end**, what the patient and the person
+checking their medicines see, and the **back end**, what happens behind the
+screen to make that work.
+
+## Front end: what people see
+
+### The patient
 
 **Signing in**
 - **First run:** set up the lock (Face ID, a fingerprint or a 6-digit PIN), then
@@ -61,12 +68,10 @@ only, no real patients). To open it as a certain patient, see
 - **Sort** by name, newest, or who prescribed it.
 
 **The QR code**
-- It fills the screen; Close or a swipe crumples it into the bag. After scanning, staff type 6
-  digits the patient tells them (hidden until tapped) on `share.html`.
-- **See what's inside** shows everything in the code on the patient's own phone.
-- **Save as FHIR file** (staff, or the patient under See what's inside) saves an
-  [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
-  warning that it isn't locked. A list where something didn't load can't be saved.
+- It fills the screen; Close or a swipe crumples it into the bag. The patient tells
+  staff the 6-digit code, hidden until tapped.
+- **See what's inside** shows everything in the code on the patient's own phone,
+  and can save the FHIR file too.
 - It says when the medicines and allergies were last updated. Changes made with no
   signal are in it, and listed on the screen.
 
@@ -81,11 +86,22 @@ only, no real patients). To open it as a certain patient, see
 - **New phone:** a backup holds what the patient added or marked, never a sign-in,
   sealed to each person. With a PIN, it gets its own long password.
 
-[Privacy](https://burroclurse.github.io/BrownBag/privacy.html) says what's kept and
-who can see it. Each page's content security policy names the servers it may
-contact: the app, only the sandbox and the drug name service; the staff page, none.
+### The person checking medicines
 
-## How it uses SMART and FHIR
+- They scan the QR code and type the patient's 6 digits on `share.html`.
+- Allergies come first, then the medicines in parts: from records, filled but not
+  in the health record, as needed, added by the patient, and what the patient
+  says they're not taking. Each says who says so, and when it was last updated.
+- **Save as FHIR file** saves an
+  [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
+  warning that it isn't locked. A list where something didn't load can't be saved.
+
+## Back end: what happens behind the screen
+
+There's no Brown Bag server. All of this runs in the patient's browser (and, for
+the staff page, the staff member's), and talks only to the servers named here.
+
+### Signing in
 
 **Launch.** The app's connections screen lists the sources. Connect on the sandbox opens `launch.html`'s test patients; choosing one (or a link
 that names its server with `iss`) starts a patient standalone launch with
@@ -101,6 +117,16 @@ patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read
 
 Every resource scope is read-only. `offline_access` asks for a refresh token
 ([SMART App Launch: scopes](https://hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html)).
+
+**The refresh token** is stored encrypted (AES-GCM) with a key that comes
+from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
+never put in a backup file. It is deleted on Sign out, when the token server
+refuses it, or after 30 days unused. Sign out is for everyone who signed in
+on the phone: every refresh token is deleted first, then each server whose
+SMART configuration offers a `revocation_endpoint` is told to end its side
+([RFC 7009](https://www.rfc-editor.org/rfc/rfc7009)); the sandbox has none.
+
+### Reading the records
 
 **Reads, each time the app is opened and unlocked, when the signal comes back, and on Update now:**
 
@@ -130,13 +156,20 @@ something out, My medicines and the staff page say so and no empty part says
 medicines or the patient's own part didn't load, or no record has a medicine
 name.
 
-**The refresh token** is stored encrypted (AES-GCM) with a key that comes
-from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is
-never put in a backup file. It is deleted on Sign out, when the token server
-refuses it, or after 30 days unused. Sign out is for everyone who signed in
-on the phone: every refresh token is deleted first, then each server whose
-SMART configuration offers a `revocation_endpoint` is told to end its side
-([RFC 7009](https://www.rfc-editor.org/rfc/rfc7009)); the sandbox has none.
+### Keeping it on the phone
+
+- The list is saved encrypted on the phone, with the lock's key, so it opens and
+  the QR code works with no signal.
+- The service worker keeps only the app's own files for no signal. It never
+  stores health data, and asks the network first, except for the pictures.
+- A backup holds what the patient added or marked, never a sign-in, sealed to
+  each person.
+
+[Privacy](https://burroclurse.github.io/BrownBag/privacy.html) says what's kept and
+who can see it. Each page's content security policy names the servers it may
+contact: the app, only the sandbox and the drug name service; the staff page, none.
+
+### The QR code and the FHIR file
 
 **The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient`,
 `MedicationStatement` and `AllergyIntolerance` resources, compressed, encrypted with a key made from
@@ -152,31 +185,48 @@ The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.
 
+**The FHIR file** is made in the browser from the opened QR code (`js/ips.js`): an
+IPS 2.0.1 document, with every part read, checked and written again. Brown
+Bag's own tags stay out; their warnings are in its readable text.
+
 ## What's planned
 
-The sections above are what Brown Bag does today. This is what's coming, and how far along each part is. Each idea becomes a plan only after its own design; the reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
+The sections above are what Brown Bag does today. This is what's coming, and how
+far along each part is. Each idea becomes a plan only after its own design; the
+reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
+
+### Front end
+
+- **When sources disagree** (designed and planned): when two sources list a
+  medicine differently, one card shows both versions. The patient is asked only
+  what they do (how much, how often, whether they still take it), one card at a
+  time, with "Not sure, ask my doctor". Home and My medicines say how many there
+  are to check, and staff see a "Records disagree: ask the patient" part.
+- **A second QR code** (idea): a flip on the QR screen, one side today's code, the
+  other a SMART Health Link a clinic's system can read.
+- **Other ideas:** scanning pill bottles to add or update a medicine, and
+  reminders to open Brown Bag before an appointment.
+
+### Back end
 
 - **Medicare fills** (designed and planned): Part D fills from Medicare's Blue
   Button API join the fills from claims. It adds one small server function that
   only swaps and renews Medicare's sign-in; the list never passes through it.
   Waiting on Medicare's approval. Design:
   [`docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md`](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md).
-- **When sources disagree** (designed, waiting for approval): with several
-  sources, each one's version is kept. The patient is asked only what they do (how much, whether they still take it), one card
-  at a time, with "Not sure, ask my doctor", and staff see both sides of anything
-  unresolved. Design:
-  [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md).
+- **When sources disagree** (designed and planned): every source's version is
+  kept and compared fresh on each update; nothing is overwritten. The QR code and
+  the FHIR file carry both sides of anything unresolved. Design:
+  [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md);
+  plan: [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
 - **More health systems and insurers** (named, not designed): Epic, Oracle Health,
   MEDITECH, Medicaid and pharmacy fills, as listed under **Not connected**.
-- **SMART Health Links** (ideas): a second QR code for the same list, a SMART
-  Health Link carrying the International Patient Summary so a clinic's system can
-  read it, on the other side of a flip on the QR screen. Reading links others
-  share with the patient comes with it. Both need a server to hold the encrypted
-  file, so when they arrive Brown Bag becomes built for server deployment, and the
-  privacy page says what that server keeps, for how long, and how it's deleted.
-- **Other ideas:** scanning pill bottles to add or update a medicine, reminders to
-  open Brown Bag before an appointment, and sending changes back to the clinic
-  (with the clinic's permission).
+- **SMART Health Links** (ideas): the second QR code carries the International
+  Patient Summary, and links others share with the patient can be read. Both need
+  a server to hold the encrypted file, so when they arrive Brown Bag becomes built
+  for server deployment, and the privacy page says what that server keeps, for how
+  long, and how it's deleted.
+- **Sending changes back to the clinic** (idea), with the clinic's permission.
 
 ## Files
 

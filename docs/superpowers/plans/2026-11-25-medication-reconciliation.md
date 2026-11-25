@@ -438,11 +438,11 @@ Asked one at a time, each confirmed as proposed:
 - Test: `tests/readme.test.mjs`, `tests/privacy.test.mjs` (existing)
 
 - [ ] **Step 1: Update the README.**
-  - **"What the patient sees":** when sources disagree, the review, and hospital orders.
-  - **"How it uses SMART and FHIR":** the QR code's `differs` tag and the FHIR file's `DetectedIssue`.
+  - **"Front end":** for the patient, when sources disagree, the review, and hospital orders; for the person checking medicines, the "Records disagree: ask the patient" part and the fill hint.
+  - **"Back end":** reconciliation (every source kept and compared fresh), the QR code's `differs` and `source-not-loaded` tags, and the FHIR file's `DetectedIssue`.
   - **"Files":** add `js/reconcile.js`, `js/review.js` and `js/demo-source.js`. The README test fails without them.
   - **"Run it locally on a phone":** `BROWN_BAG_DEMO=two-clinics`.
-  - **"What's planned":** "When sources disagree" moves out, since it's done.
+  - **"What's planned":** "When sources disagree" comes out of both halves, since it's done.
 - [ ] **Step 2: LIMITS.** #8 "Now:" says what's built. #16 "Now:" notes marks on joined cards. #17 is checked, since cards name every source.
 - [ ] **Step 3: Privacy page.** It says the patient's answers are kept with their other additions, encrypted, and in backups.
 - [ ] **Step 4: Bump the cache name in `sw.js`**, and add a LEARNING entry: what reconciliation is, in plain words.
