@@ -84,3 +84,33 @@ test("Health records is the connections screen", () => {
 test("home's Sign in note comes back home", () => {
   assert.ok(body("js/app.js", "drawNotices").includes('keepReturn(sessionStorage, "home")'));
 });
+
+test("the lock comes first, and sign-ins land where they started", () => {
+  const start = body("js/app.js", "start");
+  assert.ok(start.length > 100);
+  assert.ok(!start.includes("drawSignedOut("));
+  assert.ok(!start.includes("hasSavedList("));
+  assert.ok(start.includes("wantsConnections(location.search)"));
+  assert.ok(read("js/app.js").includes("takeReturn(sessionStorage)"));
+  for (const gone of ["drawSignedOut", "drawRestoreFromSignIn", "drawNoConnection"]) assert.ok(!read("js/app.js").includes("function " + gone + "("), gone);
+  assert.ok(!read("js/lock-screen.js").includes("export function restoreBackupText"));
+});
+
+test("signed out, Sign in goes to the connections screen", () => {
+  const app = read("js/app.js");
+  assert.ok(!app.includes('href = "./launch.html"'));
+  assert.ok(body("js/app.js", "savedListAsked").includes('"./?open=connections"'));
+});
+
+test("every sign-in link says where to come back to", () => {
+  const app = read("js/app.js");
+  const links = app.match(/signInLink\(/g).length;
+  // Each link is one of: signInButton (Health records), or a keepReturn just before it.
+  const lines = app.split("\n");
+  lines.forEach((line, i) => {
+    if (!line.includes("signInLink(") || line.includes("import ")) return;
+    const near = lines.slice(i - 2, i + 3).join("\n");
+    assert.ok(near.includes("keepReturn(") || line.includes("signInButton("), line.trim());
+  });
+  assert.ok(links >= 5);
+});

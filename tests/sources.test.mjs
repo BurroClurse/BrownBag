@@ -36,12 +36,13 @@ test("signing in again goes back to the same person when it can", () => {
   for (const id of [null, undefined, "someone-else"]) assert.equal(startFor(search(signInLink(id))), "patients", String(id));
 });
 
-test("Sign in after the lock goes straight in; signed out, it opens the list", () => {
+test("Sign in after the lock goes straight in; signed out, it opens the connections screen", () => {
   const app = read("js/app.js");
-  // The two notes, and Health records (the link, and Update
-  // now with no pass).
+  // The note on home, the allergies note, Health records' Sign in again, and
+  // Update now with no pass.
   assert.equal(app.match(/signInLink\(state\.patientId\)/g).length, 4);
-  assert.equal(app.match(/href = "\.\/launch\.html"/g).length, 2);
+  assert.equal(app.match(/href = "\.\/launch\.html"/g), null);
+  assert.equal(app.match(/href = "\.\/\?open=connections"/g).length, 1);
 });
 
 test("the trademark lines are said, in the list and in the README", () => {
@@ -102,7 +103,7 @@ test("both lists of sources are drawn the same way", () => {
 // "This list is…" has no list to point at before one is open.
 test("the sign-in screens don't show the note about the list", () => {
   const app = read("js/app.js");
-  for (const name of ["savedListAsked", "drawSignedOut"]) {
+  for (const name of ["savedListAsked", "drawConnections"]) {
     const body = app.slice(app.indexOf("function " + name)).split("\n}\n")[0];
     assert.ok(body.length > 100);
     assert.ok(!body.includes("DISCLAIMER"), name);

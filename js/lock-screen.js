@@ -132,27 +132,6 @@ async function startPasswordRestore(root, text, done, onBack, opener) {
   return true;
 }
 
-// For the sign-in screen on a phone with no lock yet (a new phone, or the
-// Home Screen app): restore a backup straight from a file's text. Resolves
-// with the key, null if the patient goes Back, or false if they cancel the
-// password (the screen is as it was). Rejects if the file isn't a backup.
-export function restoreBackupText(root, text, opener) {
-  return new Promise(function (resolve, reject) {
-    function done(key) {
-      clear(root);
-      resolve(key);
-    }
-    if (isPasswordBackup(text)) {
-      startPasswordRestore(root, text, done, function () { resolve(null); }, opener)
-        .then(function (started) { if (!started) resolve(false); }, reject);
-      return;
-    }
-    if (!startRestore(root, text, done, function () { resolve(null); })) {
-      reject(new LockError("bad-backup"));
-    }
-  });
-}
-
 function drawPinSetup(root, done, opened, onBack) {
   clear(root);
   var box = panel(root, "Choose a 6-digit PIN");
