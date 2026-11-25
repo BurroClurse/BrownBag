@@ -33,6 +33,13 @@ an idea becomes a plan only after its own design.
     patient checks each one before it's saved; the photo stays on the phone.
     Needs a library or a service to read the label, so ask first. Also
     "upload to Brown Bag" from a pharmacy.
+  - ML (Tyler, 2026-11-25): the first place Brown Bag would use a trained
+    model. Reading the label (text recognition, then the drug, strength and
+    directions) runs on the phone, so the photo never leaves it; the model is
+    small, loads from Brown Bag's own address, and works with no signal. It
+    only fills in the add form: the patient checks every field, and the add
+    check runs as for typing. Trained (for example in Colab) on public and
+    synthetic label images only, never real patients' photos.
 - [ ] **5. Every source is its own sign-in, and some can't stay signed in.**
   Epic and Aetna give a browser app no refresh token; Medicare and the
   SMART sandbox do.
@@ -191,3 +198,16 @@ an idea becomes a plan only after its own design.
     - **Careful:** credentialed real-patient sets (for example MIMIC) can't go
       in the repo or near the app. Before real patients, a pharmacist reviews
       the matching rules, and Brown Bag is still not a medical device.
+- [ ] **24. Directions written in different words read as different.** "Take 1
+  tab PO BID" and "1 tablet by mouth twice a day" are the same, but unless both
+  are coded, Brown Bag calls them "worded differently", which goes to staff only.
+  - Now: the words are compared after small clean-ups (add-check.js `words`).
+  - Idea (Tyler, 2026-11-25): a small trained model reads free-text directions
+    (dose, route, how often, as needed) into the same parts FHIR codes. It only
+    suggests: two directions it reads the same stop counting as worded
+    differently, but it never settles a dose or schedule disagreement, never
+    changes what the record says, and the rules stay the fallback. Runs on the
+    phone, offline, from Brown Bag's own address. Trained on public and
+    synthetic directions (FAERS, openFDA labels, Synthea, the research's
+    examples), never real patients'. A pharmacist checks its rules before real
+    patients.

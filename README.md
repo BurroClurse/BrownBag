@@ -206,9 +206,14 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   are to check, and staff see a "Records disagree: ask the patient" part.
 - **A second QR code** (idea): a flip on the QR screen, one side today's code, the
   other a SMART Health Link a clinic's system can read.
-- **Other ideas:** scanning pill bottles to add or update a medicine,
-  reminders to open Brown Bag before an appointment, and, with several sources,
-  a line for each saying when Brown Bag last read it.
+- **Scanning pill bottles** (idea): a small model on the phone reads a
+  bottle's label into the add form, and the patient checks every field before
+  it's saved. The photo never leaves the phone.
+- **Reading directions** (idea): a small model on the phone recognizes that
+  "Take 1 tab PO BID" and "1 tablet by mouth twice a day" say the same thing.
+  It only suggests, and never settles a disagreement.
+- **Other ideas:** reminders to open Brown Bag before an appointment, and,
+  with several sources, a line for each saying when Brown Bag last read it.
 
 ### Back end
 
