@@ -297,9 +297,10 @@ test("an answer of one side names that side's medicine", () => {
   const card = patientCard(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer }), true);
   assert.equal(card.name, "lisinopril 10 MG Oral Tablet");
   assert.deepEqual(card.take[0], ["Dose", "1 tablet"]);
-  assert.equal(patientCard(asked("dose"), true).name, undefined, "no name of its own before an answer");
+  // Before an answer, a dose question's card goes by its plain name (Tyler, 2026-11-25).
+  assert.equal(patientCard(asked("dose"), true).name, "Lisinopril", "its plain name before an answer");
   assert.equal(cardName(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer })), "lisinopril 10 MG Oral Tablet");
-  assert.equal(cardName(asked("dose")), "lisinopril 20 MG Oral Tablet");
+  assert.equal(cardName(asked("dose")), "Lisinopril");
 });
 
 // What a screen reader hears on the buttons is the name the card shows.
@@ -346,4 +347,35 @@ test("an answer of the second source with the same code shows that source's dose
   // The card's own source chosen: its own details.
   const own = patientCard(Object.assign({}, shown, { answer: Object.assign({}, answer, { choice: "smart-sandbox" }) }), true);
   assert.deepEqual(own.facts.filter(([label]) => label === "Prescribed by" || label === "Source"), [["Prescribed by", "Dr. Patel"], ["Source", "SMART sandbox"]]);
+});
+
+// Tyler, 2026-11-25: while "How much do you take?" is open, the card's name
+// mustn't say one side's strength. Its plain name until it's answered.
+test("a dose question names the medicine plainly until it's answered", () => {
+  assert.equal(cardName(asked("dose")), "Lisinopril");
+  assert.equal(patientCard(asked("dose"), true).name, "Lisinopril");
+  assert.equal(cardName(asked("schedule")), "lisinopril 20 MG Oral Tablet");
+  assert.equal(cardName(asked("status")), "lisinopril 20 MG Oral Tablet");
+  const answered = Object.assign({}, GROUPED, { answer: { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "valley-clinic-demo", answeredAt: "2026-11-25" } });
+  assert.equal(cardName(answered), "lisinopril 20 MG Oral Tablet");
+  const unsure = Object.assign({}, GROUPED, { answer: { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "not-sure", answeredAt: "2026-11-25" } });
+  assert.equal(cardName(unsure), "lisinopril 20 MG Oral Tablet");
+});
+
+// Tyler, 2026-11-25: "You said" says the words the patient picked.
+test("a stop is said back in the words that were picked", () => {
+  const said = (entry) => patientCard(entry, true).facts.filter(([label]) => label === "You said")[0][1];
+  const status = [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
+  const verdict = (verdicts, sides) => Object.assign({}, GROUPED, {
+    group: Object.assign({}, GROUPED.group, { verdicts, sides }),
+    answer: { groupId: "29046", fingerprint: "fp", sides, choice: "not-taking", answeredAt: "2026-11-25" }
+  });
+  assert.equal(said(verdict(["status"], status)), "No, I stopped (Nov 25)");
+  assert.equal(said(verdict(["dose"], SIDES)), "I don't take this anymore (Nov 25)");
+  assert.equal(said(verdict(["schedule"], SIDES)), "I don't take this anymore (Nov 25)");
+  // A mark's question was "Do you still take it?".
+  assert.equal(said(item({ answer: { groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice: "not-taking", answeredAt: "2026-11-25" } })), "No, I stopped (Nov 25)");
+  // A card saved with no group goes by the sides the answer kept.
+  const old = Object.assign({}, GROUPED, { group: undefined, answer: { groupId: "29046", fingerprint: "fp", sides: status, choice: "not-taking", answeredAt: "2026-11-25" } });
+  assert.equal(said(old), "No, I stopped (Nov 25)");
 });

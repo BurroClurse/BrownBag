@@ -36,7 +36,7 @@ import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 import { olderQuestion, takenOlder } from "./older.js";
-import { answerFor, checkText, choicesFor, clearSpot, questionText, saveSpot, spotFrom } from "./review.js";
+import { answerFor, checkText, choicesFor, clearSpot, questionText, reviewButton, saveSpot, spotFrom } from "./review.js";
 import { draftFromOlder, olderFrom, draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
@@ -1857,20 +1857,27 @@ function drawCheckBox(parent, arranged) {
 }
 
 // The review: one card per screen (js/review.js). state.review is { from,
-// done, seen, change }: where it was opened, how many were answered here,
-// which questions those were, and the answer being changed (or null).
+// done, seen, change, only }: where it was opened, how many were answered
+// here, which questions those were, and, for one card alone, the answer
+// being changed or the question being checked (else null).
 // Answered cards leave the list, so the next card is the first one left.
 // REVIEW_SPOT keeps the card's number through the lock, which reloads.
-function openReview(from, change) {
-  state.review = { from: from, done: 0, seen: [], change: change || null };
+function openReview(from, one) {
+  state.review = { from: from, done: 0, seen: [], change: (one && one.change) || null, only: (one && one.only) || null };
   if (!reviewCard()) {
     state.review = null;
     return;
   }
-  // Changing one answer is one card; only the review itself comes back.
-  if (change) clearSpot(sessionStorage);
+  // Checking or changing one card is one card; only the whole review comes
+  // back after the lock.
+  if (one) clearSpot(sessionStorage);
   else saveSpot(sessionStorage, 1);
   go("review", "review-heading");
+}
+
+// Checking or changing one card, not the whole review.
+function oneCard() {
+  return Boolean(state.review.change || state.review.only);
 }
 
 // Back after the lock: the same card, or none if nothing is left to check.
@@ -1878,7 +1885,7 @@ function openReview(from, change) {
 function resumeReview() {
   var spot = spotFrom(sessionStorage);
   if (!spot || state.screen !== "home") return;
-  state.review = { from: "medicines", done: spot - 1, seen: [], change: null };
+  state.review = { from: "medicines", done: spot - 1, seen: [], change: null, only: null };
   if (!reviewCard()) {
     state.review = null;
     clearSpot(sessionStorage);
@@ -1908,6 +1915,10 @@ function reviewCard() {
     }) });
     return arrangeList(state.split, without).toCheck.filter(function (card) { return card.question.groupId === change.groupId; })[0] || null;
   }
+  if (state.review.only) {
+    var only = seenKey({ question: state.review.only });
+    return reviewList().filter(function (card) { return seenKey(card) === only; })[0] || null;
+  }
   return reviewLeft()[0] || null;
 }
 
@@ -1922,8 +1933,8 @@ function drawReview() {
     setTimeout(function () { reviewDone("medicines", "medicines-heading", ""); });
     return;
   }
-  var number = state.review.change ? 1 : state.review.done + 1;
-  var total = state.review.change ? 1 : state.review.done + reviewLeft().length;
+  var number = oneCard() ? 1 : state.review.done + 1;
+  var total = oneCard() ? 1 : state.review.done + reviewLeft().length;
   var top = add(root, "div", null, "review-top");
   var title = add(top, "h1", null, "review-title");
   title.id = "review-heading";
@@ -1989,11 +2000,11 @@ function keepAnswer(card, value) {
     }
   }
   state.data.answers = answers;
-  if (!state.review.change) {
+  if (!oneCard()) {
     state.review.done += 1;
     state.review.seen.push(seenKey(card));
   }
-  var next = state.review.change ? null : reviewLeft()[0];
+  var next = oneCard() ? null : reviewLeft()[0];
   if (next) {
     saveSpot(sessionStorage, state.review.done + 1);
     state.focusId = "review-heading";
@@ -2548,11 +2559,14 @@ function afterBackup(said) {
 function medRow(list, entry) {
   var row = add(list, "li");
   drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded"));
-  // An answer can be changed; the old one stays until a new one is saved.
-  if (entry.answer) {
-    button(add(row, "div", null, "card-actions"), "Change", "secondary", function () {
-      openReview("medicines", entry.answer);
-    }, "Change: " + cardName(entry));
+  // An open question can be checked on its own (Tyler, 2026-11-25); an
+  // answer can be changed, and the old one stays until a new one is saved.
+  var review = reviewButton(entry);
+  if (review) {
+    button(add(row, "div", null, "card-actions"), review.text, "secondary", function () {
+      if (entry.answer) openReview("medicines", { change: entry.answer });
+      else openReview("medicines", { only: entry.question });
+    }, review.label);
   }
   return row;
 }

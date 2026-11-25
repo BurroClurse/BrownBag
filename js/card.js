@@ -5,6 +5,7 @@
 import { claimsLabel, completedLine } from "./claims.js";
 import { doseChange, holdText } from "./meds.js";
 import { isOwnSide, sideWords } from "./reconcile.js";
+import { displayName } from "./add-check.js";
 
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -112,8 +113,11 @@ export function patientCard(entry, claimsLoaded) {
 }
 
 // The name a card shows: the side the patient chose, else the record's.
-// Its buttons and what's said about it use the same.
+// Its buttons and what's said about it use the same. While "How much do you
+// take?" is open, its plain name, so no one side's strength is the name
+// (Tyler, 2026-11-25).
 export function cardName(entry) {
+  if (!entry.answer && entry.question && entry.question.kind === "dose") return displayName(entry.name);
   var chosen = entry.answer ? chosenSide(entry) : null;
   return (chosen && chosen.name) || entry.name;
 }
@@ -169,15 +173,26 @@ var CHOICE_WORDS = { "not-taking": "I don't take this anymore", "not-sure": "Not
 
 // The answer as the patient chose it. A side is said as it was then: in a
 // question about stopping, which side they agreed with; else its dose and
-// how often.
+// how often. A stop is said as it was picked: "No, I stopped" to "Do you
+// still take it?" (a mark's question, or the group's status one, asked
+// first), else "I don't take this anymore".
 function answerWords(entry) {
   var answer = entry.answer;
+  if (answer.choice === "not-taking" && askedAboutStopping(entry)) return "No, I stopped";
   if (CHOICE_WORDS[answer.choice]) return CHOICE_WORDS[answer.choice];
   var sides = answer.sides && answer.sides.length ? answer.sides : (entry.group ? entry.group.sides : []);
   var side = sides.filter(function (one) { return one.sourceId === answer.choice; })[0];
   if (!side) return "See the record";
   if (aboutStopping(sides)) return side.status === "not-current" ? "No, I stopped" : "Yes, I take it";
   return sideWords(side);
+}
+
+// Worked out from what's saved, so answers saved before this need nothing new.
+function askedAboutStopping(entry) {
+  var answer = entry.answer;
+  if (String(answer.fingerprint || "").indexOf("mark:") === 0) return true;
+  if (entry.group && Array.isArray(entry.group.verdicts)) return entry.group.verdicts.indexOf("status") !== -1;
+  return aboutStopping(answer.sides || []);
 }
 
 // The name goes in as text, like everything from the records.

@@ -2,7 +2,7 @@
 // What it says and what an answer keeps; the screen itself is in app.js.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { checkText, choicesFor, answerFor, questionText, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
+import { checkText, choicesFor, answerFor, questionText, reviewButton, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
 import { arrangeList } from "../js/view.js";
 
 const CLINIC = "Valley Clinic (test records)";
@@ -189,4 +189,16 @@ test("the review spot never throws when storage is blocked", () => {
   assert.doesNotThrow(() => saveSpot(blocked, 1));
   assert.doesNotThrow(() => clearSpot(blocked));
   assert.equal(spotFrom(undefined), null);
+});
+
+// Tyler, 2026-11-25: each card with an open question can be checked on its
+// own; an answered one can be changed.
+test("a card's own review button", () => {
+  const open = asked(lisinopril());
+  assert.deepEqual(reviewButton(open), { text: "Check this", label: "Check this: Lisinopril" });
+  assert.deepEqual(reviewButton(asked(atorvastatin())), { text: "Check this", label: "Check this: atorvastatin 20 MG Oral Tablet" });
+  const answers = [answerFor(open, "valley-clinic-demo", "2026-11-25")];
+  const answered = arrangeList({ current: [lisinopril()], older: [] }, { answers }).current[0];
+  assert.deepEqual(reviewButton(answered), { text: "Change", label: "Change: lisinopril 20 MG Oral Tablet" });
+  assert.equal(reviewButton({ key: "rx:9", name: "Metformin", status: "current" }), null);
 });

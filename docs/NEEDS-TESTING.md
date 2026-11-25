@@ -58,6 +58,12 @@ Riley. On both virtual phones:
   1 thing" and **Check it**. From home's line it opens as "1 of 1"; Back goes
   home. Answer it: My medicines, the box is gone, and the screen reader says
   "Saved. Your list is up to date."
+- Before checking, lisinopril's card on My medicines is named "Lisinopril"
+  (no strength), as is its review heading; atorvastatin and methotrexate keep
+  their full names. Each of the three has **Check this**, which opens that
+  card alone ("1 of 1"); Do this later comes back to My medicines.
+- Answering atorvastatin "No, I stopped" says "You said: No, I stopped";
+  "I don't take this anymore" on lisinopril says the same words back.
 - Each answered card says "You said: … (Nov 25)" with **Change**. Change on
   lisinopril opens it as "1 of 1"; Do this later keeps the old answer; saving
   10 MG shows the 10 MG card.

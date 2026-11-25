@@ -3,7 +3,7 @@
 // its choices and the answer it saves. No page here, so Node's tests can
 // check it; the screen is in app.js.
 
-import { monthText } from "./card.js";
+import { cardName, monthText } from "./card.js";
 import { sideWords } from "./reconcile.js";
 
 // Where the patient is in the review, so it comes back after the 5-minute
@@ -68,6 +68,13 @@ export function choicesFor(card, today) {
     { value: "not-taking", label: "No, I stopped", detail: stopped ? says(stopped.sourceName, "stopped", stopped.asOf) : "" },
     NOT_SURE
   ];
+}
+
+// The button under a card on My medicines: "Check this" while its question
+// is open, "Change" once it's answered, else none. Its label names the card.
+export function reviewButton(entry) {
+  var text = entry.answer ? "Change" : entry.question ? "Check this" : null;
+  return text ? { text: text, label: text + ": " + cardName(entry) } : null;
 }
 
 // What the patient chose, as it's saved (spec, section 7). A mark's question
