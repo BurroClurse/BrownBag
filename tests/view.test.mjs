@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -133,6 +133,15 @@ test("medicineCount counts current records not marked stopped, plus additions", 
 test("medicinesButtonText shows the count", () => {
   assert.equal(medicinesButtonText(0), "My medicines (0)");
   assert.equal(medicinesButtonText(8), "My medicines (8)");
+});
+
+test("a finished update floats a check for long enough to read, only when it worked", () => {
+  assert.deepEqual(updatedToast({ allergyStatus: "loaded" }), { kind: "updated", text: "Your list is up to date." });
+  assert.deepEqual(updatedToast({ allergyStatus: "failed" }), { kind: "updated", text: "Your medicines are up to date. Your allergies couldn't be updated." });
+  assert.equal(updatedToast({ offline: true, allergyStatus: "loaded" }), null);
+  assert.equal(updatedToast({ needsSignIn: true, allergyStatus: "loaded" }), null);
+  assert.equal(UPDATED_SHOWS_MS, 3000);
+  assert.ok(UPDATED_FADE_MS >= 1000);
 });
 
 test("noticesFor gives one short line for each note", () => {

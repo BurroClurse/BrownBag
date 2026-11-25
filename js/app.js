@@ -11,7 +11,7 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, swooshFrom, foundText, isAsNeeded } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
 import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
@@ -136,6 +136,34 @@ liveUpdate.id = "live-update";
 liveUpdate.className = "visually-hidden";
 liveUpdate.setAttribute("role", "status");
 document.body.appendChild(liveUpdate);
+// The note that floats over the top of home while the list updates, then
+// says it worked. It's out of the layout, so coming and going never moves the
+// screen, and it's one node kept across redraws so its fade isn't restarted.
+// VoiceOver hears the same words from the status area above.
+var updateToast = document.createElement("div");
+updateToast.id = "update-toast";
+updateToast.setAttribute("aria-hidden", "true");
+updateToast.hidden = true;
+var toastTimers = [];
+function showToast(kind, text) {
+  toastTimers.forEach(clearTimeout);
+  toastTimers = [];
+  clear(updateToast);
+  updateToast.className = "update-toast toast-" + kind;
+  if (kind === "updated") add(updateToast, "span", "\u2713", "toast-check");
+  add(updateToast, "span", text);
+  updateToast.hidden = false;
+  if (kind === "updated") {
+    toastTimers.push(setTimeout(function () { updateToast.classList.add("toast-fading"); }, UPDATED_SHOWS_MS));
+    toastTimers.push(setTimeout(hideToast, UPDATED_SHOWS_MS + UPDATED_FADE_MS));
+  }
+}
+function hideToast() {
+  toastTimers.forEach(clearTimeout);
+  toastTimers = [];
+  updateToast.hidden = true;
+}
+
 function sayUpdate(text) {
   liveUpdate.textContent = text;
 }
@@ -294,6 +322,9 @@ function finishUpdate() {
   if ((state.offline || state.needsSignIn) && !state.savedAt) state.savedAt = state.updatedAt;
   var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
   sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
+  var toast = updatedToast({ offline: state.offline, needsSignIn: state.needsSignIn, allergyStatus: state.allergies.status });
+  if (toast) showToast(toast.kind, toast.text);
+  else hideToast();
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
   if (mayRedraw()) {
@@ -716,6 +747,8 @@ function drawHome(arranged) {
   // The name first, so a note coming or going ("Updating your list…") never
   // moves it; the bag below gives up the room.
   add(root, "h1", shortName(state.patient.name), "home-name");
+  add(root, "div", null, "update-toast-slot").appendChild(updateToast);
+  if (state.updating && !updateToast.classList.contains("toast-updating")) showToast("updating", "Updating your list…");
   drawNotices();
   var bag = add(root, "button", null, "home-bag");
   bag.type = "button";
@@ -2009,6 +2042,9 @@ function drawNotices() {
     installTip: hint,
     now: new Date()
   });
+  // Updating floats over the bag instead (updateToast), so the screen
+  // doesn't move when it ends.
+  notes = notes.filter(function (note) { return note.kind !== "updating"; });
   if (!notes.length) return;
   // One card, one short line per note. It's a live area, so VoiceOver
   // reads "Updating your list…" and what replaces it.
