@@ -532,3 +532,9 @@ test("two sides with nothing but a strength still read differently", () => {
   assert.equal(sideWords({ name: "lisinopril 10 MG Oral Tablet", dose: null, frequency: null }), "10 MG");
   assert.equal(sideWords({ name: "lisinopril 20 MG Oral Tablet" }), "20 MG");
 });
+
+test("the reconcile and snapshot modules are kept for offline use", () => {
+  const sw = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
+  assert.ok(sw.includes('"./js/reconcile.js"'));
+  assert.ok(sw.includes('"./js/snapshot.js"'));
+});

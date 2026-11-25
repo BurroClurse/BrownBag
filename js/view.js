@@ -117,44 +117,55 @@ function dayOf(date) {
 function markState(entry, marks) {
   var members;
   if (entry.group) {
-    var sides = entry.group.sides.filter(function (side) { return side.status === "current"; });
-    members = (sides.length ? sides : entry.group.sides).map(function (side) {
+    members = entry.group.sides.map(function (side) {
       // The card's own record also answers to its other keys and its date.
       var own = side.key === entry.key;
-      return { side: side, keys: own ? keysOf({ key: side.key, otherKeys: entry.otherKeys }) : [side.key], date: newer(side.asOf, own ? entry.lastDate : null) };
+      return { side: side, current: side.status === "current", keys: own ? keysOf({ key: side.key, otherKeys: entry.otherKeys }) : [side.key], date: newer(side.asOf, own ? entry.lastDate : null) };
     });
   } else {
-    members = [{ side: null, keys: keysOf(entry), date: entry.lastDate || null }];
+    members = [{ side: null, current: true, keys: keysOf(entry), date: entry.lastDate || null }];
   }
   members.forEach(function (member) { member.mark = markOf(member.keys, marks); });
-  var markedOnes = members.filter(function (member) { return member.mark; });
+  // With no current record at all, every record counts, as before.
+  var counted = members.some(function (member) { return member.current; }) ? members.filter(function (member) { return member.current; }) : members;
+  var markedOnes = counted.filter(function (member) { return member.mark; });
   if (!markedOnes.length) return {};
   var mark = markedOnes.reduce(function (latest, member) { return later(member.mark, latest); }, null);
-  var left = members.filter(function (member) { return !member.mark; });
+  // Only a current record is said to list it current: the newest dated one.
+  var left = counted.filter(function (member) { return !member.mark && member.current; });
   if (left.length) {
-    // The newest source still listing it is the one named.
-    var other = left[left.length - 1];
-    var since = dayOf(other.side.asOf);
+    var dated = left.filter(function (member) { return dayOf(member.date); });
+    var other = (dated.length ? dated : left).reduce(function (best, member) {
+      return dayOf(member.date) > dayOf(best.date) ? member : best;
+    });
+    var since = dayOf(other.date);
     return { ask: {
       kind: "status",
       why: "You marked this Not taking" + (dayOf(mark.at) ? " on " + dayText(dayOf(mark.at)) : "") + ". " + other.side.sourceName + " lists it current" + (since ? ", " + monthText(since) : "") + ".",
-      fingerprint: "mark:" + mark.at + ">" + (since || ""),
+      fingerprint: markFingerprint(mark, counted),
       mark: mark
     } };
   }
   // An undated mark or record can't be put in order: it stays as marked.
-  var renewed = members.filter(function (member) {
+  var renewed = markedOnes.filter(function (member) {
     return dayOf(member.mark.at) && dayOf(member.date) && after(dayOf(member.date), dayOf(member.mark.at));
   }).pop();
   if (renewed) {
     return { ask: {
       kind: "status",
       why: "You marked Not taking on " + dayText(renewed.mark.at) + ". Your records have a newer prescription, " + dayText(dayOf(renewed.date)) + ".",
-      fingerprint: "mark:" + renewed.mark.at + ">" + dayOf(renewed.date),
+      fingerprint: markFingerprint(renewed.mark, counted),
       mark: renewed.mark
     } };
   }
   return { stop: mark };
+}
+
+// The mark and the newest current record, marked or not, so any record
+// newer than the answer asks again.
+function markFingerprint(mark, members) {
+  var newest = members.reduce(function (date, member) { return newer(member.date, date); }, null);
+  return "mark:" + mark.at + ">" + (dayOf(newest) || "");
 }
 
 // The latest mark under these keys, as { key, at }, or null. The first key
@@ -189,7 +200,8 @@ function verdictQuestion(entry, answers) {
   if (!entry.group) return null;
   var kind = ASKED.filter(function (verdict) { return entry.group.verdicts.indexOf(verdict) !== -1; })[0];
   if (!kind) return null;
-  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id; }).pop();
+  // A mark's answer was about the mark, not what the sources say.
+  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id && String(answer.fingerprint).indexOf("mark:") !== 0; }).pop();
   return { kind: kind, why: before ? changedText(before.sides || [], entry.group.sides) : null, fingerprint: entry.group.fingerprint };
 }
 
