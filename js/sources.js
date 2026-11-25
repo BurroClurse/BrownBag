@@ -67,7 +67,7 @@ export function recordsStatus(state, format) {
   var note = null;
   var signIn = false;
   if (state.updating) {
-    note = "Updating your list…";
+    note = "Checking your health records…";
   } else if (state.offline) {
     note = "Couldn't update. This is the last list that loaded.";
   } else if (state.needsSignIn) {

@@ -193,7 +193,7 @@ export function foundText(count) {
 export function noticesFor({ updating, savedAt, offline, needsSignIn, failed, dataFailed, allergiesRefused, installTip, now }) {
   var out = [];
   if (updating) {
-    out.push({ kind: "updating", text: "Updating your list…" });
+    out.push({ kind: "updating", text: "Checking your health records…" });
   } else if (savedAt && offline) {
     out.push({ kind: "offline", text: "No connection. List from " + listDate(savedAt, now) + "." });
   } else if (savedAt && needsSignIn) {
@@ -280,7 +280,7 @@ export function updatedToast({ offline, needsSignIn, allergyStatus }) {
 export function updateDoneText(allergyStatus) {
   return allergyStatus === "failed"
     ? "Your medicines are up to date. Your allergies couldn't be updated."
-    : "Your list is up to date.";
+    : "Up to date with your health records.";
 }
 
 function partOf(change) {

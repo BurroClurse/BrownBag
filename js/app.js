@@ -130,7 +130,7 @@ function startAutoLock() {
 }
 
 // A status area that stays on the page between redraws, so VoiceOver reads
-// "Updating your list…" and how the update ended.
+// "Checking your health records…" and how the update ended.
 var liveUpdate = document.createElement("p");
 liveUpdate.id = "live-update";
 liveUpdate.className = "visually-hidden";
@@ -266,7 +266,7 @@ async function keepRotated(client, pass) {
 // the list after "No connection" shows. Only the token server refusing the
 // pass deletes it; anything else keeps it for next time.
 async function updateWithPass(pass) {
-  sayUpdate("Updating your list…");
+  sayUpdate("Checking your health records…");
   var client;
   try {
     client = FHIR.client(clientStateFromPass(pass));
@@ -744,11 +744,11 @@ homeLogo.src = "icons/logo-trimmed.png";
 homeLogo.alt = "";
 
 function drawHome(arranged) {
-  // The name first, so a note coming or going ("Updating your list…") never
+  // The name first, so a note coming or going ("Checking your health records…") never
   // moves it; the bag below gives up the room.
   add(root, "h1", shortName(state.patient.name), "home-name");
   add(root, "div", null, "update-toast-slot").appendChild(updateToast);
-  if (state.updating && !updateToast.classList.contains("toast-updating")) showToast("updating", "Updating your list…");
+  if (state.updating && !updateToast.classList.contains("toast-updating")) showToast("updating", "Checking your health records…");
   drawNotices();
   var bag = add(root, "button", null, "home-bag");
   bag.type = "button";
@@ -2047,7 +2047,7 @@ function drawNotices() {
   notes = notes.filter(function (note) { return note.kind !== "updating"; });
   if (!notes.length) return;
   // One card, one short line per note. It's a live area, so VoiceOver
-  // reads "Updating your list…" and what replaces it.
+  // reads "Checking your health records…" and what replaces it.
   var bar = add(root, "div", null, "notice-bar");
   bar.setAttribute("role", "status");
   notes.forEach(function (note) {

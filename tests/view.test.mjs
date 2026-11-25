@@ -136,7 +136,7 @@ test("medicinesButtonText shows the count", () => {
 });
 
 test("a finished update floats a check for long enough to read, only when it worked", () => {
-  assert.deepEqual(updatedToast({ allergyStatus: "loaded" }), { kind: "updated", text: "Your list is up to date." });
+  assert.deepEqual(updatedToast({ allergyStatus: "loaded" }), { kind: "updated", text: "Up to date with your health records." });
   assert.deepEqual(updatedToast({ allergyStatus: "failed" }), { kind: "updated", text: "Your medicines are up to date. Your allergies couldn't be updated." });
   assert.equal(updatedToast({ offline: true, allergyStatus: "loaded" }), null);
   assert.equal(updatedToast({ needsSignIn: true, allergyStatus: "loaded" }), null);
@@ -148,7 +148,7 @@ test("noticesFor gives one short line for each note", () => {
   const at = new Date(2026, 10, 21, 8, 0).toISOString();
   const now = new Date(2026, 10, 21, 9, 0);
   const tip = "Add Brown Bag to your Home Screen.";
-  assert.deepEqual(noticesFor({ updating: true, savedAt: at, now }), [{ kind: "updating", text: "Updating your list…" }]);
+  assert.deepEqual(noticesFor({ updating: true, savedAt: at, now }), [{ kind: "updating", text: "Checking your health records…" }]);
   assert.deepEqual(noticesFor({ savedAt: at, offline: true, now }), [{ kind: "offline", text: "No connection. List from Nov 21." }]);
   assert.deepEqual(noticesFor({ savedAt: at, needsSignIn: true, now }), [{ kind: "sign-in", text: "List from Nov 21. Sign in again to update it." }]);
   assert.deepEqual(noticesFor({ failed: true, now }), [{ kind: "failed", text: "Some records didn't load." }]);
@@ -307,7 +307,7 @@ test("the log of reaction changes says what really changed", () => {
 });
 
 test("updateDoneText never says up to date when the allergies didn't load", () => {
-  assert.equal(updateDoneText("loaded"), "Your list is up to date.");
+  assert.equal(updateDoneText("loaded"), "Up to date with your health records.");
   assert.equal(updateDoneText("failed"), "Your medicines are up to date. Your allergies couldn't be updated.");
 });
 

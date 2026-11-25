@@ -89,7 +89,7 @@ test("it says when only signing in will update it", () => {
 });
 
 test("while updating, it says only that", () => {
-  assert.deepEqual([status({ updating: true, needsSignIn: true }).note, status({ updating: true, needsSignIn: true }).signIn], ["Updating your list…", false]);
+  assert.deepEqual([status({ updating: true, needsSignIn: true }).note, status({ updating: true, needsSignIn: true }).signIn], ["Checking your health records…", false]);
 });
 
 // The lists before and after sign-in are one piece of code, so the names and
