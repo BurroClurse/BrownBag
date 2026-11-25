@@ -43,8 +43,8 @@ only, no real patients). To open it as a certain patient, see
 **My medicines**
 - **Allergies** come first, in their own box, with each reaction and who says
   so. The patient can add one, add or change their reaction, or say they have none
-  known. A record that names no allergen is the last row; after adding an allergy
-  that could be it, the patient can say it is. Staff still see the record.
+  known. A record that names no allergen is the last row; the patient can say
+  what it is, there or after adding one. Staff still see the record.
 - **Medicines** from the records: repeats merged, strengths of one drug grouped,
   directions in full, on-hold ones marked, older prescriptions folded away.
 - **As needed** and **Not taking** move a medicine to its own part, with Undo.

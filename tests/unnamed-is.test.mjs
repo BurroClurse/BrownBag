@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { arrangeAllergies, couldBe, fromAllergyRecords, keepAllergies, removeMine, putBack, unnamedQuestion, unspecifiedSentence } from "../js/allergies.js";
+import { arrangeAllergies, couldBe, fromAllergyRecords, keepAllergies, keepDrafts, removeMine, tied, unnamedForm, putBack, unnamedQuestion, unspecifiedSentence } from "../js/allergies.js";
 import { allergyNotices, buildShareBundle, groupShareBundle } from "../js/share.js";
 import { patientSummary } from "../js/ips.js";
 import { loadPatientData, savePatientData } from "../js/vault.js";
@@ -94,4 +94,23 @@ test("the screen: Done twice, Edit folds the buttons, the popup starts on No", (
   assert.equal(body("drawMedicines").match(/medicinesDone\(/g).length, 2);
   assert.match(body("drawAllergyCard"), /aria-expanded/);
   assert.match(body("askUnnamed"), /keep\.focus\(\)/);
+});
+
+test("a half-typed answer is kept like any other, until its entry is gone", () => {
+  const draft = { allergen: { choice: "Latex", other: "" }, reaction: { choice: "", other: "" } };
+  const open = arrangeAllergies(read(ENV), data()).open;
+  assert.deepEqual(keepDrafts({ [unnamedForm(open[0])]: draft }, [], open), { "unnamed:id:u1": draft });
+  assert.deepEqual(keepDrafts({ "unnamed:id:u1": draft }, [], []), {});
+});
+
+test("answering from the row links it, with no second question", () => {
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  const form = app.slice(app.indexOf("function drawAllergyForm")).split("\n}\n")[0];
+  assert.match(form, /state\.data\.unnamedAre\[entry\.key\] = own\.id/);
+  assert.match(form, /if \(!entry\) askUnnamed\(own\)/);
+});
+
+test("a dot or a date never starts a line on its own", () => {
+  assert.equal(tied("Reaction not in your records · Source: SMART sandbox"), "Reaction not in your records\u00a0· Source: SMART sandbox");
+  assert.equal(tied("Environment, recorded Feb 28, 1979 (same day as Mold)"), "Environment, recorded Feb\u00a028,\u00a01979 (same day as Mold)");
 });

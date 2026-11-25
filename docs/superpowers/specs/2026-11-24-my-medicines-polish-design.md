@@ -31,5 +31,10 @@ added is under Edit. The unnamed allergy is the last row, not a note, so the pop
 "its line". A saved date is a plain line; warnings keep their yellow box. The staff page
 and the QR code don't change.
 
+**Say what it is (same day, Tyler: the row had no way to change it and said too
+little):** the unnamed row has that button. It opens the add form in the row, and
+saving links the two with no second question. The row says the records don't name it
+and to ask the care team, or say what it is if known.
+
 **Approaches for the note:** hide the record everywhere (rejected: it would turn
 a guess into a missing allergy) or only the note on the phone (chosen).

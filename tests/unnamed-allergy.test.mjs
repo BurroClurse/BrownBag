@@ -73,6 +73,7 @@ test("a list or a code from before this still opens", () => {
 });
 
 test("on the phone it's a row of its own", () => {
-  assert.deepEqual(unnamedRow({ details: "environment, recorded Feb 28, 1979 (same day as Mold)" }), { name: "Unnamed allergy", lines: ["Environment, recorded Feb 28, 1979 (same day as Mold)", "In your records. Ask your care team."] });
-  assert.deepEqual(unnamedRow({ details: "" }), { name: "Unnamed allergy", lines: ["In your records. Ask your care team."] });
+  assert.deepEqual(unnamedRow({ key: "id:u1", details: "environment, recorded Feb 28, 1979 (same day as Mold)" }), { name: "Unnamed allergy", lines: ["Environment, recorded Feb 28, 1979 (same day as Mold)", "Your records don't say what you're allergic to. Ask your care team, or say what it is if you know."], canSay: true });
+  // Saved before entries could be told apart: nothing to answer.
+  assert.deepEqual(unnamedRow({ key: null, details: "" }), { name: "Unnamed allergy", lines: ["Your records don't say what you're allergic to. Ask your care team."], canSay: false });
 });

@@ -17,7 +17,7 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
-import { readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
+import { readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
 import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
@@ -688,8 +688,9 @@ function leaveMedicines() {
   } else {
     closeAddForm();
   }
-  var cards = arrangeAllergies(state.allergies, state.data).cards;
-  state.allergyDrafts = keepDrafts(state.allergyDrafts, cards);
+  var arranged = arrangeAllergies(state.allergies, state.data);
+  var cards = arranged.cards;
+  state.allergyDrafts = keepDrafts(state.allergyDrafts, cards, arranged.open);
   state.allergyForm = startedDraft(state.allergyDrafts, state.allergyForm);
   Object.keys(state.allergyDrafts).forEach(function (which) {
     var of = cards.filter(function (card) { return card.key === which; })[0];
@@ -828,10 +829,15 @@ function drawAllergies(parent) {
   }
   var list = arranged.count + arranged.open.length ? add(section, "ul", null, "allergy-rows") : null;
   arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
-  arranged.open.map(unnamedRow).forEach(function (unnamed) {
+  arranged.open.forEach(function (entry) {
+    var unnamed = unnamedRow(entry);
     var row = add(list, "li");
-    add(row, "p", unnamed.name, "med-name");
-    unnamed.lines.forEach(function (text) { add(row, "p", text, "med-line"); });
+    var head = add(row, "div", null, "allergy-head");
+    add(head, "p", unnamed.name, "med-name");
+    unnamed.lines.forEach(function (text) { add(row, "p", tied(text), "med-line"); });
+    if (!unnamed.canSay) return;
+    if (state.allergyForm === unnamedForm(entry)) drawAllergyForm(row, arranged, null, entry);
+    else button(head, "Say what it is", "secondary row-button", function () { openAllergyForm(unnamedForm(entry), "allergen"); }, "Say what it is: unnamed allergy");
   });
   if (state.lastRemovedAllergy) drawAllergyUndo(section);
   if (state.allergyForm === "new") {
@@ -852,7 +858,7 @@ function drawAllergyCard(list, card) {
   var row = add(list, "li");
   var head = add(row, "div", null, "allergy-head");
   add(head, "p", card.name, "med-name");
-  allergyLines(card).forEach(function (text) { add(row, "p", text, "med-line"); });
+  allergyLines(card).forEach(function (text) { add(row, "p", tied(text), "med-line"); });
   if (state.allergyForm === card.key) {
     drawAllergyForm(row, null, card);
     return;
@@ -957,8 +963,9 @@ function setReaction(card, reaction) {
   allergySaved("Reaction to " + card.name + " saved.", "allergies-heading");
 }
 
-// Adds an allergy (card null), or a reaction to one from the records.
-function drawAllergyForm(parent, arranged, card) {
+// Adds an allergy (card null), or a reaction to one from the records. entry: the
+// unnamed one this says it is.
+function drawAllergyForm(parent, arranged, card, entry) {
   var form = add(parent, "form");
   form.id = "allergy-form";
   form.noValidate = true;
@@ -973,10 +980,10 @@ function drawAllergyForm(parent, arranged, card) {
   saveButton.type = "submit";
   var cancelButton = button(form, "Cancel", "secondary big", function () {
     closeAllergyForm();
-    state.focusId = card ? "allergies-heading" : "allergy-add-open";
+    state.focusId = card || entry ? "allergies-heading" : "allergy-add-open";
     render();
   });
-  var which = card ? card.key : "new";
+  var which = card ? card.key : entry ? unnamedForm(entry) : "new";
   var kept = state.allergyDrafts[which];
   if (kept) {
     if (allergen) allergen.restore(kept.allergen);
@@ -1020,7 +1027,7 @@ function drawAllergyForm(parent, arranged, card) {
     }
     var match = sameAllergen(name, arranged.cards);
     if (match) {
-      drawAllergyCheck(form, match, happened, [saveButton, cancelButton], function () { allergen.focus(); });
+      drawAllergyCheck(form, match, happened, [saveButton, cancelButton], function () { allergen.focus(); }, entry);
       return;
     }
     var picked = ALLERGENS.filter(function (choice) { return choice.label === name; })[0];
@@ -1030,14 +1037,20 @@ function drawAllergyForm(parent, arranged, card) {
     }
     var own = { id: makeAddition({ name: name }, new Date()).id, name: name, rxcui: (picked && picked.rxcui) || null, reaction: happened, addedAt: today() };
     state.data.allergies.push(own);
+    if (entry) {
+      if (!state.data.unnamedAre) state.data.unnamedAre = {};
+      state.data.unnamedAre[entry.key] = own.id;
+    }
     allergyChange("allergy-added", name);
     closeAllergyForm();
-    allergySaved(name + " added to your allergies.", "allergy-add-open").then(function () { askUnnamed(own); });
+    allergySaved(name + " added to your allergies." + (entry ? " Staff still see the record, with your answer." : ""), entry ? "allergies-heading" : "allergy-add-open").then(function () {
+      if (!entry) askUnnamed(own);
+    });
   });
 }
 
 // The allergy is already there: never a second card for it.
-function drawAllergyCheck(form, match, reaction, hide, back) {
+function drawAllergyCheck(form, match, reaction, hide, back, entry) {
   var fields = Array.prototype.slice.call(form.querySelectorAll("input, select"));
   fields.forEach(function (field) { field.disabled = true; });
   hide.forEach(function (b) { b.hidden = true; });
@@ -1054,6 +1067,15 @@ function drawAllergyCheck(form, match, reaction, hide, back) {
   });
   if (match.origin === "records" && !match.mine && !match.reactions.length) {
     button(panel, "Use my reaction for it", "primary big", function () { setReaction(match, reaction); });
+  }
+  // One they added before.
+  if (entry && match.mine && match.mine.ids.length) {
+    button(panel, "It's the unnamed one", "primary big", function () {
+      if (!state.data.unnamedAre) state.data.unnamedAre = {};
+      state.data.unnamedAre[entry.key] = match.mine.ids[0];
+      closeAllergyForm();
+      allergySaved("Saved. Staff still see the record, with your answer.", "allergies-heading");
+    });
   }
   h.focus();
 }

@@ -264,3 +264,5 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - 2026-11-24, the QR code crumpling into the bag, before publishing: the test browser
   (and Reduce Motion) and both virtual phones, with real touches on Android. Passed. How
   smooth it looks on a real iPhone is still to check.
+- 2026-11-24, Say what it is on the unnamed allergy: the test browser and the virtual
+  iPhone. Passed.

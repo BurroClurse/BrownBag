@@ -49,7 +49,18 @@ export function unspecifiedSentence(count, listed, records, ask, unnamed) {
 // The same entry as a row on My medicines.
 export function unnamedRow(entry) {
   var details = entry.details ? [entry.details.charAt(0).toUpperCase() + entry.details.slice(1)] : [];
-  return { name: "Unnamed allergy", lines: details.concat("In your records. Ask your care team.") };
+  var ask = "Your records don't say what you're allergic to. Ask your care team" + (entry.key ? ", or say what it is if you know." : ".");
+  return { name: "Unnamed allergy", lines: details.concat(ask), canSay: Boolean(entry.key) };
+}
+
+// The form that says what it is, among the allergy forms.
+export function unnamedForm(entry) {
+  return "unnamed:" + entry.key;
+}
+
+// Keeps a dot with the words before it, and a date whole, when lines wrap.
+export function tied(text) {
+  return text.replace(/ · /g, "\u00a0· ").replace(/\b([A-Z][a-z]{2}) (\d{1,2}), (\d{4})/g, "$1\u00a0$2,\u00a0$3");
 }
 
 // Everything an entry with no allergen does say, to help them remember. Not low
@@ -574,10 +585,11 @@ export function allergyDraftStarted(draft) {
 // Forms as the patient left them, by form: "new", or the key of the allergy
 // whose reaction was being added. Empty ones, and ones for an allergy that's
 // no longer there, are dropped.
-export function keepDrafts(drafts, cards) {
+export function keepDrafts(drafts, cards, open) {
   var out = {};
   Object.keys(drafts || {}).forEach(function (which) {
-    var there = which === "new" || cards.some(function (card) { return card.key === which; });
+    var there = which === "new" || cards.some(function (card) { return card.key === which; }) ||
+      (open || []).some(function (entry) { return entry.key && unnamedForm(entry) === which; });
     if (there && allergyDraftStarted(drafts[which])) out[which] = drafts[which];
   });
   return out;
