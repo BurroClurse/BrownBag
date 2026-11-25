@@ -482,6 +482,8 @@ The findings' cases 33–54. Tyler's answers, one question each:
 
 ### Task 9: The FHIR file says it too
 
+> **Changed in the build (2026-11-25):** HL7's validator (7.0.7, IPS 2.0.1) rejects a `DetectedIssue` in the Medications section, so the file carries none (Tyler asked for the best option; ruling R32). Each disagreement is in the file as its sides' statements with their notes, plus the caution, which reads "Records disagree on 1 medicine." in the singular (Tyler). IPS 2.0.1 removed the absent-unknown code list, so a no-medicines source is said in the section's text only, with no coded entry (Tyler). All four validated files have 0 errors. The interfaces below are kept as first planned, for the record.
+
 **Files:**
 - Modify: `js/ips.js` (`patientSummary`, `medicineWords`, the caution list, a new `detectedIssueFor`)
 - Test: `tests/ips.test.mjs`
