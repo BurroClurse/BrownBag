@@ -103,6 +103,8 @@ an idea becomes a plan only after its own design.
   Seen once: a patient another student added to the sandbox (saved 2026-11-20 in
   `tests/fixtures/`). None of the app's test patients.
   - Now: both show, so nothing is hidden. The NDC goes in the QR code when it fits.
+    A fill coded only by NDC gets its RxNorm code from RxNav by the fill's date
+    (2026-11-25); a record coded only by NDC doesn't yet.
   - Careful: joining two cards joins their marks. If the patient marked one copy
     Not taking to tidy the list, the one they take must not go with it.
   - When (Tyler, 2026-11-24): with Medicare, its fills first, then joining cards.
@@ -198,6 +200,15 @@ an idea becomes a plan only after its own design.
     - **Careful:** credentialed real-patient sets (for example MIMIC) can't go
       in the repo or near the app. Before real patients, a pharmacist reviews
       the matching rules, and Brown Bag is still not a medical device.
+  - Testing aid (Tyler, 2026-11-25): a Google Colab notebook, "Brown Bag Matching
+    Check", built and run once on 40 Synthea patients. It roughs records up four
+    ways for medicines and five for people, asks Brown Bag's own `matchOf` and
+    `samePerson` about 4,026 pairs, and counts wrong joins and wrong splits; a
+    gradient-boosting model then flags the pairs worth a person's review, and
+    tries real openFDA product names. Its first run, before Tasks 6c and 6d,
+    found 176 wrong joins, all finding D1 (an ingredient code listed first, so
+    acetaminophen joined acetaminophen with oxycodone). The model stays a test
+    tool and never goes into the app.
 - [ ] **24. Directions written in different words read as different.** "Take 1
   tab PO BID" and "1 tablet by mouth twice a day" are the same, but unless both
   are coded, Brown Bag calls them "worded differently", which goes to staff only.
