@@ -5,6 +5,7 @@
 // test runner can check it.
 
 import { heldBack } from "./read.js";
+import { plainName } from "./reconcile.js";
 
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 var CLAIM_TYPE = "http://terminology.hl7.org/CodeSystem/claim-type";
@@ -78,12 +79,6 @@ function currentFirst(items) {
 function ingredientKey(ingredientOf, rxcui) {
   var found = rxcui && ingredientOf && ingredientOf.get(rxcui);
   return found ? found.rxcui : null;
-}
-
-// "Sertraline 50 MG Oral Tablet [Zoloft]" and "sertraline 50 mg oral tablet"
-// are the same drug, strength and form. Different strengths stay different.
-function plainName(name) {
-  return String(name || "").toLowerCase().replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // Fills of one drug together: the same code or the same plain name. A fill

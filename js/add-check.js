@@ -7,7 +7,7 @@
 // The drug's own first word: past "24 HR", "3 ML" and other leading
 // numbers and units in RxNorm names, so "24 HR metformin …" is metformin.
 var UNIT_WORDS = ["hr", "ml", "mg", "mcg", "unt", "actuat", "g", "l"];
-function firstWord(name) {
+export function firstWord(name) {
   var words = String(name || "").trim().toLowerCase().split(/[\s,{}()\[\]]+/);
   for (var i = 0; i < words.length; i += 1) {
     if (/^[a-z][a-z-]*$/.test(words[i]) && UNIT_WORDS.indexOf(words[i]) === -1) return words[i];

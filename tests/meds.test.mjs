@@ -11,7 +11,8 @@ import {
   doseChange,
   usableRecord,
   statusWord,
-  formOf
+  formOf,
+  strengthOf
 } from "../js/meds.js";
 
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
@@ -448,4 +449,10 @@ test("formOf reads the form", () => {
   assert.equal(formOf("lisinopril 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet"), "oral tablet");
   assert.equal(formOf("24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"), "extended release oral tablet");
   assert.equal(formOf("fish oil"), null);
+});
+
+test("strengthOf and formOf read patch strengths like MG/24HR", () => {
+  assert.equal(strengthOf("estradiol 0.1 MG/24HR Transdermal System"), "0.1 MG/24HR");
+  assert.equal(formOf("estradiol 0.1 MG/24HR Transdermal System"), "transdermal system");
+  assert.equal(strengthOf("fentanyl 25 MCG/HR Transdermal System"), "25 MCG/HR");
 });

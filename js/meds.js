@@ -260,9 +260,13 @@ function mergeIngredientGroup(members) {
   return [shown];
 }
 
-// Strength as written in RxNorm names, such as "10 MG" or "0.5 MG/ML".
+// Strength as written in RxNorm names, such as "10 MG", "0.5 MG/ML" or the
+// patch "0.1 MG/24HR". One pattern, so the strength and the form after it
+// are cut at the same place.
+var STRENGTH = "\\d+(?:\\.\\d+)?\\s*(?:MG|MCG|G|UNT|MEQ|ML|%)(?:\\/(?:\\d+\\s*)?(?:ML|HR|ACTUAT))?";
+
 export function strengthOf(name) {
-  var match = /(\d+(?:\.\d+)?\s*(?:MG|MCG|G|UNT|MEQ|ML|%)(?:\/(?:ML|HR|ACTUAT))?)/i.exec(name || "");
+  var match = new RegExp("(" + STRENGTH + ")", "i").exec(name || "");
   return match ? match[1].toUpperCase() : null;
 }
 
@@ -270,7 +274,7 @@ export function strengthOf(name) {
 // tablet". A brand in brackets is left off.
 export function formOf(name) {
   var text = String(name || "").replace(/\s*\[[^\]]*\]/g, "");
-  var all = Array.from(text.matchAll(/\d+(?:\.\d+)?\s*(?:MG|MCG|G|UNT|MEQ|ML|%)(?:\/(?:ML|HR|ACTUAT))?/gi));
+  var all = Array.from(text.matchAll(new RegExp(STRENGTH, "gi")));
   if (!all.length) return null;
   var last = all[all.length - 1];
   var form = text.slice(last.index + last[0].length).trim().toLowerCase();

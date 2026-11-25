@@ -238,6 +238,7 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
 | `js/meds.js` | FHIR records into one deduplicated list. |
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
+| `js/reconcile.js` | Whether two sources are the same person, and how two records match. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
 | `js/connections.js` | The connections screen's choices: where a sign-in comes back to, and what the screen says. |
