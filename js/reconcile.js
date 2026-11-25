@@ -272,9 +272,11 @@ export function verdictsFor(sides) {
   return VERDICTS.filter(function (verdict) { return found[verdict]; });
 }
 
-// The record's own date: a request's authoredOn, a statement's dateAsserted
-// or else its start. Never the day it arrived.
+// The record's own date: a request's authoredOn; a statement's end if it
+// stopped, else its dateAsserted, else its start. Never the day it arrived.
+// A stop is news from when it happened, not from when the medicine began.
 function asOfItem(item) {
+  if (item.kind === "statement" && item.status !== "current" && item.stoppedOn) return item.stoppedOn;
   return (item.kind === "statement" && item.asserted) || item.start || null;
 }
 

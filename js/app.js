@@ -13,7 +13,7 @@ import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { reconcile } from "./reconcile.js";
 import { loadDemoSource } from "./demo-source.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded, keysOf, sourceNotices } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded, keysOf, sourceNotices, firstHeldBack } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
 import { saveRecords, loadLastRecords, loadRecordsFor, splitToSave, splitFromSaved } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
@@ -1294,7 +1294,7 @@ function drawRecords(parent, arranged) {
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
-  if (state.split.heldBack) {
+  if (firstHeldBack(state.split)) {
     add(section, "p", "Your health system didn't send some of your medicines. Ask your care team.", "notice");
   }
   sourceNotices(state.split).forEach(function (text) { add(section, "p", text, "notice"); });

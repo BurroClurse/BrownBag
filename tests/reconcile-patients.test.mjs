@@ -11,7 +11,7 @@ import { demoSource } from "../js/demo-source.js";
 import { reconcile } from "../js/reconcile.js";
 import { fillsFromClaims, mergeClaims } from "../js/claims.js";
 import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus } from "../js/meds.js";
-import { arrangeList } from "../js/view.js";
+import { arrangeList, sourceNotices, firstHeldBack } from "../js/view.js";
 
 const read = (file) => JSON.parse(readFileSync(new URL(file, import.meta.url), "utf8"));
 const clinicFile = (id) => read("./fixtures/reconcile/clinics/" + id + ".json");
@@ -181,11 +181,18 @@ test("Jordan's clinic file held some back", () => {
     assert.ok(card.group.notes.includes(CLINIC + " didn't send some records"), card.name);
   }
 
+  // The second source that held back is named; the first source's line isn't needed.
+  assert.deepEqual(sourceNotices(split), [CLINIC + " didn't send some of your medicines."]);
+  assert.equal(firstHeldBack(split), false);
+
   // A stop dated by year only can't be put before the prescription: it asks.
   const simvastatin = only(split, /^simvastatin/);
   assert.deepEqual(simvastatin.group.verdicts, ["status"]);
   const stop = simvastatin.group.sides.find((side) => side.sourceName === CLINIC);
   assert.match(stop.asOf, /^\d{4}$/);
+  // It dates by when it stopped (2026), so it sorts after the sandbox's Dec 2025 side.
+  assert.equal(stop.asOf, "2026");
+  assert.deepEqual(simvastatin.group.sides.map((side) => side.sourceName), ["SMART sandbox", CLINIC]);
 
   // An undated stop can't be put in order either.
   const metformin = only(split, /^metformin/);

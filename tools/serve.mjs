@@ -50,6 +50,16 @@ export function demoAnswer(urlPath, env) {
   return { status: 200, file: fs.existsSync(own) ? own : DEMO_FILE };
 }
 
+// The request's path with %-escapes read, or null when they're malformed
+// (like "/%E0%A4%A"), so a bad address can't throw inside the handler.
+export function decodedPath(url) {
+  try {
+    return decodeURIComponent(new URL(url, "https://localhost").pathname);
+  } catch (error) {
+    return null;
+  }
+}
+
 function send(response, filePath) {
   fs.readFile(filePath, function (error, data) {
     if (error) {
@@ -71,7 +81,11 @@ function serve() {
   };
 
   https.createServer(options, function (request, response) {
-    var urlPath = decodeURIComponent(new URL(request.url, "https://localhost").pathname);
+    var urlPath = decodedPath(request.url);
+    if (urlPath === null) {
+      response.writeHead(400).end("Bad request");
+      return;
+    }
     var demo = demoAnswer(urlPath, process.env);
     if (demo) {
       if (demo.status === 200) send(response, demo.file);

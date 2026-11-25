@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
 import { demoSourceUrl, demoSource, loadDemoSource } from "../js/demo-source.js";
 import { personOf, samePerson, reconcile, sideWords } from "../js/reconcile.js";
 import { fromMedicationRequest, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus } from "../js/meds.js";
-import { arrangeList, sourceNotices } from "../js/view.js";
-import { demoAnswer } from "../tools/serve.mjs";
+import { arrangeList, sourceNotices, firstHeldBack } from "../js/view.js";
+import { demoAnswer, decodedPath } from "../tools/serve.mjs";
 
 const read = (file) => JSON.parse(readFileSync(new URL(file, import.meta.url), "utf8"));
 const DEMO = read("./fixtures/reconcile/demo-clinic.json");
@@ -159,4 +159,26 @@ test("a source kept out or not loaded is said, the first one's failure as before
   ]);
   // A list saved before sources were joined has neither.
   assert.deepEqual(sourceNotices({ current: [], older: [] }), []);
+});
+
+test("a source after the first that held records back is named, the first stays unnamed", () => {
+  const status = (complete) => [
+    { id: "a", name: "SMART sandbox", loaded: true, complete: true },
+    { id: "b", name: "Valley Clinic", loaded: true, complete }
+  ];
+  assert.deepEqual(sourceNotices({ heldBack: true, sourceStatus: status(false) }), ["Valley Clinic didn't send some of your medicines."]);
+  assert.deepEqual(sourceNotices({ heldBack: false, sourceStatus: status(true) }), []);
+  assert.equal(firstHeldBack({ heldBack: true, sourceStatus: status(false) }), false);
+  const first = status(true);
+  first[0].complete = false;
+  assert.equal(firstHeldBack({ heldBack: true, sourceStatus: first }), true);
+  // One source, or a list saved before sources were joined.
+  assert.equal(firstHeldBack({ heldBack: true }), true);
+  assert.equal(firstHeldBack({ heldBack: false }), false);
+});
+
+test("a malformed address has no path, instead of throwing", () => {
+  assert.equal(decodedPath("/%E0%A4%A"), null);
+  assert.equal(decodedPath("/js/app%2ejs?x=1"), "/js/app.js");
+  assert.equal(decodedPath("/"), "/");
 });

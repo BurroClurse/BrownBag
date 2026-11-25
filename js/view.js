@@ -266,7 +266,20 @@ export function sourceNotices(split) {
   var failed = (split.sourceStatus || []).slice(1).filter(function (source) { return !source.loaded; }).map(function (source) {
     return "Couldn't load medicines from " + source.name + ".";
   });
-  return kept.concat(failed);
+  var held = (split.sourceStatus || []).slice(1).filter(function (source) { return source.loaded && !source.complete; }).map(function (source) {
+    return source.name + " didn't send some of your medicines.";
+  });
+  return kept.concat(failed, held);
+}
+
+// Whether the first source, the patient's own health system, held records
+// back. Only that one gets the unnamed line; a later source is named. A list
+// saved before sources were joined has no sourceStatus, so it counts as first.
+export function firstHeldBack(split) {
+  if (!split.heldBack) return false;
+  var status = split.sourceStatus;
+  if (!status || !status.length) return true;
+  return status[0].complete === false;
 }
 
 // Where a medicine goes when "I stopped this" is undone.
