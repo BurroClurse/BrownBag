@@ -85,6 +85,11 @@ var WEEKLY = /\b(weekly|biweekly|monthly|bimonthly|once a (?:week|month)|every (
 // Masses are compared in mg, so 0.025 MG and 25 MCG are one strength.
 var MASS = { g: 1000, mg: 1, mcg: 0.001 };
 
+// A unit is free text, so "constructor" must not find Object.prototype's.
+function massOf(unit) {
+  return Object.prototype.hasOwnProperty.call(MASS, unit) ? MASS[unit] : 0;
+}
+
 function dosageOf(item) {
   return (item.fhir && item.fhir.dosage) || null;
 }
@@ -101,8 +106,8 @@ function strengthParts(name) {
   return strengthsOf(name).map(function (strength) {
     var found = /^(\d+(?:\.\d+)?)\s*(.*)$/.exec(strength);
     var unit = found[2].replace(/\s+/g, "").toLowerCase().split("/");
-    var scale = MASS[unit[0]] || 1;
-    var top = MASS[unit[0]] ? "mg" : unit[0];
+    var scale = massOf(unit[0]) || 1;
+    var top = massOf(unit[0]) ? "mg" : unit[0];
     return { value: parseFloat(found[1]) * scale, unit: [top].concat(unit.slice(1)).join("/"), top: top };
   });
 }
@@ -136,10 +141,10 @@ function doseAmounts(item) {
   if (!dosage || !dosage.quantity || !strengths.length) return null;
   var quantity = dosage.quantity;
   var unit = unitOf(quantity);
-  var top = MASS[unit] ? "mg" : unit;
+  var top = massOf(unit) ? "mg" : unit;
   if (strengths.some(function (strength) { return strength.top === top; })) {
     if (strengths.length > 1) return null;
-    return [{ value: quantity.value * (MASS[unit] || 1), unit: top }];
+    return [{ value: quantity.value * (massOf(unit) || 1), unit: top }];
   }
   return strengths.map(function (strength) {
     return { value: strength.value * quantity.value, unit: strength.top };
@@ -237,6 +242,17 @@ function stopCounts(current, stopped) {
   return !dates.length || !started || dates.some(function (date) { return !before(date, started); });
 }
 
+// A snapshot only says what it said then, so against a list that refreshes
+// it can't call the record stopped, or current again, on date alone. Its
+// stop counts only when it's the newer word; its "current" never does.
+function snapshotAllowsStop(current, stopped) {
+  if (Boolean(current.fromSnapshot) === Boolean(stopped.fromSnapshot)) return true;
+  if (current.fromSnapshot) return false;
+  var when = day(asOfItem(stopped));
+  var against = day(asOfItem(current));
+  return !(when && against && before(when, against));
+}
+
 // What the sources disagree on. sides are items, one per source, in one group.
 export function verdictsFor(sides) {
   var found = {};
@@ -244,7 +260,7 @@ export function verdictsFor(sides) {
     sides.forEach(function (b, j) {
       var statusA = statusWord(a);
       var statusB = statusWord(b);
-      if (statusA === "current" && statusB === "not-current" && stopCounts(a, b)) found.status = true;
+      if (statusA === "current" && statusB === "not-current" && stopCounts(a, b) && snapshotAllowsStop(a, b)) found.status = true;
       if (j <= i || statusA !== "current" || statusB !== "current") return;
       if (dosesDiffer(a, b)) found.dose = true;
       // Weekly against daily is how often, never just worded differently.
@@ -274,6 +290,14 @@ function newest(entries) {
   })[0];
 }
 
+var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "Jan 2025" from a date, read as written so the time zone can't move it.
+function monthYear(date) {
+  var found = /^(\d{4})-(\d{2})/.exec(String(date || ""));
+  return found && MONTHS[Number(found[2]) - 1] ? MONTHS[Number(found[2]) - 1] + " " + found[1] : "an unknown date";
+}
+
 function sideOf(entry) {
   var item = entry.item;
   return {
@@ -289,6 +313,20 @@ function sideOf(entry) {
     recordStatus: item.recordStatus,
     key: item.key
   };
+}
+
+// A snapshot's current statement that a refreshing record has since
+// passed isn't a disagreement, but it says how old it is.
+function withAsOfNotes(sides) {
+  var refreshed = sides.filter(function (side) { return side.kind !== "snapshot" && day(side.asOf); });
+  sides.forEach(function (side) {
+    var when = day(side.asOf);
+    if (side.kind !== "snapshot" || side.status !== "current" || !when) return;
+    if (refreshed.some(function (other) { return before(when, day(other.asOf)); })) {
+      side.asOfNote = "As of " + monthYear(when) + ", " + side.sourceName + " listed this";
+    }
+  });
+  return sides;
 }
 
 // Oldest first; an undated side goes last.
@@ -419,8 +457,11 @@ export function reconcile(sources, ingredientOf) {
         group: {
           id: null,
           sources: inOrder.map(function (entry) { return entry.source.name; }),
-          verdicts: inOrder.length > 1 ? verdictsFor(inOrder.map(function (entry) { return entry.item; })) : [],
-          sides: inOrder.map(sideOf).sort(bySides),
+          verdicts: inOrder.length > 1 ? verdictsFor(inOrder.map(function (entry) {
+            // verdictsFor can't see the source, so a copy says if it's a snapshot's.
+            return entry.source.kind === "snapshot" ? Object.assign({}, entry.item, { fromSnapshot: true }) : entry.item;
+          })) : [],
+          sides: withAsOfNotes(inOrder.map(sideOf).sort(bySides)),
           fingerprint: fingerprintOf(inOrder),
           notes: missing.concat(heldBackNotes(inOrder), notes[at])
         }

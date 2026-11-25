@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { personOf, samePerson, matchOf, plainName, GROUPS, verdictsFor, dailyAmount, isWeekly, reconcile } from "../js/reconcile.js";
+import { snapshotSource } from "../js/snapshot.js";
 import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus } from "../js/meds.js";
 
 function item(name, rxcui) {
@@ -431,4 +432,80 @@ test("strengths are compared in one unit", () => {
   assert.deepEqual(verdictsFor([mg, med("4", "levothyroxine sodium 0.025 MG/ML Oral Solution", coded(1, "mL"))]), []);
   assert.deepEqual(verdictsFor([mg, med("5", "levothyroxine sodium 0.025 MG/ML Oral Solution", coded(2, "mL"))]), ["dose"]);
   assert.equal(dailyAmount(med("6", "x 25 MCG Oral Tablet", coded(2, "tablet"))), 0.05);
+});
+
+test("a unit named like an object property is just an unknown unit", () => {
+  assert.equal(dailyAmount(med("7", "x 25 MCG Oral Tablet", coded(2, "constructor"))), 0.05);
+});
+
+// Snapshots: a dated list that was handed over, not signed in.
+function stoppedOn(id, rxcui, display, date) {
+  return request(id, rxcui, display, date, words("Take 1 tablet at night"), { status: "stopped" });
+}
+
+test("an IPS snapshot joins as a dated source", () => {
+  var snap = snapshotSource(fixture("ips-snapshot"), "Mercy Health");
+  assert.equal(snap.kind, "snapshot");
+  assert.equal(snap.refreshes, false);
+  assert.equal(snap.id, "snapshot:2026-06-01:Mercy Health");
+  assert.deepEqual([snap.split.failed, snap.split.heldBack, snap.split.placeholders], [false, false, 0]);
+  var lisinopril = only(snap.split, /^lisinopril/);
+  assert.equal(lisinopril.asserted, "2026-06-01");
+  var out = reconcile([sandbox(), snap], MAP);
+  var joined = only(out, /^lisinopril/);
+  assert.deepEqual(joined.group.verdicts, ["dose"]);
+  assert.equal(personOf(snap.patient).family, "Jenkins");
+});
+
+test("an older snapshot doesn't say stopped", () => {
+  var bundle = fixture("ips-snapshot");
+  bundle.entry[0].resource.date = "2025-01-01";
+  var snap = snapshotSource(bundle, "Mercy Health");
+  var stopped = sandbox(SANDBOX_REQUESTS.filter(function (r) { return r.id !== "a-atorvastatin"; })
+    .concat([stoppedOn("a-atorvastatin", "617310", "atorvastatin 20 MG Oral Tablet", "2026-02-01")]));
+  var statin = only(reconcile([stopped, snap], MAP), /^atorvastatin/);
+  assert.deepEqual(statin.group.verdicts, []);
+  var side = statin.group.sides.filter(function (s) { return s.kind === "snapshot"; })[0];
+  assert.equal(side.asOfNote, "As of Jan 2025, Mercy Health listed this");
+  assert.equal(statin.group.sides.filter(function (s) { return s.asOfNote; }).length, 1);
+});
+
+test("a snapshot's newer stop is a status verdict", () => {
+  var bundle = fixture("ips-snapshot");
+  bundle.entry[3].resource.status = "stopped";
+  var snap = snapshotSource(bundle, "Mercy Health");
+  assert.deepEqual(only(reconcile([sandbox(), snap], MAP), /^atorvastatin/).group.verdicts, ["status"]);
+  bundle.entry[0].resource.date = "2025-01-01";
+  assert.deepEqual(only(reconcile([sandbox(), snapshotSource(bundle, "Mercy Health")], MAP), /^atorvastatin/).group.verdicts, []);
+});
+
+test("a re-imported Brown Bag list doesn't duplicate the patient's own", () => {
+  var snap = snapshotSource(fixture("own-qr"), "Brown Bag list");
+  assert.equal(snap.id, "snapshot:2026-05-21T09:00:00Z:Brown Bag list");
+  assert.deepEqual(cards(snap.split).map(function (card) { return card.name; }), ["metformin hydrochloride 500 MG Oral Tablet"]);
+  assert.equal(snap.patient.name[0].text, "Loria Jenkins");
+  // The same patient statement in a bundle without the tag is somebody's record, and stays.
+  var untagged = fixture("own-qr");
+  delete untagged.meta;
+  assert.equal(cards(snapshotSource(untagged, "x").split).length, 2);
+});
+
+test("an IPS file made by Brown Bag drops the patient's own too", () => {
+  var bundle = fixture("ips-snapshot");
+  var patient = bundle.entry[1].fullUrl;
+  bundle.entry[0].resource.author = [{ reference: patient }, { reference: "urn:uuid:device" }];
+  bundle.entry.push({ fullUrl: "urn:uuid:device", resource: { resourceType: "Device", deviceName: [{ name: "Brown Bag", type: "user-friendly-name" }] } });
+  bundle.entry[2].resource.informationSource = { reference: patient };
+  var names = cards(snapshotSource(bundle, "Brown Bag file").split).map(function (card) { return card.name; });
+  assert.deepEqual(names, ["atorvastatin 20 MG Oral Tablet"]);
+  // A different device is not Brown Bag.
+  bundle.entry[bundle.entry.length - 1].resource.deviceName[0].name = "Other App";
+  assert.equal(cards(snapshotSource(bundle, "x").split).length, 2);
+});
+
+test("an odd bundle is refused", () => {
+  var bundle = fixture("ips-snapshot");
+  bundle.type = "transaction";
+  assert.equal(snapshotSource(bundle, "x"), null);
+  assert.equal(snapshotSource(null, "x"), null);
 });
