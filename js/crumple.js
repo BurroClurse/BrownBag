@@ -116,7 +116,7 @@ function picture(overlay, width, height) {
     var box = qr.getBoundingClientRect();
     pen.drawImage(qr, box.left - base.left, box.top - base.top, box.width, box.height);
   }
-  overlay.querySelectorAll("h2, .qr-say, button:not(.code-reveal)").forEach(function (part) {
+  overlay.querySelectorAll("h2, .qr-say, button:not(.code-reveal):not(.help-button)").forEach(function (part) {
     var at = part.getBoundingClientRect();
     var style = getComputedStyle(part);
     if (!at.width) return;
@@ -135,7 +135,40 @@ function picture(overlay, width, height) {
     pen.textBaseline = "middle";
     lines(part).forEach(function (line) { pen.fillText(line.text, line.x - base.left, line.y - base.top); });
   });
+  overlay.querySelectorAll(".help-pill").forEach(function (pill) {
+    drawPill(pen, pill, base);
+  });
   return sheet;
+}
+
+// As the CSS draws it: white over teal, the mark the other color on each half.
+function drawPill(pen, pill, base) {
+  var at = pill.getBoundingClientRect();
+  var style = getComputedStyle(pill.firstChild);
+  var x = at.left - base.left;
+  var y = at.top - base.top;
+  function half(top, fill, ink) {
+    pen.save();
+    pen.beginPath();
+    pen.rect(x, top, at.width, at.height / 2);
+    pen.clip();
+    pen.beginPath();
+    if (pen.roundRect) pen.roundRect(x + 1, y + 1, at.width - 2, at.height - 2, at.width / 2 - 1);
+    else pen.rect(x + 1, y + 1, at.width - 2, at.height - 2);
+    pen.fillStyle = fill;
+    pen.fill();
+    pen.lineWidth = 2;
+    pen.strokeStyle = "#164F5A";
+    pen.stroke();
+    pen.fillStyle = ink;
+    pen.font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+    pen.textAlign = "center";
+    pen.textBaseline = "middle";
+    pen.fillText("?", x + at.width / 2, y + at.height / 2);
+    pen.restore();
+  }
+  half(y, "#FFFFFF", "#164F5A");
+  half(y + at.height / 2, "#164F5A", "#FFFFFF");
 }
 
 // The words of an element, a line each, where they are on the screen.

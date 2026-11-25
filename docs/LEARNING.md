@@ -1840,6 +1840,17 @@ how bad one was. Either one can mark it.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 64: A pill with a question mark
+
+**What changed:** the "?" buttons are pills, white over teal, and the mark changes color
+where the pill does.
+
+**How:** the mark is see-through text. Behind it is the pill's fill upside down, cut to
+the letter's shape (`background-clip: text`). With a phone's high contrast colors on, that
+would leave a blank button, so the mark gets a plain color there.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

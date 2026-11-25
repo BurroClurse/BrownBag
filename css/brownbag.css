@@ -435,7 +435,7 @@ button.stop { background: var(--stop); border-color: var(--stop); color: #FFFFFF
    cream fill so they stand off the wheat page. */
 .big.secondary { background: var(--card); }
 
-/* "?" buttons: round, beside the words they explain. The explanation opens
+/* "?" buttons: a pill like the logo's, beside the words they explain. The explanation opens
    under them as a note. */
 .help-row { display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
 .help-row h2, .help-row p { margin-top: 0; margin-bottom: 0; }
@@ -446,14 +446,35 @@ button.help-button {
   min-width: 44px;
   padding: 0;
   margin: 0;
-  border-radius: 50%;
-  background: #164F5A;
-  border-color: #164F5A;
-  color: #FFFFFF;
-  font-size: 1.3rem;
-  font-weight: 800;
-  line-height: 1;
+  border: none;
+  border-radius: 14px;
+  background: none;
 }
+.help-pill {
+  display: block;
+  box-sizing: border-box;
+  width: 33px;
+  height: 44px;
+  margin: 0 auto;
+  border: 2px solid #164F5A;
+  border-radius: 17px;
+  background: linear-gradient(#FFFFFF 50%, #164F5A 50%);
+}
+/* The mark is the other color on each half. */
+.help-pill > span {
+  display: block;
+  height: 40px;
+  background: linear-gradient(#164F5A 50%, #FFFFFF 50%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 40px;
+  text-align: center;
+}
+.section-help .help-pill { margin-right: 0; }
+@media (forced-colors: active) { .help-pill, .help-pill > span { background: none; color: ButtonText; } }
 .help-panel { text-align: left; max-width: 28rem; width: 100%; }
 .help-panel p { margin: 0.3rem 0; }
 .help-panel ul { margin: 0.3rem 0; padding-left: 1.3rem; }

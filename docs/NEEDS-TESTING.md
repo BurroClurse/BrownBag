@@ -34,6 +34,9 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The "?" pills** (2026-11-24): passed in Chrome and on the virtual iPhone. Not yet on the
+Android emulator, nor with high contrast colors on.
+
 **The folded Allergies box and the severe mark** (2026-11-24): passed in Chrome and on the
 virtual iPhone. Not yet on the Android emulator. A nurse or pharmacist has yet to check
 which reactions are marked severe.

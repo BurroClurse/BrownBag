@@ -2400,7 +2400,8 @@ function helpBubble(row, label, fill) {
   panel.id = "help-" + helpCount;
   panel.hidden = true;
   fill(panel);
-  var ask = add(row, "button", "?", "help-button");
+  var ask = add(row, "button", null, "help-button");
+  add(add(ask, "span", null, "help-pill"), "span", "?");
   ask.type = "button";
   ask.setAttribute("aria-label", label);
   ask.setAttribute("aria-expanded", "false");

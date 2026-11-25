@@ -55,5 +55,9 @@ Nothing is ever called mild; no mark isn't a rating. A failed load, a Sign in no
 "your records say" never fold. Staff pages don't change. A nurse or pharmacist has yet to
 check the rule.
 
+**"?" pills (same day, Tyler):** each "?" is an upright pill, white over teal like the
+logo's, shorter, with the mark in the opposite color. Side by side halves were tried: they
+split the mark down its middle and it was hard to read. Still 44 by 44 to tap.
+
 **Approaches for the note:** hide the record everywhere (rejected: it would turn
 a guess into a missing allergy) or only the note on the phone (chosen).
