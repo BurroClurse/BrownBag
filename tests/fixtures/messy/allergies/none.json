@@ -1,0 +1,26 @@
+{
+  "_about": "Every way a record says the patient has no allergies, or holds a place where the allergen should be (cases 33-38). Codes and displays from HL7 R4's allergyintolerance-nka/-nkda/-nkla examples, https://hl7.org/fhir/uv/ips/CodeSystem-absent-unknown-uv-ips.json, v3-NullFlavor, data-absent-reason and the C-CDA NKA example; the rest is made up.",
+  "ipsNoInfo": { "resourceType": "AllergyIntolerance", "id": "ips-no-info", "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", "code": "active" }] }, "code": { "coding": [{ "system": "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips", "code": "no-allergy-info", "display": "No information about allergies" }] }, "recordedDate": "2026-10-01" },
+  "ipsNoInfoText": { "resourceType": "AllergyIntolerance", "id": "ips-no-info-text", "code": { "coding": [{ "system": "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips", "code": "no-allergy-info", "display": "No information about allergies" }], "text": "No information about allergies" } },
+  "ipsNoneKnown": { "resourceType": "AllergyIntolerance", "id": "ips-none", "code": { "coding": [{ "system": "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips", "code": "no-known-allergies" }] } },
+  "nka": { "resourceType": "AllergyIntolerance", "id": "nka", "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "716186003", "display": "No Known Allergy (situation)" }], "text": "NKA" } },
+  "nkda": { "resourceType": "AllergyIntolerance", "id": "nkda", "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "409137002", "display": "No Known Drug Allergy (situation)" }], "text": "NKDA" } },
+  "nkla": { "resourceType": "AllergyIntolerance", "id": "nkla", "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "716184000", "display": "No Known Latex Allergy (situation)" }], "text": "No Known Latex Allergy" } },
+  "typed": [
+    ["NKA", "No known allergy"],
+    ["nka.", "No known allergy"],
+    ["NKDA", "No known drug allergy"],
+    ["NKMA", "No known medication allergy"],
+    ["No Known Allergies.", "No known allergy"],
+    ["Patient has no known allergies", "No known allergy"],
+    ["PATIENT HAS NO KNOWN ALLERGIES.", "No known allergy"],
+    ["No Known Drug Allergies", "No known drug allergy"],
+    ["No Known Medication Allergies", "No known medication allergy"]
+  ],
+  "notNone": ["NKA to food, allergic to penicillin", "No known allergies except penicillin", "NKDA but hives with sulfa", "Penicillin (NKA)"],
+  "nullFlavor": { "resourceType": "AllergyIntolerance", "id": "ni", "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor", "code": "NI", "display": "NoInformation" }] } },
+  "absentReason": { "resourceType": "AllergyIntolerance", "id": "unk", "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/data-absent-reason", "code": "unknown", "display": "Unknown" }], "text": "Unknown" } },
+  "nullFlavorWithReaction": { "resourceType": "AllergyIntolerance", "id": "ni-hives", "code": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor", "code": "NI", "display": "NoInformation" }] }, "reaction": [{ "manifestation": [{ "text": "Hives" }] }] },
+  "flattenedCcda": { "resourceType": "AllergyIntolerance", "id": "ccda-nka", "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "419199007", "display": "Allergy to substance (disorder)" }] }, "recordedDate": "2026-09-14" },
+  "penicillin": { "resourceType": "AllergyIntolerance", "id": "pcn", "code": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "7980", "display": "Penicillin G" }] }, "reaction": [{ "manifestation": [{ "text": "Hives" }], "severity": "moderate" }] }
+}

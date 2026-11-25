@@ -11,7 +11,7 @@
 // (node tools/reconcile-patients.mjs) gets its own file from
 // tests/fixtures/reconcile/clinics/; anyone else gets
 // tests/fixtures/reconcile/demo-clinic.json. Add ?demo=someone-else to the
-// page address to see it kept out as someone else's. Without the variable,
+// page address to see it kept out as not matching. Without the variable,
 // the list is the sandbox's alone.
 
 import https from "node:https";

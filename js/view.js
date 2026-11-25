@@ -254,10 +254,12 @@ export function emptyRecordsText(split, arranged) {
   return "No medicines in your records.";
 }
 
+// "someone-else" is how a list saved before 2026-11-25 says "no-match".
 var KEPT_OUT = {
-  "someone-else": function (name) { return "Records from " + name + " are for someone else, so they aren't on your list."; },
+  "no-match": function (name) { return "Records from " + name + " don't match your name and birth date, so they aren't on your list."; },
   "no-identity": function (name) { return name + " didn't share a name and birth date, so its records aren't on your list."; }
 };
+KEPT_OUT["someone-else"] = KEPT_OUT["no-match"];
 
 var NO_MEDICINES = {
   "no-info": function (name) { return name + " has no information about your medicines."; },

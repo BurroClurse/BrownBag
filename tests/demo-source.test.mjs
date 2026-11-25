@@ -72,13 +72,13 @@ test("the test source is the signed-in person", () => {
   assert.ok(cards(source.split).every((card) => card.source === "Valley Clinic (test records)"));
 });
 
-test("with ?demo=someone-else the test source is a day off and stays out", () => {
+test("with ?demo=someone-else the test source is a day off and stays out as not matching", () => {
   const source = demoSource(DEMO, SIGNED_IN, "?demo=someone-else");
   assert.equal(source.patient.birthDate, "1971-05-02");
   assert.equal(samePerson(personOf(source.patient), personOf(SIGNED_IN)), false);
   assert.equal(demoSource(DEMO, { name: SIGNED_IN.name, birthDate: "1999-12-31" }, "?demo=someone-else").patient.birthDate, "2000-01-01");
   const out = reconcile([sandbox(LORIA), demoSource(DEMO, LORIA_PATIENT, "?x=1&demo=someone-else")], new Map());
-  assert.deepEqual(out.keptOut, [{ id: "valley-clinic-demo", name: "Valley Clinic (test records)", why: "someone-else" }]);
+  assert.deepEqual(out.keptOut, [{ id: "valley-clinic-demo", name: "Valley Clinic (test records)", why: "no-match" }]);
   assert.ok(cards(out).every((card) => !card.group));
 });
 
@@ -153,14 +153,14 @@ test("an id that isn't letters, digits and dashes never reaches the files", () =
 
 test("a source kept out or not loaded is said, the first one's failure as before", () => {
   assert.deepEqual(sourceNotices({ keptOut: [
-    { id: "a", name: "Valley Clinic", why: "someone-else" },
+    { id: "a", name: "Valley Clinic", why: "no-match" },
     { id: "b", name: "Mercy Health", why: "no-identity" }
   ], sourceStatus: [
     { id: "smart-sandbox", name: "SMART sandbox", loaded: false, complete: true },
     { id: "c", name: "Lakeside", loaded: false, complete: true },
     { id: "d", name: "Hilltop", loaded: true, complete: true }
   ] }), [
-    "Records from Valley Clinic are for someone else, so they aren't on your list.",
+    "Records from Valley Clinic don't match your name and birth date, so they aren't on your list.",
     "Mercy Health didn't share a name and birth date, so its records aren't on your list.",
     "Couldn't load medicines from Lakeside."
   ]);

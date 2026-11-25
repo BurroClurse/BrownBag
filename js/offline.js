@@ -69,9 +69,15 @@ export function splitFromSaved(saved) {
     noMedicines: saved.noMedicines || [],
     heldBack: Boolean(saved.heldBack),
     claims: saved.claims || null,
-    keptOut: saved.keptOut || [],
+    keptOut: (saved.keptOut || []).map(keptOutNow),
     sourceStatus: saved.sourceStatus || []
   };
+}
+
+// A list saved before the wording changed says "someone-else" for a source
+// whose name and birth date didn't match.
+function keptOutNow(source) {
+  return source && source.why === "someone-else" ? Object.assign({}, source, { why: "no-match" }) : source;
 }
 
 // The saved list's date for the notes on home: "Nov 21", with the year only

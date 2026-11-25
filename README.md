@@ -55,11 +55,21 @@ screen to make that work.
   severe ones; open, it has each reaction and who says so. The patient can add one, add or change their reaction, or say they have none
   known. A record that names no allergen is the last row; the patient can say
   what it is, or remove it if it repeats another. Staff still see the record.
+  A record that says the patient has no known allergies ("NKA", "NKDA",
+  "Patient has no known allergies") is shown as "Your records say: No known
+  allergy.", never as an allergy, and never hides one listed beside it. Words
+  that say none and also name something ("NKA to food, allergic to
+  penicillin") stay an allergy row.
 - **Medicines** from the records: repeats merged, strengths of one drug grouped,
   directions in full, on-hold ones marked, older prescriptions folded away. Another
   release type (12 or 24 hour, XL), salt (tartrate, succinate) or form (eye drops,
   tablets) is its own line, and so is a combination such as Excedrin beside
   Tylenol.
+- A second source is added only when its name and birth date match the
+  patient's. One that doesn't gets a line: "Records from <Source> don't match
+  your name and birth date, so they aren't on your list." One that shares no
+  name or birth date gets "<Source> didn't share a name and birth date, so its
+  records aren't on your list."
 - A source that lists no medicine and says it has no information about the
   patient's medicines, or knows of none, gets a line of its own ("<Source> has no information about your
   medicines." or "<Source> says: no medicines known."), never a card, and the
@@ -180,6 +190,28 @@ narrow it. A coded medicine with no name still shows, as "Unnamed medicine
 (RxNorm <code>)". Each code is looked up once, and a record's lookups stop
 at its first product. An allergy entry that doesn't say
 what it's to gets its own row, or a note for staff, with everything else it says.
+So does one whose code only holds a place: IPS `no-allergy-info`, a
+nullFlavor or data-absent-reason code, or "Allergy to substance"
+(SNOMED `419199007`); it's never called "NoInformation" or "Unknown". "No known
+allergies" is read from SNOMED's codes (no known allergy, drug, food,
+environmental or latex allergy), IPS `no-known-allergies` by its code alone,
+and from the whole entry's words, any case, with a dot or not: "NKA", "NKDA",
+"NKMA", "No Known Allergies.", "Patient has no known allergies". A none code
+beside words that name something is an allergy.
+
+**The same person.** A second source joins the list only when its patient has
+the same name and birth date as the first source's. The name is the
+`official` one, else the `usual` one, else the first that isn't old, maiden, a
+nickname or anonymous. Text-only names are read as "LAST, FIRST" when there's a
+comma and "First Last" when not, with "van de" and other particles kept in the
+family name. The whole family name must match ("García López" isn't "Garcia"),
+and only the first given word counts ("Amy V." is "Amy"). Capitals, accents,
+punctuation and Synthea's numbers at the end of a word ("Loria621") don't
+count; letters of any alphabet do, and ü, ö, ä and ß match ue, oe, ae and ss.
+Jr. against Sr., or II against III, is two people; an ending on one side only is
+ignored. A birth date is read as written: a datetime's first 10 characters,
+never moved to local time. 1900-01-01, 1901-01-01, 1800-01-01, 0001-01-01, a
+partial date, and `_birthDate` with a data-absent-reason count as no birth date.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the
 patient's own additions couldn't be loaded, or the server says it left
@@ -280,11 +312,12 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   matching on hundreds of synthetic patients, counts its mistakes, and uses a
   model only to flag cases for a person to review. The model never goes into
   the app.
-- **Records as real sources write them** (medicines built; allergies, names
-  and birth dates planned): Epic's, Cerner's, claims' and IPS's ways of writing
-  medicines are read as described above. Next, the same for allergies ("NKA",
-  IPS "no information about allergies"), names ("SMART, JOE", an old name
-  first, any alphabet) and birth dates. Research:
+- **Records as real sources write them** (built; waiting on the phone pass):
+  Epic's, Cerner's, claims' and IPS's ways of writing medicines, allergies
+  ("NKA", IPS "no information about allergies"), names ("SMART, JOE", an old
+  name first, any alphabet) and birth dates are read as described above. Still
+  open: a nickname against a legal name (Bill and William) stays apart, and an
+  old or maiden name is never compared. Research:
   [`docs/superpowers/research/2026-11-25-messy-data-findings.md`](docs/superpowers/research/2026-11-25-messy-data-findings.md);
   plan: Task 6d of
   [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
@@ -396,7 +429,7 @@ adds as a second source with the signed-in patient's name and birth date.
 Riley and Jordan (Test patients, above) each get their own clinic file; anyone
 else gets Loria's. Against Loria Jenkins it disagrees on a dose and on a stop,
 agrees on one medicine and adds one she doesn't have. `?demo=someone-else` in the page
-address makes it someone else's, so it's kept out. Only the home server
+address makes its birth date a day off, so it's kept out as not matching. Only the home server
 (port 8443) asks for it; the published app never does.
 
 ## Copyright

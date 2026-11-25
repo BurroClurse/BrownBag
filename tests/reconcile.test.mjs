@@ -292,10 +292,10 @@ test("dailyAmount and isWeekly", () => {
   assert.equal(isWeekly(make("x 10 MG Oral Tablet", words("Take daily"))), false);
 });
 
-test("someone else is kept out", () => {
+test("a source whose name and birth date don't match is kept out", () => {
   var first = sandbox();
   var out = reconcile([first, valley("someone-else")], MAP);
-  assert.deepEqual(out.keptOut, [{ id: "clinic-b", name: "Valley Clinic", why: "someone-else" }]);
+  assert.deepEqual(out.keptOut, [{ id: "clinic-b", name: "Valley Clinic", why: "no-match" }]);
   assert.deepEqual(out.current, first.split.current);
   assert.deepEqual(out.older, first.split.older);
   var nobody = valley("two-clinics");

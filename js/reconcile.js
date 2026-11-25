@@ -15,39 +15,128 @@ export function plainName(name) {
   return String(name || "").toLowerCase().replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// Only a whole date: "1950" or "1950-02" could be many people.
-var FULL_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// Only a whole date: "1950" or "1950-02" could be many people. A datetime's
+// date is its first 10 characters, never moved to local time, which could
+// make it another day.
+var FULL_DATE = /^(\d{4}-\d{2}-\d{2})(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/;
+// Dates sources put in when they don't know one: shared by many people.
+var PLACEHOLDER_DATES = ["1900-01-01", "1901-01-01", "1800-01-01", "0001-01-01"];
 
-// A FHIR Patient as { family, given, birthDate }, or null when the name or
-// a whole birth date is missing. A name written only as text uses its first
-// and last words.
-export function personOf(patient) {
-  var name = patient && patient.name && patient.name[0];
-  if (!name || !FULL_DATE.test(String(patient.birthDate || ""))) return null;
-  var family = name.family ? String(name.family).trim() : "";
-  var given = name.given && name.given[0] ? String(name.given[0]).trim() : "";
-  if (!family || !given) {
-    var words = String(name.text || "").trim().split(/\s+/).filter(Boolean);
-    if (words.length < 2) return null;
-    family = words[words.length - 1];
-    given = words[0];
+function birthDateOf(value) {
+  var found = FULL_DATE.exec(String(value || ""));
+  return found && PLACEHOLDER_DATES.indexOf(found[1]) === -1 ? found[1] : null;
+}
+
+// "_birthDate" saying why it's missing: no birth date, whatever else is there.
+function absentBirthDate(patient) {
+  var extensions = (patient._birthDate && patient._birthDate.extension) || [];
+  return extensions.some(function (e) { return e && /data-absent-reason$/.test(String(e.url || "")); });
+}
+
+// Which name is the person's now: the official one, else the usual one, else
+// the first that isn't an old, maiden, nickname or anonymous one.
+var NOT_NOW = ["old", "maiden", "nickname", "anonymous"];
+function currentName(names) {
+  var list = (Array.isArray(names) ? names : []).filter(function (name) { return name && typeof name === "object"; });
+  var used = function (use) { return list.filter(function (name) { return name.use === use; })[0]; };
+  return used("official") || used("usual") || list.filter(function (name) { return NOT_NOW.indexOf(name.use) === -1; })[0] || null;
+}
+
+// Endings that tell a father from a son. Degrees (MSc, PharmD) don't say who.
+var SUFFIX = /[\s,]+(jr|sr|ii|iii|iv)\.?\s*$/i;
+function withoutSuffix(text) {
+  var rest = String(text || "").trim();
+  var found = [];
+  var match;
+  while ((match = SUFFIX.exec(rest))) {
+    found.unshift(match[1].toLowerCase());
+    rest = rest.slice(0, match.index).trim();
   }
-  return { family: family, given: given, birthDate: String(patient.birthDate) };
+  return { rest: rest, suffix: found.join(" ") };
 }
 
-// Capitals, accents, punctuation and spaces don't count, nor an ending
-// (Jr., III) after the rest of the name. Elsewhere those letters are part of it.
-function nameKey(text) {
-  return String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-    .replace(/(?:[\s,]+(?:jr|sr|ii|iii|iv)\.?)+$/, "").replace(/[^a-z0-9]/g, "");
+function suffixOf(list) {
+  return (Array.isArray(list) ? list : [list]).map(function (text) { return String(text || "").toLowerCase().replace(/\./g, "").trim(); })
+    .filter(function (text) { return /^(jr|sr|ii|iii|iv)$/.test(text); }).join(" ");
 }
 
+function firstNameWord(text) {
+  return String(text || "").trim().split(/\s+/)[0] || "";
+}
+
+// Words before the last one that belong to the family name: "van de Heuvel".
+var PARTICLES = ["van", "von", "de", "der", "den", "del", "della", "la", "le", "du", "da", "di", "dos", "das", "ten", "ter", "bin", "ibn", "al", "el"];
+
+// A name written only as text: "LAST, FIRST MIDDLE", or "First Middle Last".
+function fromText(text) {
+  var split = withoutSuffix(text);
+  var comma = split.rest.indexOf(",");
+  if (comma !== -1) {
+    var family = withoutSuffix(split.rest.slice(0, comma));
+    return { family: family.rest, given: firstNameWord(split.rest.slice(comma + 1)), suffix: [split.suffix, family.suffix].filter(Boolean).join(" ") };
+  }
+  var words = split.rest.split(/\s+/).filter(Boolean);
+  if (words.length < 2) return null;
+  var start = words.length - 1;
+  while (start > 1 && PARTICLES.indexOf(words[start - 1].toLowerCase()) !== -1) start -= 1;
+  return { family: words.slice(start).join(" "), given: words[0], suffix: split.suffix };
+}
+
+// A FHIR Patient as { family, given, birthDate }, with suffix ("jr") when
+// it has one, or null when the name or a whole birth date is missing. Only
+// the first given word counts: a middle name or initial is often left off.
+export function personOf(patient) {
+  var name = patient && currentName(patient.name);
+  var birthDate = patient && !absentBirthDate(patient) ? birthDateOf(patient.birthDate) : null;
+  if (!name || !birthDate) return null;
+  var given = Array.isArray(name.given) ? name.given[0] : name.given;
+  var family = withoutSuffix(name.family);
+  var parts = { family: family.rest, given: firstNameWord(given), suffix: [suffixOf(name.suffix), family.suffix].filter(Boolean).join(" ") };
+  if (!parts.family || !parts.given) {
+    var text = fromText(name.text);
+    parts = text && { family: text.family, given: text.given, suffix: [suffixOf(name.suffix), text.suffix].filter(Boolean).join(" ") };
+  }
+  if (!parts || !parts.family || !parts.given) return null;
+  return Object.assign({ family: parts.family, given: parts.given, birthDate: birthDate }, parts.suffix ? { suffix: parts.suffix.split(" ")[0] } : {});
+}
+
+// Capitals, accents, punctuation, spaces and Synthea's numbers at the end of
+// a word don't count. Letters of any alphabet do. ü is ue or u, ö oe or o,
+// ä ae or a, and ß is ss, so each way of writing it gives a key.
+function nameKeys(text) {
+  var plain = String(text || "").toLowerCase().normalize("NFC").replace(/\u00df/g, "ss");
+  var written = plain.replace(/\u00e4/g, "ae").replace(/\u00f6/g, "oe").replace(/\u00fc/g, "ue");
+  return [written, plain].map(squash).filter(function (key, i, all) { return key && all.indexOf(key) === i; });
+}
+
+function squash(text) {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).map(function (word) {
+    return word.replace(/[^\p{L}\p{M}\d]/gu, "").replace(/\d+$/, "");
+  }).join("");
+}
+
+function sameName(a, b) {
+  var keys = nameKeys(b);
+  return nameKeys(a).some(function (key) { return keys.indexOf(key) !== -1; });
+}
+
+// Two people the same: the same family name in full, the same first given
+// word and the same birth date. Jr. against Sr., or II against III, is two
+// people; an ending on one side only is ignored.
 export function samePerson(a, b) {
   if (!a || !b) return false;
-  var family = nameKey(a.family);
-  var given = nameKey(a.given);
-  return family !== "" && given !== "" && family === nameKey(b.family) && given === nameKey(b.given) &&
-    FULL_DATE.test(a.birthDate || "") && a.birthDate === b.birthDate;
+  var one = partsOf(a);
+  var other = partsOf(b);
+  if (one.suffix && other.suffix && one.suffix !== other.suffix) return false;
+  var date = birthDateOf(a.birthDate);
+  return Boolean(date) && date === birthDateOf(b.birthDate) && sameName(one.family, other.family) && sameName(one.given, other.given);
+}
+
+// What samePerson compares, from personOf's answer or one written by hand.
+function partsOf(person) {
+  var family = withoutSuffix(person.family);
+  var given = withoutSuffix(person.given);
+  return { family: family.rest, given: firstNameWord(given.rest), suffix: person.suffix || family.suffix.split(" ")[0] || given.suffix.split(" ")[0] || "" };
 }
 
 function ingredientKey(ingredientOf, rxcui) {
@@ -406,16 +495,18 @@ function heldBackNotes(group) {
   return said;
 }
 
+// "no-match", not "someone else": a typo in a birth date or a name read
+// wrong keeps out the patient's own records too.
 function keptOutWhy(first, person) {
   if (!first || !person) return "no-identity";
-  return samePerson(first, person) ? null : "someone-else";
+  return samePerson(first, person) ? null : "no-match";
 }
 
 // Every source's list, joined into one. sources is [{ id, name, kind,
 // refreshes, patient, split }], the first one the list belongs to. A
-// source for someone else, or one that doesn't say who, stays out. Records
-// from different sources that match (GROUPS) become one card with a
-// `group`; one source never joins with itself.
+// source whose name and birth date don't match, or one that doesn't say who,
+// stays out. Records from different sources that match (GROUPS) become one
+// card with a `group`; one source never joins with itself.
 export function reconcile(sources, ingredientOf) {
   var first = sources[0];
   var firstPerson = personOf(first.patient);

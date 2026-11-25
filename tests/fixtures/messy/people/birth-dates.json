@@ -1,0 +1,13 @@
+{
+  "_about": "How real sources write a birth date (cases 48-53). The day/month swap is HL7's own patient-example-newborn; the converter shift and data-absent-reason are in the spec's shape. The people are made up.",
+  "placeholder": ["1900-01-01", "1901-01-01", "1800-01-01", "0001-01-01"],
+  "commonName": { "resourceType": "Patient", "name": [{ "family": "Smith", "given": ["Mary"] }] },
+  "newborn": { "resourceType": "Patient", "name": [{ "family": "Doe", "given": ["Baby"] }], "birthDate": "2017-09-05", "_birthDate": { "extension": [{ "url": "http://hl7.org/fhir/StructureDefinition/patient-birthTime", "valueDateTime": "2017-05-09T17:11:00+01:00" }] } },
+  "newbornSwapped": { "resourceType": "Patient", "name": [{ "family": "Doe", "given": ["Baby"] }], "birthDate": "2017-05-09" },
+  "asDateTime": { "resourceType": "Patient", "name": [{ "family": "Brooks", "given": ["Albert"] }], "birthDate": "1950-01-02T00:00:00Z" },
+  "lateDateTime": { "resourceType": "Patient", "name": [{ "family": "Brooks", "given": ["Albert"] }], "birthDate": "1950-01-02T23:30:00-05:00" },
+  "asDate": { "resourceType": "Patient", "name": [{ "family": "Brooks", "given": ["Albert"] }], "birthDate": "1950-01-02" },
+  "shifted": { "resourceType": "Patient", "name": [{ "family": "Brooks", "given": ["Albert"] }], "birthDate": "1950-01-01" },
+  "absent": { "resourceType": "Patient", "name": [{ "family": "Brooks", "given": ["Albert"] }], "_birthDate": { "extension": [{ "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason", "valueCode": "unknown" }] } },
+  "absentBeside": { "resourceType": "Patient", "name": [{ "family": "Brooks", "given": ["Albert"] }], "birthDate": "1950-01-02", "_birthDate": { "extension": [{ "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason", "valueCode": "unknown" }] } }
+}

@@ -34,6 +34,27 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Allergies, names and birth dates as real sources write them** (2026-11-25,
+Task 6d). Checked only in headless Chromium (iPhone 15 size, PIN lock, the live
+sandbox, self-signed certificate). Run `node tools/reconcile-patients.mjs`
+first, then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. On both virtual
+phones:
+
+- Loria Jenkins reads as before: My medicines (6), metoprolol's dose
+  disagreement with Valley Clinic (test records), no allergies, "I have no
+  known allergies" offered.
+- Loria again at `/?demo=someone-else`, unlocked: "Records from Valley Clinic
+  (test records) don't match your name and birth date, so they aren't on your
+  list." above the cards, and My medicines (4). The line wraps well on the
+  iPhone SE size, and VoiceOver and TalkBack read it whole.
+- Chantell Bartell: Allergies (1), closed "Mold, 1 unnamed"; open, Mold and
+  the Unnamed allergy row ("Environment (same day as Mold)"). On the QR code's
+  See what's inside: Mold, and "Records also have an unnamed allergy:
+  environment, recorded Feb 28, 1979 (same day as Mold). Ask the patient."
+- Nothing else on screen changed: the rest is in the tests
+  (`tests/messy-allergies.test.mjs`, `tests/messy-people.test.mjs`).
+
 **Medicines as real sources write them** (2026-11-25, Task 6c). Checked only
 in headless Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
 certificate). Run `node tools/reconcile-patients.mjs` first, then
@@ -109,8 +130,9 @@ signed in as Loria Jenkins:
   join the clinic's (see "Medicines as real sources write them" above), so
   it's My medicines (6); lisinopril (Valley Clinic only) is there.
 - Open the app again at `/?demo=someone-else` and unlock: after the update,
-  "Records from Valley Clinic (test records) are for someone else, so they
-  aren't on your list." and My medicines (4).
+  "Records from Valley Clinic (test records) don't match your name and birth
+  date, so they aren't on your list." (worded so since Task 6d) and My
+  medicines (4).
 - Started without the variable: My medicines (4), the same list as before
   this change, with no notice.
 - The long side labels wrap well on the iPhone SE size, and VoiceOver and

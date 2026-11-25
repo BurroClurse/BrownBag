@@ -139,7 +139,9 @@ test("a reaction under a broad code goes only to the allergy it was added to", (
 test("different allergies that share a placeholder code stay apart", () => {
   const absent = (text) => rec({ code: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }], text } });
   assert.deepEqual(items(absent("Penicillin"), absent("Latex")).map((i) => i.name), ["Latex", "Penicillin"]);
-  assert.equal(items(absent("Penicillin"), rec({ id: "9", code: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }] } })).length, 2);
+  // One that names nothing is the unnamed-allergy row (Task 6d), so both are still there.
+  const both = fromAllergyRecords([absent("Penicillin"), rec({ id: "9", code: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/data-absent-reason", code: "unknown" }] } })], "S");
+  assert.deepEqual([both.items.length, both.unspecified], [1, 1]);
   // A nameless record of a real code joins the one that has its name.
   assert.deepEqual(items(rec({ id: "1", code: { coding: [{ system: SNOMED, code: "84489001" }] } }), rec()).map((i) => i.name), ["Mold"]);
 });

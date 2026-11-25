@@ -167,7 +167,7 @@ an idea becomes a plan only after its own design.
     `tools/reconcile-patients.mjs`).
   - Careful: two vendors' sandboxes have different made-up patients, so
     Brown Bag's same-person check would keep them apart, and connecting Epic's
-    sandbox beside the SMART sandbox would only ever show "someone else".
+    sandbox beside the SMART sandbox would only ever show "don't match".
     Anpheros' sandbox (looked at 2026-11-25) is also European and ATC-coded,
     and US sources only is the scope for now (Tyler, 2026-11-25).
   - Idea: two records for the same made-up person on the SMART sandbox, which

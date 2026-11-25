@@ -1,0 +1,11 @@
+{
+  "_about": "One source's penicillin family (case 39): typed names, an abbreviation, a reaction in the name, and IPS's class code. Codes from Synthea and the IPS example bundles; the records are made up.",
+  "records": [
+    { "resourceType": "AllergyIntolerance", "id": "p1", "code": { "text": "Penicillin" } },
+    { "resourceType": "AllergyIntolerance", "id": "p2", "code": { "text": "Penicillins" } },
+    { "resourceType": "AllergyIntolerance", "id": "p3", "code": { "text": "PCN" } },
+    { "resourceType": "AllergyIntolerance", "id": "p4", "code": { "text": "penicillin - rash" } },
+    { "resourceType": "AllergyIntolerance", "id": "p5", "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "764146007", "display": "Substance with penicillin structure (substance)" }, { "system": "http://www.whocc.no/atc", "code": "J01CA", "display": "Penicillins with extended spectrum" }] } },
+    { "resourceType": "AllergyIntolerance", "id": "s1", "code": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "10831", "display": "Sulfamethoxazole / Trimethoprim" }], "text": "Sulfa" } }
+  ]
+}

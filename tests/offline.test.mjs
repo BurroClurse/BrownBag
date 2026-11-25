@@ -190,13 +190,16 @@ test("a saved copy keeps its groups", async () => {
   const storage = memoryStorage();
   const split = {
     current: [GROUP_CARD], older: [], failed: false, placeholders: 0, heldBack: false, claims: null, ingredientOf: new Map([["1", { rxcui: "1" }]]),
-    keptOut: [{ id: "x", name: "Mercy Health", why: "someone-else" }],
+    keptOut: [{ id: "x", name: "Mercy Health", why: "no-match" }],
     sourceStatus: [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }, { id: "valley-clinic-demo", name: "Valley Clinic (test records)", loaded: true, complete: true }]
   };
   await saveRecords(storage, await key(), Object.assign({ patientId: SAVED.patientId, patient: SAVED.patient, savedAt: SAVED.savedAt }, splitToSave(split)));
   const opened = splitFromSaved(await loadLastRecords(storage, await key()));
   assert.deepEqual(opened.current[0].group, GROUP_CARD.group);
   assert.deepEqual(opened.keptOut, split.keptOut);
+  // Saved before the wording changed, it reads as the new reason.
+  const older = splitFromSaved(Object.assign({}, splitToSave(split), { keptOut: [{ id: "x", name: "Mercy Health", why: "someone-else" }] }));
+  assert.deepEqual(older.keptOut, split.keptOut);
   assert.deepEqual(opened.sourceStatus, split.sourceStatus);
   assert.equal(opened.failed, false);
   assert.equal(arrangeList(opened, {}).toCheck.length, 1, "still asks");
