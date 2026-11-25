@@ -114,3 +114,20 @@ test("every sign-in link says where to come back to", () => {
   });
   assert.ok(links >= 5);
 });
+
+// Review fixes, 2026-11-25.
+test("a sign-in that didn't finish isn't replayed by a reload or the auto-lock", () => {
+  // fhirclient leaves ?error= or a spent ?code= in the address when it throws.
+  assert.ok(body("js/app.js", "signInUnavailable").includes('if (cameBackFromAuth) history.replaceState(null, "", "./");'));
+});
+
+test("Done with no list loaded stays on the connections screen", () => {
+  const done = body("js/app.js", "connectionsDone");
+  assert.ok(done.indexOf("!state.patient") !== -1);
+  assert.ok(done.indexOf("!state.patient") < done.indexOf("history.back()"));
+});
+
+test("Sign-in didn't finish goes once an update works or a new sign-in starts", () => {
+  assert.ok(body("js/app.js", "finishUpdate").includes("state.signInFailed = false"));
+  assert.ok(body("js/app.js", "signInButton").includes("state.signInFailed = false"));
+});

@@ -352,7 +352,10 @@ function finishUpdate() {
   var note = noticesFor({ savedAt: state.savedAt, offline: state.offline, needsSignIn: state.needsSignIn, allergiesRefused: state.allergies.status === "refused", now: new Date() })[0];
   sayUpdate(note ? note.text : updateDoneText(state.allergies.status));
   var toast = updatedToast({ offline: state.offline, needsSignIn: state.needsSignIn, allergyStatus: state.allergies.status });
-  if (toast) showToast(toast.kind, toast.text);
+  if (toast) {
+    state.signInFailed = false;
+    showToast(toast.kind, toast.text);
+  }
   else hideToast();
   // Other screens pick up the new list when they go back home, so nothing
   // the patient is typing gets redrawn away.
@@ -563,6 +566,9 @@ async function clearChanges(part) {
 // sign-in from the connections screen failed: that screen says so. With no
 // list, the connections screen.
 async function signInUnavailable(error, where) {
+  // fhirclient leaves ?error= or a spent ?code= in the address when it
+  // throws; a reload or the auto-lock would replay it.
+  if (cameBackFromAuth) history.replaceState(null, "", "./");
   var may = mayOpenSaved({
     signedOut: Boolean(localStorage.getItem(SIGNED_OUT_KEY)),
     asked: state.askedForSaved,
@@ -2191,6 +2197,12 @@ function drawConnections() {
 // From More options there's a step to go back to. Back from a sign-in, or
 // setting up, there isn't: Done goes home.
 function connectionsDone() {
+  // Nothing loaded (storage cleared, signed out elsewhere): home has nothing
+  // to show, so setting up stays.
+  if (!state.patient) {
+    openConnections("setup");
+    return;
+  }
   if (history.state && history.state.bb === "records") {
     history.back();
   } else {
@@ -2203,7 +2215,10 @@ function connectionsDone() {
 function signInButton(parent, text, kind, href) {
   var link = add(parent, "a", text, "button big " + kind);
   link.href = href;
-  link.addEventListener("click", function () { keepReturn(sessionStorage, state.recordsFrom); });
+  link.addEventListener("click", function () {
+    state.signInFailed = false;
+    keepReturn(sessionStorage, state.recordsFrom);
+  });
   return link;
 }
 
