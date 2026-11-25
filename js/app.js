@@ -457,7 +457,7 @@ async function loadFresh(client, found, total) {
     .then(function (result) { found.allergies = result; });
   var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras);
   // Only the home test server has a second source (js/demo-source.js).
-  var demo = loadDemoSource(location, patient, globalThis.fetch.bind(globalThis));
+  var demo = loadDemoSource(location, patient, patientId, globalThis.fetch.bind(globalThis));
   var medicines = await loadMedicines(client, patientId);
   var sources = [{ id: "smart-sandbox", name: SOURCE, kind: "records", refreshes: true, patient: patient, split: medicines }];
   var other = await demo;

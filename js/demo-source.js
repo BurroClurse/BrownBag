@@ -8,11 +8,13 @@ import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceho
 
 export var DEMO_ID = "valley-clinic-demo";
 export var DEMO_NAME = "Valley Clinic (test records)";
-var DEMO_URL = "./_home/demo-source.json";
 
 // Only the home server's port: GitHub Pages is on 443, so it never asks.
-export function demoSourceUrl(location) {
-  return location && String(location.port) === "8443" ? DEMO_URL : null;
+// Per patient, so a test patient made for it (tools/reconcile-patients.mjs)
+// gets its own clinic file; the server answers anyone else with Loria's.
+export function demoSourceUrl(location, patientId) {
+  if (!location || String(location.port) !== "8443" || !patientId) return null;
+  return "./_home/demo-source/" + encodeURIComponent(patientId) + ".json";
 }
 
 // The next day, so the same-person check can be seen keeping a source out.
@@ -22,9 +24,10 @@ function dayAfter(date) {
   return new Date(Date.UTC(Number(found[1]), Number(found[2]) - 1, Number(found[3]) + 1)).toISOString().slice(0, 10);
 }
 
-// json is { patient, requests, statements }. The records are made up, so
-// they're given the signed-in patient's name and birth date to join that
-// list; ?demo=someone-else in the address makes the birth date a day off.
+// json is { patient, requests, statements, heldBack? }. The records are
+// made up, so they're given the signed-in patient's name and birth date to
+// join that list; ?demo=someone-else in the address makes the birth date a
+// day off.
 export function demoSource(json, patient, search) {
   var someoneElse = new URLSearchParams(search || "").get("demo") === "someone-else";
   var birthDate = patient && patient.birthDate;
@@ -40,7 +43,8 @@ export function demoSource(json, patient, search) {
   // No ingredient map: the app looks its codes up before joining.
   var split = splitByStatus(groupByIngredient(dedupe(items), new Map()));
   split.failed = false;
-  split.heldBack = false;
+  // A clinic file can say it sent only some records, as a real source can.
+  split.heldBack = json.heldBack === true;
   split.placeholders = placeholders;
   return {
     id: DEMO_ID,
@@ -58,8 +62,8 @@ export function demoSource(json, patient, search) {
 // The test source, or null: not the home server, not started for it, no
 // signal, or something that isn't the test records. Never stored by the
 // service worker (sw.js).
-export async function loadDemoSource(location, patient, fetchFn) {
-  var url = demoSourceUrl(location);
+export async function loadDemoSource(location, patient, patientId, fetchFn) {
+  var url = demoSourceUrl(location, patientId);
   if (!url) return null;
   try {
     var response = await fetchFn(url, { cache: "no-store", credentials: "same-origin" });

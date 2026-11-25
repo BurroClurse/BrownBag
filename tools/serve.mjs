@@ -6,9 +6,11 @@
 //
 // To try two sources on a phone, start it with the demo clinic:
 //   BROWN_BAG_DEMO=two-clinics node tools/serve.mjs
-// The app then adds Valley Clinic's test records
-// (tests/fixtures/reconcile/demo-clinic.json) as a second source, given the
-// signed-in patient's name and birth date. Add ?demo=someone-else to the
+// The app then adds Valley Clinic's test records as a second source, given
+// the signed-in patient's name and birth date. A test patient made for it
+// (node tools/reconcile-patients.mjs) gets its own file from
+// tests/fixtures/reconcile/clinics/; anyone else gets
+// tests/fixtures/reconcile/demo-clinic.json. Add ?demo=someone-else to the
 // page address to see it kept out as someone else's. Without the variable,
 // the list is the sandbox's alone.
 
@@ -22,6 +24,9 @@ var PORT = 8443;
 var ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 var CERTS = path.join(ROOT, ".certs");
 var DEMO_FILE = path.join(ROOT, "tests", "fixtures", "reconcile", "demo-clinic.json");
+var CLINICS = path.join(ROOT, "tests", "fixtures", "reconcile", "clinics");
+// One part of the address, never a path: no dots, no slashes.
+var DEMO_PATH = /^\/_home\/demo-source\/([A-Za-z0-9-]+)\.json$/;
 
 var TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -34,14 +39,15 @@ var TYPES = {
   ".svg": "image/svg+xml"
 };
 
-// The demo clinic's address, answered here before any file is looked up,
-// since no _home folder exists. Null for every other address.
+// The demo clinic's address for one patient, answered here before any file
+// is looked up, since no _home folder exists: that patient's clinic file,
+// else Loria's. Null for every other address.
 export function demoAnswer(urlPath, env) {
   if (urlPath.indexOf("/_home/") !== 0) return null;
-  if (urlPath === "/_home/demo-source.json" && env.BROWN_BAG_DEMO === "two-clinics") {
-    return { status: 200, file: DEMO_FILE };
-  }
-  return { status: 404 };
+  var found = DEMO_PATH.exec(urlPath);
+  if (!found || env.BROWN_BAG_DEMO !== "two-clinics") return { status: 404 };
+  var own = path.join(CLINICS, found[1] + ".json");
+  return { status: 200, file: fs.existsSync(own) ? own : DEMO_FILE };
 }
 
 function send(response, filePath) {

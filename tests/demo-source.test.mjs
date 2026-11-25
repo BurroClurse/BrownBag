@@ -33,10 +33,26 @@ const only = (split, pattern) => {
 };
 
 test("the test source is only for the home server", () => {
-  assert.equal(demoSourceUrl({ port: "8443" }), "./_home/demo-source.json");
-  assert.equal(demoSourceUrl({ port: "" }), null);
-  assert.equal(demoSourceUrl({ port: "443" }), null);
-  assert.equal(demoSourceUrl(null), null);
+  assert.equal(demoSourceUrl({ port: "8443" }, "e7de504a-311d-49be-b2bc-566a328bcc72"), "./_home/demo-source/e7de504a-311d-49be-b2bc-566a328bcc72.json");
+  assert.equal(demoSourceUrl({ port: "" }, "e7de504a-311d-49be-b2bc-566a328bcc72"), null);
+  assert.equal(demoSourceUrl({ port: "443" }, "e7de504a-311d-49be-b2bc-566a328bcc72"), null);
+  assert.equal(demoSourceUrl(null, "e7de504a-311d-49be-b2bc-566a328bcc72"), null);
+});
+
+test("the test clinic follows the signed-in patient", () => {
+  assert.equal(demoSourceUrl({ port: "8443" }, "brownbag-recon-riley"), "./_home/demo-source/brownbag-recon-riley.json");
+  assert.equal(demoSourceUrl({ port: "" }, "brownbag-recon-riley"), null);
+  // No patient, no file to ask for.
+  assert.equal(demoSourceUrl({ port: "8443" }), null);
+  assert.equal(demoSourceUrl({ port: "8443" }, ""), null);
+  // An id is one part of the address, whatever it holds.
+  assert.equal(demoSourceUrl({ port: "8443" }, "../a b"), "./_home/demo-source/..%2Fa%20b.json");
+});
+
+test("a clinic file that held records back says so", () => {
+  assert.equal(demoSource(DEMO, SIGNED_IN, "").split.heldBack, false);
+  assert.equal(demoSource(Object.assign({}, DEMO, { heldBack: true }), SIGNED_IN, "").split.heldBack, true);
+  assert.equal(demoSource(Object.assign({}, DEMO, { heldBack: "yes" }), SIGNED_IN, "").split.heldBack, false);
 });
 
 test("no _home folder is published", () => {
@@ -88,24 +104,44 @@ test("the demo clinic against Loria's own records", () => {
 test("only a 200 from the home server adds it", async () => {
   const asked = [];
   const answer = (status, body) => async (url, options) => { asked.push([url, options]); return { ok: status === 200, status, json: async () => body }; };
-  assert.equal(await loadDemoSource({ port: "443", search: "" }, SIGNED_IN, answer(200, DEMO)), null);
+  const id = "e7de504a-311d-49be-b2bc-566a328bcc72";
+  assert.equal(await loadDemoSource({ port: "443", search: "" }, SIGNED_IN, id, answer(200, DEMO)), null);
   assert.deepEqual(asked, [], "never asked anywhere else");
-  assert.equal(await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, answer(404, null)), null);
-  const source = await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, answer(200, DEMO));
+  assert.equal(await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, id, answer(404, null)), null);
+  const source = await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, id, answer(200, DEMO));
   assert.equal(source.id, "valley-clinic-demo");
-  assert.equal(asked[0][0], "./_home/demo-source.json");
-  assert.equal(asked[0][1].cache, "no-store");
-  assert.equal(await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, async () => { throw new Error("offline"); }), null);
-  assert.equal(await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, answer(200, { nonsense: true })), null);
+  assert.equal(asked[1][0], "./_home/demo-source/" + id + ".json");
+  assert.equal(asked[1][1].cache, "no-store");
+  assert.equal(await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, id, async () => { throw new Error("offline"); }), null);
+  assert.equal(await loadDemoSource({ port: "8443", search: "" }, SIGNED_IN, id, answer(200, { nonsense: true })), null);
 });
 
 test("the home server answers with the demo clinic only when started for it", () => {
+  const on = { BROWN_BAG_DEMO: "two-clinics" };
   const file = fileURLToPath(new URL("./fixtures/reconcile/demo-clinic.json", import.meta.url));
-  assert.deepEqual(demoAnswer("/_home/demo-source.json", { BROWN_BAG_DEMO: "two-clinics" }), { status: 200, file });
-  assert.deepEqual(demoAnswer("/_home/demo-source.json", {}), { status: 404 });
-  assert.deepEqual(demoAnswer("/_home/demo-source.json", { BROWN_BAG_DEMO: "yes" }), { status: 404 });
-  assert.deepEqual(demoAnswer("/_home/other.json", { BROWN_BAG_DEMO: "two-clinics" }), { status: 404 });
-  assert.equal(demoAnswer("/index.html", { BROWN_BAG_DEMO: "two-clinics" }), null);
+  const loria = "/_home/demo-source/e7de504a-311d-49be-b2bc-566a328bcc72.json";
+  assert.deepEqual(demoAnswer(loria, on), { status: 200, file });
+  assert.deepEqual(demoAnswer(loria, {}), { status: 404 });
+  assert.deepEqual(demoAnswer(loria, { BROWN_BAG_DEMO: "yes" }), { status: 404 });
+  assert.deepEqual(demoAnswer("/_home/demo-source.json", on), { status: 404 });
+  assert.deepEqual(demoAnswer("/_home/other.json", on), { status: 404 });
+  assert.equal(demoAnswer("/index.html", on), null);
+});
+
+test("a patient with their own clinic file gets it", () => {
+  const on = { BROWN_BAG_DEMO: "two-clinics" };
+  const riley = fileURLToPath(new URL("./fixtures/reconcile/clinics/brownbag-recon-riley.json", import.meta.url));
+  assert.deepEqual(demoAnswer("/_home/demo-source/brownbag-recon-riley.json", on), { status: 200, file: riley });
+  assert.deepEqual(demoAnswer("/_home/demo-source/brownbag-recon-riley.json", {}), { status: 404 });
+});
+
+test("an id that isn't letters, digits and dashes never reaches the files", () => {
+  const on = { BROWN_BAG_DEMO: "two-clinics" };
+  for (const bad of ["../../package", "..", "a.b", "a/b", "", "brownbag-recon-riley.json", "a b", "%2e%2e", "clinics\\x"]) {
+    assert.deepEqual(demoAnswer("/_home/demo-source/" + bad + ".json", on), { status: 404 }, bad);
+  }
+  assert.deepEqual(demoAnswer("/_home/demo-source/brownbag-recon-riley", on), { status: 404 });
+  assert.deepEqual(demoAnswer("/_home/demo-source/brownbag-recon-riley.json/x", on), { status: 404 });
 });
 
 test("a source kept out or not loaded is said, the first one's failure as before", () => {

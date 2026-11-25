@@ -34,6 +34,39 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Riley and Jordan, test patients whose records disagree** (2026-11-25, step
+2 of when sources disagree). Checked only in headless Chromium (iPhone 15
+size, PIN lock, the live sandbox, self-signed certificate). Run
+`node tools/reconcile-patients.mjs` first (the sandbox deletes them every
+night), then start the home server with
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. They aren't on Brown Bag's
+list of test patients, so after setting up the lock, open the home server's
+address with one of these added, which signs in as that patient with no
+approval page:
+
+- Riley: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLXJpbGV5IiwiIiwiQVVUTyIsMSwxLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwxLCIiXQ%2Ffhir`
+- Jordan: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLWpvcmRhbiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir`
+
+On both virtual phones:
+
+- Riley Reconcile: My medicines (9). Lisinopril 20 MG says "Your records
+  don't agree on how much you take." with "SMART sandbox" 10 MG and "Valley
+  Clinic (test records)" 20 MG sides. Methotrexate says "…how often you take
+  it." with "once a week" against "once a day". Atorvastatin says "…whether
+  you still take it." with sides ending ", current" and ", stopped".
+  Levothyroxine says "Marked stopped in your records, but filled" and a date
+  last month. Sertraline is one card (Zoloft and generic agree). Both
+  metformins, the lisinopril with hydrochlorothiazide, and amlodipine (Valley
+  Clinic only) are their own cards. Under Older prescriptions (1), the
+  ondansetron IV says "Hospital order".
+- Jordan Partial: "Some records didn't load." on Home, My medicines with no
+  count, and "Your health system didn't send some of your medicines. Ask your
+  care team." Simvastatin and metformin each say "…whether you still take
+  it."; simvastatin's clinic side is dated by year only, metformin's has no
+  date. Amlodipine is one card.
+- The long side labels wrap well on the iPhone SE size, and VoiceOver and
+  TalkBack read each side's source with its dose.
+
 **Two sources on one list, with the home server's test clinic** (2026-11-25,
 step 2 of when sources disagree). Checked only in headless Chromium (iPhone
 15 size, PIN lock, Loria Jenkins on the live sandbox, self-signed

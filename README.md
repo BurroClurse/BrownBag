@@ -282,7 +282,7 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 | `vendor/` | The two libraries the app uses (fhirclient, qrcode-generator), unchanged copies with their licenses (`vendor/LICENSES.md`). |
 | `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/`, and the see-through logo this README shows. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
-| `tools/` | Local https server, the demo patient script and the logo source. |
+| `tools/` | Local https server, the demo patient scripts and the logo source. |
 | `docs/` | Designs, build plans, the learning log, the limits on keeping the list current, and what's waiting for a phone test. |
 | `prompts/` | A prompt that has an AI agent list the sandbox's test data. |
 | `health.html` | From the course starter; not part of Brown Bag. |
@@ -306,6 +306,22 @@ patients are deleted: **Avery Brownbag** (`brownbag-demo-patient`), who shows ev
 fill case, is there only after `node tools/demo-patient.mjs`, until the next reset.
 Nothing done in Brown Bag is sent to the sandbox; what you add stays on your phone.
 
+Two more added patients have records that disagree, for trying two sources with
+the home server's test clinic (below). They're there only after
+`node tools/reconcile-patients.mjs`, until the next reset. The script also writes
+each one's test clinic file, with dates from the same day, so run it again before
+testing on another day.
+
+- **Riley Reconcile** (`brownbag-recon-riley`, born 1948-06-02): lisinopril 10 mg
+  in the sandbox and 20 mg at the clinic; methotrexate weekly against daily;
+  atorvastatin current in the sandbox, stopped later at the clinic; Zoloft and
+  generic sertraline, which agree; regular and extended-release metformin, a
+  possible duplicate; lisinopril with hydrochlorothiazide beside lisinopril; an
+  active hospital IV order; levothyroxine stopped in the record but filled since;
+  and amlodipine, which only the clinic lists.
+- **Jordan Partial** (`brownbag-recon-jordan`, born 1955-11-20): a stop dated by
+  year only, an undated stop, and a clinic file that says it held records back.
+
 ## Run the tests
 
 Node 22 or later, nothing to install. From this folder:
@@ -323,8 +339,9 @@ a certificate from [mkcert](https://github.com/FiloSottile/mkcert) kept in
 To try two sources, start it with `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`.
 It then serves the demo clinic, Valley Clinic (test records), which the app
 adds as a second source with the signed-in patient's name and birth date.
-Against Loria Jenkins it disagrees on a dose and on a stop, agrees on one
-medicine and adds one she doesn't have. `?demo=someone-else` in the page
+Riley and Jordan (Test patients, above) each get their own clinic file; anyone
+else gets Loria's. Against Loria Jenkins it disagrees on a dose and on a stop,
+agrees on one medicine and adds one she doesn't have. `?demo=someone-else` in the page
 address makes it someone else's, so it's kept out. Only the home server
 (port 8443) asks for it; the published app never does.
 

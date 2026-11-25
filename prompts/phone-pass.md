@@ -12,7 +12,11 @@ that needs a phone check is listed in `docs/NEEDS-TESTING.md` for this pass.
 2. Make sure you're on the branch Tyler checked out (`git status`) and that it
    is up to date with GitHub (`git pull`). Run the tests first:
    `node --test "tests/*.test.mjs"`. If any fail, stop and tell Tyler.
-3. Start the home test server with the test clinic switched on, in the
+3. Put the test patients whose records disagree back on the sandbox, which
+   deletes them every night, and write their test clinic files for today:
+   `node tools/reconcile-patients.mjs`. If it fails, tell Tyler and skip the
+   items that use Riley Reconcile or Jordan Partial. Then start the home test
+   server with the test clinic switched on, in the
    background: `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. It needs the
    mkcert certificates in `.certs/` (see the top of `tools/serve.mjs`). Without
    `BROWN_BAG_DEMO`, the list is today's with one source; check both ways where
@@ -21,8 +25,9 @@ that needs a phone check is listed in `docs/NEEDS-TESTING.md` for this pass.
    - the Android emulator (`Peregrine_Pixel9_API36`, Chrome), with TalkBack for
      anything that says screen reader or TalkBack;
    - the iPhone 15 simulator (Safari).
-   Use the test patients named in `docs/NEEDS-TESTING.md` (Loria Jenkins, or
-   Chantell Bartell for claims and an allergy). Take a screenshot of anything
+   Use the test patients named in `docs/NEEDS-TESTING.md` (Loria Jenkins,
+   Chantell Bartell for claims and an allergy, or Riley Reconcile and Jordan
+   Partial for records that disagree). Take a screenshot of anything
    that looks wrong.
 5. Don't change any app code. If something fails, write down exactly what you
    did, what you saw, and on which phone, and keep going with the rest.
@@ -30,7 +35,9 @@ that needs a phone check is listed in `docs/NEEDS-TESTING.md` for this pass.
    that passed to "Tested" with today's date and the phones it passed on, and
    leave failed or blocked ones under "Waiting", with a short note on what
    happened. Items under "On a real iPhone (Tyler)" stay for Tyler.
-7. Commit only `docs/NEEDS-TESTING.md` with a one-line message in plain words
+7. Stop the server. Step 3 rewrote the clinic files with today's dates, so put
+   them back first: `git checkout -- tests/fixtures/reconcile/clinics`. Commit
+   only `docs/NEEDS-TESTING.md` with a one-line message in plain words
    ("Phone pass: <what passed>"), then `git pull` and `git push` on the same
    branch. Never push to `main`.
 8. Tell Tyler, in plain words: what passed, what failed (with screenshots), and
