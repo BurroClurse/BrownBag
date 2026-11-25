@@ -651,6 +651,18 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 
 /* Two blocks, on My medicines and the staff page:
    allergies in a box nobody can miss, then medicines. */
+/* My medicines: Allergies and Medicines get matching section headers, bigger
+   than the rest, each in its own color: the allergy box's red, the buttons'
+   teal (Tyler, 2026-11-25). */
+.screen-medicines .section-heading { margin: 2.25rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 4px solid; font-size: min(1.9rem, 11vw); line-height: 1.2; overflow-wrap: anywhere; }
+.screen-medicines .allergies-section { color: var(--error-ink); border-bottom-color: var(--error-ink); margin-top: 1.5rem; }
+.screen-medicines .medicines-section { color: var(--teal); border-bottom-color: var(--teal); }
+.screen-medicines .section-heading + .allergy-box { margin-top: 0; }
+/* The box's summary line opens and closes the list (drawAllergyFold). */
+.allergy-box > .allergy-toggle { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 44px; margin: 0; padding: 0; background: none; border: none; color: inherit; font: inherit; text-align: left; }
+.allergy-box > .allergy-toggle > .allergy-names { min-width: 0; }
+.allergy-box > .allergy-toggle > .allergy-chevron { color: var(--error-ink); }
+.allergy-box > .allergy-toggle + .allergy-fold { margin-top: 0.5rem; }
 .allergy-box { background: #FBE4DF; border: 3px solid var(--error-ink); border-radius: 16px; padding: 0.75rem 0.9rem 1rem; margin: 1.5rem 0 0; }
 .allergy-box > .block-title, .screen-medicines .allergy-box > .block-title { margin: 0 0 0.6rem; padding: 0; border: none; color: var(--error-ink); font-size: 1.6rem; }
 .allergy-sign { display: inline-block; margin-right: 0.45rem; vertical-align: -0.1em; }
