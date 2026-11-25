@@ -814,13 +814,17 @@ function drawMedicines(arranged) {
   // The one being edited was removed.
   if (state.editing && !editedNow()) closeAddForm();
   medicinesDone("screen-top", "medicines-done");
-  var title = add(root, "h1", "My medicines");
+  // Shown, it read "My medicines" right over "Medicines (7)"; the two section
+  // headers say what's here. Screen readers still hear the page's name.
+  var title = add(root, "h1", "My medicines", "visually-hidden");
   title.id = "medicines-heading";
   title.tabIndex = -1;
   note(root, DISCLAIMER);
   drawAllergies(root);
   // No number when some didn't load: it would read as the whole.
-  var block = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2).section;
+  var medicines = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2);
+  medicines.heading.className = "section-heading medicines-section";
+  var block = medicines.section;
   drawAdd(block);
   // Only the order on this screen; the QR code has its own.
   var sorted = sortArranged(arranged, state.data.additions, savedSort(localStorage));
@@ -897,6 +901,9 @@ function drawAllergies(parent) {
   var box = allergyBox(parent, allergiesTitle(arranged.cards), showsSymbol(arranged.count, arranged.unspecified, state.dataFailed ? "failed" : state.allergies.status), 2);
   box.heading.id = "allergies-heading";
   box.heading.tabIndex = -1;
+  // A section header above the box, matching Medicines' (Tyler, 2026-11-25).
+  box.heading.className = "section-heading allergies-section";
+  parent.insertBefore(box.heading, box.section);
   var section = box.section;
   if (saysNoneKnown(arranged, state.dataFailed ? "failed" : state.allergies.status)) section.classList.add("allergy-none-known");
   if (state.dataFailed) add(section, "p", "Allergies you added couldn't be opened.", "notice");
@@ -973,22 +980,18 @@ function drawAllergies(parent) {
 
 // The title opens and closes the rest; closed, the names still show.
 function drawAllergyFold(box, arranged) {
-  var toggle = document.createElement("button");
+  // The summary line opens and closes the list; the header is above the box.
+  var toggle = add(box.section, "button", null, "allergy-toggle");
   toggle.type = "button";
   toggle.id = "allergies-toggle";
-  toggle.className = "allergy-toggle";
-  var words = add(toggle, "span");
-  while (box.heading.firstChild) words.appendChild(box.heading.firstChild);
+  add(toggle, "span", closedLine(arranged.cards, arranged.open.length), "allergy-names");
   add(toggle, "span", null, "allergy-chevron").setAttribute("aria-hidden", "true");
-  box.heading.appendChild(toggle);
-  var names = add(box.section, "p", closedLine(arranged.cards, arranged.open.length), "allergy-names");
   var fold = add(box.section, "div", null, "allergy-fold");
   fold.id = "allergy-fold";
   toggle.setAttribute("aria-controls", "allergy-fold");
   function show() {
     toggle.setAttribute("aria-expanded", String(state.allergiesOpen));
     fold.hidden = !state.allergiesOpen;
-    names.hidden = state.allergiesOpen;
   }
   toggle.addEventListener("click", function () {
     state.allergiesOpen = !state.allergiesOpen;
