@@ -58,7 +58,7 @@ only, no real patients). To open it as a certain patient, see
 - **Sort** by name, newest, or who prescribed it.
 
 **The QR code**
-- It fills the screen; Close or a swipe puts it away. After scanning, staff type 6
+- It fills the screen; Close or a swipe crumples it into the bag. After scanning, staff type 6
   digits the patient tells them (hidden until tapped) on `share.html`.
 - **See what's inside** shows everything in the code on the patient's own phone.
 - **Save as FHIR file** (staff, or the patient under See what's inside) saves an
@@ -99,7 +99,7 @@ patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read
 Every resource scope is read-only. `offline_access` asks for a refresh token
 ([SMART App Launch: scopes](https://hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html)).
 
-**Reads, each time the app is opened and unlocked:**
+**Reads, each time the app is opened and unlocked, when the signal comes back, and on Update now:**
 
 1. Refresh token → new access token (about an hour).
 2. `GET Patient/{id}`.
@@ -159,7 +159,7 @@ The list never passes through a server.
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
 | `js/meds.js` | FHIR records into one deduplicated list. |
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
-| `js/allergies.js` | Allergy records and the patient's own, one card each. |
+| `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/card.js` | One medicine's card: how to take it, anything to check, then the rest, each labelled. |
@@ -182,7 +182,7 @@ The list never passes through a server.
 | `js/sort.js` | The order of My medicines, and the short name on home. |
 | `js/older.js` | Older prescriptions the patient says they still take. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |
-| `js/signed-out.js` | When a signed-out phone can open its saved list: only with no signal. |
+| `js/signed-out.js` | When a signed-out phone can open its saved list: no signal, or a sign-in that couldn't start. |
 | `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
