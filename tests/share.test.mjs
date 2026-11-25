@@ -953,7 +953,8 @@ test("staff see the hint, the patient doesn't", async () => {
   const notes = notesOf(statementsOf(bundle)[0]);
   assert.deepEqual(notes.slice(-2), ["Last filled 2026-10-21 (Aetna claims), 2 fills", "Fill suggests about 2 a day (60 for 30 days)"]);
   const row = groupShareBundle(bundle).fromRecords[0];
-  assert.deepEqual(row.facts.filter(([label]) => label === "Fill suggests"), [["Fill suggests", "about 2 a day (60 for 30 days)"]]);
+  // Tyler, 2026-11-25: the row says where it comes from.
+  assert.deepEqual(row.facts.filter(([label]) => label === "From the fill"), [["From the fill", "about 2 a day (60 for 30 days)"]]);
   assert.ok(!row.facts.some(([label]) => label === "Note"), "read as a fact, not a loose note");
   const mine = patientCard(entry, true);
   assert.ok(!JSON.stringify(mine).toLowerCase().includes("suggest"), JSON.stringify(mine));

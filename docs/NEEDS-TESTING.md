@@ -50,8 +50,8 @@ Riley. On both virtual phones:
   under its source and month ("SMART sandbox, Jan 2026", "Valley Clinic (test
   records), Oct 2026"), with a line between them. Atorvastatin's say "Records
   say: current" and "Records say: stopped". Then From records (6).
-- On From records, metformin hydrochloride 500 MG says "Fill suggests: about 2
-  a day (60 for 30 days)". My medicines never says it.
+- On From records, metformin hydrochloride 500 MG has the row "From the fill:
+  about 2 a day (60 for 30 days)". My medicines never says it.
 - See what's inside says the same, in the same order.
 - Answer one card "Not sure, ask my doctor", make a new code: that card on
   the staff page starts with "Patient isn't sure".

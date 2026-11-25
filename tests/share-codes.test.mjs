@@ -198,3 +198,28 @@ test("a side's date is dropped only when level 0 doesn't fit", async () => {
   assert.ok(bothSides(bundle), "never a side");
   assert.ok(await fits(bundle));
 });
+
+// Ruling R31: the fill hint is optional staff help, so it's the first thing
+// to go at level 0, never kept while another record's note is shortened.
+test("the fill hint is dropped first at level 0", async () => {
+  const fills = { count: 1, last: "2026-10-21", insurers: ["Aetna"], cash: false, sizedOn: "2026-10-21", suggests: { perDay: 2, quantity: 60, days: 30 } };
+  const hinted = (bundle) => bundle.entry.filter((e) => (e.resource.note || []).some((n) => /^Fill suggests /.test(n.text))).length;
+  const item = Object.assign(med(), { fills });
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 2)), 1);
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 1)), 1);
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 0)), 0);
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 0, true)), 0);
+  // The fill itself stays at every level.
+  assert.ok(buildShareBundle(list([item]), NOW, {}, 0).entry[1].resource.note.some((n) => n.text === "Last filled 2026-10-21 (Aetna claims), 1 fill"));
+  // A short list keeps it: the app's own choice is level 2.
+  assert.equal(hinted(await shareBundleFor(list([item]), NOW, {}, BASE)), 1);
+  // Wherever another record's note is shortened, the hint is already gone.
+  const answered = Object.assign({}, GROUPED, { fills, answer: { groupId: "29046", fingerprint: "fp", sides: GROUPED.group.sides, choice: "smart-sandbox", answeredAt: "2026-11-25T15:00:00.000Z" } });
+  for (const level of [2, 1, 0]) {
+    const bundle = buildShareBundle(list([answered]), NOW, {}, level);
+    const other = bundle.entry[1].resource.note.map((n) => n.text).filter((t) => t.startsWith("Other record: "));
+    const short = other.length && other.every((t) => t.split(", ").length === 2);
+    assert.ok(other.length, "level " + level);
+    assert.ok(!(short && hinted(bundle)), "level " + level);
+  }
+});

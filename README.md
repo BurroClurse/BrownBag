@@ -124,10 +124,10 @@ screen to make that work.
   that says "Patient confirmed this", with each other source's as "Other
   record". See what's inside says the same, word for word.
 - A source that didn't load is named under Medicines: "<Source> didn't load."
-- **Fill suggests**: when the newest fill says how many and for how many days,
-  the card says "Fill suggests about 2 a day (60 for 30 days)", to the nearest
-  half, and only between half and 12 a day. It's something to ask about, never
-  the dose.
+- **From the fill**: when the newest fill says how many and for how many days,
+  the card has a "From the fill" row, "about 2 a day (60 for 30 days)", to the
+  nearest half, and only between half and 12 a day. It's something to ask
+  about, never the dose.
 - **Save as FHIR file** saves an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
   warning that it isn't locked. A list where something didn't load can't be saved.
@@ -278,12 +278,12 @@ mark. An answered one is the chosen version, with the others as notes. A source
 other than the first that didn't load is named in a `source-not-loaded` tag,
 which the staff page, See what's inside and the FHIR file's text say as
 "<Source> didn't load.". What the newest fill suggests a day is a note on that
-medicine, for staff only.
+medicine ("Fill suggests about 2 a day (60 for 30 days)"), for staff only.
 Brown Bag's own tags carry their value in `display` and mean nothing to another
 system, so an older staff page still shows every version, each with its notes.
 Each unsettled version also says its record's date. When the list is long,
-codes go first, then the other versions' notes shorten to the source and month,
-then the record dates go; a version is never left out, and the list is too long
+codes go first, then the fill hints, then the other versions' notes shorten
+to the source and month, then the record dates go; a version is never left out, and the list is too long
 for one QR code first. The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.

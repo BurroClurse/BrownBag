@@ -319,8 +319,9 @@ function recordStatement(item, level, from) {
   }
   if (item.fills) {
     statement.note.push({ text: fillNote(item.fills) });
-    // What the newest fill suggests, for staff to ask about (Task 8).
-    if (suggestNote(item.fills)) statement.note.push({ text: suggestNote(item.fills) });
+    // What the newest fill suggests, for staff to ask about (Task 8). It's
+    // optional help, so the first thing to go at level 0 (ruling R31).
+    if (level && suggestNote(item.fills)) statement.note.push({ text: suggestNote(item.fills) });
   }
   if (item.asNeededAt) {
     asNeeded(statement, AS_NEEDED_NOTE);
@@ -876,7 +877,7 @@ function cardFrom(resource, added) {
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
     else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
     else if (text === "No fill found in claims") card.facts.push(["Filled", text]);
-    else if ((found = /^Fill suggests (about \d+(?:\.5)? a day \(\d+(?:\.\d+)? for \d+(?:\.\d+)? days\))$/.exec(text))) card.facts.push(["Fill suggests", found[1]]);
+    else if ((found = /^Fill suggests (about \d+(?:\.5)? a day \(\d+(?:\.\d+)? for \d+(?:\.\d+)? days\))$/.exec(text))) card.facts.push(["From the fill", found[1]]);
     else if (text) source.push(["Note", text]);
   });
   card.facts = card.facts.concat(source);
