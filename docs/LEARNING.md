@@ -1811,6 +1811,17 @@ animation had ended. Waiting for a signal needs a time limit too.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 62: Remove that doesn't erase
+
+**What changed:** the unnamed allergy has Remove, for when it repeats one already listed.
+
+**Why it isn't deleted:** nobody knows what the record is, and a wrong guess could hide a
+real allergy. So the line leaves the phone's list, and staff still see the record with
+"patient thinks it's already listed". It comes back with Show it again, or by itself if
+no other allergy is left for it to repeat.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

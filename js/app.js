@@ -17,7 +17,7 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
-import { readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
+import { ALREADY_LISTED, removedUnnamed, removeUnnamedQuestion, readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
 import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
@@ -839,8 +839,23 @@ function drawAllergies(parent) {
     unnamed.lines.forEach(function (text) { add(row, "p", tied(text), "med-line"); });
     if (!unnamed.canSay) return;
     if (state.allergyForm === unnamedForm(entry)) drawAllergyForm(row, arranged, null, entry);
-    else button(head, "Say what it is", "secondary row-button", function () { openAllergyForm(unnamedForm(entry), "allergen"); }, "Say what it is: unnamed allergy");
+    else {
+      var actions = add(add(row, "div", null, "allergy-more"), "div", null, "card-actions");
+      button(actions, "Say what it is", "secondary", function () { openAllergyForm(unnamedForm(entry), "allergen"); }, "Say what it is: unnamed allergy");
+      if (entry.canRemove) {
+        var remove = button(actions, "Remove", "stop", function () { askRemoveUnnamed(entry, remove); }, "Remove: unnamed allergy");
+      }
+    }
   });
+  if (arranged.removedKeys.length) {
+    var gone = removedUnnamed(arranged.removedKeys.length);
+    var goneRow = add(section, "div", null, "undo-row");
+    add(goneRow, "p", gone.text, "med-line");
+    button(goneRow, gone.again, "secondary", function () {
+      arranged.removedKeys.forEach(function (key) { delete state.data.unnamedAre[key]; });
+      allergySaved("Back on your list.", "allergies-heading");
+    }).id = "unnamed-again";
+  }
   if (state.lastRemovedAllergy) drawAllergyUndo(section);
   if (state.allergyForm === "new") {
     drawAllergyForm(section, arranged, null);
@@ -908,6 +923,22 @@ function askUnnamed(own) {
       state.data.unnamedAre[entries[i].key] = own.id;
       allergySaved("Taken off My medicines. Staff still see the record, with your answer.", "allergies-heading");
     });
+  });
+  keep.focus();
+}
+
+// It starts on No, like askUnnamed.
+function askRemoveUnnamed(entry, opener) {
+  var question = removeUnnamedQuestion(entry);
+  var popup = openPopup(document.body, question.title, opener);
+  question.lines.forEach(function (text) { popupLine(popup.inner, tied(text)); });
+  var keep = popupButton(popup.inner, "No, keep it", "secondary");
+  keep.addEventListener("click", popup.close);
+  popupButton(popup.inner, question.yes, "primary").addEventListener("click", function () {
+    popup.close();
+    if (!state.data.unnamedAre) state.data.unnamedAre = {};
+    state.data.unnamedAre[entry.key] = ALREADY_LISTED;
+    allergySaved("", "unnamed-again");
   });
   keep.focus();
 }

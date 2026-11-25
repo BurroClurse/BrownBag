@@ -13,6 +13,8 @@ var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 var NO_CODE = /data-absent-reason|NullFlavor/i;
 var SEVERITIES = ["mild", "moderate", "severe"];
 export var UNNAMED = "Unnamed allergy";
+// In data.unnamedAre, in place of an allergy's id: the patient thinks it repeats one.
+export var ALREADY_LISTED = "already-listed";
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 var NOT_NOW = ["inactive", "resolved"];
 var NOT_REAL = ["entered-in-error", "refuted"];
@@ -48,9 +50,31 @@ export function unspecifiedSentence(count, listed, records, ask, unnamed) {
 
 // The same entry as a row on My medicines.
 export function unnamedRow(entry) {
-  var details = entry.details ? [entry.details.charAt(0).toUpperCase() + entry.details.slice(1)] : [];
-  var ask = "Your records don't say what you're allergic to. Ask your care team" + (entry.key ? ", or say what it is if you know." : ".");
+  var details = entry.details ? [capital(entry.details)] : [];
+  var ask = "Your records don't say what you're allergic to. Ask your care team" + (!entry.key ? "." : entry.canRemove ? ", say what it is if you know, or remove it if it's already on your list." : ", or say what it is if you know.");
   return { name: "Unnamed allergy", lines: details.concat(ask), canSay: Boolean(entry.key) };
+}
+
+function capital(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// Before it leaves the list. Nobody knows what it is, so it says when not to.
+export function removeUnnamedQuestion(entry) {
+  return {
+    title: "Remove the unnamed allergy?",
+    lines: (entry.details ? [capital(entry.details) + "."] : []).concat([
+      "Do this only if you think it's already on your list. If you're not sure, keep it and ask your care team.",
+      "Staff still see the record, marked \"patient thinks it's already listed\"."
+    ]),
+    yes: "Yes, remove it"
+  };
+}
+
+// What stays on the list after, with the way back.
+export function removedUnnamed(count) {
+  return count === 1 ? { text: "You removed an unnamed allergy from this list.", again: "Show it again" }
+    : { text: "You removed " + count + " unnamed allergies from this list.", again: "Show them again" };
 }
 
 // The form that says what it is, among the allergy forms.
@@ -435,6 +459,11 @@ export function arrangeAllergies(allergies, data) {
   });
   var none = (data && data.noKnownAllergies) || null;
   var unnamed = unnamedEntries(allergies, data);
+  // It can only repeat an allergy that's there.
+  unnamed.forEach(function (entry) {
+    entry.listed = entry.listed && cards.length > 0;
+    entry.canRemove = Boolean(entry.key) && cards.length > 0;
+  });
   cards.forEach(function (card) {
     card.unnamedKeys = unnamed.filter(function (entry) { return entry.own && card.mine && card.mine.ids.indexOf(entry.own.id) !== -1; }).map(function (entry) { return entry.key; });
   });
@@ -443,9 +472,13 @@ export function arrangeAllergies(allergies, data) {
     statements: allergies.statements,
     unspecified: allergies.unspecified || 0,
     // For staff: every entry, with the patient's answer on it.
-    unnamed: unnamed.map(function (entry) { return entry.own ? [entry.details, "patient says it's " + shortened(entry.own.name)].filter(Boolean).join(", ") : entry.details; }),
-    // For the patient: the ones they haven't said what it is.
-    open: unnamed.filter(function (entry) { return !entry.own; }),
+    unnamed: unnamed.map(function (entry) {
+      var said = entry.own ? "patient says it's " + shortened(entry.own.name) : entry.listed ? "patient thinks it's already listed" : null;
+      return [entry.details, said].filter(Boolean).join(", ");
+    }),
+    // For the patient: the ones they haven't answered.
+    open: unnamed.filter(function (entry) { return !entry.own && !entry.listed; }),
+    removedKeys: unnamed.filter(function (entry) { return entry.listed; }).map(function (entry) { return entry.key; }),
     unnamedFhir: allergies.unnamedFhir || [],
     saidNone: cards.length ? null : none,
     canSayNone: !cards.length && !none && (allergies.status === "loaded" || Boolean(allergies.savedAt)),
@@ -462,6 +495,7 @@ function unnamedEntries(allergies, data) {
     var id = key && Object.prototype.hasOwnProperty.call(said, key) ? said[key] : null;
     return {
       key: key,
+      listed: id === ALREADY_LISTED,
       details: (allergies.unnamed || [])[i] || "",
       category: ((allergies.unnamedFhir || [])[i] || {}).category || [],
       own: (id && ((data && data.allergies) || []).filter(function (a) { return a.id === id; })[0]) || null

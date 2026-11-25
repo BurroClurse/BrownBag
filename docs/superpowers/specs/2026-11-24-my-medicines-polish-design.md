@@ -41,5 +41,11 @@ falls, so the status bar strip isn't left white. "Removed Latex." and the like s
 above the last Done. Added by me shows only with something in it, an Undo or a failed
 load.
 
+**Remove the unnamed allergy (same day, Tyler: it could repeat one already there, like
+mold):** the row gets Remove beside Say what it is, when there's another allergy. A popup
+starting on No says when not to. Only the phone's line goes: staff, the QR code and the
+file keep the record with "patient thinks it's already listed". A line with Show it again
+stays, and the row returns by itself if no other allergy is left.
+
 **Approaches for the note:** hide the record everywhere (rejected: it would turn
 a guess into a missing allergy) or only the note on the phone (chosen).

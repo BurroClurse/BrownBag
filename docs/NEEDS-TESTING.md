@@ -34,6 +34,9 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Remove on the unnamed allergy** (2026-11-24): passed in Chrome and on the virtual
+iPhone, including See what's inside. Not yet on the Android emulator.
+
 **As needed, Not taking, the staff code box and the "?" headings** (PR #3,
 merged and live 2026-11-24). Checked only in headless Chromium (sandbox
 sign-in, PIN, Loria Jenkins), not yet on a virtual phone or Tyler's iPhone.
