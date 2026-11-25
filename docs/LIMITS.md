@@ -146,7 +146,13 @@ an idea becomes a plan only after its own design.
   The tests check Brown Bag's rules, not the FHIR standard's, so a shape HL7
   wouldn't accept can slip in.
   - Now: HL7's FHIR validator is run by hand on test data when a design asks for
-    it (the FHIR file design, and the IPS file's `DetectedIssue`).
+    it (the FHIR file design, and the IPS file's `DetectedIssue`). Last run
+    2026-11-25, validator 7.0.7 (`-version 4.0.1 -ig hl7.fhir.uv.ips#2.0.1`), on
+    four files made from test patients: Riley Reconcile with three open
+    disagreements, the same with one answered "Not sure", a list whose sources
+    say they have no medicines, and today's file with no disagreement. All four
+    pass with 0 errors; the warnings are best practice only (no narrative on
+    each resource, UCUM `{tbl}` and `{capsule}`).
   - Idea (Tyler, 2026-11-25, from looking at github.com/anpheros): a GitHub Action
     that runs HL7's validator (`validator_cli.jar`, FHIR 4.0.1, IPS 2.0.1) on every
     push, against the test fixtures and the IPS file Brown Bag makes from them.
@@ -230,3 +236,15 @@ an idea becomes a plan only after its own design.
   - A middle initial matches any middle name with that letter (R27), so "Amy
     V." joins "Amy Valerie" as well as "Amy Victoria". Accepted: twins rarely
     share a first name, and two different full middle names stay apart.
+- [ ] **26. The FHIR file can't flag a disagreement in codes.** A `DetectedIssue`
+  would be the standard way to say two records disagree, but IPS 2.0.1's
+  Medications section allows only medicine records (MedicationStatement,
+  MedicationRequest and the like), so HL7's validator rejects the file with one
+  (validator 7.0.7, 2026-11-25).
+  - Now: each source's version is its own `MedicationStatement` with its notes
+    ("Records disagree", "Records say: …", "Record date: …", "Patient isn't
+    sure"), and the section's title, a note and its readable text say "Records
+    disagree on N medicines. Ask the patient." (Tyler, 2026-11-25: keep the
+    file valid IPS).
+  - Idea: revisit if IPS or US Core define a place for it, or if a SMART Health
+    Link design carries more than an IPS.

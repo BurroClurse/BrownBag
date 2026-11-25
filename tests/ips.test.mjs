@@ -187,3 +187,143 @@ test("a medicine the patient takes as needed has no schedule, and says who said 
   assert.equal(d.asNeededBoolean, true);
   assert.match(d.text, /2 times a day\. Patient says: takes only when needed$/);
 });
+
+// Task 9: when the records disagree, the file says so in its own words, and
+// every side is in it as its own statement with its notes. IPS 2.0.1 allows
+// only medicine records in the Medications section, so there's no
+// DetectedIssue. If these fail, a hospital system could take one source's
+// dose as the only one, be told of a disagreement the patient settled, or
+// reject the file.
+const SIDES = [
+  { sourceId: "smart-sandbox", sourceName: "SMART sandbox", kind: "records", asOf: "2026-03-02", name: "lisinopril 10 MG Oral Tablet", dose: "10 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314076" },
+  { sourceId: "valley-clinic-demo", sourceName: "Valley Clinic (test records)", kind: "records", asOf: "2026-10-05", name: "lisinopril 20 MG Oral Tablet", dose: "20 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314077" }
+];
+const grouped = (group) => ({
+  key: "rx:314077", rxcui: "314077", name: "lisinopril 20 MG Oral Tablet", dose: "20 mg", route: null, frequency: "once a day", start: "2026-10-05", end: null, prescriber: "Dr. Patel",
+  source: "Valley Clinic (test records)", status: "current", origin: "records", lastDate: "2026-10-05", count: 1,
+  group: Object.assign({ id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], sides: SIDES, fingerprint: "fp", notes: [] }, group)
+});
+const ANSWER = (choice) => ({ groupId: "29046", fingerprint: "fp", sides: SIDES, choice, answeredAt: "2026-11-25T15:00:00.000Z" });
+async function disagreeing(cards, data, warnings) {
+  const { arrangeList, shareListFrom } = await import("../js/view.js");
+  const list = Object.assign(shareListFrom({ name: "Avery Brownbag", birthDate: "1950-03-14" }, arrangeList({ current: cards, older: [] }, data || {}), []), { allergies: ALLERGIES });
+  return save(JSON.parse(JSON.stringify(buildShareBundle(list, NOW, Object.assign({}, FINE, warnings), 2))));
+}
+const fullUrlOf = (doc, resource) => doc.entry.filter((e) => e.resource === resource)[0].fullUrl;
+const notesOf = (doc) => of(doc, "MedicationStatement").map((m) => [m.status, m.medicationCodeableConcept.text].concat((m.note || []).map((x) => x.text)));
+const noIssue = (doc) => assert.deepEqual(doc.entry.map((e) => e.resource.resourceType).filter((type) => type === "DetectedIssue"), []);
+
+test("a disagreement is in the file as both sides, with no DetectedIssue", async () => {
+  const doc = await disagreeing([grouped()]);
+  noIssue(doc);
+  const meds = of(doc, "MedicationStatement");
+  assert.deepEqual(meds.map((m) => m.medicationCodeableConcept.text), ["lisinopril 10 MG Oral Tablet", "lisinopril 20 MG Oral Tablet"]);
+  const s = section(doc, "10160-0");
+  // Only medicine records in the Medications section.
+  assert.deepEqual(s.entry.map((e) => e.reference), meds.map((m) => fullUrlOf(doc, m)));
+  assert.match(s.text.div, /<p><strong>Records disagree on 1 medicine\. Ask the patient\.<\/strong><\/p>/);
+  // The same sides staff see, together, under their source and date.
+  assert.match(s.text.div, /<p>Records disagree: ask the patient<\/p><ul><li>SMART sandbox, Mar 2026: lisinopril 10 MG Oral Tablet\. Dose: 10 mg\. How often: once a day\. Valley Clinic \(test records\), Oct 2026: lisinopril 20 MG Oral Tablet\. Dose: 20 mg\. How often: once a day\. Prescribed by: Dr\. Patel<\/li><\/ul>/);
+  const urls = doc.entry.map((e) => e.fullUrl);
+  const refs = []; JSON.stringify(doc, (key, value) => { if (key === "reference") refs.push(value); return value; });
+  for (const ref of refs) assert.ok(urls.includes(ref), ref);
+});
+
+test("every side of a disagreement is in the file with its notes", async () => {
+  assert.deepEqual(notesOf(await disagreeing([grouped()])), [
+    ["active", "lisinopril 10 MG Oral Tablet", "From records: SMART sandbox", "Records disagree", "Record date: 2026-03"],
+    ["active", "lisinopril 20 MG Oral Tablet", "From records: Valley Clinic (test records)", "Records disagree", "Record date: 2026-10", "Prescribed by Dr. Patel"]
+  ]);
+  // Whether it's still taken: which side lists it current, which stopped.
+  const stopped = Object.assign({}, SIDES[0], { dose: "20 mg", status: "not-current", recordStatus: "stopped" });
+  assert.deepEqual(notesOf(await disagreeing([grouped({ verdicts: ["status"], sides: [stopped, SIDES[1]] })])), [
+    ["completed", "lisinopril 10 MG Oral Tablet", "From records: SMART sandbox", "Records disagree", "Records say: stopped", "Record date: 2026-03"],
+    ["active", "lisinopril 20 MG Oral Tablet", "From records: Valley Clinic (test records)", "Records disagree", "Records say: current", "Record date: 2026-10", "Prescribed by Dr. Patel"]
+  ]);
+  // Not sure: every side stays, and says so.
+  const unsure = await disagreeing([grouped()], { answers: [ANSWER("not-sure")] });
+  noIssue(unsure);
+  assert.deepEqual(notesOf(unsure).map((m) => m.slice(3, 5)), [["Records disagree", "Patient isn't sure"], ["Records disagree", "Patient isn't sure"]]);
+  assert.match(section(unsure, "10160-0").text.div, /<p><strong>Records disagree on 1 medicine\. Ask the patient\.<\/strong><\/p>/);
+  assert.match(section(unsure, "10160-0").text.div, /<li>Patient isn&#39;t sure\. SMART sandbox, Mar 2026: /);
+  // A Not taking mark against the record: the record and the mark.
+  const card = Object.assign(grouped(), { group: null, key: "rx:314076", rxcui: "314076", lastDate: "2026-10-02" });
+  const marked = await disagreeing([card], { stopped: { "rx:314076": "2026-03-03" } });
+  noIssue(marked);
+  assert.deepEqual(notesOf(marked).map((m) => m.slice(0, 4)), [["active", "lisinopril 20 MG Oral Tablet", "From records: Valley Clinic (test records)", "Records disagree"], ["stopped", "lisinopril 20 MG Oral Tablet"]]);
+});
+
+test("an answer settles it in the file", async () => {
+  const chosen = await disagreeing([grouped()], { answers: [ANSWER("valley-clinic-demo")] });
+  noIssue(chosen);
+  assert.deepEqual(notesOf(chosen), [
+    ["active", "lisinopril 20 MG Oral Tablet", "From records: Valley Clinic (test records)", "Prescribed by Dr. Patel", "Patient confirmed this, 2026-11-25", "Other record: SMART sandbox, 10 mg, once a day, 2026-03"]
+  ]);
+  const s = section(chosen, "10160-0");
+  assert.equal(s.title, "Medicines");
+  assert.equal(s.extension, undefined);
+  assert.doesNotMatch(s.text.div, /Records disagree on/);
+});
+
+test("the caution says 1 medicine, or N medicines", async () => {
+  const one = section(await disagreeing([grouped()]), "10160-0");
+  assert.equal(one.title, "Medicines (records disagree on 1 medicine)");
+  assert.equal(one.extension[0].valueAnnotation.text, "Records disagree on 1 medicine. Ask the patient.");
+  const other = Object.assign(grouped({ id: "6809", sides: [Object.assign({}, SIDES[0], { name: "metformin 500 MG", key: "rx:861007", dose: "20 mg", frequency: "twice a day" }), Object.assign({}, SIDES[1], { name: "metformin 500 MG", key: "rx:861007" })], verdicts: ["schedule"] }), { key: "rx:861007", rxcui: "861007", name: "metformin 500 MG" });
+  const doc = await disagreeing([grouped(), other]);
+  noIssue(doc);
+  assert.equal(of(doc, "MedicationStatement").length, 4);
+  const two = section(doc, "10160-0");
+  assert.equal(two.title, "Medicines (records disagree on 2 medicines)");
+  assert.equal(two.extension[0].valueAnnotation.text, "Records disagree on 2 medicines. Ask the patient.");
+  assert.match(two.text.div, /<p><strong>Records disagree on 2 medicines\. Ask the patient\.<\/strong><\/p>/);
+  // After the saved copy's caution, which comes first as it always has.
+  const saved = section(await disagreeing([grouped()], {}, { recordsSavedAt: "2026-11-20T10:00:00.000Z", recordsUpdatedAt: null }), "10160-0");
+  assert.equal(saved.title, "Medicines (saved copy, records disagree on 1 medicine)");
+});
+
+// IPS 2.0.1 removed its code list for "no known medicines", so a source's
+// word is in the readable text only, as staff see it (Tyler, 2026-11-25).
+test("a source with no medicines says so in the text, with no coded entry", () => {
+  const said = { noMedicines: [{ source: "Valley Clinic", kind: "no-info" }, { source: "Summary", kind: "none-known" }] };
+  const empty = save(bundle({ current: [], additions: [], stopped: [] }, said));
+  assert.deepEqual(of(empty, "MedicationStatement"), []);
+  const s = section(empty, "10160-0");
+  assert.equal(s.entry, undefined);
+  assert.equal(s.emptyReason.coding[0].code, "unavailable");
+  assert.match(s.text.div, /<p><strong>Valley Clinic: no information about medicines<\/strong><\/p><p><strong>Summary: no medicines known<\/strong><\/p>/);
+  assert.doesNotMatch(JSON.stringify(empty), /absent-unknown|no-known-medications|no-medication-info/);
+  // Beside what the patient added: only the patient's medicine is coded.
+  const added = save(bundle({ current: [], stopped: [] }, said));
+  assert.deepEqual(of(added, "MedicationStatement").map((m) => m.medicationCodeableConcept.text), ["Vitamin D"]);
+  assert.match(section(added, "10160-0").text.div, /Valley Clinic: no information about medicines/);
+});
+
+// Every file made before this change is made the same way now.
+test("no disagreement, the file is made as before", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { timeText } = await import("../js/share.js");
+  const today = JSON.parse(readFileSync(new URL("./fixtures/ips/today.json", import.meta.url), "utf8"));
+  const fresh = (b) => {
+    let k = 0;
+    let text = JSON.stringify(patientSummary(b, { now: SAVED, uuid: () => "00000000-0000-4000-8000-" + String(k += 1).padStart(12, "0") }));
+    // The fixture holds times as <ISO>, so it reads the same in any time zone.
+    [NOW.toISOString(), FINE.recordsUpdatedAt, "2026-11-20T10:00:00.000Z"].forEach((t) => { text = text.split(timeText(t)).join("<" + t + ">"); });
+    return JSON.parse(text);
+  };
+  const made = {
+    plain: fresh(bundle()),
+    savedCopy: fresh(bundle({}, { recordsSavedAt: "2026-11-20T10:00:00.000Z", recordsUpdatedAt: null, claims: "failed" })),
+    unnamed: fresh(bundle({}, { unnamed: 2 })),
+    empty: fresh(bundle({ current: [], additions: [], stopped: [], allergies: { cards: [], statements: [], saidNone: null, unspecified: 0 } }))
+  };
+  for (const name of Object.keys(today)) {
+    assert.deepEqual(made[name], today[name], name);
+    assert.deepEqual(of(made[name], "DetectedIssue"), [], name);
+  }
+});
+
+test("the QR code still can't carry a DetectedIssue", () => {
+  const b = bundle(); b.entry.push({ resource: { resourceType: "DetectedIssue", status: "preliminary" } });
+  assert.equal(whyNotSaved(b), "odd");
+});

@@ -3,7 +3,7 @@
 // a valid link, so every part is read, checked and written again; nothing is
 // copied whole, and anything unexpected means no file. No DOM here.
 
-import { AS_NEEDED_NOTE, DISAGREE_TITLE, disagreeRows, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, fillsNote, groupShareBundle, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, staffSaysNone, timeText } from "./share.js";
+import { AS_NEEDED_NOTE, DISAGREE_TITLE, disagreeParts, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, fillsNote, groupShareBundle, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, staffSaysNone, timeText } from "./share.js";
 import { localDate } from "./view.js";
 import { isUnspecified, noneCode, statementOf } from "./allergies.js";
 
@@ -61,12 +61,15 @@ export function patientSummary(bundle, options) {
     return { reference: entry.fullUrl };
   };
 
+  // A disagreement is its sides' statements, each with its notes. IPS 2.0.1
+  // allows only medicine records here, so there's no DetectedIssue.
   var medicines = read.medicines.map(function (m) { return add(medicineFor(m, patient)); });
   for (var i = 0; i < groups.unnamed; i += 1) medicines.push(add(unnamedMedicine(patient)));
   var held = noneIsInDoubt(groups.allergies);
   var allergies = read.allergies.filter(function (a) { return !(held && a.none); }).map(function (a) { return add(allergyFor(a, patient)); });
 
-  var caution = [groups.recordsSavedAt ? ["saved copy", savedCopyText(groups)] : null, groups.claimsNotLoaded ? ["insurance fills not loaded", fillsNote(groups)] : null].filter(Boolean);
+  var disagree = groups.disagree.length ? ["records disagree on " + disagreeCount(groups), disagreeText(groups)] : null;
+  var caution = [groups.recordsSavedAt ? ["saved copy", savedCopyText(groups)] : null, groups.claimsNotLoaded ? ["insurance fills not loaded", fillsNote(groups)] : null, disagree].filter(Boolean);
   var allergyCaution = groups.allergies.savedAt ? [["saved copy", allergyNotices(groups.allergies)[0]]] : [];
   var composition = {
     resourceType: "Composition",
@@ -101,6 +104,16 @@ function noneIsInDoubt(allergies) {
   return Boolean(allergies.fromRecords.length || allergies.fromPatient.length || allergies.unspecified || allergies.savedAt || allergies.status !== "loaded");
 }
 
+// "1 medicine", else "N medicines" (Tyler, 2026-11-25).
+function disagreeCount(groups) {
+  var count = groups.disagree.length;
+  return count + (count === 1 ? " medicine" : " medicines");
+}
+
+function disagreeText(groups) {
+  return "Records disagree on " + disagreeCount(groups) + ". Ask the patient.";
+}
+
 function loinc(code, display) {
   return { coding: [{ system: LOINC, code: code, display: display }] };
 }
@@ -123,10 +136,10 @@ function section(title, code, words, entries, cautions) {
 
 // The readable text: the same words as the staff page, warnings first.
 function medicineWords(groups) {
-  var words = warnings(medicineNotices(groups).concat(groups.recordsSavedAt ? savedCopyText(groups) : [], fillsNote(groups) || []));
+  var words = warnings(medicineNotices(groups).concat(groups.recordsSavedAt ? savedCopyText(groups) : [], fillsNote(groups) || [], groups.disagree.length ? disagreeText(groups) : []));
   dateLines(groups, timeText).forEach(function (text) { words.push(["p", text]); });
   words.push(["p", medicinesTitle(groups)]);
-  list(words, DISAGREE_TITLE, disagreeRows(groups));
+  list(words, DISAGREE_TITLE, disagreeParts(groups));
   if (groups.fromRecords.length) list(words, "From records", groups.fromRecords);
   else if (emptyPartText(groups, "records")) words.push(["p", (recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   list(words, "Filled, not in the health record", groups.fromClaims);
@@ -156,10 +169,17 @@ function list(words, title, rows) {
   if (!rows || !rows.length) return;
   words.push(["p", title]);
   words.push(["ul", rows.map(function (row) {
-    if (!row.take) return [row.name].concat(row.lines).join(". ");
-    var pairs = row.take.concat(row.facts).map(function (pair) { return pair[0] + ": " + String(pair[1]).trim(); });
-    return [row.name].concat(row.flags, pairs).join(". ");
+    if (!row.sides) return rowText(row);
+    // A disagreement, as staff see it: the answer, then each side under its
+    // source and date.
+    return [row.answer].concat(row.sides.map(function (side) { return (side.label ? side.label + ": " : "") + rowText(side.row); })).filter(Boolean).join(". ");
   })]);
+}
+
+function rowText(row) {
+  if (!row.take) return [row.name].concat(row.lines).join(". ");
+  var pairs = row.take.concat(row.facts).map(function (pair) { return pair[0] + ": " + String(pair[1]).trim(); });
+  return [row.name].concat(row.flags, pairs).join(". ");
 }
 
 function html(word) {

@@ -958,12 +958,6 @@ export function recordsPartial(groups) {
 
 export var DISAGREE_TITLE = "Records disagree: ask the patient";
 
-// Each side of a disagreement as its own row, for the FHIR file's text
-// until it gets the part below (Task 9).
-export function disagreeRows(groups) {
-  return (groups.disagree || []).reduce(function (rows, group) { return rows.concat(group.sides); }, []);
-}
-
 var ANSWERED = /^Patient (?:isn't sure|confirmed this, .+)$/;
 
 // Each disagreement as staff read it, on the staff page and in See what's

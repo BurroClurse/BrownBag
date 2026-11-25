@@ -131,6 +131,8 @@ screen to make that work.
 - **Save as FHIR file** saves an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
   warning that it isn't locked. A list where something didn't load can't be saved.
+  When the records disagree, the file says so first ("Records disagree on 1
+  medicine. Ask the patient."), then lists each source's version, as staff see it.
 
 ## Back end: what happens behind the screen
 
@@ -290,7 +292,18 @@ The list never passes through a server.
 
 **The FHIR file** is made in the browser from the opened QR code (`js/ips.js`): an
 IPS 2.0.1 document, with every part read, checked and written again. Brown
-Bag's own tags stay out; their warnings are in its readable text.
+Bag's own tags stay out; their warnings are in its readable text. When the
+records disagree, each source's version is its own `MedicationStatement` with
+its notes ("Records disagree", "Records say: stopped", "Record date: 2026-03",
+"Patient isn't sure", or, once answered, "Other record: …"), and the Medicines
+section's title, a note on it and its readable text say "Records disagree on 2
+medicines. Ask the patient." ("1 medicine" for one). There's no `DetectedIssue`:
+IPS 2.0.1 allows only medicine records in that section
+([LIMITS #26](docs/LIMITS.md)). A source's "no medicines" line is only in the
+readable text, as staff see it ("<Source>: no information about medicines" or
+"<Source>: no medicines known"), with no coded entry: IPS 2.0 dropped its code
+list for that. HL7's validator (7.0.7) passes the test files made this way
+with no errors.
 
 ## What's planned
 
@@ -329,8 +342,10 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 - **When sources disagree** (being built): every source's version is
   kept and compared fresh on each update; nothing is overwritten. The
   comparing is built and runs on every update; with one source the list is
-  as before. The QR code carries both sides of anything unresolved (built);
-  the FHIR file is next, with a `DetectedIssue` for each. Design:
+  as before. The QR code and the FHIR file carry both sides of anything
+  unresolved (built; waiting on the phone pass). A `DetectedIssue` in the file
+  waits for IPS or US Core to give it a place (idea,
+  [LIMITS #26](docs/LIMITS.md)). Design:
   [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md);
   plan: [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
 - **More health systems and insurers** (named, not designed): Epic, Oracle Health,
@@ -362,7 +377,8 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   plan: Task 6d of
   [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
 - **HL7's validator on every push** (idea): a GitHub Action checks the test files
-  and the FHIR file Brown Bag makes against HL7's own FHIR and IPS rules.
+  and the FHIR file Brown Bag makes against HL7's own FHIR and IPS rules. Today
+  it's run by hand on test files (last on 2026-11-25, 0 errors).
 
 ## Files
 

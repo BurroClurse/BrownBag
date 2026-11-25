@@ -34,6 +34,25 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Save as FHIR file with a disagreement** (2026-11-25, Task 9; test right
+away: it's saved from the staff page). Not checked on a phone yet. The file's
+contents are covered by `tests/ips.test.mjs`, and HL7's validator passed the
+test files with 0 errors. Run `node tools/reconcile-patients.mjs`, then
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as
+Riley. On both virtual phones:
+
+- On the staff page, Save as FHIR file saves one .json file, as before.
+- Open it: the Medicines section's title is "Medicines (records disagree on 3
+  medicines)", and its text starts with "Records disagree on 3 medicines. Ask
+  the patient.", then "Records disagree: ask the patient" with both versions of
+  atorvastatin, lisinopril and methotrexate, each under its source and month.
+  The word "DetectedIssue" is nowhere in the file.
+- Answer one card "Not sure, ask my doctor", make a new code, save again: its
+  versions say "Patient isn't sure". Answer all three with a version: the
+  title is "Medicines", and each chosen one has "Other record" notes.
+- See what's inside, Save as FHIR file, gives the same file.
+
 **The staff page with a disagreement, and the fill hint** (2026-11-25, Task 8;
 test right away: it changes what the person checking medicines sees).
 Checked only in headless Chromium (iPhone 15 size, PIN lock, the live
