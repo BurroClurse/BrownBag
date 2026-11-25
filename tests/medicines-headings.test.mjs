@@ -15,7 +15,7 @@ test("the title shows, with the note behind a ? beside it (Tyler, 2026-11-25)", 
   assert.ok(draw.includes("DISCLAIMER"));
   assert.ok(!draw.includes("note(root, DISCLAIMER)"));
   assert.ok(!draw.includes("visually-hidden"));
-  assert.match(css, /\.help-row\.title-help[^{]*\{[^}]*justify-content: flex-start/);
+  assert.match(css, /\.help-row\.title-help[^{]*\{[^}]*justify-content: space-between/);
   assert.match(css, /\.help-row\.title-help h1 \{[^}]*font-size: min\(2\.2rem, 12vw\)/);
 });
 
