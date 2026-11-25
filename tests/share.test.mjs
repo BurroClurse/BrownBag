@@ -942,3 +942,68 @@ test("an empty From records names the parts that have the medicines", async () =
   // A source that says it has none doesn't hide where the others are.
   assert.equal(emptyPartText(groups({ disagree, noMedicines: [{ source: "Mercy Health", kind: "no-info" }] }), "records"), "All under Records disagree: ask the patient.");
 });
+
+// Task 8: what a fill suggests goes to staff only. If this fails, the
+// patient could read a pharmacy's count as how much they should take.
+test("staff see the hint, the patient doesn't", async () => {
+  const { patientCard } = await import("../js/card.js");
+  const fills = { count: 2, last: "2026-10-21", insurers: ["Aetna"], cash: false, sizedOn: "2026-10-21", suggests: { perDay: 2, quantity: 60, days: 30 } };
+  const entry = Object.assign(recordItem("metformin 500 MG Oral Tablet", "861007"), { fills });
+  const bundle = JSON.parse(JSON.stringify(buildShareBundle({ patient: PATIENT, current: [entry], additions: [], stopped: [] }, NOW, {}, 2)));
+  const notes = notesOf(statementsOf(bundle)[0]);
+  assert.deepEqual(notes.slice(-2), ["Last filled 2026-10-21 (Aetna claims), 2 fills", "Fill suggests about 2 a day (60 for 30 days)"]);
+  const row = groupShareBundle(bundle).fromRecords[0];
+  assert.deepEqual(row.facts.filter(([label]) => label === "Fill suggests"), [["Fill suggests", "about 2 a day (60 for 30 days)"]]);
+  assert.ok(!row.facts.some(([label]) => label === "Note"), "read as a fact, not a loose note");
+  const mine = patientCard(entry, true);
+  assert.ok(!JSON.stringify(mine).toLowerCase().includes("suggest"), JSON.stringify(mine));
+  // No hint, no note.
+  const plain = Object.assign({}, entry, { fills: Object.assign({}, fills, { suggests: null }) });
+  assert.ok(!notesOf(statementsOf(buildShareBundle({ patient: PATIENT, current: [plain], additions: [], stopped: [] }, NOW, {}, 2))[0]).some((t) => t.startsWith("Fill suggests")));
+});
+
+test("a source that didn't load is said under Medicines", async () => {
+  const { medicineNotices } = await import("../js/share.js");
+  const base = { fromRecords: [], disagree: [], noMedicines: [], unnamed: 0 };
+  assert.deepEqual(medicineNotices(Object.assign({ notLoaded: ["Valley Clinic (test records)", "Mercy Health"] }, base)), ["Valley Clinic (test records) didn't load.", "Mercy Health didn't load."]);
+  assert.deepEqual(medicineNotices(Object.assign({ notLoaded: [] }, base)), []);
+  // A code from before the tag.
+  assert.deepEqual(medicineNotices(base), []);
+});
+
+// The staff part (Task 8): each disagreement's sides together, under their
+// source and date, the patient's answer first.
+test("each disagreement's sides go together, labelled by source and date", async () => {
+  const { disagreeParts } = await import("../js/share.js");
+  const parts = disagreeParts(groupShareBundle(await shared([grouped()])));
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0].answer, null);
+  assert.deepEqual(parts[0].sides.map((side) => side.label), ["SMART sandbox, Mar 2026", "Valley Clinic (test records), Oct 2026"]);
+  assert.deepEqual(parts[0].sides.map((side) => side.row.name), ["lisinopril 10 MG Oral Tablet", "lisinopril 20 MG Oral Tablet"]);
+  // The label and the part's title say these; the side doesn't again.
+  for (const side of parts[0].sides) {
+    assert.ok(!side.row.facts.some(([label, text]) => label === "Source" || label === "Record date" || text === "Records disagree"), JSON.stringify(side.row.facts));
+  }
+  assert.deepEqual(parts[0].sides[1].row.facts, [["Prescribed by", "Dr. Patel"]]);
+  const unsure = disagreeParts(groupShareBundle(await shared([grouped()], { answers: [ANSWER("not-sure")] })));
+  assert.equal(unsure[0].answer, "Patient isn't sure");
+  for (const side of unsure[0].sides) assert.ok(!side.row.facts.some(([, text]) => text === "Patient isn't sure"));
+  // A status disagreement keeps what each side's records say.
+  const sides = [Object.assign({}, SIDES[0], { status: "not-current", recordStatus: "stopped" }), SIDES[1]];
+  const status = disagreeParts(groupShareBundle(await shared([grouped({ group: Object.assign({}, grouped().group, { verdicts: ["status"], sides }) })])));
+  assert.deepEqual(status[0].sides.map((side) => side.row.facts.filter(([label]) => label === "Records say")), [[["Records say", "stopped"]], [["Records say", "current"]]]);
+});
+
+test("a confirmed side comes first, and the patient's own mark is labelled as theirs", async () => {
+  const { disagreeParts } = await import("../js/share.js");
+  const row = (name, facts, status) => ({ name, take: [], flags: [], facts, status });
+  const parts = disagreeParts({ disagree: [{ name: "a", sides: [
+    row("a 10", [["Note", "Records disagree"], ["Source", "SMART sandbox"]], "active"),
+    row("a 20", [["Note", "Records disagree"], ["Note", "Patient confirmed this, 2026-11-25"], ["Source", "Valley Clinic"], ["Record date", "Oct 2026"]], "active"),
+    row("a 10", [["Not taking since", "Mar 3, 2026"]], "stopped")
+  ] }] });
+  assert.equal(parts[0].answer, "Patient confirmed this, 2026-11-25");
+  assert.deepEqual(parts[0].sides.map((side) => side.label), ["Valley Clinic, Oct 2026", "SMART sandbox", "Patient says not taking"]);
+  assert.deepEqual(parts[0].sides[2].row.facts, [["Not taking since", "Mar 3, 2026"]]);
+  assert.deepEqual(disagreeParts({}), []);
+});

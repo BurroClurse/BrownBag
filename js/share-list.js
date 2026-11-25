@@ -2,7 +2,7 @@
 // (design 2026-11-23). "See what's inside" is the same list as short text
 // (js/inside.js); a test checks nothing staff see is left out of it.
 
-import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, staffSaysNone, dateLines, disagreeRows, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, staffSaysNone, dateLines, disagreeParts, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 import { drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
@@ -24,8 +24,8 @@ export function drawShareList(parent, groups, level) {
   medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
   var fills = fillsNote(groups);
   if (fills) note(block, fills);
-  // No count: its rows are sides, not medicines.
-  if (disagreeRows(groups).length) part(block, DISAGREE_TITLE, disagreeRows(groups), "", level + 2, true);
+  // First: what to ask the patient about before anything else.
+  if (disagreeParts(groups).length) part(block, DISAGREE_TITLE, disagreeParts(groups), "", level + 2);
   part(block, "From records", groups.fromRecords, emptyPartText(groups, "records"), level + 2, recordsPartial(groups));
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);
@@ -96,6 +96,10 @@ function rowsInto(section, rows) {
   var list = add(section, "ul", null, "meds");
   rows.forEach(function (row) {
     var item = add(list, "li");
+    if (row.sides) {
+      drawSides(item, row);
+      return;
+    }
     if (row.take) {
       drawCard(item, row.name, row);
       return;
@@ -103,6 +107,18 @@ function rowsInto(section, rows) {
     // An allergy.
     add(item, "p", row.name, "med-name");
     row.lines.forEach(function (text) { add(item, "p", text, "med-line"); });
+  });
+}
+
+// One medicine the records disagree on: the patient's answer, then each
+// side's card under its source and date.
+function drawSides(item, group) {
+  item.className = "disagree";
+  if (group.answer) add(item, "p", group.answer, "flag");
+  group.sides.forEach(function (side) {
+    var box = add(item, "div", null, "side");
+    if (side.label) add(box, "p", side.label, "side-label");
+    drawCard(box, side.row.name, side.row);
   });
 }
 

@@ -216,3 +216,16 @@ test("a joined card knows its own source, even when the code is the same", async
     assert.ok(card.group.sides.some((side) => side.sourceId === card.sourceId));
   }
 });
+
+// Task 8: one of Riley's fills says how much and for how many days, so the
+// staff page's fill hint can be seen. The other fills say nothing of it.
+test("Riley's metformin fill suggests 2 a day, staff only", async () => {
+  const { suggestNote } = await import("../js/claims.js");
+  const { split } = signedIn("brownbag-recon-riley");
+  const metformin = only(split, /^metformin hydrochloride 500 MG Oral/);
+  assert.deepEqual(metformin.fills.suggests, { perDay: 2, quantity: 60, days: 30 });
+  assert.equal(suggestNote(metformin.fills), "Fill suggests about 2 a day (60 for 30 days)");
+  assert.equal(cards(split).filter((card) => card.fills && card.fills.suggests).length, 1);
+  const claim = definitions(writtenOn(clinicFile("brownbag-recon-riley"))).find((p) => p.id === "brownbag-recon-riley").sandbox.find((r) => r.id === "brownbag-recon-riley-fill-5");
+  assert.equal(claim.supportingInfo[0].category.coding[0].system, "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBSupportingInfoType");
+});

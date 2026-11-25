@@ -5,7 +5,7 @@
 // IG): the Bundle is trimmed (no ids, short "resource:N" references), and
 // the packed list is written as digits, which a QR code holds more of.
 
-import { fillNote, completedNote } from "./claims.js";
+import { fillNote, completedNote, suggestNote } from "./claims.js";
 import { holdText } from "./meds.js";
 import { olderText, dateText, monthText, fillRowsFrom, isDirections, takeRows } from "./card.js";
 import { isOwnSide, sideWords } from "./reconcile.js";
@@ -319,6 +319,8 @@ function recordStatement(item, level, from) {
   }
   if (item.fills) {
     statement.note.push({ text: fillNote(item.fills) });
+    // What the newest fill suggests, for staff to ask about (Task 8).
+    if (suggestNote(item.fills)) statement.note.push({ text: suggestNote(item.fills) });
   }
   if (item.asNeededAt) {
     asNeeded(statement, AS_NEEDED_NOTE);
@@ -874,6 +876,7 @@ function cardFrom(resource, added) {
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
     else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
     else if (text === "No fill found in claims") card.facts.push(["Filled", text]);
+    else if ((found = /^Fill suggests (about \d+(?:\.5)? a day \(\d+(?:\.\d+)? for \d+(?:\.\d+)? days\))$/.exec(text))) card.facts.push(["Fill suggests", found[1]]);
     else if (text) source.push(["Note", text]);
   });
   card.facts = card.facts.concat(source);
@@ -938,6 +941,7 @@ export function shareMedicineCount(groups) {
 export function medicineNotices(groups) {
   var out = [];
   if (groups.incomplete) out.push("Some of the patient's records couldn't be loaded. This list may be missing medicines.");
+  (groups.notLoaded || []).forEach(function (name) { out.push(name + " didn't load."); });
   if (groups.ownMissing) out.push("What the patient added or marked not taking couldn't be opened. Ask the patient.");
   if (groups.unnamed) {
     var one = groups.unnamed === 1;
@@ -951,12 +955,50 @@ export function recordsPartial(groups) {
   return Boolean(groups.incomplete || ((groups.unnamed || (groups.noMedicines || []).length) && !groups.fromRecords.length && !(groups.disagree || []).length));
 }
 
-// Until the staff page has its own part for them (Task 8), each side of a
-// disagreement is a row under this title, group by group.
 export var DISAGREE_TITLE = "Records disagree: ask the patient";
 
+// Each side of a disagreement as its own row, for the FHIR file's text
+// until it gets the part below (Task 9).
 export function disagreeRows(groups) {
   return (groups.disagree || []).reduce(function (rows, group) { return rows.concat(group.sides); }, []);
+}
+
+var ANSWERED = /^Patient (?:isn't sure|confirmed this, .+)$/;
+
+// Each disagreement as staff read it, on the staff page and in See what's
+// inside: the patient's answer first, then each side under its source and
+// date, a side the patient confirmed first. What the label, the answer and
+// the part's title say isn't said again on each side.
+export function disagreeParts(groups) {
+  return (groups.disagree || []).map(function (group) {
+    var answer = null;
+    var sides = group.sides.map(function (row) {
+      var said = row.facts.filter(function (fact) { return fact[0] === "Note" && ANSWERED.test(fact[1]); })[0];
+      if (said && !answer) answer = said[1];
+      var label = [factOf(row, "Source"), factOf(row, "Record date")].filter(Boolean).join(", ");
+      var facts = row.facts.filter(function (fact) {
+        if (fact[0] === "Source" || fact[0] === "Record date") return false;
+        return !(fact[0] === "Note" && (fact[1] === DISAGREE_NOTE || ANSWERED.test(fact[1])));
+      });
+      return {
+        // The patient's own Not taking has no source: it's theirs.
+        label: label || (row.status === "stopped" ? "Patient says not taking" : null),
+        row: Object.assign({}, row, { facts: facts }),
+        confirmed: Boolean(said) && said[1] !== UNSURE_NOTE
+      };
+    });
+    var first = sides.filter(function (side) { return side.confirmed; });
+    return {
+      name: group.name,
+      answer: answer,
+      sides: first.concat(sides.filter(function (side) { return !side.confirmed; })).map(function (side) { return { label: side.label, row: side.row }; })
+    };
+  });
+}
+
+function factOf(row, label) {
+  var found = row.facts.filter(function (fact) { return fact[0] === label; })[0];
+  return found ? found[1] : null;
 }
 
 // The ones under As needed that the patient didn't add.

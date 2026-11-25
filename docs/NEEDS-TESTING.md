@@ -34,6 +34,30 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The staff page with a disagreement, and the fill hint** (2026-11-25, Task 8;
+test right away: it changes what the person checking medicines sees).
+Checked only in headless Chromium (iPhone 15 size, PIN lock, the live
+sandbox, self-signed certificate); screenshots `task-8-riley-*.png` in
+`.superpowers/sdd/2026-11-25-medication-reconciliation/`. Run
+`node tools/reconcile-patients.mjs` first (it now gives Riley's metformin fill
+60 tablets for 30 days), then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`,
+then `git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as
+Riley. On both virtual phones:
+
+- The staff page (scan the QR code, type the 6 digits), Medicines (9): the
+  first part is "Records disagree: ask the patient (3)", one card each for
+  atorvastatin, lisinopril and methotrexate. Each card has two versions, each
+  under its source and month ("SMART sandbox, Jan 2026", "Valley Clinic (test
+  records), Oct 2026"), with a line between them. Atorvastatin's say "Records
+  say: current" and "Records say: stopped". Then From records (6).
+- On From records, metformin hydrochloride 500 MG says "Fill suggests: about 2
+  a day (60 for 30 days)". My medicines never says it.
+- See what's inside says the same, in the same order.
+- Answer one card "Not sure, ask my doctor", make a new code: that card on
+  the staff page starts with "Patient isn't sure".
+- The cards wrap well on the iPhone SE size, and VoiceOver and TalkBack read
+  each version's source and month before its name.
+
 **The QR code with a disagreement** (2026-11-25, Task 7; test right away: it
 changes what the person checking medicines sees). Checked only in headless
 Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
@@ -56,7 +80,9 @@ certificate); screenshots `task-7-riley-*.png` in
   The rows wrap well on the iPhone SE size, and VoiceOver and TalkBack read
   each row's source with it.
 - Atorvastatin's two rows say "Records say: current" and "Records say:
-  stopped". Task 8 draws the part as one card per medicine.
+  stopped". (Task 8 draws the part as one card per medicine, each version
+  under its source and month in place of the "Records disagree" and "Record
+  date" rows; check it as its entry says.)
 
 **Allergies, names and birth dates as real sources write them** (2026-11-25,
 Task 6d). Checked only in headless Chromium (iPhone 15 size, PIN lock, the live

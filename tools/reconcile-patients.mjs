@@ -72,13 +72,14 @@ export const PATIENTS = [
       // Stopped in the record, but the pharmacy kept filling it (fills below).
       { id: "levothyroxine", drug: "levothyroxine", status: "stopped", written: 240, dose: TABLET, often: DAILY }
     ],
-    // [drug, filled days ago, insurer]
+    // [drug, filled days ago, insurer, [how many, for how many days]?]
     fills: [
       ["levothyroxine", 150, "Test Health Plan"],
       ["levothyroxine", 25, "Test Health Plan"],
       ["lisinopril20", 20, "Test Health Plan"],
       ["atorvastatin", 100, "Test Health Plan"],
-      ["metformin", 35, "NO_INSURANCE"]
+      // Says how much, for the staff page's fill hint: 2 a day.
+      ["metformin", 35, "NO_INSURANCE", [60, 30]]
     ],
     clinic: [
       { id: "lisinopril", drug: "lisinopril20", status: "active", written: 30, dose: TABLET, often: DAILY },
@@ -164,8 +165,23 @@ function record(row, prefix, patientId, day, requester) {
   };
 }
 
-function claim([drug, days, insurer], index, patientId, day) {
+// A fill's size is written as CARIN Blue Button writes it: the item's
+// quantity, and a days supply the item points to.
+function sized(supply) {
+  if (!supply) return {};
+  return {
+    item: { quantity: { value: supply[0] }, informationSequence: [1] },
+    supportingInfo: [{
+      sequence: 1,
+      category: { coding: [{ system: "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBSupportingInfoType", code: "dayssupply" }] },
+      valueQuantity: { value: supply[1], unit: "days", system: "http://unitsofmeasure.org", code: "d" }
+    }]
+  };
+}
+
+function claim([drug, days, insurer, supply], index, patientId, day) {
   const date = dateOf(days, day);
+  const size = sized(supply);
   return {
     resourceType: "ExplanationOfBenefit",
     id: patientId + "-fill-" + (index + 1),
@@ -186,7 +202,8 @@ function claim([drug, days, insurer], index, patientId, day) {
     provider: { display: "Brown Bag Test Pharmacy" },
     outcome: "complete",
     insurance: [{ focal: true, coverage: { reference: "#coverage", display: insurer } }],
-    item: [{ sequence: 1, productOrService: concept(drug), servicedPeriod: { start: date, end: date } }]
+    supportingInfo: size.supportingInfo,
+    item: [Object.assign({ sequence: 1, productOrService: concept(drug), servicedPeriod: { start: date, end: date } }, size.item)]
   };
 }
 

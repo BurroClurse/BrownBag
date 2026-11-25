@@ -79,7 +79,8 @@ screen to make that work.
   **I'm taking this**, on an older prescription, asks first.
 - **Filled**: how many times, and when last, from insurance claims. A prescription
   the record calls finished but filled since is current again, and says so. Fills the
-  record doesn't list get their own part.
+  record doesn't list get their own part. How much a fill was for is only for
+  the person checking medicines: My medicines never says what a fill suggests.
 - **Add a medicine** uses lists for how much and how often, checks the name
   against RxNorm, and asks when it's already there or looks like one that is.
   Added ones can be edited.
@@ -113,14 +114,20 @@ screen to make that work.
   A source with no medicines to give is named under the heading ("<Source>: no
   information about medicines" or "<Source>: no medicines known").
 - When the patient's records disagree and they haven't said which is right,
-  each source's version comes first, under "Records disagree: ask the
-  patient", noted "Records disagree" (and "Patient isn't sure" when they said
-  so), with its record's date and, when they disagree on whether it's still
-  taken, "Records say: current" or "Records say: stopped". The same goes for a
-  Not taking mark against a newer prescription: the record and the mark. A
-  version the patient chose says "Patient confirmed this", with each other
-  source's as "Other record". For now each version is its own row; a card per
-  medicine is planned.
+  "Records disagree: ask the patient" is the first part under Medicines, with
+  one card per medicine. The patient's answer comes first when there is one
+  ("Patient isn't sure"), then each source's version under its source and its
+  record's date, and, when they disagree on whether it's still taken,
+  "Records say: current" or "Records say: stopped". The same goes for a Not
+  taking mark against a newer prescription: the record, then the mark, under
+  "Patient says not taking". A version the patient chose is an ordinary card
+  that says "Patient confirmed this", with each other source's as "Other
+  record". See what's inside says the same, word for word.
+- A source that didn't load is named under Medicines: "<Source> didn't load."
+- **Fill suggests**: when the newest fill says how many and for how many days,
+  the card says "Fill suggests about 2 a day (60 for 30 days)", to the nearest
+  half, and only between half and 12 a day. It's something to ask about, never
+  the dose.
 - **Save as FHIR file** saves an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
   warning that it isn't locked. A list where something didn't load can't be saved.
@@ -165,7 +172,8 @@ SMART configuration offers a `revocation_endpoint` is told to end its side
 4. `GET MedicationStatement?patient={id}&_include=MedicationStatement:medication`, all pages.
 5. `GET ExplanationOfBenefit?patient={id}`, all pages, keeping pharmacy
    claims: the drug (RxNorm, or an NDC looked up in RxNav's `ndcstatus` by the
-   fill's date), the fill date and the insurer. It starts
+   fill's date), the fill date, the insurer, and how many for how many days
+   (the item's `quantity` and its CARIN Blue Button `dayssupply`). It starts
    alongside steps 3 and 4 with its own 6-second limit, so a slow insurer
    never holds up the medicines.
 6. `GET AllergyIntolerance?patient={id}`, all pages, alongside, with its own
@@ -267,7 +275,10 @@ isn't sure, each source's version is its own `MedicationStatement` with its own
 source and words, and a `differs` tag lists their entry numbers. A Not taking
 mark against a newer record travels the same way: the record and the patient's
 mark. An answered one is the chosen version, with the others as notes. A source
-other than the first that didn't load is named in a `source-not-loaded` tag.
+other than the first that didn't load is named in a `source-not-loaded` tag,
+which the staff page, See what's inside and the FHIR file's text say as
+"<Source> didn't load.". What the newest fill suggests a day is a note on that
+medicine, for staff only.
 Brown Bag's own tags carry their value in `display` and mean nothing to another
 system, so an older staff page still shows every version, each with its notes.
 Each unsettled version also says its record's date. When the list is long,
@@ -294,9 +305,9 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   and can be tried with the home server's test clinic. The patient is asked only
   what they do (how much, how often, whether they still take it), one card at a
   time, with "Not sure, ask my doctor". Home and My medicines say how many there
-  are to check. Staff already see a "Records disagree: ask the patient" part,
-  one row per version; next it shows each medicine's versions on one card,
-  with the patient's answer first, and names a source that didn't load.
+  are to check. Staff see a "Records disagree: ask the patient" part (built),
+  one card per medicine with the patient's answer first, and a source that
+  didn't load is named.
 - **A second QR code** (idea): a flip on the QR screen, one side today's code, the
   other a SMART Health Link a clinic's system can read.
 - **Scanning pill bottles** (idea): a small model on the phone reads a
@@ -432,7 +443,7 @@ testing on another day.
   in the sandbox and 20 mg at the clinic; methotrexate weekly against daily;
   atorvastatin current in the sandbox, stopped later at the clinic; Zoloft and
   generic sertraline, which agree; regular and extended-release metformin, a
-  possible duplicate; lisinopril with hydrochlorothiazide beside lisinopril; an
+  possible duplicate, whose fill says 60 for 30 days; lisinopril with hydrochlorothiazide beside lisinopril; an
   active hospital IV order; levothyroxine stopped in the record but filled since;
   and amlodipine, which only the clinic lists.
 - **Jordan Partial** (`brownbag-recon-jordan`, born 1955-11-20): a stop dated by

@@ -55,7 +55,9 @@ export function fillsFromClaims(eobs) {
         name: name ? productName(String(name)) : "",
         date: when ? String(when).slice(0, 10) : "",
         insurer: cash ? null : insurer,
-        cash: cash
+        cash: cash,
+        quantity: positive(line.quantity && line.quantity.value),
+        daysSupply: daysSupplyOf(eob, line)
       };
       if (!rx && ndc) fill.ndc = String(ndc.code);
       fills.push(fill);
@@ -64,8 +66,26 @@ export function fillsFromClaims(eobs) {
   return fills;
 }
 
+function positive(value) {
+  return typeof value === "number" && isFinite(value) && value > 0 ? value : null;
+}
+
+// CARIN Blue Button's days supply (a supportingInfo coded "dayssupply";
+// insurers write their own systems): the one the item points to, else the
+// claim's only one, unless another item points to that.
+function daysSupplyOf(eob, line) {
+  var all = (eob.supportingInfo || []).filter(function (info) {
+    return info && info.category && (info.category.coding || []).some(function (c) { return c && c.code === "dayssupply"; });
+  });
+  var pointsTo = function (one, info) { return (one.informationSequence || []).indexOf(info.sequence) !== -1; };
+  var own = all.filter(function (info) { return pointsTo(line, info); })[0];
+  var only = all.length === 1 && !(eob.item || []).some(function (other) { return other !== line && pointsTo(other, all[0]); }) ? all[0] : null;
+  var found = own || only;
+  return positive(found && found.valueQuantity && found.valueQuantity.value);
+}
+
 function emptyFills() {
-  return { count: 0, last: null, insurers: [], cash: false };
+  return { count: 0, last: null, insurers: [], cash: false, sizedOn: null, suggests: null };
 }
 
 function addFill(fills, fill) {
@@ -73,6 +93,19 @@ function addFill(fills, fill) {
   if (fill.date && (!fills.last || fill.date > fills.last)) fills.last = fill.date;
   if (fill.insurer && fills.insurers.indexOf(fill.insurer) === -1) fills.insurers.push(fill.insurer);
   if (fill.cash) fills.cash = true;
+  // Only the newest fill that says both: an older one's count may be out of
+  // date, so a newest that makes no sense gives no hint at all.
+  if (fill.quantity && fill.daysSupply && (fills.sizedOn === null || fill.date > fills.sizedOn)) {
+    fills.sizedOn = fill.date;
+    fills.suggests = suggests(fill.quantity, fill.daysSupply);
+  }
+}
+
+// To the nearest half, and only when it could be a day's doses: one inhaler
+// for 90 days, or 400 grams of cream, isn't a count of doses.
+function suggests(quantity, days) {
+  var perDay = Math.round(quantity / days * 2) / 2;
+  return perDay >= 0.5 && perDay <= 12 ? { perDay: perDay, quantity: quantity, days: days } : null;
 }
 
 // The date can be a day, a month or just a year; all three parse as UTC.
@@ -292,6 +325,14 @@ export function completedLine(date, status) {
 export function completedNote(date, status) {
   var word = STATUS_WORDS[status];
   return (word ? "Record marked " + word : "Not current in the record") + ", but filled " + date;
+}
+
+// For staff only: how much the newest fill was for. It only suggests, so it
+// never shows on My medicines.
+export function suggestNote(fills) {
+  var hint = fills && fills.suggests;
+  if (!hint) return null;
+  return "Fill suggests about " + hint.perDay + " a day (" + hint.quantity + " for " + hint.days + " days)";
 }
 
 export function fillNote(fills) {
