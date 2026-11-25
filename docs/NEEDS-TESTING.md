@@ -79,8 +79,6 @@ Decided for later, so nothing to test until they're picked up:
 
 VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 
-- The status bar strip is wheat, not white, while the paper ball falls (real iPhone
-  only; Chrome has no such strip).
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
   and the popup starting on Cancel.
 - Face ID unlock after the content security policy (the simulators have no Face ID).
@@ -88,6 +86,9 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   out, "Sign in again to update it." The virtual phones used a stand-in signal.
 
 ## Tested
+
+**The status bar strip** is wheat while the paper ball falls: passed on Tyler's iPhone
+2026-11-24.
 
 - 2026-11-23, Android emulator and iPhone simulator, live site, Loria
   Jenkins: sign-in and PIN lock; home; My medicines; How much and How often
