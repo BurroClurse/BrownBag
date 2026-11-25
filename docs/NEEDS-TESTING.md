@@ -59,11 +59,14 @@ On both virtual phones:
   metformins, the lisinopril with hydrochlorothiazide, and amlodipine (Valley
   Clinic only) are their own cards. Under Older prescriptions (1), the
   ondansetron IV says "Hospital order".
-- Jordan Partial: "Some records didn't load." on Home, My medicines with no
-  count, and "Your health system didn't send some of your medicines. Ask your
-  care team." Simvastatin and metformin each say "…whether you still take
-  it."; simvastatin's clinic side is dated by year only, metformin's has no
-  date. Amlodipine is one card.
+- Jordan Partial: "Some records didn't load." on Home and My medicines with
+  no count (intended: Home doesn't say which source). On My medicines,
+  "Valley Clinic (test records) didn't send some of your medicines." (the
+  sandbox sent everything, so there's no "Your health system…" line).
+  Simvastatin and metformin each say "…whether you still take it.";
+  simvastatin's clinic side is dated 2026 (the year it stopped, by year only)
+  and comes after the sandbox's Dec 2025 side, metformin's has no date.
+  Amlodipine is one card.
 - The long side labels wrap well on the iPhone SE size, and VoiceOver and
   TalkBack read each side's source with its dose.
 
