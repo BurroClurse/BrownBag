@@ -499,6 +499,7 @@ The findings' cases 33–54. Tyler's answers, one question each:
     ```
   - Verdict words: status "Whether it's still taken", dose "How much", schedule "How often".
   - `readBundle` still accepts only Patient, MedicationStatement and AllergyIntolerance from the QR Bundle.
+  - (Ruling R25, 2026-11-25) When the QR Bundle carries a `no-medicines` tag (Task 6c), the FHIR file's Medications section also gets the IPS entry for it: a MedicationStatement coded `no-medication-info` or `no-known-medications` (system `http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips`), with the source named in a note. This is the file's own entry, not a new resource type in the QR.
 
 - [ ] **Step 1: Write the failing tests**
   - "a disagreement gets a DetectedIssue": the lisinopril group gives one DetectedIssue with `implicated` naming both statements' fullUrls, `detail` "How much", and the section title ending "(records disagree on 1)".

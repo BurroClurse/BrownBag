@@ -270,6 +270,10 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   Synthea, copied into several sources and roughed up the way real ones are, so
   every run counts wrong joins and wrong splits; plus openFDA, FAERS, RxNorm and
   CMS synthetic claims. Before real patients, a pharmacist reviews the rules.
+  The first piece exists: a Google Colab notebook that runs Brown Bag's own
+  matching on hundreds of synthetic patients, counts its mistakes, and uses a
+  model only to flag cases for a person to review. The model never goes into
+  the app.
 - **Records as real sources write them** (medicines built; allergies, names
   and birth dates planned): Epic's, Cerner's, claims' and IPS's ways of writing
   medicines are read as described above. Next, the same for allergies ("NKA",
