@@ -60,8 +60,16 @@ function suffixOf(list) {
     .filter(function (text) { return /^(jr|sr|ii|iii|iv)$/.test(text); }).join(" ");
 }
 
+function nameWords(text) {
+  return String(text || "").trim().split(/\s+/).filter(Boolean);
+}
+
 function firstNameWord(text) {
-  return String(text || "").trim().split(/\s+/)[0] || "";
+  return nameWords(text)[0] || "";
+}
+
+function middleOf(text) {
+  return nameWords(text).slice(1).join(" ");
 }
 
 // Words before the last one that belong to the family name: "van de Heuvel".
@@ -73,31 +81,33 @@ function fromText(text) {
   var comma = split.rest.indexOf(",");
   if (comma !== -1) {
     var family = withoutSuffix(split.rest.slice(0, comma));
-    return { family: family.rest, given: firstNameWord(split.rest.slice(comma + 1)), suffix: [split.suffix, family.suffix].filter(Boolean).join(" ") };
+    var givenPart = split.rest.slice(comma + 1);
+    return { family: family.rest, given: firstNameWord(givenPart), middle: middleOf(givenPart), suffix: [split.suffix, family.suffix].filter(Boolean).join(" ") };
   }
   var words = split.rest.split(/\s+/).filter(Boolean);
   if (words.length < 2) return null;
   var start = words.length - 1;
   while (start > 1 && PARTICLES.indexOf(words[start - 1].toLowerCase()) !== -1) start -= 1;
-  return { family: words.slice(start).join(" "), given: words[0], suffix: split.suffix };
+  return { family: words.slice(start).join(" "), given: words[0], middle: words.slice(1, start).join(" "), suffix: split.suffix };
 }
 
-// A FHIR Patient as { family, given, birthDate }, with suffix ("jr") when
-// it has one, or null when the name or a whole birth date is missing. Only
-// the first given word counts: a middle name or initial is often left off.
+// A FHIR Patient as { family, given, birthDate }, with middle ("Olaf", every
+// given word after the first) and suffix ("jr") when it has them, or null
+// when the name or a whole birth date is missing.
 export function personOf(patient) {
   var name = patient && currentName(patient.name);
   var birthDate = patient && !absentBirthDate(patient) ? birthDateOf(patient.birthDate) : null;
   if (!name || !birthDate) return null;
-  var given = Array.isArray(name.given) ? name.given[0] : name.given;
+  var given = (Array.isArray(name.given) ? name.given : [name.given]).map(function (part) { return String(part || ""); }).join(" ");
   var family = withoutSuffix(name.family);
-  var parts = { family: family.rest, given: firstNameWord(given), suffix: [suffixOf(name.suffix), family.suffix].filter(Boolean).join(" ") };
+  var parts = { family: family.rest, given: firstNameWord(given), middle: middleOf(given), suffix: [suffixOf(name.suffix), family.suffix].filter(Boolean).join(" ") };
   if (!parts.family || !parts.given) {
     var text = fromText(name.text);
-    parts = text && { family: text.family, given: text.given, suffix: [suffixOf(name.suffix), text.suffix].filter(Boolean).join(" ") };
+    parts = text && Object.assign(text, { suffix: [suffixOf(name.suffix), text.suffix].filter(Boolean).join(" ") });
   }
   if (!parts || !parts.family || !parts.given) return null;
-  return Object.assign({ family: parts.family, given: parts.given, birthDate: birthDate }, parts.suffix ? { suffix: parts.suffix.split(" ")[0] } : {});
+  return Object.assign({ family: parts.family, given: parts.given, birthDate: birthDate },
+    parts.middle ? { middle: parts.middle } : {}, parts.suffix ? { suffix: parts.suffix.split(" ")[0] } : {});
 }
 
 // Capitals, accents, punctuation, spaces and Synthea's numbers at the end of
@@ -120,23 +130,41 @@ function sameName(a, b) {
   return nameKeys(a).some(function (key) { return keys.indexOf(key) !== -1; });
 }
 
-// Two people the same: the same family name in full, the same first given
-// word and the same birth date. Jr. against Sr., or II against III, is two
-// people; an ending on one side only is ignored.
+// "V" or "V." stands for any word that starts with V.
+function initialOf(word, other) {
+  if (!/^\p{L}\.?$/u.test(word)) return false;
+  var letter = nameKeys(word)[0];
+  return Boolean(letter) && nameKeys(other).some(function (key) { return key.charAt(0) === letter; });
+}
+
+// Given words in order. A middle name left off or cut to its initial never
+// keeps two records apart, but two different ones do: twins can share the
+// first name ("Mary Ann" and "Mary Beth").
+function sameGiven(a, b) {
+  if (!a.length || !b.length || !sameName(a[0], b[0])) return false;
+  for (var i = 1; i < Math.min(a.length, b.length); i += 1) {
+    if (!sameName(a[i], b[i]) && !initialOf(a[i], b[i]) && !initialOf(b[i], a[i])) return false;
+  }
+  return true;
+}
+
+// Two people the same: the same family name in full, the same given names
+// as far as both go (sameGiven) and the same birth date. Jr. against Sr., or
+// II against III, is two people; an ending on one side only is ignored.
 export function samePerson(a, b) {
   if (!a || !b) return false;
   var one = partsOf(a);
   var other = partsOf(b);
   if (one.suffix && other.suffix && one.suffix !== other.suffix) return false;
   var date = birthDateOf(a.birthDate);
-  return Boolean(date) && date === birthDateOf(b.birthDate) && sameName(one.family, other.family) && sameName(one.given, other.given);
+  return Boolean(date) && date === birthDateOf(b.birthDate) && sameName(one.family, other.family) && sameGiven(one.given, other.given);
 }
 
 // What samePerson compares, from personOf's answer or one written by hand.
 function partsOf(person) {
   var family = withoutSuffix(person.family);
   var given = withoutSuffix(person.given);
-  return { family: family.rest, given: firstNameWord(given.rest), suffix: person.suffix || family.suffix.split(" ")[0] || given.suffix.split(" ")[0] || "" };
+  return { family: family.rest, given: nameWords(given.rest).concat(nameWords(person.middle)), suffix: person.suffix || family.suffix.split(" ")[0] || given.suffix.split(" ")[0] || "" };
 }
 
 function ingredientKey(ingredientOf, rxcui) {

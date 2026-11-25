@@ -47,7 +47,7 @@ test("personOf reads a name written as text", () => {
     { family: "Jenkins", given: "Loria", birthDate: "1971-05-01" });
   assert.equal(personOf({ name: [{ text: "Loria Jenkins" }] }), null);
   assert.deepEqual(personOf({ name: [{ family: "Ng", given: ["Al", "B"] }], birthDate: "2000-01-01" }),
-    { family: "Ng", given: "Al", birthDate: "2000-01-01" });
+    { family: "Ng", given: "Al", middle: "B", birthDate: "2000-01-01" });
   assert.equal(personOf(null), null);
 });
 

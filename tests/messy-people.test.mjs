@@ -31,7 +31,7 @@ test("case 40: US Core's old name first: the usual name is compared", () => {
 });
 
 test("case 41: a nickname first: the official name is compared", () => {
-  assert.deepEqual(personOf(NAMES.nicknameFirst), { family: "Chalmers", given: "Peter", birthDate: "1974-12-25" });
+  assert.deepEqual(personOf(NAMES.nicknameFirst), { family: "Chalmers", given: "Peter", middle: "James", birthDate: "1974-12-25" });
   assert.equal(same(NAMES.nicknameFirst, NAMES.chalmers), true);
 });
 
@@ -53,6 +53,31 @@ test("case 43: a suffix in the text is moved out of the family name", () => {
 test("case 44: a middle name or initial inside the first given name isn't compared", () => {
   assert.equal(same(NAMES.middleInGiven, NAMES.middleApart), true);
   assert.equal(same(NAMES.initialInGiven, NAMES.baxter), true);
+});
+
+// R27: a middle name left off or cut to its initial never keeps two records
+// apart, but two different middle names do.
+test("case 44: twins who share a first name stay apart when their middle names differ", () => {
+  const person = (given) => ({ name: [{ family: "Baxter", given }], birthDate: "1987-02-20" });
+  assert.equal(same(person(["Mary Ann"]), person(["Mary Beth"])), false);
+  assert.equal(same(person(["Mary", "Ann"]), person(["Mary", "Beth"])), false);
+  assert.deepEqual(keptOut(person(["Mary", "Ann"]), person(["Mary Beth"])), [{ id: "b", name: "Valley Clinic", why: "no-match" }]);
+  assert.equal(same(person(["Amy V."]), person(["Amy"])), true);
+  assert.equal(same(person(["Amy V."]), person(["Amy Victoria"])), true);
+  assert.equal(same(person(["Amy", "V"]), person(["Amy", "Victoria"])), true);
+  assert.equal(same(person(["Amy V."]), person(["Amy W."])), false);
+  assert.equal(same(person(["Amy V."]), person(["Amy Wendy"])), false);
+  assert.equal(same(person(["Roelof Olaf"]), person(["Roelof", "Olaf"])), true);
+  assert.equal(same(person(["Peter James"]), person(["Peter"])), true);
+  assert.equal(same(person(["Peter James Paul"]), person(["Peter", "James"])), true);
+  assert.equal(same(person(["Peter James Paul"]), person(["Peter", "John"])), false);
+  // In text too, either way round.
+  assert.equal(same({ name: [{ text: "BAXTER, MARY ANN" }], birthDate: "1987-02-20" }, { name: [{ text: "Mary Beth Baxter" }], birthDate: "1987-02-20" }), false);
+  assert.equal(same({ name: [{ text: "BAXTER, AMY V" }], birthDate: "1987-02-20" }, { name: [{ text: "Amy Victoria Baxter" }], birthDate: "1987-02-20" }), true);
+  // The first word is never an initial.
+  assert.equal(same(person(["A."]), person(["Amy"])), false);
+  // By hand, as the older tests call it.
+  assert.equal(samePerson({ family: "Baxter", given: "Mary Ann", birthDate: "1987-02-20" }, { family: "Baxter", given: "Mary Beth", birthDate: "1987-02-20" }), false);
 });
 
 test("case 45: particles stay part of the family name, in text or not", () => {

@@ -205,7 +205,10 @@ the same name and birth date as the first source's. The name is the
 nickname or anonymous. Text-only names are read as "LAST, FIRST" when there's a
 comma and "First Last" when not, with "van de" and other particles kept in the
 family name. The whole family name must match ("García López" isn't "Garcia"),
-and only the first given word counts ("Amy V." is "Amy"). Capitals, accents,
+and given names are compared word by word as far as both go: a middle name
+left off or cut to its initial still matches ("Amy V." is "Amy" and "Amy
+Victoria"), but two different ones don't ("Mary Ann" isn't "Mary Beth", as
+twins can be). Capitals, accents,
 punctuation and Synthea's numbers at the end of a word ("Loria621") don't
 count; letters of any alphabet do, and ü, ö, ä and ß match ue, oe, ae and ss.
 Jr. against Sr., or II against III, is two people; an ending on one side only is
