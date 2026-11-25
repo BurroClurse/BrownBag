@@ -525,5 +525,10 @@ test("a side reads as its dose and how often, with the strength when the dose do
   assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: "1 tablet", frequency: "once a day" }), "10 MG, 1 tablet, once a day");
   assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: "10mg", frequency: null }), "10mg");
   assert.equal(sideWords({ name: "Lisinopril", dose: "20 mg" }), "20 mg");
-  assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: null, frequency: null }), "See the record");
+  assert.equal(sideWords({ name: "Lisinopril", dose: null, frequency: null }), "See the record");
+});
+
+test("two sides with nothing but a strength still read differently", () => {
+  assert.equal(sideWords({ name: "lisinopril 10 MG Oral Tablet", dose: null, frequency: null }), "10 MG");
+  assert.equal(sideWords({ name: "lisinopril 20 MG Oral Tablet" }), "20 MG");
 });

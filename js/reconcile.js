@@ -351,12 +351,12 @@ function fingerprintOf(entries) {
 
 // One side in words, the same everywhere it's shown: its dose and how
 // often. The strength goes first when the dose doesn't say it, so a 10 MG
-// and a 20 MG side never read the same.
+// and a 20 MG side never read the same, even with nothing else to say.
 export function sideWords(side) {
   var dose = side.dose || "";
   var often = side.frequency || "";
-  if (!dose && !often) return "See the record";
   var strength = strengthOf(side.name);
+  if (!dose && !often) return strength || "See the record";
   var squeeze = function (text) { return text.replace(/\s+/g, "").toLowerCase(); };
   var says = strength && squeeze(dose).indexOf(squeeze(strength)) !== -1;
   return [says ? null : strength, dose, often].filter(Boolean).join(", ");
