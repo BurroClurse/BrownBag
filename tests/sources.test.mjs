@@ -95,8 +95,12 @@ test("while updating, it says only that", () => {
 
 // The lists before and after sign-in are one piece of code, so the names and
 // the owners' lines can't differ.
-test("both lists of sources are drawn the same way", () => {
-  for (const file of ["js/launch.js", "js/app.js"]) assert.match(read(file), /drawNotConnected\(/);
+test("one list of sources, on the connections screen", () => {
+  assert.match(read("js/app.js"), /drawNotConnected\(/);
+  assert.doesNotMatch(read("js/launch.js"), /drawNotConnected/);
+  // A plain launch.html, and every Back there, go to the connections screen.
+  assert.match(read("js/launch.js"), /location\.replace\("\.\/\?open=connections"\)/);
+  assert.doesNotMatch(read("js/launch.js"), /href = "\.\/"/);
   assert.ok(read("sw.js").includes('"./js/source-list.js"'));
 });
 
@@ -124,7 +128,7 @@ test("the list works with no signal, and a file that doesn't arrive is said", ()
 // choice) and keeps an earlier try's answers, so a choice is a fresh page.
 test("a choice on the list never carries another sign-in's address or failure", () => {
   const launch = read("js/launch.js");
-  assert.match(launch, /location\.href = signInLink\(\)/);
+  assert.match(read("js/app.js"), /signInButton\(card, "Connect", "primary", signInLink\(\)\)/);
   assert.match(launch, /location\.href = signInLink\(patient\.id\)/);
   assert.equal(launch.match(/signIn\(\)/g).length, 2);
   for (const name of ["iss", "launch", "patientId", "clientId", "fhirServiceUrl"]) assert.equal(new URL(signInLink(ONE), "https://example.test/").searchParams.get(name), null, name);

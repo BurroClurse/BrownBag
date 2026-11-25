@@ -2180,6 +2180,8 @@ function drawConnections() {
     signInButton(card, "Sign in again", status.signIn ? "primary" : "secondary", signInLink(state.patientId)).id = "sign-in-again";
   });
   drawNotConnected(root);
+  // Before connecting anything, what Brown Bag does with the records.
+  if (view.intro) add(root, "a", "Privacy", "quiet-link").href = "./privacy.html";
   // Setting up, the way on is at the end too, after the last connection.
   if (view.done === "home") {
     button(add(root, "div", null, "screen-bottom"), "Done", "primary big", connectionsDone).id = "records-done-end";

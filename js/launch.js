@@ -1,9 +1,8 @@
 // launch.html's screen: the list of sources, then sign-in. startSignIn() is
 // in launch.html, with the SMART settings.
 
-import { chosen, connected, leavingText, signInLink, startFor } from "./sources.js";
+import { chosen, leavingText, signInLink, startFor } from "./sources.js";
 import { GROUPS, OWN_LIST, sandboxServer } from "./test-patients.js";
-import { drawNotConnected } from "./source-list.js";
 import { withTimeout } from "./pass.js";
 import { hasSavedList } from "./offline.js";
 import { SIGNED_OUT_KEY, offerSaved } from "./signed-out.js";
@@ -27,27 +26,15 @@ function title(text) {
   return h;
 }
 
+// Back to the connections screen, which the sign-in was started from.
 function back(className) {
-  add(root, "a", "Back", "button " + className).href = "./";
+  add(root, "a", "Back", "button " + className).href = "./?open=connections";
 }
 
+// The list of sources is the app's connections screen now (design
+// 2026-11-25), after the lock. A plain launch.html goes there.
 function showList() {
-  root.textContent = "";
-  var h = title("Choose where your records are");
-  connected().forEach(function (source) {
-    var button = add(root, "button", null, "primary big source");
-    button.type = "button";
-    add(button, "span", source.name);
-    // The space keeps the two lines apart for a screen reader.
-    button.appendChild(document.createTextNode(" "));
-    add(button, "span", source.note, "source-note");
-    // Its own address, so Back comes here.
-    button.addEventListener("click", function () { location.href = signInLink(); });
-  });
-  drawNotConnected(root);
-  add(root, "a", "Privacy", "quiet-link").href = "./privacy.html";
-  back("secondary big");
-  h.focus();
+  location.replace("./?open=connections");
 }
 
 // Counts sign-ins started. A slow one answering after the patient has gone
@@ -60,7 +47,7 @@ var SIGN_IN_WAIT_MS = 12000;
 function showPatients() {
   root.textContent = "";
   var top = add(root, "div", null, "screen-top");
-  add(top, "a", "Back", "button secondary big").href = "./launch.html";
+  add(top, "a", "Back", "button secondary big").href = "./?open=connections";
   var h = title("Choose a test patient");
   add(root, "p", "All of them are made up.");
   GROUPS.forEach(function (group) {
