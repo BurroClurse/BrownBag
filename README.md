@@ -49,6 +49,8 @@ screen to make that work.
 
 **Home** has their first name and last initial, **Show my QR code**, **My medicines
 (N)** and **More options** (Health records, backups, the Home Screen, Privacy, Sign out).
+When the records disagree, a line under the buttons ("Your records don't agree
+on 2 things") opens the review below, unless some of the list didn't load.
 
 **My medicines**
 - **Allergies** come first, in their own box: closed, it names them and counts the
@@ -74,8 +76,23 @@ screen to make that work.
   patient's medicines, or knows of none, gets a line of its own ("<Source> has no information about your
   medicines." or "<Source> says: no medicines known."), never a card, and the
   list never reads as none.
+- **When sources disagree** on how much, how often, or whether it's still
+  taken, the medicine is one card with each source's version and date, and a
+  box under Allergies says "Your records don't agree on 2 things" with **Check
+  them**. The review asks one card per screen ("1 of 2"): "How much do you
+  take?", "How often do you take it?" or "Do you still take it?", with each
+  source's version, its source and month, "I don't take this anymore" and "Not
+  sure, ask my doctor". Nothing is chosen at the start, and **Save** waits for
+  a choice. A recent fill shows beside "Yes, I take it" ("Filled Oct 2026"),
+  but never answers it. **Do this later** closes it, and the box stays. A card
+  that's answered says "You said: 20 mg, once a day (Nov 25)" with **Change**.
+  It's asked again only when a source says something new. The review comes
+  back at the same card after the 5-minute lock.
 - **As needed** and **Not taking** move a medicine to its own part, with Undo.
-  A prescription dated after a Not taking mark puts the medicine back on the list.
+  A prescription dated after a Not taking mark, or a source whose copy wasn't
+  marked, puts the medicine back on the list, and the review asks "Do you still
+  take it?". "Yes, I take it" takes the mark away; "No, I stopped" keeps it,
+  and isn't asked again for that prescription.
   **I'm taking this**, on an older prescription, asks first.
 - **Filled**: how many times, and when last, from insurance claims. A prescription
   the record calls finished but filled since is current again, and says so. Fills the
@@ -254,6 +271,12 @@ name, or a source said it has no medicines to give.
   stores health data, and asks the network first, except for the pictures.
 - A backup holds what the patient added or marked, never a sign-in, sealed to
   each person.
+- The patient's answers in the review are kept with what they added or
+  marked: encrypted, in the same saved copy and backups. Each answer keeps the
+  sources' versions as they were, and holds only while they say the same.
+  Where they are in the review is only the card's number, in the browser
+  tab's session storage (`brownbag-review-spot`), so it survives the lock's
+  reload. It's cleared when the review closes.
 
 [Privacy](https://burroclurse.github.io/BrownBag/privacy.html) says what's kept and
 who can see it. Each page's content security policy names the servers it may
@@ -313,14 +336,14 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 
 ### Front end
 
-- **When sources disagree** (being built): when two sources list a
-  medicine differently, one card shows both versions. That card is built,
-  and can be tried with the home server's test clinic. The patient is asked only
-  what they do (how much, how often, whether they still take it), one card at a
-  time, with "Not sure, ask my doctor". Home and My medicines say how many there
-  are to check. Staff see a "Records disagree: ask the patient" part (built),
-  one card per medicine with the patient's answer first, and a source that
-  didn't load is named.
+- **When sources disagree** (built; waiting on the phone pass): one card shows
+  each source's version, the review asks the patient one card at a time, and
+  home and My medicines say how many there are to check. Staff see a "Records
+  disagree: ask the patient" part. It can be tried with the home server's test
+  clinic. Left: the privacy page, the app cache and the notes in
+  `docs/LIMITS.md` (Task 11). Design:
+  [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md),
+  sections 6 and 7.
 - **A second QR code** (idea): a flip on the QR screen, one side today's code, the
   other a SMART Health Link a clinic's system can read.
 - **Scanning pill bottles** (idea): a small model on the phone reads a
@@ -339,13 +362,13 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   only swaps and renews Medicare's sign-in; the list never passes through it.
   Waiting on Medicare's approval. Design:
   [`docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md`](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md).
-- **When sources disagree** (being built): every source's version is
-  kept and compared fresh on each update; nothing is overwritten. The
-  comparing is built and runs on every update; with one source the list is
-  as before. The QR code and the FHIR file carry both sides of anything
-  unresolved (built; waiting on the phone pass). A `DetectedIssue` in the file
-  waits for IPS or US Core to give it a place (idea,
-  [LIMITS #26](docs/LIMITS.md)). Design:
+- **When sources disagree** (built; waiting on the phone pass): every source's
+  version is kept and compared fresh on each update; nothing is overwritten.
+  With one source the list is as before. The patient's answers are saved with
+  their other additions. The QR code and the FHIR file carry both sides of
+  anything unresolved. Left: the docs and the app cache (Task 11). A
+  `DetectedIssue` in the file waits for IPS or US Core to give it a place
+  (idea, [LIMITS #26](docs/LIMITS.md)). Design:
   [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md);
   plan: [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
 - **More health systems and insurers** (named, not designed): Epic, Oracle Health,
@@ -392,6 +415,7 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 | `js/med-list.js` | One source's search answers into its list: references, RxNav term types, "no medicines" entries. |
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/reconcile.js` | Whether two sources are the same person, and how two records match. |
+| `js/review.js` | The review when sources disagree: what each card asks, its choices and the answer it saves. |
 | `js/snapshot.js` | A shared list opened again (an IPS file or Brown Bag list) as one more dated source. |
 | `js/demo-source.js` | Test records from a made-up second clinic, offered only by the home test server. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |

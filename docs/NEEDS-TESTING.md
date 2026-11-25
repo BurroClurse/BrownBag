@@ -34,6 +34,41 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The review cards when records disagree** (2026-11-25, Task 10; test right
+away: it changes the patient's list and what the QR code says). Checked only
+in headless Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
+certificate); screenshots `task-10-*.png` in
+`.superpowers/sdd/2026-11-25-medication-reconciliation/`. Run
+`node tools/reconcile-patients.mjs` first, then
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as
+Riley. On both virtual phones:
+
+- Home: under My medicines, "Your records don't agree on 3 things" as a
+  link. My medicines: a box under Allergies, above Medicines, with the same
+  line and **Check them**.
+- Check them: "atorvastatin 20 MG Oral Tablet" and "1 of 3", "Do you still
+  take it?", three choices, none chosen, Save greyed out until one is picked.
+  "Yes, I take it" says "SMART sandbox says current, Jan 2026. Filled Aug
+  2026". Save goes to lisinopril, "2 of 3", "How much do you take?"; then
+  methotrexate, "3 of 3", "How often do you take it?".
+- On lisinopril, lock the phone (or wait 5 minutes), unlock: back on
+  lisinopril, "2 of 3".
+- **Do this later** on methotrexate: back on My medicines, the box says "on
+  1 thing" and **Check it**. From home's line it opens as "1 of 1"; Back goes
+  home. Answer it: My medicines, the box is gone, and the screen reader says
+  "Saved. Your list is up to date."
+- Each answered card says "You said: … (Nov 25)" with **Change**. Change on
+  lisinopril opens it as "1 of 1"; Do this later keeps the old answer; saving
+  10 MG shows the 10 MG card.
+- With TalkBack, each choice is read with its detail ("Yes, I take it, SMART
+  sandbox says current, Jan 2026…"), and the question is read as the group's
+  name. The heading is read with "1 of 3". VoiceOver on Tyler's iPhone the same.
+- Show my QR code afterwards: on the staff page, a chosen version says
+  "Patient confirmed this", and a "Not sure" one "Patient isn't sure" under
+  "Records disagree: ask the patient".
+- The cards wrap well on the iPhone SE size and at the largest text.
+
 **Save as FHIR file with a disagreement** (2026-11-25, Task 9; test right
 away: it's saved from the staff page). Not checked on a phone yet. The file's
 contents are covered by `tests/ips.test.mjs`, and HL7's validator passed the

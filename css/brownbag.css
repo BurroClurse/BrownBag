@@ -836,3 +836,28 @@ button.option:focus-visible { outline-offset: -4px; border-radius: 14px; }
 .option-detail { font-weight: 400; font-size: 1.125rem; color: var(--muted); margin-top: 0.1rem; }
 .option-stop .option-icon { background: #F6E3DE; color: var(--stop); }
 .option-stop .option-name { color: var(--stop); }
+
+/* When the records disagree (js/review.js). The box on My medicines, under
+   Allergies, and the line on home, which opens the same review. */
+.check-box { background: var(--warn-bg); color: var(--warn-ink); border: 2px solid var(--warn-ink); border-radius: 16px; padding: 0.75rem 0.9rem 0.9rem; margin: 1.5rem 0 0; }
+.check-box-line { margin: 0 0 0.5rem; font-weight: 700; font-size: 1.2rem; line-height: 1.3; overflow-wrap: anywhere; }
+.check-box button { display: block; width: 100%; min-height: 48px; margin: 0; border-radius: 10px; font-size: 1.2rem; }
+.home-actions .check-line { min-height: 44px; margin: 0.35rem auto 0; color: var(--warn-ink); overflow-wrap: anywhere; text-align: center; }
+
+/* The review: one card per screen, its name and "1 of 2" at the top, then
+   the choices, each a row nobody can miss. */
+.review-top { margin: 0.5rem 0 0.5rem; }
+.review-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; margin: 0.5rem 0 0.25rem; font-size: 1.5rem; line-height: 1.25; }
+.review-name { min-width: 0; overflow-wrap: anywhere; }
+.review-count { flex: none; color: var(--muted); font-size: 1.1rem; font-weight: 600; }
+.review-why { margin: 0.5rem 0 0; }
+.review-choices { border: none; margin: 1rem 0 0; padding: 0; min-width: 0; }
+.review-choices legend { padding: 0; margin: 0 0 0.5rem; font-size: 1.3rem; font-weight: 700; }
+label.review-choice { display: flex; align-items: flex-start; gap: 0.75rem; min-height: 44px; margin: 0 0 0.6rem; padding: 0.75rem min(1rem, 4%); background: var(--card); border: 2px solid var(--line); border-radius: 14px; font-weight: 400; cursor: pointer; }
+label.review-choice:has(input:checked) { border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); }
+.review-choice input { flex: none; width: 1.5rem; height: 1.5rem; margin: 0.1rem 0 0; accent-color: var(--teal); }
+.review-words { display: flex; flex-direction: column; min-width: 0; }
+.review-label { font-weight: 700; font-size: 1.15rem; line-height: 1.35; overflow-wrap: anywhere; }
+.review-detail { color: var(--muted); font-size: 1rem; line-height: 1.35; overflow-wrap: anywhere; }
+.review-actions { margin-top: 1rem; }
+.review-actions .link-button { min-height: 44px; margin-top: 0.75rem; }

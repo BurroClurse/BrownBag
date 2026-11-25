@@ -36,6 +36,7 @@ import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 import { olderQuestion, takenOlder } from "./older.js";
+import { answerFor, checkText, choicesFor, clearSpot, questionText, saveSpot, spotFrom } from "./review.js";
 import { draftFromOlder, olderFrom, draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
@@ -86,6 +87,10 @@ var state = {
   // When the records last loaded, while they aren't a saved copy.
   updatedAt: null,
   screen: "home",
+  // The review of what the records disagree on, while it's open (openReview),
+  // and where it closes to after a step back in history.
+  review: null,
+  reviewAfter: null,
   olderOpen: false,
   // The notes at the top of home: updating with the pass, no connection,
   // or the pass ended (or there is none) and the list is a saved copy.
@@ -248,7 +253,10 @@ async function start() {
   await keepPass(client);
   // Back from a sign-in: the connections screen, unless home's note started it.
   if (where && where !== "home") openConnections(where);
-  else render();
+  else {
+    if (!cameBackFromAuth) resumeReview();
+    render();
+  }
 }
 
 // The list saved on this phone, if any, without updating it.
@@ -280,6 +288,8 @@ async function openWithPass() {
   await loadAdditions();
   state.updating = navigator.onLine;
   state.offline = !navigator.onLine;
+  // Locked in the middle of the review: back to the same card.
+  resumeReview();
   render();
   if (state.updating) {
     await updateWithPass(pass);
@@ -684,6 +694,8 @@ function render() {
   var arranged = arrangeList(state.split, state.data);
   if (state.screen === "medicines") {
     drawMedicines(arranged);
+  } else if (state.screen === "review") {
+    drawReview();
   } else if (state.screen === "more") {
     drawMore();
   } else if (state.screen === "install") {
@@ -727,6 +739,8 @@ window.addEventListener("popstate", function () {
     go("more", "open-install");
   } else if (state.screen === "records" && history.state && history.state.bb === "more") {
     go("more", "open-records");
+  } else if (state.screen === "review") {
+    showAfterReview();
   } else if (state.screen !== "home") {
     go("home", BACK_FOCUS[state.screen]);
   }
@@ -809,6 +823,13 @@ function drawHome(arranged) {
   button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions), medicinesPartial(state)), "secondary big", function () {
     go("medicines", "medicines-heading");
   }).id = "open-medicines";
+  // Under the buttons, so home keeps its three (Tyler, 2026-11-25). Not on a
+  // partial list, where a count would read as the whole.
+  if (arranged.toCheck.length && !medicinesPartial(state)) {
+    button(actions, checkText(arranged.toCheck.length).line, "link-button check-line", function () {
+      openReview("home", null);
+    }).id = "open-review";
+  }
   button(root, "More options", "link-button", function () {
     go("more", "more-heading");
   }).id = "open-more";
@@ -830,6 +851,7 @@ function drawMedicines(arranged) {
     return h;
   });
   drawAllergies(root);
+  drawCheckBox(root, arranged);
   // No number when some didn't load: it would read as the whole.
   var medicines = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2);
   medicines.heading.className = "section-heading medicines-section";
@@ -1819,6 +1841,213 @@ function drawAsNeeded(parent, arranged, additions) {
   added.forEach(function (addition) { drawAddition(list, addition); });
 }
 
+// The box on My medicines, under Allergies and above Medicines, when the
+// records disagree on anything the patient hasn't answered.
+function drawCheckBox(parent, arranged) {
+  var count = arranged.toCheck.length;
+  if (!count) return;
+  var words = checkText(count);
+  var box = add(parent, "div", null, "check-box");
+  var line = add(box, "p", words.line, "check-box-line");
+  line.id = "check-line";
+  var open = button(box, words.button, "primary", function () { openReview("medicines", null); });
+  open.id = "check-open";
+  // So "Check them" is read with what it's for.
+  open.setAttribute("aria-describedby", "check-line");
+}
+
+// The review: one card per screen (js/review.js). state.review is { from,
+// done, seen, change }: where it was opened, how many were answered here,
+// which questions those were, and the answer being changed (or null).
+// Answered cards leave the list, so the next card is the first one left.
+// REVIEW_SPOT keeps the card's number through the lock, which reloads.
+function openReview(from, change) {
+  state.review = { from: from, done: 0, seen: [], change: change || null };
+  if (!reviewCard()) {
+    state.review = null;
+    return;
+  }
+  // Changing one answer is one card; only the review itself comes back.
+  if (change) clearSpot(sessionStorage);
+  else saveSpot(sessionStorage, 1);
+  go("review", "review-heading");
+}
+
+// Back after the lock: the same card, or none if nothing is left to check.
+// Where it was opened is gone with the reload, so it closes to My medicines.
+function resumeReview() {
+  var spot = spotFrom(sessionStorage);
+  if (!spot || state.screen !== "home") return;
+  state.review = { from: "medicines", done: spot - 1, seen: [], change: null };
+  if (!reviewCard()) {
+    state.review = null;
+    clearSpot(sessionStorage);
+    return;
+  }
+  history.pushState({ bb: "review" }, "");
+  state.screen = "review";
+  state.focusId = "review-heading";
+}
+
+// The cards still to check, in the order My medicines shows them.
+function reviewList() {
+  return sortArranged(arrangeList(state.split, state.data), state.data.additions, savedSort(localStorage)).arranged.toCheck;
+}
+
+function seenKey(card) {
+  return card.question.groupId + "\n" + card.question.fingerprint;
+}
+
+// The card on screen now, with its question, or null. A changed answer's
+// card is asked as if that answer weren't saved yet.
+function reviewCard() {
+  var change = state.review.change;
+  if (change) {
+    var without = Object.assign({}, state.data, { answers: (state.data.answers || []).filter(function (answer) {
+      return answer.groupId !== change.groupId || answer.fingerprint !== change.fingerprint;
+    }) });
+    return arrangeList(state.split, without).toCheck.filter(function (card) { return card.question.groupId === change.groupId; })[0] || null;
+  }
+  return reviewLeft()[0] || null;
+}
+
+function reviewLeft() {
+  return reviewList().filter(function (card) { return state.review.seen.indexOf(seenKey(card)) === -1; });
+}
+
+function drawReview() {
+  var card = state.review ? reviewCard() : null;
+  if (!card) {
+    // Settled some other way (an update): nothing left to ask here.
+    setTimeout(function () { reviewDone("medicines", "medicines-heading", ""); });
+    return;
+  }
+  var number = state.review.change ? 1 : state.review.done + 1;
+  var total = state.review.change ? 1 : state.review.done + reviewLeft().length;
+  var top = add(root, "div", null, "review-top");
+  var title = add(top, "h1", null, "review-title");
+  title.id = "review-heading";
+  title.tabIndex = -1;
+  // The comma, unseen, so a screen reader pauses before the count.
+  var name = add(title, "span", cardName(card), "review-name");
+  add(name, "span", ",", "visually-hidden");
+  add(title, "span", number + " of " + total, "review-count");
+  var shown = patientCard(card, state.split.claims === "loaded");
+  shown.flags.slice(0, shown.lead || 0).forEach(function (text) { add(root, "p", text, "flag review-why"); });
+  var form = add(root, "form", null, "review-form");
+  form.noValidate = true;
+  var set = add(form, "fieldset", null, "review-choices");
+  add(set, "legend", questionText(card));
+  var choices = choicesFor(card, today());
+  choices.forEach(function (choice, index) {
+    var label = add(set, "label", null, "review-choice");
+    var input = add(label, "input");
+    input.type = "radio";
+    input.name = "review-choice";
+    input.value = choice.value;
+    input.id = "review-choice-" + index;
+    var words = add(label, "span", null, "review-words");
+    var said = add(words, "span", choice.label, "review-label");
+    // Read with the words, as one choice, with a pause between.
+    if (choice.detail) {
+      add(said, "span", ",", "visually-hidden");
+      add(words, "span", choice.detail, "review-detail");
+    }
+  });
+  var actions = add(form, "div", null, "review-actions");
+  var saveButton = add(actions, "button", "Save", "primary big");
+  saveButton.type = "submit";
+  saveButton.id = "review-save";
+  saveButton.disabled = true;
+  set.addEventListener("change", function () { saveButton.disabled = false; });
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var picked = form.querySelector("input[name=review-choice]:checked");
+    if (picked) keepAnswer(card, picked.value);
+  });
+  button(actions, "Do this later", "link-button", function () {
+    reviewDone(state.review.from, laterFocus(state.review.from), "");
+  }).id = "review-later";
+}
+
+// Saves what the patient chose, then the next card, or My medicines after
+// the last. A mark's "Yes, I take it" takes its Not taking marks away and
+// saves no answer; its "No, I stopped" marks every source's copy (R2).
+function keepAnswer(card, value) {
+  var question = card.question;
+  var name = cardName(card);
+  var answers = (state.data.answers || []).filter(function (answer) { return answer.groupId !== question.groupId; });
+  if (value === "taking") {
+    keysOf(card).forEach(function (key) { delete state.data.stopped[key]; });
+    recordChange("unstopped", name);
+  } else {
+    answers.push(answerFor(card, value, today()));
+    if (value === "not-taking" && question.mark) {
+      // The mark's own date, so the answer still matches its question.
+      keysOf(card).forEach(function (key) { state.data.stopped[key] = question.mark.at; });
+      recordChange("stopped", name);
+    }
+  }
+  state.data.answers = answers;
+  if (!state.review.change) {
+    state.review.done += 1;
+    state.review.seen.push(seenKey(card));
+  }
+  var next = state.review.change ? null : reviewLeft()[0];
+  if (next) {
+    saveSpot(sessionStorage, state.review.done + 1);
+    state.focusId = "review-heading";
+    save().then(function () { window.scrollTo(0, 0); });
+    return;
+  }
+  var settled = !reviewList().length;
+  leaveReview({ screen: "medicines", focusId: "medicines-heading", announce: settled ? "Saved. Your list is up to date." : "Saved." });
+  save().then(function () { window.scrollTo(0, 0); });
+}
+
+// Closes the review to where it goes next. Home is a step back in the
+// phone's history; Back there then arrives via popstate.
+function reviewDone(screen, focusId, announce) {
+  var after = { screen: screen, focusId: focusId, announce: announce };
+  if (screen === "home" && history.state && history.state.bb) {
+    state.reviewAfter = after;
+    history.back();
+    return;
+  }
+  leaveReview(after);
+  render();
+  window.scrollTo(0, 0);
+}
+
+// The phone's Back button on the review, or the step back from Do this later.
+function showAfterReview() {
+  var from = state.review ? state.review.from : "medicines";
+  leaveReview(state.reviewAfter || { screen: from, focusId: laterFocus(from), announce: "" });
+  render();
+  window.scrollTo(0, 0);
+}
+
+// Back on what opened the review: the line or box, while it's still there
+// (a Change can close with nothing left to check).
+function laterFocus(from) {
+  var left = reviewList().length && (from !== "home" || !medicinesPartial(state));
+  if (from === "home") return left ? "open-review" : "open-medicines";
+  return left ? "check-open" : "medicines-heading";
+}
+
+// My medicines keeps a step in history, so Back from it goes home.
+function leaveReview(after) {
+  state.review = null;
+  state.reviewAfter = null;
+  clearSpot(sessionStorage);
+  var step = history.state && history.state.bb;
+  if (after.screen === "medicines" && step === "review") history.replaceState({ bb: "medicines" }, "");
+  else if (after.screen === "medicines" && step !== "medicines") history.pushState({ bb: "medicines" }, "");
+  state.screen = after.screen;
+  state.focusId = after.focusId;
+  state.announce = after.announce || "";
+}
+
 // The QR code covers the screen: it swooshes up out of the bag, and closing it
 // crumples it back in (js/crumple.js; a fade with Reduce Motion). It shows
 // only See what's inside, the code, the 6 digits and Close. Focus stays inside it, Escape
@@ -2319,6 +2548,12 @@ function afterBackup(said) {
 function medRow(list, entry) {
   var row = add(list, "li");
   drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded"));
+  // An answer can be changed; the old one stays until a new one is saved.
+  if (entry.answer) {
+    button(add(row, "div", null, "card-actions"), "Change", "secondary", function () {
+      openReview("medicines", entry.answer);
+    }, "Change: " + cardName(entry));
+  }
   return row;
 }
 

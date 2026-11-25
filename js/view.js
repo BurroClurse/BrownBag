@@ -78,6 +78,8 @@ export function arrangeList(split, data) {
         var asked = { kind: question.kind, why: question.why, groupId: groupId, fingerprint: question.fingerprint };
         // What was marked, and on which source's record, for the QR code.
         if (question.mark) asked.mark = { key: question.mark.key, at: question.mark.at, side: question.mark.side || null };
+        // The record its sentence names, so the review's "Yes" says the same.
+        if (question.listed) asked.listed = question.listed;
         keep({ question: asked });
       }
     }
@@ -150,7 +152,8 @@ function markState(entry, marks) {
       kind: "status",
       why: "You marked this Not taking" + (dayOf(mark.at) ? " on " + dayText(dayOf(mark.at)) : "") + ". " + other.side.sourceName + " lists it current" + (since ? ", " + monthText(since) : "") + ".",
       fingerprint: markFingerprint(mark, counted),
-      mark: mark
+      mark: mark,
+      listed: { sourceName: other.side.sourceName, date: since || null }
     } };
   }
   // An undated mark or record can't be put in order: it stays as marked.
@@ -162,7 +165,8 @@ function markState(entry, marks) {
       kind: "status",
       why: "You marked Not taking on " + dayText(renewed.mark.at) + ". Your records have a newer prescription, " + dayText(dayOf(renewed.date)) + ".",
       fingerprint: markFingerprint(renewed.mark, counted),
-      mark: renewed.mark
+      mark: renewed.mark,
+      listed: { sourceName: renewed.side ? renewed.side.sourceName : entry.source, date: dayOf(renewed.date) }
     } };
   }
   return { stop: mark };
