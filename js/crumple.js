@@ -231,7 +231,8 @@ export function crumpleInto(overlay, bag, done) {
   canvas.style.width = innerWidth + "px";
   canvas.style.height = innerHeight + "px";
   document.body.appendChild(canvas);
-  overlay.style.visibility = "hidden";
+  // Gone, not just unseen: an iPhone colors its status bar from a hidden one too.
+  overlay.style.display = "none";
   var start = null;
   var last = null;
   var ended = false;

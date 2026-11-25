@@ -36,5 +36,10 @@ little):** the unnamed row has that button. It opens the add form in the row, an
 saving links the two with no second question. The row says the records don't name it
 and to ask the care team, or say what it is if known.
 
+**From Tyler's video (same day):** the code screen is taken off the page while the ball
+falls, so the status bar strip isn't left white. "Removed Latex." and the like show
+above the last Done. Added by me shows only with something in it, an Undo or a failed
+load.
+
 **Approaches for the note:** hide the record everywhere (rejected: it would turn
 a guess into a missing allergy) or only the note on the phone (chosen).

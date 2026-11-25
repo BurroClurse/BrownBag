@@ -1800,6 +1800,10 @@ the bag. With Reduce Motion on, it only fades.
 a little out of step, with its own shade, and that reads as paper. The 6 digits are
 left out of the picture.
 
+**The status bar (from a video):** the strip at the top of an iPhone stayed white until
+the ball was in the bag. The code screen was invisible but still on the page, and the
+iPhone seems to take the strip's color from it. Now it's taken off the page.
+
 **A slow phone:** drawn sharply from the start, the virtual Android phone showed 5
 pictures in the second. So it starts plain and turns sharp only after four quick
 ones. Testing there also found swipes ignored when the phone never said the opening

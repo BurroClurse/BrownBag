@@ -613,6 +613,8 @@ function render() {
   }
   var live = add(root, "p", state.announce, "status-line");
   live.setAttribute("role", "status");
+  var lastDone = document.getElementById("medicines-done-end");
+  if (lastDone) root.insertBefore(live, lastDone.parentNode);
   state.announce = "";
   if (!state.focusId && had && document.getElementById(had)) {
     document.getElementById(had).focus();
@@ -1183,6 +1185,8 @@ function drawSort(parent) {
 }
 
 function drawAdditions(parent, additions) {
+  var mine = additions.filter(function (addition) { return !isAsNeeded(addition); });
+  if (!mine.length && !state.dataFailed && !state.lastRemoved) return;
   var section = add(parent, "section");
   helpHeading(section, "Added by me", "added-heading", "About Added by me", function (panel) {
     add(panel, "p", "Medicines you added yourself, like vitamins and ones bought over the counter. They go in your QR code.");
@@ -1190,7 +1194,7 @@ function drawAdditions(parent, additions) {
   }, partHeading);
   if (state.dataFailed) add(section, "p", "What you added or marked couldn't be opened.", "notice");
   var list = add(section, "ul", null, "meds");
-  additions.filter(function (addition) { return !isAsNeeded(addition); }).forEach(function (addition) { drawAddition(list, addition); });
+  mine.forEach(function (addition) { drawAddition(list, addition); });
   if (state.lastRemoved) {
     var removed = state.lastRemoved;
     var undoRow = add(section, "p", "Removed " + removed.name + ".", "med-line");
@@ -1199,7 +1203,7 @@ function drawAdditions(parent, additions) {
       recordChange("added", removed.name, { checked: Boolean(removed.rxcui) });
       state.lastRemoved = null;
       state.announce = removed.name + " is back.";
-      state.focusId = "added-heading";
+      state.focusId = "added-" + removed.id;
       save();
     }, "Undo: put " + removed.name + " back");
     undo.id = "undo-remove";
@@ -1857,7 +1861,7 @@ function closeQr(fromHistory) {
       return;
     }
   } catch (error) {
-    overlay.style.visibility = "";
+    overlay.style.display = "";
     document.querySelectorAll(".crumple").forEach(function (left) { left.remove(); });
   }
   // Only the closing animation ends it; the opening one may still be

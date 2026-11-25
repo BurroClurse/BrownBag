@@ -73,3 +73,14 @@ test("it starts plain, and is drawn sharply only once the phone shows it's fast"
   assert.equal(dotsFor([16, 17, 16, 17, 60, 16, 16, 16, 16], 2), 1);
   assert.equal(dotsFor([8, 8, 8, 8], 1), 1);
 });
+
+// From Tyler's video: the iPhone's status bar strip stayed white until the ball
+// was in the bag, because the white code screen was only made invisible.
+test("the code screen is off the page while the ball falls", () => {
+  const read = (f) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  assert.match(read("js/crumple.js"), /overlay\.style\.display = "none"/);
+  const app = read("js/app.js");
+  const close = app.slice(app.indexOf("function closeQr")).split("\n}\n")[0];
+  // If it can't be drawn, the code screen comes back to fade out.
+  assert.match(close, /overlay\.style\.display = ""/);
+});

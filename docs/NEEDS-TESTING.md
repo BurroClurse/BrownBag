@@ -79,6 +79,8 @@ Decided for later, so nothing to test until they're picked up:
 
 VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 
+- The status bar strip is wheat, not white, while the paper ball falls (real iPhone
+  only; Chrome has no such strip).
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
   and the popup starting on Cancel.
 - Face ID unlock after the content security policy (the simulators have no Face ID).
