@@ -440,7 +440,10 @@ group goes under Not taking only when every current member is marked.
 When some are marked and some aren't (the patient marked Clinic A's copy
 Not taking, and Clinic B lists it current), that's a status question:
 "You marked this Not taking on Mar 3. Mercy Health lists it current, Oct
-2026." So joining cards never hides the one they take.
+2026." So joining cards never hides the one they take. A Not taking or As
+needed mark made on a group's card is saved under every member's key, so
+it covers the whole group, as `docs/LIMITS.md` #16 proposes ("make a mark
+on the joined card cover all").
 2. **Hospital orders go under Older prescriptions**, labelled "Hospital
    order". Today's sandbox ones are already completed, so in practice only
    the label is new until a hospital source is connected.

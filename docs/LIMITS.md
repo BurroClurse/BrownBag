@@ -116,3 +116,20 @@ an idea becomes a plan only after its own design.
     so the first one can't be taken. Dropping "tablet" and strengths from names could
     join a regular and an extended-release tablet.
   - When (Tyler, 2026-11-24): with Medicare, which brings package numbers.
+- [ ] **19. The QR code only works with Brown Bag's own staff page.** Staff read
+  the list and type it in; a clinic's system can't take it in, and it holds about
+  seven medicines with codes before codes are dropped.
+  - Now: Brown Bag's own encrypted link (prefix `v3.`), built on the phone, works
+    with no signal and no server, and "Save as FHIR file" gives an IPS file.
+  - Idea (Tyler, 2026-11-25): a second QR code for the same list, a SMART Health
+    Link carrying the IPS file, so a clinic's system can read it. A flip on the QR
+    screen: one side today's code, the other the SMART Health Link. The flip is a
+    labelled button, not only a gesture. Today's code stays the default and the
+    one that works with no signal.
+  - Careful: a SMART Health Link always points to an encrypted file on a server,
+    so this needs a small store (the Medicare plan's Netlify function is the
+    precedent) and a signal when it's made. Its passcode is checked by the
+    server, unlike today's 6-digit code, which is half the key.
+  - When it comes: its own design (shared with reading incoming SMART Health
+    Links); the privacy page says what the store keeps, for how long, and how
+    it's deleted; and the README says Brown Bag is built for server deployment.
