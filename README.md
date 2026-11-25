@@ -152,6 +152,32 @@ The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.
 
+## What's planned
+
+The sections above are what Brown Bag does today. This is what's coming, and how far along each part is. Each idea becomes a plan only after its own design; the reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
+
+- **Medicare fills** (designed and planned): Part D fills from Medicare's Blue
+  Button API join the fills from claims. It adds one small server function that
+  only swaps and renews Medicare's sign-in; the list never passes through it.
+  Waiting on Medicare's approval. Design:
+  [`docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md`](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md).
+- **When sources disagree** (designed, waiting for approval): with several
+  sources, each one's version is kept. The patient is asked only what they do (how much, whether they still take it), one card
+  at a time, with "Not sure, ask my doctor", and staff see both sides of anything
+  unresolved. Design:
+  [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md).
+- **More health systems and insurers** (named, not designed): Epic, Oracle Health,
+  MEDITECH, Medicaid and pharmacy fills, as listed under **Not connected**.
+- **SMART Health Links** (ideas): a second QR code for the same list, a SMART
+  Health Link carrying the International Patient Summary so a clinic's system can
+  read it, on the other side of a flip on the QR screen. Reading links others
+  share with the patient comes with it. Both need a server to hold the encrypted
+  file, so when they arrive Brown Bag becomes built for server deployment, and the
+  privacy page says what that server keeps, for how long, and how it's deleted.
+- **Other ideas:** scanning pill bottles to add or update a medicine, reminders to
+  open Brown Bag before an appointment, and sending changes back to the clinic
+  (with the clinic's permission).
+
 ## Files
 
 | File | Purpose |
