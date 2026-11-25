@@ -299,6 +299,35 @@ Asked one at a time, each confirmed as proposed:
 - [ ] **Step 4: Run the whole suite.** All pass. Then start `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, open `https://localhost:8443/` in the iPhone 15 simulator as Loria Jenkins, and check that the lisinopril card shows both sides. Without the variable, the list is today's.
 - [ ] **Step 5: Commit** `js/app.js js/card.js js/demo-source.js tools/serve.mjs tests/demo-source.test.mjs tests/card.test.mjs tests/offline.test.mjs docs/NEEDS-TESTING.md`: "Bring every source through one list, with test records on the home server".
 
+### Task 6b: Sandbox test patients with conflicting records (added 2026-11-25, Tyler)
+
+Tyler, 2026-11-25: create test patients on the sandbox "with many conflicting meds, and if possible, from different sources". Brown Bag holds one sandbox connection, so the sources are: the patient's health record on the sandbox, their insurance claims (ExplanationOfBenefit) on the sandbox, and a matching test clinic file the home server serves for that patient. Two sign-ins for one person is later work with its own design.
+
+**Files:**
+- Create: `tools/reconcile-patients.mjs` (modelled on `tools/demo-patient.mjs`: fixed ids, PUT, dates relative to today, touches nothing else on the sandbox)
+- Create: `tests/fixtures/reconcile/clinics/<patient id>.json` (written by the script, committed)
+- Modify: `js/demo-source.js` (`demoSourceUrl(location, patientId)`), `tools/serve.mjs`, `js/app.js` (passes the patient id), `README.md` (Test patients), `prompts/phone-pass.md` (run the script first), `docs/NEEDS-TESTING.md`
+- Test: `tests/demo-source.test.mjs`, a new `tests/reconcile-patients.test.mjs`
+
+**Interfaces:**
+- Consumes: `demoSource`, `demoSourceUrl` (Task 6), `reconcile` (Task 3).
+- Produces:
+  - `node tools/reconcile-patients.mjs` puts on `https://r4.smarthealthit.org/` two made-up patients:
+    - "Riley Reconcile" (`brownbag-recon-riley`, born 1948-06-02). Records, claims and test-clinic file together cover: lisinopril 10 vs 20 mg; methotrexate weekly vs daily, coded; atorvastatin current in one source, stopped later in the other; Zoloft (brand) vs sertraline (generic), which agree; metformin regular vs extended release (possible duplicate); lisinopril/HCTZ beside lisinopril; an active inpatient IV order; a medicine filled after the record stopped it; and one only the clinic lists.
+    - "Jordan Partial" (`brownbag-recon-jordan`, born 1955-11-20). A stop dated by year only, a clinic file that says it held records back, and an undated record.
+  - The script also writes `tests/fixtures/reconcile/clinics/brownbag-recon-riley.json` and `…/brownbag-recon-jordan.json` in the `{ patient, requests, statements, heldBack? }` shape, from the same definitions.
+  - `demoSourceUrl(location, patientId)` gives `"./_home/demo-source/" + encodeURIComponent(patientId) + ".json"` on port 8443, else null. `serve.mjs` answers it with `clinics/<id>.json` when that file exists, else `demo-clinic.json` (Loria Jenkins), only with `BROWN_BAG_DEMO=two-clinics`. `demoSource` sets `split.heldBack` from the file's `heldBack`.
+  - With the script run and the home server's test clinic on, signing in as Riley gives a status, a dose and a schedule question, possible-duplicate notes, the hospital order under Older, and a "completed but filled" line.
+
+- [ ] **Step 1: Write the failing tests**
+  - "Riley's clinic file disagrees in every way the design names": build Riley's sandbox split from the script's own definitions (export them; don't call the network in tests), reconcile it with `clinics/brownbag-recon-riley.json`, and assert the verdicts per medicine listed above.
+  - "Jordan's clinic file held some back": its `sourceStatus` entry has `complete: false`, and its cards carry "<Source> didn't send some records".
+  - "the test clinic follows the signed-in patient": `demoSourceUrl({ port: "8443" }, "brownbag-recon-riley")` is `"./_home/demo-source/brownbag-recon-riley.json"`, and null on port "".
+- [ ] **Step 2: Run them to see them fail.**
+- [ ] **Step 3: Implement** the script (PUT with fixed ids; `--dry-run` writes the clinic files only), the URL change, and the server route. Run the script once against the sandbox and commit the clinic files it wrote.
+- [ ] **Step 4: Check it.** Run the whole suite. Then in headless Chromium (iPhone 15 profile, the self-signed home server certificate, PIN lock), sign in to the sandbox as Riley with `BROWN_BAG_DEMO=two-clinics` and check the cases above on My medicines. Add Riley and Jordan to README "Test patients" in plain text, like Avery: there only after `node tools/reconcile-patients.mjs`, until the nightly reset, with no links (the README test pins two links). Make `prompts/phone-pass.md` run the script before starting the server, and add the cases to "Waiting for the next pass" in `docs/NEEDS-TESTING.md`.
+- [ ] **Step 5: Commit** `tools/reconcile-patients.mjs tests/fixtures/reconcile/clinics/brownbag-recon-riley.json tests/fixtures/reconcile/clinics/brownbag-recon-jordan.json js/demo-source.js tools/serve.mjs js/app.js README.md prompts/phone-pass.md docs/NEEDS-TESTING.md tests/demo-source.test.mjs tests/reconcile-patients.test.mjs`: "Put patients on the sandbox whose records disagree".
+
 ### Task 7: The QR code carries both sides
 
 **Files:**
