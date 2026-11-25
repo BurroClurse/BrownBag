@@ -328,6 +328,98 @@ Tyler, 2026-11-25: create test patients on the sandbox "with many conflicting me
 - [ ] **Step 4: Check it.** Run the whole suite. Then in headless Chromium (iPhone 15 profile, the self-signed home server certificate, PIN lock), sign in to the sandbox as Riley with `BROWN_BAG_DEMO=two-clinics` and check the cases above on My medicines. Add Riley and Jordan to README "Test patients" in plain text, like Avery: there only after `node tools/reconcile-patients.mjs`, until the nightly reset, with no links (the README test pins two links). Make `prompts/phone-pass.md` run the script before starting the server, and add the cases to "Waiting for the next pass" in `docs/NEEDS-TESTING.md`.
 - [ ] **Step 5: Commit** `tools/reconcile-patients.mjs tests/fixtures/reconcile/clinics/brownbag-recon-riley.json tests/fixtures/reconcile/clinics/brownbag-recon-jordan.json js/demo-source.js tools/serve.mjs js/app.js README.md prompts/phone-pass.md docs/NEEDS-TESTING.md tests/demo-source.test.mjs tests/reconcile-patients.test.mjs`: "Put patients on the sandbox whose records disagree".
 
+### Task 6c: Real-world medicines (added 2026-11-25, Tyler)
+
+Tyler, 2026-11-25: "Testing will be paramount ... the more data, conflicting data, the better ... some [data] may not be [clean]". The research is in `docs/superpowers/research/2026-11-25-messy-data-findings.md` ("the findings"). Its "Fixtures to build" cases 1–32 are this task's tests. Tyler's answers, one question each:
+- Use the most specific product code.
+- Release type and salt are part of the form.
+- IPS "no medication" entries are left out and said.
+- Built before Task 7.
+
+**Files:**
+- Modify: `js/meds.js` (`readDrug`, `STRENGTH`, `formOf`, `PLACEHOLDER`/`isPlaceholderDrug`, `formatDosage`), `js/rxnorm.js` (term types with the ingredient lookup; salts), `js/reconcile.js` (`matchOf`, `WEEKLY`/`isWeekly`, `massOf`/units), `js/claims.js` (`attachFills` form and salt check; package-sentence names), `js/snapshot.js` (Medication map, MedicationRequest), `js/app.js` (the Medication map in `loadMedicines`; the no-medicines line), `js/share.js`/`js/share-list.js` (the no-medicines line for staff)
+- Create: `tests/fixtures/messy/medicines/*.json` (one small file per case, copying the findings' public strings, no real patient data), `tests/messy-medicines.test.mjs`
+
+**Interfaces:**
+- Consumes: everything from Tasks 1–6b.
+- Produces:
+  - **Which code** (findings D1, D5; cases 1–3):
+    - `readDrug` keeps every RxNorm coding.
+    - The record's `rxcui` is the coding marked `userSelected`. Otherwise it's the most specific product (SCD, SBD, GPCK, BPCK, ahead of SCDC, SBDF, SCDF, SBDG, SCDG, MIN, PIN, IN, BN), known from the term types `ingredientsFor` now also returns.
+    - A record whose codes are all ingredient-level (IN, PIN, MIN) or brand-name-level (BN) gets `rxcui: null` and `ingredientOnly: true`. It keeps its key by text, never joins another record by code, and shows as name-only with a staff note.
+    - Offline (no term types), the first SCD or SBD-looking coding by `display` is used. Otherwise the record is treated as ingredient-only.
+  - **Form** (D2–D4; cases 4–7): `formOf` includes release words and the time prefix anywhere in the name: "12 HR", "24 HR", "XL", "XR", "ER", "SR", "CR", "DR", "LA", "ODT", "Extended Release", "Delayed Release". Salt words ("tartrate", "succinate", "hydrochloride", "sodium" and so on) also count as part of the form. `matchOf` never treats a null form as the same form.
+  - **Strength** (D8; cases 14–20):
+    - `STRENGTH` reads ".5" as 0.5 and "1,000" as 1000.
+    - It reads mcg spellings (ug, µg, ?G, MUG, microgram(s)) as MCG, unit spellings (IU, UT, IE, unit(s), u, [iU]) as UNT, and "N-N-N MG" combinations.
+    - `massOf` treats ug and microgram as mcg.
+    - A coded dose whose unit contradicts the text ("mg/kg" beside "100 mg") isn't shown as the dose; the record's words are.
+  - **Weekly** (D7; case 13): `isWeekly` also matches "/WEEK", "QW", "QWK", "PER WEEK", "1/WEEK", "N time(s) per week", "every <weekday>", "every 7 days", "Q7D", "1/MO", "every 28 days", "each week", "once weekly".
+  - **References** (D9, D10; cases 21–24):
+    - `loadMedicines` and `snapshotSource` resolve contained (`#id`, from the resource's own `contained`), `urn:uuid:…` (by Bundle `fullUrl`), relative (`Medication/<id>`) and absolute references, as long as the referenced Medication is in the response.
+    - `snapshotSource` reads MedicationRequest as well as MedicationStatement.
+  - **Placeholders** (case 25): "Unknown medication", "Med", "Rx", "None" and "No current medications" are placeholders.
+  - **IPS no-medication entries** (cases 31–32; Tyler):
+    - A statement coded `no-medication-info` or `no-known-medications` (system `http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips`) is never a card.
+    - The split gets `noMedicines: [{ source, kind: "no-info" | "none-known" }]`.
+    - My medicines and the staff page say "<Source> has no information about your medicines." or "<Source> says: no medicines known." for the patient, and "<Source>: no information about medicines" or "<Source>: no medicines known" for staff.
+    - It never makes an empty list read as "none" (unknown is never none). The QR carries it as a Bundle tag (`no-medicines`, display "<kind>:<Source>").
+  - **Claims** (D6; cases 11–12, 27–30): a fill attaches by ingredient only when the form and salt match too, otherwise it's "Filled, not in your records". CARIN package sentences ("…, 100 CAPSULE in 1 BOTTLE (…) (package)") are cut to the product name for display. RxNav `ndcstatus` is used for NDC → RxCUI, never the first of several.
+  - **Remapped codes** (case 26): RxNav history status maps an obsolete RxCUI to its current one before matching. If it can't, a "Possible duplicate" note stays.
+
+- [ ] **Step 1: Write the failing tests.** One test per findings case 1–32. Each uses its fixture and asserts the "→" behavior in the findings, adjusted by the rules above where they differ. Cases whose "Today" already matches are pinned as they are.
+- [ ] **Step 2: Run them to see them fail.** `node --test tests/messy-medicines.test.mjs`
+- [ ] **Step 3: Implement**, file by file. Every existing test must keep passing. Where an old test pinned behavior these rules reverse, change that test's expectation and say so in the report.
+- [ ] **Step 4: Run the whole suite**, then the headless Chromium check with Riley (Task 6b) and Loria. Their lists may change only where these rules say so, and the report lists every changed card.
+- [ ] **Step 5: Commit** with explicit paths: "Read medicines the way real sources write them".
+
+### Task 6d: Real-world allergies, names and birth dates (added 2026-11-25, Tyler)
+
+The findings' cases 33–54. Tyler's answers, one question each:
+- Read names as real ones.
+- A birth date is read as written, and placeholders count as no birth date.
+- Kept-out wording says "don't match".
+- Fix both allergy gaps.
+
+**Files:**
+- Modify: `js/allergies.js` (`NONE_CODES`, `statementOf`, `NO_CODE`), `js/reconcile.js` (`personOf`, `nameKey`, `samePerson`, `keptOutWhy`), `js/app.js` (kept-out copy), `js/view.js` or wherever the kept-out line is built
+- Create: `tests/fixtures/messy/people/*.json`, `tests/fixtures/messy/allergies/*.json`, `tests/messy-people.test.mjs`, `tests/messy-allergies.test.mjs`
+
+**Interfaces:**
+- Produces:
+  - **Allergies** (cases 33–39):
+    - All of these read as the records saying no known allergies:
+      - IPS `no-known-allergies`, by code even with no display;
+      - SNOMED `716186003`, `409137002` and `716184000` (latex);
+      - text "NKA", "NKDA", "NKMA", "No Known Allergies." and "Patient has no known allergies", any case, trailing dot allowed.
+    - `no-allergy-info` and nullFlavor/data-absent-reason codes become today's unnamed-allergy row ("an allergy entry that doesn't say what it's to"), never named "NoInformation" or "Unknown".
+    - A real allergy beside any of these still shows, and staff still see the record.
+    - The penicillin family (case 39) stays five rows, pinned.
+  - **Names** (cases 40–47, 54):
+    - `personOf` uses the first `official` name, else `usual`, else the first that isn't `old`, `maiden`, `nickname` or `anonymous`.
+    - Text "LAST, FIRST [MIDDLE]" is read as family LAST.
+    - A suffix in text or `family` is moved out, and kept for the Jr/Sr rule.
+    - A `given` that is a string is one name.
+    - Only the first given word is compared.
+    - Trailing digits are stripped (Synthea).
+    - Particles stay part of the family name.
+    - `nameKey` keeps letters of any alphabet (`\p{L}` with the `u` flag), folds accents, and folds ü/ue, ö/oe, ä/ae.
+    - A compound surname must match in full.
+    - Jr. on one side and Sr. on the other is not the same person. A suffix on only one side is ignored.
+  - **Birth dates** (cases 48–53):
+    - The first 10 characters of a datetime are the date, never converted to local time.
+    - 1900-01-01, 1901-01-01, 1800-01-01 and 0001-01-01 count as no birth date.
+    - `_birthDate` with data-absent-reason counts as no birth date.
+  - **Kept-out wording** (Tyler):
+    - "Records from <Source> don't match your name and birth date, so they aren't on your list." replaces "are for someone else".
+    - `keptOutWhy` gives "no-match" in place of "someone-else". Old saved lists with "someone-else" read as "no-match".
+
+- [ ] **Step 1: Write the failing tests.** One per findings case 33–54, plus the copy.
+- [ ] **Step 2: Run them to see them fail.**
+- [ ] **Step 3: Implement.** Keep every existing test passing. Update expectations only where these rules reverse them, and say which in the report.
+- [ ] **Step 4: Run the whole suite**, then the Chromium check with Loria, Chantell and `?demo=someone-else`.
+- [ ] **Step 5: Commit** with explicit paths: "Read allergies, names and birth dates the way real sources write them".
+
 ### Task 7: The QR code carries both sides
 
 **Files:**
