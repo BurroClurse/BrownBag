@@ -47,5 +47,13 @@ starting on No says when not to. Only the phone's line goes: staff, the QR code 
 file keep the record with "patient thinks it's already listed". A line with Show it again
 stays, and the row returns by itself if no other allergy is left.
 
+**Shorter Allergies box (same day, Tyler chose folding the box and the unnamed row, and
+the word over "!"):** it starts closed each time, names showing, title "Allergies (2) · 1
+severe". Severe: anaphylaxis, trouble breathing, swelling of the face, lips or throat,
+fainting, blistering or peeling skin, or the records' "severe", "high risk" or like words.
+Nothing is ever called mild; no mark isn't a rating. A failed load, a Sign in note and
+"your records say" never fold. Staff pages don't change. A nurse or pharmacist has yet to
+check the rule.
+
 **Approaches for the note:** hide the record everywhere (rejected: it would turn
 a guess into a missing allergy) or only the note on the phone (chosen).

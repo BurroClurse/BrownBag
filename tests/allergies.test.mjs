@@ -259,7 +259,7 @@ test("sameAllergen ignores case, spacing and the SNOMED ending", () => {
 
 test("the pick lists hold the approved choices", () => {
   assert.deepEqual(ALLERGENS.map((a) => a.label), ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye", "Latex", "Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk", "Bee stings"]);
-  assert.deepEqual(REACTIONS.map((a) => a.label), ["Hives", "Rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea", "Vomiting", "Not sure"]);
+  assert.deepEqual(REACTIONS.map((a) => a.label), ["Hives", "Rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Fainting", "Blistering or peeling skin", "Severe reaction (anaphylaxis)", "Nausea", "Vomiting", "Not sure"]);
 });
 
 test("the drug ingredients on the list carry their RxNorm code, and nothing else does", () => {

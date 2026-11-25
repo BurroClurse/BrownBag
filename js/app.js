@@ -17,7 +17,7 @@ import { saveRecords, loadLastRecords, hasSavedList, loadRecordsFor } from "./of
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
-import { ALREADY_LISTED, removedUnnamed, removeUnnamedQuestion, readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
+import { ALREADY_LISTED, allergiesTitle, closedLine, isSevere, removedUnnamed, removeUnnamedQuestion, readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
 import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
@@ -73,6 +73,8 @@ var state = {
   // "new" while adding an allergy, or the key of the one whose reaction is
   // being added; and its form as the patient left it.
   allergyForm: null,
+  // Closed each time My medicines opens.
+  allergiesOpen: false,
   allergyDrafts: {},
   lastRemovedAllergy: null,
   announce: "",
@@ -267,6 +269,7 @@ async function updateWithPass(pass) {
       if (!samePatient) {
         closeAddForm();
         state.allergyForm = null;
+        state.allergiesOpen = false;
         state.allergyDrafts = {};
         state.lastRemoved = null;
         state.lastRemovedAllergy = null;
@@ -681,6 +684,7 @@ function leaveMedicines() {
   state.olderOpen = false;
   state.lastRemoved = null;
   state.lastRemovedAllergy = null;
+  state.allergiesOpen = false;
   var unsaved = [];
   var editing = editedNow();
   if (state.adding && editing && draftChanged(state.draft, editing)) {
@@ -694,6 +698,8 @@ function leaveMedicines() {
   var cards = arranged.cards;
   state.allergyDrafts = keepDrafts(state.allergyDrafts, cards, arranged.open);
   state.allergyForm = startedDraft(state.allergyDrafts, state.allergyForm);
+  // Half done: there when they come back.
+  if (state.allergyForm) state.allergiesOpen = true;
   Object.keys(state.allergyDrafts).forEach(function (which) {
     var of = cards.filter(function (card) { return card.key === which; })[0];
     unsaved.push(unsavedAllergyText(state.allergyDrafts[which], of ? of.name : null));
@@ -803,13 +809,14 @@ async function signOutEveryone() {
 function drawAllergies(parent) {
   var arranged = arrangeAllergies(state.allergies, state.data);
   var notes = allergyNotes(state.allergies, new Date());
-  var box = allergyBox(parent, arranged.count ? "Allergies (" + arranged.count + ")" : "Allergies", showsSymbol(arranged.count, arranged.unspecified, state.dataFailed ? "failed" : state.allergies.status), 2);
+  var box = allergyBox(parent, allergiesTitle(arranged.cards), showsSymbol(arranged.count, arranged.unspecified, state.dataFailed ? "failed" : state.allergies.status), 2);
   box.heading.id = "allergies-heading";
   box.heading.tabIndex = -1;
   var section = box.section;
   if (saysNoneKnown(arranged, state.dataFailed ? "failed" : state.allergies.status)) section.classList.add("allergy-none-known");
   if (state.dataFailed) add(section, "p", "Allergies you added couldn't be opened.", "notice");
-  notes.forEach(function (text) {
+  // A date alone can fold; anything wrong can't.
+  notes.filter(function (text) { return !text.plain; }).forEach(function (text) {
     add(section, "p", text.text, text.plain ? "med-line" : "notice");
     if (text.signIn) {
       add(section, "a", "Sign in", "button secondary").href = signInLink(state.patientId);
@@ -829,6 +836,9 @@ function drawAllergies(parent) {
   } else if (!arranged.count && !arranged.statements.length && !arranged.unspecified && loaded) {
     add(section, "p", "No allergies in your records.");
   }
+  // Only a list folds: with nothing on it there's only what to press.
+  if (arranged.count + arranged.open.length) section = drawAllergyFold(box, arranged);
+  notes.filter(function (text) { return text.plain; }).forEach(function (text) { add(section, "p", text.text, "med-line"); });
   var list = arranged.count + arranged.open.length ? add(section, "ul", null, "allergy-rows") : null;
   arranged.cards.forEach(function (card) { drawAllergyCard(list, card); });
   arranged.open.forEach(function (entry) {
@@ -836,11 +846,14 @@ function drawAllergies(parent) {
     var row = add(list, "li");
     var head = add(row, "div", null, "allergy-head");
     add(head, "p", unnamed.name, "med-name");
-    unnamed.lines.forEach(function (text) { add(row, "p", tied(text), "med-line"); });
+    if (unnamed.short) add(row, "p", tied(unnamed.short), "med-line");
+    var more = add(row, "div", null, "allergy-more");
+    unnamed.lines.forEach(function (text) { add(more, "p", tied(text), "med-line"); });
     if (!unnamed.canSay) return;
     if (state.allergyForm === unnamedForm(entry)) drawAllergyForm(row, arranged, null, entry);
     else {
-      var actions = add(add(row, "div", null, "allergy-more"), "div", null, "card-actions");
+      foldButton(head, more, "Review", "Review: unnamed allergy");
+      var actions = add(more, "div", null, "card-actions");
       button(actions, "Say what it is", "secondary", function () { openAllergyForm(unnamedForm(entry), "allergen"); }, "Say what it is: unnamed allergy");
       if (entry.canRemove) {
         var remove = button(actions, "Remove", "stop", function () { askRemoveUnnamed(entry, remove); }, "Remove: unnamed allergy");
@@ -871,10 +884,50 @@ function drawAllergies(parent) {
   }
 }
 
+// The title opens and closes the rest; closed, the names still show.
+function drawAllergyFold(box, arranged) {
+  var toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.id = "allergies-toggle";
+  toggle.className = "allergy-toggle";
+  var words = add(toggle, "span");
+  while (box.heading.firstChild) words.appendChild(box.heading.firstChild);
+  add(toggle, "span", null, "allergy-chevron").setAttribute("aria-hidden", "true");
+  box.heading.appendChild(toggle);
+  var names = add(box.section, "p", closedLine(arranged.cards, arranged.open.length), "allergy-names");
+  var fold = add(box.section, "div", null, "allergy-fold");
+  fold.id = "allergy-fold";
+  toggle.setAttribute("aria-controls", "allergy-fold");
+  function show() {
+    toggle.setAttribute("aria-expanded", String(state.allergiesOpen));
+    fold.hidden = !state.allergiesOpen;
+    names.hidden = state.allergiesOpen;
+  }
+  toggle.addEventListener("click", function () {
+    state.allergiesOpen = !state.allergiesOpen;
+    show();
+  });
+  show();
+  return fold;
+}
+
+function foldButton(head, more, text, label) {
+  more.hidden = true;
+  var fold = button(head, text, "row-link", function () {
+    more.hidden = !more.hidden;
+    fold.setAttribute("aria-expanded", String(!more.hidden));
+  }, label);
+  fold.setAttribute("aria-expanded", "false");
+}
+
 function drawAllergyCard(list, card) {
   var row = add(list, "li");
   var head = add(row, "div", null, "allergy-head");
-  add(head, "p", card.name, "med-name");
+  var name = add(head, "p", card.name, "med-name");
+  if (isSevere(card)) {
+    name.appendChild(document.createTextNode(" "));
+    add(name, "span", "Severe", "severe-tag");
+  }
   allergyLines(card).forEach(function (text) { add(row, "p", tied(text), "med-line"); });
   if (state.allergyForm === card.key) {
     drawAllergyForm(row, null, card);
@@ -888,12 +941,7 @@ function drawAllergyCard(list, card) {
   }
   // Nothing left to do, so the buttons are folded away.
   var more = add(row, "div", null, "allergy-more");
-  more.hidden = true;
-  var edit = button(head, "Edit", "row-link", function () {
-    more.hidden = !more.hidden;
-    edit.setAttribute("aria-expanded", String(!more.hidden));
-  }, "Edit: " + card.name);
-  edit.setAttribute("aria-expanded", "false");
+  foldButton(head, more, "Edit", "Edit: " + card.name);
   add(more, "p", "Added " + longDate(card.mine.addedAt) + ".", "med-line");
   var actions = add(more, "div", null, "card-actions");
   button(actions, "Change the reaction", "secondary", open, "Change the reaction: " + card.name);
@@ -969,6 +1017,7 @@ function drawAllergyUndo(section) {
 function openAllergyForm(which, focusId) {
   // The other form's answers stay, for when it's opened again.
   state.allergyForm = which;
+  state.allergiesOpen = true;
   state.focusId = focusId;
   render();
 }

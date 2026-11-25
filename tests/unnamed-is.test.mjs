@@ -92,7 +92,7 @@ test("the screen: Done twice, Edit folds the buttons, the popup starts on No", (
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
   const body = (name) => app.slice(app.indexOf("function " + name)).split("\n}\n")[0];
   assert.equal(body("drawMedicines").match(/medicinesDone\(/g).length, 2);
-  assert.match(body("drawAllergyCard"), /aria-expanded/);
+  assert.match(body("foldButton"), /aria-expanded/);
   assert.match(body("askUnnamed"), /keep\.focus\(\)/);
 });
 

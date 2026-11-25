@@ -48,11 +48,17 @@ export function unspecifiedSentence(count, listed, records, ask, unnamed) {
   return records + (listed ? " also" : "") + " have " + (count === 1 ? "an unnamed allergy" : count + " unnamed allergies") + details + ". " + ask;
 }
 
-// The same entry as a row on My medicines.
+// The same entry as a row on My medicines: one line, the rest behind Review.
 export function unnamedRow(entry) {
-  var details = entry.details ? [capital(entry.details)] : [];
-  var ask = "Your records don't say what you're allergic to. Ask your care team" + (!entry.key ? "." : entry.canRemove ? ", say what it is if you know, or remove it if it's already on your list." : ", or say what it is if you know.");
-  return { name: "Unnamed allergy", lines: details.concat(ask), canSay: Boolean(entry.key) };
+  var ask = "Your records don't say what you're allergic to.";
+  if (!entry.key) return { name: "Unnamed allergy", short: capital(entry.details), lines: [ask + " Ask your care team."], canSay: false };
+  var recorded = /, (recorded [A-Z][a-z]{2} \d{1,2}, \d{4})/.exec(entry.details);
+  return {
+    name: "Unnamed allergy",
+    short: capital(recorded ? entry.details.replace(recorded[0], "") : entry.details),
+    lines: (recorded ? [capital(recorded[1]) + "."] : []).concat(ask),
+    canSay: true
+  };
 }
 
 function capital(text) {
@@ -147,8 +153,32 @@ function choices(category, labels) {
 export var ALLERGENS = choices("medication", ["Penicillin", "Amoxicillin", "Sulfa antibiotics", "Aspirin", "Ibuprofen", "Codeine", "Contrast dye"])
   .concat(choices("environment", ["Latex"]), choices("food", ["Peanuts", "Tree nuts", "Shellfish", "Eggs", "Milk"]), choices("environment", ["Bee stings"]));
 // One thing each: a code for "nausea or vomiting" would say both happened.
-export var REACTIONS = ["Hives", "Rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Severe reaction (anaphylaxis)", "Nausea", "Vomiting", NOT_SURE]
+export var REACTIONS = ["Hives", "Rash", "Itching", "Swelling of the face, lips or throat", "Trouble breathing", "Fainting", "Blistering or peeling skin", "Severe reaction (anaphylaxis)", "Nausea", "Vomiting", NOT_SURE]
   .map(function (label) { return { label: label }; });
+
+// Severe (design 2026-11-24): what can be life-threatening. A warning only: an
+// allergy with no mark isn't a mild one, and nothing may say so.
+var SEVERE = /anaphyl|\bsevere|(trouble|difficult\w*|short\w*|problems?) (in |of |with )?breath|dyspn|wheez|bronchospasm|laryng|angioedema|face, lips or throat|(throat|tongue|airway)\W+(is |was )?(swell|swollen|clos|tight)|(swell\w*|swollen|tight\w*)( of| in)?( the| my)? (throat|tongue)|\bfaint|pass(ed|ing) out|syncope|blister|peel|stevens|epidermal necrolysis/i;
+var DENIED = /^\s*(no|not|non|never|without|denies)\b/i;
+function soundsSevere(text) {
+  if (REACTIONS.some(function (choice) { return choice.label === text; })) return SEVERE.test(text);
+  return String(text || "").split(/[,;·]/).some(function (part) { return !DENIED.test(part) && SEVERE.test(part); });
+}
+
+export function isSevere(card) {
+  return Boolean(card.highRisk) || card.reactions.some(function (r) { return r.severity === "severe" || soundsSevere(r.text); }) ||
+    Boolean(card.mine) && card.mine.reactions.some(soundsSevere);
+}
+
+// The top of the Allergies box, and the line under it while it's closed.
+export function allergiesTitle(cards) {
+  var severe = cards.filter(isSevere).length;
+  return "Allergies" + (cards.length ? " (" + cards.length + ")" : "") + (severe ? " · " + severe + "\u00a0severe" : "");
+}
+
+export function closedLine(cards, unnamed) {
+  return cards.map(function (card) { return card.name; }).concat(unnamed ? unnamed + " unnamed" : []).join(", ");
+}
 
 export function allergenNamed(name) {
   return ALLERGENS.filter(function (choice) { return plainName(choice.label) === plainName(name); })[0] || null;

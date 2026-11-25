@@ -1822,6 +1822,24 @@ no other allergy is left for it to repeat.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 63: A short box that still warns
+
+**What changed:** the Allergies box starts closed, with each name showing. The title says
+how many are severe, the unnamed allergy is one line with Review, and Fainting and
+Blistering or peeling skin joined the reactions.
+
+**Why a word, not "!":** the box already has a warning sign for any allergy. A word says
+what it means and screen readers say it.
+
+**What isn't marked isn't mild:** a blank reaction could be serious, and nobody can
+predict the next one. So the app says "severe" or nothing. The rule follows the World
+Allergy Organization's 2020 guide, and a nurse or pharmacist should check it.
+
+**In FHIR:** `criticality` is how bad a future reaction could be; `reaction.severity` is
+how bad one was. Either one can mark it.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

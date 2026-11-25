@@ -44,7 +44,7 @@ test("only the one they removed goes; one that can't be told apart can't be remo
 
 test("the words", () => {
   const a = arrangeAllergies(read(MOLD, ENV), data());
-  assert.equal(unnamedRow(a.open[0]).lines[1], "Your records don't say what you're allergic to. Ask your care team, say what it is if you know, or remove it if it's already on your list.");
+  assert.equal(unnamedRow(a.open[0]).lines[1], "Your records don't say what you're allergic to.");
   assert.deepEqual(removeUnnamedQuestion(a.open[0]), {
     title: "Remove the unnamed allergy?",
     lines: ["Environment, recorded Feb 28, 1979 (same day as Mold).", "Do this only if you think it's already on your list. If you're not sure, keep it and ask your care team.", "Staff still see the record, marked \"patient thinks it's already listed\"."],
