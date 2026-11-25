@@ -198,8 +198,9 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 
 ### Front end
 
-- **When sources disagree** (designed and planned): when two sources list a
-  medicine differently, one card shows both versions. The patient is asked only
+- **When sources disagree** (being built): when two sources list a
+  medicine differently, one card shows both versions. That card is built,
+  and can be tried with the home server's test clinic. The patient is asked only
   what they do (how much, how often, whether they still take it), one card at a
   time, with "Not sure, ask my doctor". Home and My medicines say how many there
   are to check, and staff see a "Records disagree: ask the patient" part.
@@ -215,8 +216,10 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   only swaps and renews Medicare's sign-in; the list never passes through it.
   Waiting on Medicare's approval. Design:
   [`docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md`](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md).
-- **When sources disagree** (designed and planned): every source's version is
-  kept and compared fresh on each update; nothing is overwritten. The QR code and
+- **When sources disagree** (being built): every source's version is
+  kept and compared fresh on each update; nothing is overwritten. The
+  comparing is built and runs on every update; with one source the list is
+  as before. The QR code and
   the FHIR file carry both sides of anything unresolved. Design:
   [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md);
   plan: [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
@@ -241,6 +244,7 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/reconcile.js` | Whether two sources are the same person, and how two records match. |
 | `js/snapshot.js` | A shared list opened again (an IPS file or Brown Bag list) as one more dated source. |
+| `js/demo-source.js` | Test records from a made-up second clinic, offered only by the home test server. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
 | `js/connections.js` | The connections screen's choices: where a sign-in comes back to, and what the screen says. |
@@ -309,6 +313,14 @@ node --test "tests/*.test.mjs"
 Passkeys and encryption need https. `tools/serve.mjs` serves this folder with
 a certificate from [mkcert](https://github.com/FiloSottile/mkcert) kept in
 `.certs/` (never committed). See the comments at the top of that file.
+
+To try two sources, start it with `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`.
+It then serves the demo clinic, Valley Clinic (test records), which the app
+adds as a second source with the signed-in patient's name and birth date.
+Against Loria Jenkins it disagrees on a dose and on a stop, agrees on one
+medicine and adds one she doesn't have. `?demo=someone-else` in the page
+address makes it someone else's, so it's kept out. Only the home server
+(port 8443) asks for it; the published app never does.
 
 ## Copyright
 

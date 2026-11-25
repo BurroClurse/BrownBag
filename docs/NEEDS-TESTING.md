@@ -34,6 +34,26 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Two sources on one list, with the home server's test clinic** (2026-11-25,
+step 2 of when sources disagree). Checked only in headless Chromium (iPhone
+15 size, PIN lock, Loria Jenkins on the live sandbox, self-signed
+certificate). Needs the home server started with
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. On both virtual phones,
+signed in as Loria Jenkins:
+
+- My medicines (5): metoprolol shows "Your records don't agree on how much
+  you take." with both sides, "SMART sandbox, Aug 1992: 100 MG, 1, once a
+  day" and "Valley Clinic (test records), Oct 2026: 100 MG, 2, once a
+  day". Simvastatin says "Your records don't agree on whether you still
+  take it." Lasix is one card; lisinopril (Valley Clinic only) is there.
+- Open the app again at `/?demo=someone-else` and unlock: after the update,
+  "Records from Valley Clinic (test records) are for someone else, so they
+  aren't on your list." and My medicines (4).
+- Started without the variable: My medicines (4), the same list as before
+  this change, with no notice.
+- The long side labels wrap well on the iPhone SE size, and VoiceOver and
+  TalkBack read each side's source with its dose.
+
 **Marks and a newer prescription** (2026-11-25, step 1 of when sources disagree).
 Checked by tests only; nothing new is drawn yet. On a virtual phone with the
 sandbox: mark a medicine Not taking, then Undo, and As needed, then Undo, as

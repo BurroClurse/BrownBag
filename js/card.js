@@ -4,6 +4,7 @@
 
 import { claimsLabel, completedLine } from "./claims.js";
 import { doseChange, holdText } from "./meds.js";
+import { sideWords } from "./reconcile.js";
 
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -90,11 +91,48 @@ export function patientCard(entry, claimsLoaded) {
   say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
+  if (entry.answer) say("You said", answerWords(entry) + " (" + dayText(entry.answer.answeredAt) + ")");
+  var question = entry.answer ? null : entry.question;
+  var sides = question && entry.group && entry.group.sides.length > 1 ? entry.group.sides : null;
   return {
-    take: takeRows(entry.dose, entry.route, entry.frequency),
-    flags: [entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean),
+    // With no answer yet, no single dose: what each source says instead.
+    take: sides ? sides.map(sideRow) : takeRows(entry.dose, entry.route, entry.frequency),
+    flags: (question ? questionLines(question) : []).concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null]).filter(Boolean),
     facts: facts
   };
+}
+
+var CARD_LINES = {
+  dose: "Your records don't agree on how much you take.",
+  schedule: "Your records don't agree on how often you take it.",
+  status: "Your records don't agree on whether you still take it."
+};
+
+// A mark's question is the patient's mark against a record, not two
+// records, so it has only its own words.
+function questionLines(question) {
+  var mark = String(question.fingerprint || "").indexOf("mark:") === 0;
+  return [mark ? null : CARD_LINES[question.kind], question.why];
+}
+
+function sideRow(side) {
+  return [side.sourceName + (side.asOf ? ", " + monthText(side.asOf) : ""), sideWords(side)];
+}
+
+var CHOICE_WORDS = { "not-taking": "I don't take this anymore", "not-sure": "Not sure, ask my doctor", taking: "Yes, I take it" };
+
+// The answer as the patient chose it. A side is said as it was then: in a
+// question about stopping, which side they agreed with; else its dose and
+// how often.
+function answerWords(entry) {
+  var answer = entry.answer;
+  if (CHOICE_WORDS[answer.choice]) return CHOICE_WORDS[answer.choice];
+  var sides = answer.sides && answer.sides.length ? answer.sides : (entry.group ? entry.group.sides : []);
+  var side = sides.filter(function (one) { return one.sourceId === answer.choice; })[0];
+  if (!side) return "See the record";
+  var aboutStopping = sides.some(function (one) { return one.status === "not-current"; });
+  if (aboutStopping) return side.status === "not-current" ? "No, I stopped" : "Yes, I take it";
+  return sideWords(side);
 }
 
 // The name goes in as text, like everything from the records.

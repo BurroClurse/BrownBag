@@ -10,10 +10,12 @@ import { LOCK_KEY, lockMethod } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
+import { reconcile } from "./reconcile.js";
+import { loadDemoSource } from "./demo-source.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded, keysOf } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded, keysOf, sourceNotices } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
-import { saveRecords, loadLastRecords, loadRecordsFor } from "./offline.js";
+import { saveRecords, loadLastRecords, loadRecordsFor, splitToSave, splitFromSaved } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
 import { heldBack, recordReader, waitLeft } from "./read.js";
@@ -454,13 +456,38 @@ async function loadFresh(client, found, total) {
   var allergies = readAllergies(recordReader(client), patientId, SOURCE, extras)
     .then(function (result) { found.allergies = result; });
   var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras);
-  var split = mergeClaims(await loadMedicines(client, patientId), await claims, new Date());
+  // Only the home test server has a second source (js/demo-source.js).
+  var demo = loadDemoSource(location, patient, globalThis.fetch.bind(globalThis));
+  var medicines = await loadMedicines(client, patientId);
+  var sources = [{ id: "smart-sandbox", name: SOURCE, kind: "records", refreshes: true, patient: patient, split: medicines }];
+  var other = await demo;
+  if (other) sources.push(other);
+  // With one source, reconcile gives its list back as it was.
+  var ingredientOf = await withIngredients(medicines.ingredientOf, sources.slice(1));
+  var joined = Object.assign(reconcile(sources, ingredientOf), { ingredientOf: ingredientOf });
+  var split = mergeClaims(joined, await claims, new Date());
   await allergies;
   return {
     patientId: patientId,
     patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
     split: split
   };
+}
+
+// The ingredient map with the other sources' codes added, so the same
+// medicine at another strength joins across sources as it does within one.
+async function withIngredients(known, others) {
+  var map = new Map(known || []);
+  var missing = others.reduce(function (all, source) { return all.concat(source.split.current, source.split.older); }, [])
+    .map(function (item) { return item.rxcui; })
+    .filter(function (code, i, all) { return code && !map.has(code) && all.indexOf(code) === i; });
+  if (!missing.length) return known || map;
+  try {
+    (await ingredientsFor(missing)).forEach(function (value, code) { map.set(code, value); });
+  } catch (error) {
+    // They join by code and name only this time.
+  }
+  return map;
 }
 
 // Puts the allergies that loaded on screen, or keeps this patient's saved
@@ -507,17 +534,13 @@ function usePatient(result) {
 
 async function keepFreshCopy() {
   try {
-    await saveRecords(localStorage, state.key, {
+    await saveRecords(localStorage, state.key, Object.assign({
       patientId: state.patientId,
-      patient: state.patient,
-      current: state.split.current,
-      older: state.split.older,
-      placeholders: state.split.placeholders || 0,
-      heldBack: Boolean(state.split.heldBack),
-      claims: state.split.claims || null,
+      patient: state.patient
+    }, splitToSave(state.split), {
       allergies: allergiesToSave(),
       savedAt: new Date().toISOString()
-    });
+    }));
   } catch (error) {
     // Not saved for offline use this time. The list still shows.
   }
@@ -602,7 +625,7 @@ async function signInUnavailable(error, where) {
 function useSaved(saved) {
   state.patientId = saved.patientId;
   state.patient = saved.patient;
-  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, heldBack: Boolean(saved.heldBack), claims: saved.claims || null };
+  state.split = splitFromSaved(saved);
   state.savedAt = saved.savedAt;
   state.updatedAt = null;
   state.allergies = keepAllergies(null, saved.allergies);
@@ -622,6 +645,7 @@ async function loadAdditions() {
 // Prescriptions and "what the patient says" records, each with the
 // Medication records they point to (_include), all pages (pageLimit 0).
 // If one kind fails to load, the screen says so instead of showing less.
+// This is one source's list; loadFresh joins it with any others.
 async function loadMedicines(client, patientId) {
   var items = [];
   var placeholders = 0;
@@ -1273,6 +1297,7 @@ function drawRecords(parent, arranged) {
   if (state.split.heldBack) {
     add(section, "p", "Your health system didn't send some of your medicines. Ask your care team.", "notice");
   }
+  sourceNotices(state.split).forEach(function (text) { add(section, "p", text, "notice"); });
   var empty = emptyRecordsText(state.split, arranged);
   if (empty && !state.split.failed && !state.split.heldBack) {
     add(section, "p", empty);

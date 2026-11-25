@@ -193,3 +193,58 @@ test("month and day words say only as much as the date has", () => {
   assert.equal(dayText("2026-10"), "Oct 2026");
   assert.equal(dayText("2026"), "2026");
 });
+
+// A group from two sources, as reconcile builds it, with the question
+// arrangeList puts on it.
+const SIDES = [
+  { sourceId: "smart-sandbox", sourceName: "SMART sandbox", kind: "records", asOf: "2026-03-02", name: "lisinopril 10 MG Oral Tablet", dose: "10 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314076" },
+  { sourceId: "valley-clinic-demo", sourceName: "Valley Clinic (test records)", kind: "records", asOf: "2026-10-05", name: "lisinopril 20 MG Oral Tablet", dose: "20 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314077" }
+];
+const GROUPED = item({ key: "rx:314077", name: "lisinopril 20 MG Oral Tablet", rxcui: "314077", dose: "20 mg", route: null, source: "Valley Clinic (test records)",
+  group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], sides: SIDES, fingerprint: "fp", notes: [] } });
+const asked = (kind, why, more) => Object.assign({}, GROUPED, { question: { kind, why: why || null, groupId: "29046", fingerprint: "fp" } }, more);
+
+test("an unanswered disagreement shows both sides", () => {
+  const card = patientCard(asked("dose"), true);
+  assert.equal(card.flags[0], "Your records don't agree on how much you take.");
+  assert.deepEqual(card.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "20 mg, once a day"]]);
+  assert.equal(patientCard(asked("schedule"), true).flags[0], "Your records don't agree on how often you take it.");
+  assert.equal(patientCard(asked("status"), true).flags[0], "Your records don't agree on whether you still take it.");
+});
+
+test("what changed comes after the card line", () => {
+  const card = patientCard(asked("dose", "Valley Clinic (test records) now says 20 mg, once a day."), true);
+  assert.deepEqual(card.flags.slice(0, 2), ["Your records don't agree on how much you take.", "Valley Clinic (test records) now says 20 mg, once a day."]);
+});
+
+test("a side with no date names only its source", () => {
+  const undated = asked("dose");
+  undated.group = Object.assign({}, undated.group, { sides: [SIDES[0], Object.assign({}, SIDES[1], { asOf: null })] });
+  assert.deepEqual(patientCard(undated, true).take[1], ["Valley Clinic (test records)", "20 mg, once a day"]);
+});
+
+// A Not taking mark beside a newer prescription is the patient's mark
+// against a record, not two records, so it says only what happened.
+test("a mark's question says what the mark and the record say", () => {
+  const why = "You marked Not taking on Mar 3. Your records have a newer prescription, Oct 2.";
+  const card = patientCard(item({ question: { kind: "status", why, groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02" } }), true);
+  assert.deepEqual(card.flags, [why]);
+  assert.deepEqual(card.take, [["Dose", "1 tablet"], ["How taken", "Oral"], ["How often", "once a day"]]);
+});
+
+test("an answered card says what the patient said, and when", () => {
+  const answer = (choice) => ({ groupId: "29046", fingerprint: "fp", sides: SIDES, choice, answeredAt: "2026-11-25T15:00:00.000Z" });
+  const said = (entry) => entry.facts.filter(([label]) => label === "You said");
+  const chose = patientCard(Object.assign({}, GROUPED, { answer: answer("smart-sandbox") }), true);
+  assert.deepEqual(said(chose), [["You said", "10 mg, once a day (Nov 25)"]]);
+  assert.ok(!chose.flags.some((text) => /don't agree/.test(text)), "no question once answered");
+  assert.deepEqual(chose.take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+  assert.deepEqual(said(patientCard(Object.assign({}, GROUPED, { answer: answer("not-sure") }), true)), [["You said", "Not sure, ask my doctor (Nov 25)"]]);
+  assert.deepEqual(said(patientCard(Object.assign({}, GROUPED, { answer: answer("not-taking") }), true)), [["You said", "I don't take this anymore (Nov 25)"]]);
+  assert.deepEqual(said(patientCard(item({ answer: { groupId: "rx:314076", fingerprint: "mark:x", sides: [], choice: "taking", answeredAt: "2026-11-25" } }), true)), [["You said", "Yes, I take it (Nov 25)"]]);
+  const status = [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
+  const stopped = Object.assign({}, GROUPED, { answer: Object.assign(answer("valley-clinic-demo"), { sides: status }) });
+  assert.deepEqual(said(patientCard(stopped, true)), [["You said", "No, I stopped (Nov 25)"]]);
+  stopped.answer.choice = "smart-sandbox";
+  assert.deepEqual(said(patientCard(stopped, true)), [["You said", "Yes, I take it (Nov 25)"]]);
+});

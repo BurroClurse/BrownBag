@@ -41,6 +41,36 @@ export async function loadRecordsFor(storage, key, patientId) {
   }
 }
 
+// The list's part of the saved copy: every card with its group, and which
+// sources stayed out or didn't load. The ingredient map is looked up again.
+export function splitToSave(split) {
+  return {
+    current: split.current,
+    older: split.older,
+    placeholders: split.placeholders || 0,
+    heldBack: Boolean(split.heldBack),
+    claims: split.claims || null,
+    keptOut: split.keptOut || [],
+    sourceStatus: split.sourceStatus || []
+  };
+}
+
+// A saved copy as a list again. One saved before sources were joined has
+// no groups and no source notes, and opens as it did; the next update
+// rebuilds it.
+export function splitFromSaved(saved) {
+  return {
+    current: saved.current,
+    older: saved.older,
+    failed: false,
+    placeholders: saved.placeholders || 0,
+    heldBack: Boolean(saved.heldBack),
+    claims: saved.claims || null,
+    keptOut: saved.keptOut || [],
+    sourceStatus: saved.sourceStatus || []
+  };
+}
+
 // The saved list's date for the notes on home: "Nov 21", with the year only
 // when it isn't this year.
 export function listDate(savedAt, now) {

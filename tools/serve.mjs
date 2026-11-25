@@ -3,6 +3,14 @@
 // Certificates come from mkcert and live in .certs/ (never committed).
 //
 // Run: node tools/serve.mjs
+//
+// To try two sources on a phone, start it with the demo clinic:
+//   BROWN_BAG_DEMO=two-clinics node tools/serve.mjs
+// The app then adds Valley Clinic's test records
+// (tests/fixtures/reconcile/demo-clinic.json) as a second source, given the
+// signed-in patient's name and birth date. Add ?demo=someone-else to the
+// page address to see it kept out as someone else's. Without the variable,
+// the list is the sandbox's alone.
 
 import https from "node:https";
 import fs from "node:fs";
@@ -13,6 +21,7 @@ import { fileURLToPath } from "node:url";
 var PORT = 8443;
 var ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 var CERTS = path.join(ROOT, ".certs");
+var DEMO_FILE = path.join(ROOT, "tests", "fixtures", "reconcile", "demo-clinic.json");
 
 var TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -25,23 +34,17 @@ var TYPES = {
   ".svg": "image/svg+xml"
 };
 
-var options = {
-  cert: fs.readFileSync(path.join(CERTS, "cert.pem")),
-  key: fs.readFileSync(path.join(CERTS, "key.pem"))
-};
+// The demo clinic's address, answered here before any file is looked up,
+// since no _home folder exists. Null for every other address.
+export function demoAnswer(urlPath, env) {
+  if (urlPath.indexOf("/_home/") !== 0) return null;
+  if (urlPath === "/_home/demo-source.json" && env.BROWN_BAG_DEMO === "two-clinics") {
+    return { status: 200, file: DEMO_FILE };
+  }
+  return { status: 404 };
+}
 
-https.createServer(options, function (request, response) {
-  var urlPath = decodeURIComponent(new URL(request.url, "https://localhost").pathname);
-  if (urlPath.endsWith("/")) {
-    urlPath += "index.html";
-  }
-  var filePath = path.join(ROOT, urlPath);
-  var relative = path.relative(ROOT, filePath);
-  // Refuse anything outside the repo, and the certificates themselves.
-  if (relative.startsWith("..") || path.isAbsolute(relative) || relative.split(path.sep)[0].startsWith(".")) {
-    response.writeHead(403).end("Forbidden");
-    return;
-  }
+function send(response, filePath) {
   fs.readFile(filePath, function (error, data) {
     if (error) {
       response.writeHead(404).end("Not found");
@@ -53,16 +56,50 @@ https.createServer(options, function (request, response) {
     });
     response.end(data);
   });
-}).listen(PORT, "0.0.0.0", function () {
-  console.log("Brown Bag is running at:");
-  console.log("  https://localhost:" + PORT + "/");
-  Object.values(os.networkInterfaces()).flat().forEach(function (net) {
-    if (net && net.family === "IPv4" && !net.internal) {
-      console.log("  https://" + net.address + ":" + PORT + "/   (phone, PIN lock only)");
+}
+
+function serve() {
+  var options = {
+    cert: fs.readFileSync(path.join(CERTS, "cert.pem")),
+    key: fs.readFileSync(path.join(CERTS, "key.pem"))
+  };
+
+  https.createServer(options, function (request, response) {
+    var urlPath = decodeURIComponent(new URL(request.url, "https://localhost").pathname);
+    var demo = demoAnswer(urlPath, process.env);
+    if (demo) {
+      if (demo.status === 200) send(response, demo.file);
+      else response.writeHead(404).end("Not found");
+      return;
     }
+    if (urlPath.endsWith("/")) {
+      urlPath += "index.html";
+    }
+    var filePath = path.join(ROOT, urlPath);
+    var relative = path.relative(ROOT, filePath);
+    // Refuse anything outside the repo, and the certificates themselves.
+    if (relative.startsWith("..") || path.isAbsolute(relative) || relative.split(path.sep)[0].startsWith(".")) {
+      response.writeHead(403).end("Forbidden");
+      return;
+    }
+    send(response, filePath);
+  }).listen(PORT, "0.0.0.0", function () {
+    console.log("Brown Bag is running at:");
+    console.log("  https://localhost:" + PORT + "/");
+    Object.values(os.networkInterfaces()).flat().forEach(function (net) {
+      if (net && net.family === "IPv4" && !net.internal) {
+        console.log("  https://" + net.address + ":" + PORT + "/   (phone, PIN lock only)");
+      }
+    });
+    // Passkeys (Face ID, fingerprint) refuse number addresses, so the phone
+    // uses the Mac's network name to test them. The certificate includes it.
+    var name = os.hostname().replace(/\.local$/, "") + ".local";
+    console.log("  https://" + name + ":" + PORT + "/   (phone, Face ID works here)");
+    if (process.env.BROWN_BAG_DEMO === "two-clinics") console.log("  With the demo clinic's test records as a second source.");
   });
-  // Passkeys (Face ID, fingerprint) refuse number addresses, so the phone
-  // uses the Mac's network name to test them. The certificate includes it.
-  var name = os.hostname().replace(/\.local$/, "") + ".local";
-  console.log("  https://" + name + ":" + PORT + "/   (phone, Face ID works here)");
-});
+}
+
+// Tests import demoAnswer without starting a server.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  serve();
+}

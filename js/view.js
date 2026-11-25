@@ -251,6 +251,24 @@ export function emptyRecordsText(split, arranged) {
   return "No medicines in your records.";
 }
 
+var KEPT_OUT = {
+  "someone-else": function (name) { return "Records from " + name + " are for someone else, so they aren't on your list."; },
+  "no-identity": function (name) { return name + " didn't share a name and birth date, so its records aren't on your list."; }
+};
+
+// A source that stayed out, or a second one that didn't load, so its
+// medicines are never missing without a word. The first source's failure
+// has its own message, as before.
+export function sourceNotices(split) {
+  var kept = (split.keptOut || []).filter(function (source) { return KEPT_OUT[source.why]; }).map(function (source) {
+    return KEPT_OUT[source.why](source.name);
+  });
+  var failed = (split.sourceStatus || []).slice(1).filter(function (source) { return !source.loaded; }).map(function (source) {
+    return "Couldn't load medicines from " + source.name + ".";
+  });
+  return kept.concat(failed);
+}
+
 // Where a medicine goes when "I stopped this" is undone.
 export function backToList(entry) {
   if (entry.prn) return { name: "As needed", focusId: "as-needed-heading" };

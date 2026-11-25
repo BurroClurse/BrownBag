@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { saveRecords, loadLastRecords, loadRecordsFor, listDate, hasSavedList } from "../js/offline.js";
+import { saveRecords, loadLastRecords, loadRecordsFor, listDate, hasSavedList, splitToSave, splitFromSaved } from "../js/offline.js";
+import { arrangeList } from "../js/view.js";
 import { deriveKeyFromPin } from "../js/vault.js";
 
 function memoryStorage() {
@@ -171,4 +172,50 @@ test("both pages try once more by themselves when a file doesn't arrive", () => 
     assert.ok(html.indexOf("brownbag:retried") !== -1 && html.indexOf("brownbag:retried") < html.indexOf(script), page + " watches before its script");
     assert.match(readFileSync(new URL("../" + script, import.meta.url), "utf8"), /window\.brownBagStarted = true/);
   }
+});
+
+// A card joined from two sources, as reconcile builds it.
+const GROUP_CARD = {
+  key: "rx:314077", name: "lisinopril 20 MG Oral Tablet", status: "current", dose: "20 mg", frequency: "once a day",
+  group: {
+    id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], fingerprint: "[{\"sourceId\":\"smart-sandbox\"}]", notes: [],
+    sides: [
+      { sourceId: "smart-sandbox", sourceName: "SMART sandbox", kind: "records", asOf: "2026-03-02", name: "lisinopril 10 MG Oral Tablet", dose: "10 mg", frequency: "once a day", status: "current", key: "rx:314076" },
+      { sourceId: "valley-clinic-demo", sourceName: "Valley Clinic (test records)", kind: "records", asOf: "2026-10-05", name: "lisinopril 20 MG Oral Tablet", dose: "20 mg", frequency: "once a day", status: "current", key: "rx:314077" }
+    ]
+  }
+};
+
+test("a saved copy keeps its groups", async () => {
+  const storage = memoryStorage();
+  const split = {
+    current: [GROUP_CARD], older: [], failed: false, placeholders: 0, heldBack: false, claims: null, ingredientOf: new Map([["1", { rxcui: "1" }]]),
+    keptOut: [{ id: "x", name: "Mercy Health", why: "someone-else" }],
+    sourceStatus: [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }, { id: "valley-clinic-demo", name: "Valley Clinic (test records)", loaded: true, complete: true }]
+  };
+  await saveRecords(storage, await key(), Object.assign({ patientId: SAVED.patientId, patient: SAVED.patient, savedAt: SAVED.savedAt }, splitToSave(split)));
+  const opened = splitFromSaved(await loadLastRecords(storage, await key()));
+  assert.deepEqual(opened.current[0].group, GROUP_CARD.group);
+  assert.deepEqual(opened.keptOut, split.keptOut);
+  assert.deepEqual(opened.sourceStatus, split.sourceStatus);
+  assert.equal(opened.failed, false);
+  assert.equal(arrangeList(opened, {}).toCheck.length, 1, "still asks");
+});
+
+test("a saved copy from before groups opens", async () => {
+  const storage = memoryStorage();
+  await saveRecords(storage, await key(), SAVED);
+  const opened = splitFromSaved(await loadLastRecords(storage, await key()));
+  assert.deepEqual(opened, { current: SAVED.current, older: [], failed: false, placeholders: 0, heldBack: false, claims: null, keptOut: [], sourceStatus: [] });
+  const arranged = arrangeList(opened, {});
+  assert.deepEqual(arranged.current, SAVED.current);
+  assert.deepEqual(arranged.toCheck, []);
+});
+
+test("the test source opens with no signal, and its records are never kept", () => {
+  const worker = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
+  assert.ok(worker.includes('"./js/demo-source.js"'));
+  assert.match(worker, /var CACHE = "brownbag-v91";/);
+  assert.equal(loadWorker().routeFor("https://burroclurse.github.io/BrownBag/_home/demo-source.json"), "network");
+  assert.equal(loadWorker().routeFor("https://burroclurse.github.io/BrownBag/js/demo-source.js"), "app");
 });
