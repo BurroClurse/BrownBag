@@ -176,3 +176,9 @@ test("the staff page and My medicines draw the same card", () => {
   for (const file of ["js/app.js", "js/share-list.js"]) assert.match(read(file), /import \{[^}]*drawCard[^}]*\} from "\.\/card\.js"/, file);
   assert.ok(read("sw.js").includes('"./js/card.js"'), "opens with no signal");
 });
+
+test("a hospital order says so", () => {
+  const card = patientCard({ ...item({}), hospital: true }, false);
+  assert.equal(card.flags[0], "Hospital order");
+  assert.ok(!patientCard(item({}), false).flags.includes("Hospital order"));
+});

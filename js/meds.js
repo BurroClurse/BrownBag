@@ -27,7 +27,11 @@ export function fromMedicationRequest(resource, sourceName, medications = new Ma
   var drug = readDrug(resource, medications);
   var dosage = formatDosage(resource.dosageInstruction);
   var validity = resource.dispenseRequest && resource.dispenseRequest.validityPeriod;
+  var hospital = isHospitalOrder(resource);
   return makeItem({
+    kind: "request",
+    resource: resource,
+    hospital: hospital,
     drug: drug,
     dosage: dosage,
     start: resource.authoredOn || null,
@@ -37,7 +41,8 @@ export function fromMedicationRequest(resource, sourceName, medications = new Ma
     sourceName: sourceName,
     recordStatus: resource.status || null,
     prn: allAsNeeded(resource.dosageInstruction),
-    current: CURRENT_REQUEST.indexOf(resource.status) !== -1,
+    // A hospital order is for the stay, so it never counts as current.
+    current: CURRENT_REQUEST.indexOf(resource.status) !== -1 && !hospital,
     coded: { codes: drug.codes, dosage: codedDosage(resource.dosageInstruction) }
   });
 }
@@ -48,6 +53,9 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
   var period = resource.effectivePeriod || {};
   var start = resource.effectiveDateTime || period.start || null;
   return makeItem({
+    kind: "statement",
+    resource: resource,
+    hospital: false,
     drug: drug,
     dosage: dosage,
     start: start,
@@ -63,6 +71,31 @@ export function fromMedicationStatement(resource, sourceName, medications = new 
       (resource.status === "unknown" && !period.end),
     coded: { codes: drug.codes, dosage: codedDosage(resource.dosage) }
   });
+}
+
+var CATEGORY_SYSTEM = "http://terminology.hl7.org/CodeSystem/medicationrequest-category";
+
+function isHospitalOrder(resource) {
+  return (Array.isArray(resource.category) ? resource.category : []).some(function (concept) {
+    return Boolean(concept) && (Array.isArray(concept.coding) ? concept.coding : []).some(function (coding) {
+      return Boolean(coding) && coding.system === CATEGORY_SYSTEM && coding.code === "inpatient";
+    });
+  });
+}
+
+// What the record's status says, whatever list the item landed on:
+// "current", "not-current" or "unknown". A statement's "unknown" is current
+// until it has an end date.
+export function statusWord(item) {
+  var status = item.recordStatus;
+  if (item.kind === "statement") {
+    if (status === "active" || status === "intended") return "current";
+    if (["completed", "stopped", "not-taken"].indexOf(status) !== -1) return "not-current";
+    if (status === "unknown") return item.end ? "unknown" : "current";
+    return "unknown";
+  }
+  if (CURRENT_REQUEST.indexOf(status) !== -1) return "current";
+  return ["completed", "stopped", "cancelled"].indexOf(status) !== -1 ? "not-current" : "unknown";
 }
 
 // One dosage entry is split into its parts. Several are said in full, in the
@@ -228,9 +261,20 @@ function mergeIngredientGroup(members) {
 }
 
 // Strength as written in RxNorm names, such as "10 MG" or "0.5 MG/ML".
-function strengthOf(name) {
+export function strengthOf(name) {
   var match = /(\d+(?:\.\d+)?\s*(?:MG|MCG|G|UNT|MEQ|ML|%)(?:\/(?:ML|HR|ACTUAT))?)/i.exec(name || "");
   return match ? match[1].toUpperCase() : null;
+}
+
+// The words after the last strength: "oral tablet", "extended release oral
+// tablet". A brand in brackets is left off.
+export function formOf(name) {
+  var text = String(name || "").replace(/\s*\[[^\]]*\]/g, "");
+  var all = Array.from(text.matchAll(/\d+(?:\.\d+)?\s*(?:MG|MCG|G|UNT|MEQ|ML|%)(?:\/(?:ML|HR|ACTUAT))?/gi));
+  if (!all.length) return null;
+  var last = all[all.length - 1];
+  var form = text.slice(last.index + last[0].length).trim().toLowerCase();
+  return form || null;
 }
 
 function isNewer(a, b) {
@@ -255,6 +299,12 @@ function makeItem(parts) {
     source: parts.sourceName,
     status: parts.current ? "current" : "older",
     recordStatus: parts.recordStatus,
+    kind: parts.kind,
+    hospital: parts.hospital,
+    recordRef: parts.resource.id ? parts.kind === "request" ? "MedicationRequest/" + parts.resource.id : "MedicationStatement/" + parts.resource.id : null,
+    updated: (parts.resource.meta && parts.resource.meta.lastUpdated) || null,
+    asserted: (parts.kind === "statement" && parts.resource.dateAsserted) || null,
+    stoppedOn: (parts.kind === "statement" && parts.end) || null,
     origin: "records",
     prn: parts.prn,
     // What the record says in codes, for the QR code. Never shown.

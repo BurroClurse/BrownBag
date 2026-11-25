@@ -73,7 +73,7 @@ export function patientCard(entry, claimsLoaded) {
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
   return {
     take: takeRows(entry.dose, entry.route, entry.frequency),
-    flags: [HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean),
+    flags: [entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean),
     facts: facts
   };
 }
