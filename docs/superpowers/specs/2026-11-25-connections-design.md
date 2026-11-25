@@ -1,6 +1,8 @@
 # Brown Bag: lock first, then a connections screen
 
-Status: draft for Tyler's approval, 2026-11-25.
+Status: Tyler handed the remaining choices to Claude, 2026-11-25 ("I'll let
+you choose the best options until this is complete, just tell me at the end
+what you chose and why").
 
 ## Why
 
@@ -50,6 +52,16 @@ unlock, straight to home.
   sign-in, loses signal) can always pick up where they left off.
 - A home screen with nothing on it. Home only shows once at least one
   connection has loaded.
+
+## How many connections now (Claude's call, 2026-11-25)
+
+**One connection now, ready for more.** The new order (lock, connections
+screen, back to it after each sign-in, Done) is built in full, and the screen
+lists sources the way it will with several. Storage stays one connection:
+`state.patientId`, one pass. Signing in to the sandbox as another test patient
+replaces the connection, as today. Why: only the sandbox works, so storage for
+several connections would have nothing real to test against, and what home
+shows with two lists is undecided. The storage change comes with Medicare.
 
 ## Constraints found in the code
 
