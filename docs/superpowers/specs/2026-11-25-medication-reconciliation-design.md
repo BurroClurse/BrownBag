@@ -111,6 +111,26 @@ design") both wait on this design.
   patient marked one copy Not taking to tidy the list, the one they take
   must not go with it."
 
+## Standards and app rules this keeps (checked 2026-11-25)
+
+- **FHIR R4** only reads fields the app already receives: no new
+  resource types or searches, and no new SMART scopes (every scope stays
+  read-only, as the README says). `MedicationRequest.category`,
+  `MedicationStatement.dateAsserted` and `meta.lastUpdated` come in the
+  same reads.
+- **Nothing is written** to any health record.
+- **The QR code** stays a Bundle of type `collection` holding Patient,
+  MedicationStatement and AllergyIntolerance, within version 40-M, prefix
+  `v3.`.
+- **The FHIR file** stays IPS 2.0.1, made by `js/ips.js` from the QR
+  Bundle, with no new resource types.
+- **Content security policy:** no new addresses. RxNav is already
+  allowed, and SMART Health Link fetching is later work.
+- **Unknown is never none:** a source that didn't load is named on every
+  group it could be part of.
+- **Never `innerHTML`;** WCAG 2.2 AA; the review cards are plain form
+  controls.
+
 ## Approaches
 
 - **A. Reconciliation core first, then Medicare on top of it (Claude's
@@ -145,9 +165,13 @@ Statement {
   dose          words, plus coded amount when the record codes it
   schedule      words, plus coded repeat (frequency, period, unit) when coded
   status        current | not-current | unknown
-  asOf          the record's own date (authoredOn, effective start, fill date,
-                or a snapshot's own date, never the day it arrived)
-  hospital      true for an inpatient-category request
+  asOf          the record's own date (a request's authoredOn; a statement's
+                dateAsserted, else its effective start; a fill's date; a
+                snapshot's own date), never the day it arrived
+  hospital      true for a request with MedicationRequest.category code
+                `inpatient` (system http://terminology.hl7.org/CodeSystem/
+                medicationrequest-category). `discharge`, `outpatient` and
+                `community` are home medicines.
 }
 ```
 
@@ -155,12 +179,27 @@ The existing items (`makeItem` in `meds.js`, fills in `claims.js`,
 additions) already hold nearly all of this. `recordRef`, `form` and
 `hospital` are new.
 
-Statuses become one of three words. A request `active` or `on-hold`, or a
-statement `active` or `intended`, is current. `completed`, `stopped`,
-`cancelled` and `not-taken` are not current. Anything else, including a
-statement `unknown` with no end, is unknown (and, as today, stays on the
-main list). A fill says nothing about status by itself: it is evidence of
-pickup, with a date.
+Statuses become one of three words, keeping today's rules in `meds.js`
+(R4 value sets: MedicationRequest `active | on-hold | cancelled |
+completed | entered-in-error | stopped | draft | unknown`;
+MedicationStatement `active | completed | entered-in-error | intended |
+stopped | on-hold | unknown | not-taken`):
+
+- **Current:** a request `active` or `on-hold`; a statement `active` or
+  `intended`; a statement `unknown` with no end (which, as today, stays on
+  the main list).
+- **Not current:** `completed`, `stopped`, `cancelled`, `not-taken`. Only
+  these count as a source saying "stopped" in a status verdict.
+- **Unknown:** everything else (a request `draft` or `unknown`, a
+  statement `on-hold`, a statement `unknown` with an end). These sit under
+  Older as today and never make a status verdict.
+- `entered-in-error` is left out entirely, as today (`usableRecord`).
+
+(Found while checking: today a request `on-hold` is current but a
+statement `on-hold` is older. This design keeps that as it is.)
+
+A fill says nothing about status by itself: it is evidence of pickup, with
+a date.
 
 ### 2. Same person first
 
@@ -221,15 +260,22 @@ Within a group, the core compares its current statements from records
     patient: which bottle they have is theirs to say.
   - The strengths are the same, both amounts are coded, and they differ
     (1 tablet vs 2 tablets).
-- **Schedule differs:** both schedules are coded and differ. A difference
-  that involves a weekly or longer period (methotrexate weekly vs daily)
-  is always this verdict, and the card says "how often" plainly.
+- **Schedule differs:** both schedules are coded (`Timing.repeat`
+  frequency, period, periodUnit) and differ. A difference that involves a
+  weekly or longer period (methotrexate weekly vs daily) is always this
+  verdict, and the card says "how often" plainly. Weekly or longer means a
+  `periodUnit` of `wk`, `mo` or `a`, or `d` with a period of 7 or more.
+  When only one side is coded and either says weekly (in its code or its
+  words), it's also this verdict, not "worded differently".
 - **Status differs:** one records source says current and another says not
   current, unless the not-current one is clearly older. An R4
   MedicationRequest has no stop date, so the not-current record's date is
-  the latest of: the end of its period (`validityPeriod.end`,
-  `effectivePeriod.end`), `meta.lastUpdated`, and its own date
-  (`authoredOn`, effective start). When that date is before the current
+  the latest of: `meta.lastUpdated`, and its own date (a request's
+  `authoredOn`; a statement's `effectivePeriod.end`, `dateAsserted` or
+  effective start). `dispenseRequest.validityPeriod.end` isn't used: it
+  says until when a prescription can be filled, not when it was stopped.
+  `meta.lastUpdated` is the server's, and can be a data move rather than a
+  decision; it only ever makes a question more likely, never less. When that date is before the current
   record's own date, it's history, as today: no question. Otherwise, or
   when either has no date, it's a question (Claude's call, from the
   builder check: a question when the order can't be known, since a missed
@@ -426,22 +472,46 @@ Not taking, and Clinic B lists it current), that's a status question:
 - **Staff page** (`share-list.js`): a first part, "Records disagree: ask
   the patient", with each group's sides together; answered groups show the
   patient's answer first.
-- **The FHIR file (IPS):** the same statements and notes. A `DetectedIssue`
-  that points at both statements would be the standard way to say this
-  (Claude's call: not in v1, it costs QR space; possible later for the file
-  only).
+- **The tag's form** follows the app's own: Bundle tags in the Brown Bag
+  system that carry their value in `display`, as `records-unnamed`
+  already does with a count. Valid R4, read only by Brown Bag.
+- **The FHIR file (IPS 2.0.1):** Brown Bag's own tags stay out of it (FHIR
+  file design, 2026-11-24), so the `differs` tag doesn't reach it. Each
+  side is its own MedicationStatement with its "Records disagree" and
+  "Other record" notes, and the Medications section's readable text and
+  title say it, as the file already does for its other cautions
+  ("Medications (records disagree on 2)"). Every statement keeps a shape
+  `js/ips.js` already accepts: no new resource types, statuses or fields.
+  A `DetectedIssue` that points at both statements would be the standard
+  way to say this (Claude's call: not in v1). It costs QR space, and
+  `ips.js` `readBundle` accepts only Patient, MedicationStatement and
+  AllergyIntolerance, so it would need its own change to the reader and
+  the IPS Composition.
 
 ### 10. Snapshots (SMART Health Links, IPS files) in the core
 
 The import screen is later work, but the core handles snapshots now so
 it doesn't need changing then:
 
-- `kind: snapshot`, `refreshes: false`, `asOf` the Bundle's own
-  `timestamp` (or the Composition's date), and each statement keeps the
-  original source named in it.
-- **Brown Bag's own exports** are recognized by the Bundle tags in the
-  Brown Bag tag system. Their patient-added and patient-marked statements
-  are dropped (they are already the patient's), so a re-import never
+- `kind: snapshot`, `refreshes: false`, `asOf` the Composition's `date`
+  for an IPS document (Bundle `type` `document`), else the Bundle's
+  `timestamp`, and each statement keeps the original source named in it.
+- What a SMART Health Link holds (HL7 SMART Health Cards and Links IG):
+  files of type `application/fhir+json` (an IPS document or other Bundle)
+  or `application/smart-health-card` (signed). The core takes the Bundle
+  once it's opened. Opening the link, fetching its files, and checking a
+  Health Card's signature against its issuer's keys are the import
+  screen's job, later, and need new addresses in the content security
+  policy, so they get their own design.
+- Brown Bag's QR code is not a SMART Health Link: it's Brown Bag's own
+  encrypted `share.html` link, which borrows SMART Health Cards' trimming
+  rules. So Brown Bag's own lists come back as either that link's Bundle
+  or a saved IPS file.
+- **Brown Bag's own exports** are recognized by the Brown Bag Bundle tags
+  (the QR Bundle), or by an IPS Composition whose `author` includes the
+  Device named "Brown Bag" (the saved file, which carries no tags). Their
+  statements from the patient (`informationSource` the Patient) are
+  dropped, since they are already the patient's, so a re-import never
   duplicates them.
 - A snapshot's current statement older than a refreshing source's record
   of the same group doesn't create a status verdict on date alone; it
