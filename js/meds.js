@@ -270,6 +270,14 @@ export function strengthOf(name) {
   return match ? match[1].toUpperCase() : null;
 }
 
+// Every strength in the name, in order: a combination has one per
+// ingredient ("12.5 MG", "20 MG").
+export function strengthsOf(name) {
+  return Array.from(String(name || "").matchAll(new RegExp(STRENGTH, "gi"))).map(function (match) {
+    return match[0].toUpperCase();
+  });
+}
+
 // The words after the last strength: "oral tablet", "extended release oral
 // tablet". A brand in brackets is left off.
 export function formOf(name) {

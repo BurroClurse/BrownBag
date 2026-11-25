@@ -3,7 +3,7 @@
 // sources agree. Worked out fresh from the records every time, never stored
 // as buckets. No DOM here, so Node's test runner can check it.
 
-import { formOf, strengthOf, statusWord } from "./meds.js";
+import { formOf, strengthsOf, statusWord } from "./meds.js";
 import { firstWord, words } from "./add-check.js";
 
 // Only these matches put two records in one group.
@@ -80,7 +80,10 @@ export function matchOf(a, b, ingredientOf) {
 var VERDICTS = ["status", "dose", "schedule", "worded"];
 var DAYS = { s: 1 / 86400, min: 1 / 1440, h: 1 / 24, d: 1, wk: 7, mo: 30, a: 365 };
 var DAILY_UNITS = ["h", "d", "wk", "mo", "a"];
-var WEEKLY = /\b(weekly|once a week|every week|every \d+ weeks?)\b/i;
+// Weekly or longer, in words.
+var WEEKLY = /\b(weekly|biweekly|monthly|bimonthly|once a (?:week|month)|every (?:other )?(?:week|month)|every \d+ (?:weeks?|months?))\b/i;
+// Masses are compared in mg, so 0.025 MG and 25 MCG are one strength.
+var MASS = { g: 1000, mg: 1, mcg: 0.001 };
 
 function dosageOf(item) {
   return (item.fhir && item.fhir.dosage) || null;
@@ -91,17 +94,29 @@ function repeatOf(item) {
   return (dosage && dosage.repeat) || null;
 }
 
-// "10 MG" as { value: 10, unit: "mg" }; "2 MG/ML" has the unit "mg/ml".
+// Every strength in the name as { value, unit, top }: "10 MG" is
+// { 10, "mg", "mg" }, "25 MCG" is { 0.025, "mg", "mg" }, "2 MG/ML" is
+// { 2, "mg/ml", "mg" }.
 function strengthParts(name) {
-  var strength = strengthOf(name);
-  var found = strength && /^(\d+(?:\.\d+)?)\s*(.*)$/.exec(strength);
-  return found ? { value: parseFloat(found[1]), unit: found[2].replace(/\s+/g, "").toLowerCase() } : null;
+  return strengthsOf(name).map(function (strength) {
+    var found = /^(\d+(?:\.\d+)?)\s*(.*)$/.exec(strength);
+    var unit = found[2].replace(/\s+/g, "").toLowerCase().split("/");
+    var scale = MASS[unit[0]] || 1;
+    var top = MASS[unit[0]] ? "mg" : unit[0];
+    return { value: parseFloat(found[1]) * scale, unit: [top].concat(unit.slice(1)).join("/"), top: top };
+  });
+}
+
+function sameAmounts(a, b) {
+  return a.length === b.length && a.every(function (amount, index) {
+    return amount.unit === b[index].unit && near(amount.value, b[index].value);
+  });
 }
 
 function strengthsDiffer(a, b) {
   var first = strengthParts(a.name);
   var second = strengthParts(b.name);
-  return Boolean(first && second) && (first.value !== second.value || first.unit !== second.unit);
+  return first.length > 0 && second.length > 0 && !sameAmounts(first, second);
 }
 
 function near(a, b) {
@@ -112,24 +127,40 @@ function unitOf(quantity) {
   return String(quantity.unit || quantity.code || "").toLowerCase();
 }
 
-// One dose in the strength's unit: 2 tablets of 10 MG is 20. A dose already
-// written in that unit ("10 mg" of a 10 MG tablet) is the amount itself, or
-// it would count twice.
-function doseAmount(item) {
+// One dose, per strength: 2 tablets of 10 MG is 20 mg. A dose already
+// written in the strength's unit ("10 mg" of a 10 MG tablet) is the amount
+// itself, or it would count twice; for a combination it can't say which.
+function doseAmounts(item) {
   var dosage = dosageOf(item);
-  var strength = strengthParts(item.name);
-  if (!dosage || !dosage.quantity || !strength) return null;
-  return unitOf(dosage.quantity) === strength.unit.split("/")[0] ? dosage.quantity.value : strength.value * dosage.quantity.value;
+  var strengths = strengthParts(item.name);
+  if (!dosage || !dosage.quantity || !strengths.length) return null;
+  var quantity = dosage.quantity;
+  var unit = unitOf(quantity);
+  var top = MASS[unit] ? "mg" : unit;
+  if (strengths.some(function (strength) { return strength.top === top; })) {
+    if (strengths.length > 1) return null;
+    return [{ value: quantity.value * (MASS[unit] || 1), unit: top }];
+  }
+  return strengths.map(function (strength) {
+    return { value: strength.value * quantity.value, unit: strength.top };
+  });
+}
+
+function dailyAmounts(item) {
+  var repeat = repeatOf(item);
+  var amounts = doseAmounts(item);
+  if (!amounts || !repeat || DAILY_UNITS.indexOf(repeat.periodUnit) === -1) return null;
+  return amounts.map(function (amount) {
+    return { value: amount.value * repeat.frequency / (repeat.period * DAYS[repeat.periodUnit]), unit: amount.unit };
+  });
 }
 
 // How much a day, from codes only: 2 x 10 mg a day and 1 x 20 mg a day are
-// both 20. Null when the record doesn't code all of it.
+// both 20. Masses are in mg. Null when the record doesn't code all of it,
+// or for a combination, which has one amount per ingredient.
 export function dailyAmount(item) {
-  var dosage = dosageOf(item);
-  var repeat = repeatOf(item);
-  if (!dosage || !dosage.quantity || !repeat || DAILY_UNITS.indexOf(repeat.periodUnit) === -1) return null;
-  var amount = doseAmount(item);
-  return amount === null ? null : amount * repeat.frequency / (repeat.period * DAYS[repeat.periodUnit]);
+  var amounts = dailyAmounts(item);
+  return amounts && amounts.length === 1 ? amounts[0].value : null;
 }
 
 // Weekly or longer, in its codes or its words. Methotrexate weekly taken
@@ -144,21 +175,29 @@ function dosesDiffer(a, b) {
   if (strengthsDiffer(a, b)) {
     // Words can't say it's the same amount: which bottle they have is the
     // patient's to say.
-    var first = dailyAmount(a);
-    var second = dailyAmount(b);
-    return first === null || second === null || !near(first, second);
+    var first = dailyAmounts(a);
+    var second = dailyAmounts(b);
+    return !(first && second && sameAmounts(first, second));
   }
   var qa = dosageOf(a) && dosageOf(a).quantity;
   var qb = dosageOf(b) && dosageOf(b).quantity;
   if (!qa || !qb) return false;
-  var amountA = doseAmount(a);
-  var amountB = doseAmount(b);
-  if (amountA !== null && amountB !== null) return !near(amountA, amountB);
+  var amountA = doseAmounts(a);
+  var amountB = doseAmounts(b);
+  if (amountA && amountB) return !sameAmounts(amountA, amountB);
   return qa.value !== qb.value || unitOf(qa) !== unitOf(qb);
 }
 
 function sameWhen(a, b) {
   return a.slice().sort().join(" ") === b.slice().sort().join(" ");
+}
+
+// Both schedules coded in a way that can be compared: both with a rate, or
+// both with times of day. Twice a day beside "in the morning" can't be.
+function bothCoded(a, b) {
+  var ra = repeatOf(a);
+  var rb = repeatOf(b);
+  return Boolean(ra && rb) && (Boolean(ra.periodUnit && rb.periodUnit) || Boolean(ra.when && rb.when));
 }
 
 function schedulesDiffer(a, b) {
@@ -173,21 +212,29 @@ function schedulesDiffer(a, b) {
 }
 
 function wordedDiffers(a, b) {
-  return !strengthsDiffer(a, b) && !(repeatOf(a) && repeatOf(b)) && words(a.frequency) !== words(b.frequency);
+  return !strengthsDiffer(a, b) && !bothCoded(a, b) && words(a.frequency) !== words(b.frequency);
 }
 
+// A date as far as it goes: "2026", "2026-05" or "2026-05-01". Null when it
+// isn't one.
 function day(date) {
-  return date ? String(date).slice(0, 10) : null;
+  var found = date && /^\d{4}(?:-\d{2}(?:-\d{2})?)?/.exec(String(date));
+  return found ? found[0] : null;
+}
+
+// Clearly before: "2025" is before 2026-05-01, but "2026" might not be.
+function before(a, b) {
+  if (a.length !== b.length && (a.indexOf(b) === 0 || b.indexOf(a) === 0)) return false;
+  return a < b;
 }
 
 // A stop is history when it's dated before the current record. Without
 // both dates the order can't be known, and a missed stop is worse than one
 // more question. lastUpdated is the server's, so it only ever asks more.
 function stopCounts(current, stopped) {
-  var dates = [stopped.updated, stopped.stoppedOn, stopped.asserted, stopped.start].map(day).filter(Boolean).sort();
-  var stoppedOn = dates[dates.length - 1];
+  var dates = [stopped.updated, stopped.stoppedOn, stopped.asserted, stopped.start].map(day).filter(Boolean);
   var started = day(current.start);
-  return !stoppedOn || !started || stoppedOn >= started;
+  return !dates.length || !started || dates.some(function (date) { return !before(date, started); });
 }
 
 // What the sources disagree on. sides are items, one per source, in one group.
@@ -259,8 +306,18 @@ function bySides(a, b) {
 function fingerprintOf(entries) {
   return JSON.stringify(entries.map(function (entry) {
     var side = sideOf(entry);
-    return { sourceId: side.sourceId, strength: strengthOf(entry.item.name), dose: side.dose || null, frequency: side.frequency || null, status: side.status };
+    return { sourceId: side.sourceId, strength: strengthsOf(entry.item.name), dose: side.dose || null, frequency: side.frequency || null, status: side.status };
   }).sort(function (a, b) { return a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0; }));
+}
+
+// A source that sent only some records can't vouch for what it left out.
+function heldBackNotes(group) {
+  var said = [];
+  group.forEach(function (entry) {
+    var line = entry.source.name + " didn't send some records";
+    if (entry.source.split.heldBack && said.indexOf(line) === -1) said.push(line);
+  });
+  return said;
 }
 
 function keptOutWhy(first, person) {
@@ -278,7 +335,7 @@ export function reconcile(sources, ingredientOf) {
   var firstPerson = personOf(first.patient);
   var keptOut = [];
   var sourceStatus = sources.map(function (source) {
-    return { id: source.id, name: source.name, loaded: !source.split.failed };
+    return { id: source.id, name: source.name, loaded: !source.split.failed, complete: !source.split.heldBack };
   });
   // A source that didn't load says nothing either way.
   var included = sources.filter(function (source, index) {
@@ -365,7 +422,7 @@ export function reconcile(sources, ingredientOf) {
           verdicts: inOrder.length > 1 ? verdictsFor(inOrder.map(function (entry) { return entry.item; })) : [],
           sides: inOrder.map(sideOf).sort(bySides),
           fingerprint: fingerprintOf(inOrder),
-          notes: missing.concat(notes[at])
+          notes: missing.concat(heldBackNotes(inOrder), notes[at])
         }
       })
     });

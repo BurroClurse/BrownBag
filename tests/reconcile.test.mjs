@@ -156,7 +156,7 @@ test("one source comes back as it went in", () => {
   assert.deepEqual(out.current, split.current);
   assert.deepEqual(out.older, split.older);
   assert.deepEqual(out.keptOut, []);
-  assert.deepEqual(out.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true }]);
+  assert.deepEqual(out.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }]);
   assert.equal(out.failed, false);
   assert.equal(out.heldBack, false);
   assert.equal(out.placeholders, split.placeholders);
@@ -209,7 +209,7 @@ test("two clinics", () => {
   assert.equal(only(out, /^ondansetron 4/).group, undefined);
 
   assert.deepEqual(out.keptOut, []);
-  assert.deepEqual(out.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true }, { id: "clinic-b", name: "Valley Clinic", loaded: true }]);
+  assert.deepEqual(out.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }, { id: "clinic-b", name: "Valley Clinic", loaded: true, complete: true }]);
   // Still sorted by name, as splitByStatus does.
   var names = out.current.map(function (card) { return card.name; });
   assert.deepEqual(names, names.slice().sort(function (a, b) { return a.localeCompare(b); }));
@@ -312,13 +312,13 @@ test("a source that didn't load is named", () => {
   assert.deepEqual(lisinopril.group.sources, ["SMART sandbox", "Valley Clinic"]);
   assert.equal(lisinopril.group.notes.indexOf("Mercy Health didn't load") !== -1, true);
   assert.equal(only(out, /^hydrochlorothiazide/).group.notes.indexOf("Mercy Health didn't load") !== -1, true);
-  assert.deepEqual(out.sourceStatus[2], { id: "clinic-c", name: "Mercy Health", loaded: false });
+  assert.deepEqual(out.sourceStatus[2], { id: "clinic-c", name: "Mercy Health", loaded: false, complete: true });
 
   var failed = valley("two-clinics");
   failed.split.failed = true;
   var alone = reconcile([sandbox(), failed], MAP);
   assert.equal(cards(alone).some(function (card) { return card.group; }), false);
-  assert.deepEqual(alone.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true }, { id: "clinic-b", name: "Valley Clinic", loaded: false }]);
+  assert.deepEqual(alone.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }, { id: "clinic-b", name: "Valley Clinic", loaded: false, complete: true }]);
   assert.equal(alone.failed, false);
   assert.deepEqual(alone.keptOut, []);
 });
@@ -353,4 +353,82 @@ test("one source never joins with itself", () => {
     assert.ok(card.group);
     assert.equal(new Set(card.group.sides.map(function (side) { return side.sourceId; })).size, card.group.sides.length);
   });
+});
+
+// Fix round 1: what a quick look would call the same.
+function med(rxcui, display, dosage, extra) {
+  return fromMedicationRequest(Object.assign(request("m" + rxcui, rxcui, display, "2026-05-01", dosage), extra || {}), "x");
+}
+
+test("a source that sent only some records is named on its groups", () => {
+  var partial = valley("two-clinics");
+  partial.split.heldBack = true;
+  var out = reconcile([sandbox(), partial], MAP);
+  var lisinopril = only(out, /^lisinopril/);
+  assert.deepEqual(lisinopril.group.verdicts, ["dose"]);
+  assert.equal(lisinopril.group.notes.indexOf("Valley Clinic didn't send some records") !== -1, true);
+  assert.equal(only(out, /^metformin/).group.notes.indexOf("Valley Clinic didn't send some records") !== -1, true);
+  assert.equal(only(out, /^ondansetron 4/).group, undefined);
+  assert.deepEqual(out.sourceStatus, [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }, { id: "clinic-b", name: "Valley Clinic", loaded: true, complete: false }]);
+  assert.equal(out.heldBack, true);
+});
+
+test("every strength of a combination counts", () => {
+  var ten = med("1", "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet", coded(1, "tablet"));
+  var twenty = med("2", "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet", coded(1, "tablet"));
+  assert.deepEqual(verdictsFor([ten, twenty]), ["dose"]);
+  assert.deepEqual(verdictsFor([ten, med("3", "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet", coded(1, "tablet"))]), []);
+  var combos = map([["197885", "5487+29046"], ["197886", "5487+29046"]]);
+  var source = function (id, name, rxcui, display) {
+    var split = splitOf([request(id, rxcui, display, "2026-05-01", coded(1, "tablet"))], [], name);
+    split.ingredientOf = combos;
+    return { id: id, name: name, kind: "records", refreshes: true, patient: PATIENT, split: split };
+  };
+  var low = source("smart-sandbox", "SMART sandbox", "197885", "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet");
+  var same = reconcile([low, source("clinic-b", "Valley Clinic", "197885", "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet")], combos).current[0].group;
+  var more = reconcile([low, source("clinic-b", "Valley Clinic", "197886", "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet")], combos).current[0].group;
+  assert.deepEqual(more.verdicts, ["dose"]);
+  assert.notEqual(more.fingerprint, same.fingerprint);
+});
+
+test("a time of day beside a rate isn't the same schedule", () => {
+  var morning = med("1", "lisinopril 10 MG Oral Tablet", [{ doseAndRate: [{ doseQuantity: { value: 1, unit: "tablet" } }], timing: { repeat: { when: ["MORN"] } } }]);
+  var twice = med("1", "lisinopril 10 MG Oral Tablet", coded(1, "tablet", { frequency: 2, period: 1, periodUnit: "d" }));
+  assert.deepEqual(verdictsFor([morning, twice]), ["worded"]);
+  var weekly = med("1", "lisinopril 10 MG Oral Tablet", coded(1, "tablet", { frequency: 1, period: 1, periodUnit: "wk" }));
+  assert.deepEqual(verdictsFor([morning, weekly]), ["schedule"]);
+});
+
+test("a stop dated only by year or month can't be put before a start", () => {
+  var active = med("1", "lisinopril 10 MG Oral Tablet", words("Take 1 tablet daily"));
+  var stoppedIn = function (date) {
+    return fromMedicationStatement({ resourceType: "MedicationStatement", id: "s", status: "stopped",
+      medicationCodeableConcept: { coding: [{ system: RXNORM, code: "1", display: "lisinopril 10 MG Oral Tablet" }] },
+      effectivePeriod: { start: date, end: date }, dosage: words("Take 1 tablet daily") }, "y");
+  };
+  assert.deepEqual(verdictsFor([active, stoppedIn("2026")]), ["status"]);
+  assert.deepEqual(verdictsFor([active, stoppedIn("2026-05")]), ["status"]);
+  assert.deepEqual(verdictsFor([active, stoppedIn("2025")]), []);
+  assert.deepEqual(verdictsFor([active, stoppedIn("2026-04")]), []);
+  assert.deepEqual(verdictsFor([med("1", "lisinopril 10 MG Oral Tablet", words("Take 1 tablet daily"), { authoredOn: "2026" }), stoppedIn("2026-03-01")]), ["status"]);
+});
+
+test("monthly and every other week are weekly or longer", () => {
+  var daily = med("1", "x 10 MG Oral Tablet", words("Take 1 tablet daily"));
+  assert.deepEqual(verdictsFor([daily, med("1", "x 10 MG Oral Tablet", words("Take 1 tablet monthly"))]), ["schedule"]);
+  ["once a month", "every month", "every other week", "every other month", "every 3 months", "every 2 weeks", "biweekly", "bimonthly"].forEach(function (text) {
+    assert.equal(isWeekly(med("1", "x 10 MG Oral Tablet", words("Take 1 tablet " + text))), true, text);
+  });
+  assert.equal(isWeekly(med("1", "x 10 MG Oral Tablet", words("Take 1 tablet every morning"))), false);
+});
+
+test("strengths are compared in one unit", () => {
+  var mg = med("1", "levothyroxine sodium 0.025 MG Oral Tablet", coded(1, "tablet"));
+  var mcg = med("2", "levothyroxine sodium 0.025 MCG Oral Tablet", coded(1, "tablet"));
+  assert.deepEqual(verdictsFor([mg, mcg]), ["dose"]);
+  assert.deepEqual(verdictsFor([mg, med("3", "levothyroxine sodium 25 MCG Oral Tablet", coded(1, "tablet"))]), []);
+  // 1 mL of 0.025 MG/ML is 0.025 mg, the same amount.
+  assert.deepEqual(verdictsFor([mg, med("4", "levothyroxine sodium 0.025 MG/ML Oral Solution", coded(1, "mL"))]), []);
+  assert.deepEqual(verdictsFor([mg, med("5", "levothyroxine sodium 0.025 MG/ML Oral Solution", coded(2, "mL"))]), ["dose"]);
+  assert.equal(dailyAmount(med("6", "x 25 MCG Oral Tablet", coded(2, "tablet"))), 0.05);
 });
