@@ -632,3 +632,210 @@ test("staff see a calm allergies box only when the patient said none and nothing
 test("no color or layout is in the QR code", () => {
   assert.doesNotMatch(JSON.stringify(withAllergies([], { saidNone: "2026-11-24" })), /color|class|style|none-known/i);
 });
+
+// Both sides of a disagreement go in the QR code (spec section 9). If these
+// fail, staff can be handed one source's dose as if it were the only one.
+const TAGS = "https://burroclurse.github.io/BrownBag/tags";
+const SIDES = [
+  { sourceId: "smart-sandbox", sourceName: "SMART sandbox", kind: "records", asOf: "2026-03-02", name: "lisinopril 10 MG Oral Tablet", dose: "10 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314076" },
+  { sourceId: "valley-clinic-demo", sourceName: "Valley Clinic (test records)", kind: "records", asOf: "2026-10-05", name: "lisinopril 20 MG Oral Tablet", dose: "20 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314077" }
+];
+function grouped(more) {
+  return Object.assign(recordItem("lisinopril 20 MG Oral Tablet", "314077"), {
+    dose: "20 mg", route: null, source: "Valley Clinic (test records)", lastDate: "2026-10-05",
+    group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], sides: SIDES, fingerprint: "fp", notes: [] }
+  }, more);
+}
+const ANSWER = (choice, more) => Object.assign({ groupId: "29046", fingerprint: "fp", sides: SIDES, choice, answeredAt: "2026-11-25T15:00:00.000Z" }, more);
+async function shared(current, data, warnings) {
+  const { arrangeList, shareListFrom } = await import("../js/view.js");
+  const arranged = arrangeList({ current, older: [] }, data || {});
+  return JSON.parse(JSON.stringify(buildShareBundle(shareListFrom(PATIENT, arranged, []), NOW, warnings, 2)));
+}
+const statementsOf = (bundle) => bundle.entry.filter((e) => e.resource.resourceType === "MedicationStatement").map((e) => e.resource);
+const notesOf = (resource) => (resource.note || []).map((n) => n.text);
+const tagsOf = (bundle, code) => ((bundle.meta && bundle.meta.tag) || []).filter((t) => t.system === TAGS && t.code === code);
+
+test("an unanswered disagreement is two linked statements", async () => {
+  const bundle = await shared([grouped()]);
+  const meds = statementsOf(bundle);
+  assert.equal(meds.length, 2);
+  // The shown record keeps everything it said; the other side only its own.
+  assert.deepEqual(meds.map(notesOf), [["From records: SMART sandbox", "Records disagree"], ["From records: Valley Clinic (test records)", "Records disagree", "Prescribed by Dr. Patel"]]);
+  assert.deepEqual(meds.map((m) => m.dosage[0].text), ["10 mg · once a day", "20 mg · once a day"]);
+  assert.deepEqual(meds.map((m) => m.medicationCodeableConcept.text), ["lisinopril 10 MG Oral Tablet", "lisinopril 20 MG Oral Tablet"]);
+  for (const m of meds) assert.equal(m.informationSource, undefined, "the record's, not the patient's");
+  assert.deepEqual(tagsOf(bundle, "differs"), [{ system: TAGS, code: "differs", display: "1 2" }]);
+  const groups = groupShareBundle(bundle);
+  assert.equal(groups.disagree.length, 1);
+  assert.equal(groups.disagree[0].sides.length, 2);
+  assert.deepEqual(groups.disagree[0].sides.map((row) => row.take), [[["Dose", "10 mg"], ["How often", "once a day"]], [["Dose", "20 mg"], ["How often", "once a day"]]]);
+  assert.deepEqual(groups.fromRecords, []);
+});
+
+test("an answer keeps the other side as a note", async () => {
+  const bundle = await shared([grouped()], { answers: [ANSWER("valley-clinic-demo")] });
+  const meds = statementsOf(bundle);
+  assert.equal(meds.length, 1);
+  assert.equal(meds[0].medicationCodeableConcept.text, "lisinopril 20 MG Oral Tablet");
+  assert.deepEqual(notesOf(meds[0]), ["From records: Valley Clinic (test records)", "Prescribed by Dr. Patel", "Patient confirmed this, 2026-11-25", "Other record: SMART sandbox, 10 mg, once a day, 2026-03"]);
+  assert.equal(meds[0].informationSource, undefined, "not filed under Added by patient");
+  assert.deepEqual(tagsOf(bundle, "differs"), []);
+  // The other side chosen: its own words, never the shown record's prescriber.
+  const other = statementsOf(await shared([grouped()], { answers: [ANSWER("smart-sandbox")] }));
+  assert.equal(other.length, 1);
+  assert.equal(other[0].medicationCodeableConcept.text, "lisinopril 10 MG Oral Tablet");
+  assert.deepEqual(other[0].medicationCodeableConcept.coding, [{ system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: "314076" }]);
+  assert.equal(other[0].dosage[0].text, "10 mg · once a day");
+  assert.deepEqual(notesOf(other[0]), ["From records: SMART sandbox", "Patient confirmed this, 2026-11-25", "Other record: Valley Clinic (test records), 20 mg, once a day, 2026-10"]);
+  assert.equal(groupShareBundle(bundle).fromRecords.length, 1);
+});
+
+test("Not sure travels", async () => {
+  const bundle = await shared([grouped()], { answers: [ANSWER("not-sure")] });
+  const meds = statementsOf(bundle);
+  assert.equal(meds.length, 2);
+  for (const m of meds) assert.deepEqual(notesOf(m).slice(1, 3), ["Records disagree", "Patient isn't sure"]);
+  assert.deepEqual(tagsOf(bundle, "differs").map((t) => t.display), ["1 2"]);
+  assert.equal(groupShareBundle(bundle).disagree[0].sides.length, 2);
+});
+
+test("an older staff page still sees both", async () => {
+  const bundle = await shared([grouped()]);
+  bundle.meta.tag = bundle.meta.tag.filter((t) => t.code !== "differs");
+  if (!bundle.meta.tag.length) delete bundle.meta;
+  const groups = groupShareBundle(bundle);
+  assert.deepEqual(groups.disagree, []);
+  assert.equal(groups.fromRecords.length, 2);
+  for (const row of groups.fromRecords) assert.ok(row.facts.some(([, text]) => text === "Records disagree"), JSON.stringify(row));
+  assert.deepEqual(groups.fromRecords.map((row) => row.facts.filter(([label]) => label === "Source")), [[["Source", "SMART sandbox"]], [["Source", "Valley Clinic (test records)"]]]);
+});
+
+test("I don't take this anymore is stopped, with each side as another record", async () => {
+  const bundle = await shared([grouped()], { answers: [ANSWER("not-taking")] });
+  const meds = statementsOf(bundle);
+  assert.equal(meds.length, 1);
+  assert.equal(meds[0].status, "stopped");
+  assert.deepEqual(meds[0].informationSource, { reference: "resource:0" });
+  assert.deepEqual(meds[0].effectivePeriod, { end: "2026-11-25T15:00:00.000Z" });
+  assert.deepEqual(notesOf(meds[0]), ["Other record: SMART sandbox, 10 mg, once a day, 2026-03", "Other record: Valley Clinic (test records), 20 mg, once a day, 2026-10"]);
+  assert.equal(groupShareBundle(bundle).patientSaysStopped.length, 1);
+});
+
+// Spec section 8: a Not taking mark never hides a newer prescription, so
+// until it's answered staff see the record and the mark side by side.
+test("a mark against a newer prescription is the record and the mark, linked", async () => {
+  const card = Object.assign(recordItem("lisinopril 10 MG Oral Tablet", "314076"), { lastDate: "2026-10-02" });
+  const marks = { stopped: { "rx:314076": "2026-03-03" } };
+  const bundle = await shared([card], marks);
+  const meds = statementsOf(bundle);
+  assert.deepEqual(meds.map((m) => m.status), ["active", "stopped"]);
+  assert.deepEqual(notesOf(meds[0]), ["From records: SMART sandbox", "Prescribed by Dr. Patel"]);
+  assert.deepEqual(meds[1].informationSource, { reference: "resource:0" });
+  assert.deepEqual(meds[1].effectivePeriod, { end: "2026-03-03" });
+  assert.deepEqual(tagsOf(bundle, "differs").map((t) => t.display), ["1 2"]);
+  const groups = groupShareBundle(bundle);
+  assert.equal(groups.disagree[0].sides.length, 2);
+  assert.deepEqual(groups.fromRecords, []);
+  assert.deepEqual(groups.patientSaysStopped, []);
+  assert.ok(groups.disagree[0].sides[1].facts.some(([label]) => label === "Not taking since"));
+  // Answered "not sure": the record, and that the patient isn't sure.
+  const answer = (choice) => ({ groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice, answeredAt: "2026-11-25T15:00:00.000Z" });
+  const unsure = await shared([card], Object.assign({ answers: [answer("not-sure")] }, marks));
+  assert.deepEqual(statementsOf(unsure).map(notesOf), [["From records: SMART sandbox", "Prescribed by Dr. Patel", "Patient isn't sure"]]);
+  assert.deepEqual(tagsOf(unsure, "differs"), []);
+  // Answered "no": simply stopped, as today.
+  const no = statementsOf(await shared([card], Object.assign({ answers: [answer("not-taking")] }, marks)));
+  assert.deepEqual(no.map((m) => [m.status, m.effectivePeriod.end, m.note]), [["stopped", "2026-03-03", undefined]]);
+});
+
+test("a mark on one side of a group is the records and the mark, linked", async () => {
+  const card = grouped({ group: Object.assign({}, grouped().group, { verdicts: [] }) });
+  const bundle = await shared([card], { stopped: { "rx:314076": "2026-03-03" } });
+  const meds = statementsOf(bundle);
+  assert.deepEqual(meds.map((m) => m.status), ["active", "stopped"]);
+  // The records agree with each other, so one statement names them both.
+  assert.deepEqual(notesOf(meds[0]), ["From records: SMART sandbox, Valley Clinic (test records)", "Prescribed by Dr. Patel"]);
+  assert.deepEqual(tagsOf(bundle, "differs").map((t) => t.display), ["1 2"]);
+  // Records that also disagree with each other: every side, and the mark.
+  const both = await shared([grouped()], { stopped: { "rx:314076": "2026-03-03" } });
+  assert.deepEqual(statementsOf(both).map((m) => [m.status, notesOf(m)[0]]), [["active", "From records: SMART sandbox"], ["active", "From records: Valley Clinic (test records)"], ["stopped", undefined]]);
+  assert.deepEqual(tagsOf(both, "differs").map((t) => t.display), ["1 2 3"]);
+  assert.equal(groupShareBundle(both).disagree[0].sides.length, 3);
+});
+
+test("records that agree are one statement naming every source", async () => {
+  const card = grouped({ group: Object.assign({}, grouped().group, { verdicts: [] }) });
+  const meds = statementsOf(await shared([card]));
+  assert.equal(meds.length, 1);
+  assert.equal(notesOf(meds[0])[0], "From records: SMART sandbox, Valley Clinic (test records)");
+  assert.deepEqual(groupShareBundle(await shared([card])).fromRecords[0].facts.filter(([label]) => label === "Source"), [["Source", "SMART sandbox, Valley Clinic (test records)"]]);
+});
+
+test("a group's notes go on its statements", async () => {
+  const notes = ["Mercy Health didn't load", "May be the same medicine as lisinopril 5 MG Oral Tablet"];
+  const asked = statementsOf(await shared([grouped({ group: Object.assign({}, grouped().group, { notes }) })]));
+  for (const m of asked) assert.deepEqual(notesOf(m).slice(-2), notes);
+  const one = statementsOf(await shared([grouped({ group: Object.assign({}, grouped().group, { verdicts: [], notes }) })]));
+  assert.deepEqual(notesOf(one[0]).slice(-2), notes);
+});
+
+test("a second source that didn't load is a tag, read back by name", async () => {
+  const { shareWarnings } = await import("../js/view.js");
+  const sourceStatus = [{ id: "smart-sandbox", name: "SMART sandbox", loaded: false, complete: true }, { id: "valley-clinic-demo", name: "Valley Clinic (test records)", loaded: false, complete: true }, { id: "mercy", name: "Mercy Health", loaded: true, complete: false }];
+  const state = { split: { current: [], older: [], sourceStatus }, data: {}, allergies: { status: "loaded", savedAt: null, updatedAt: null } };
+  const warnings = shareWarnings(state);
+  assert.deepEqual(warnings.sourceStatus, sourceStatus);
+  const bundle = buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [] }, NOW, warnings);
+  assert.deepEqual(tagsOf(bundle, "source-not-loaded"), [{ system: TAGS, code: "source-not-loaded", display: "Valley Clinic (test records)" }]);
+  assert.deepEqual(groupShareBundle(JSON.parse(JSON.stringify(bundle))).notLoaded, ["Valley Clinic (test records)"]);
+  assert.deepEqual(groupShareBundle(buildShareBundle({ patient: PATIENT, current: [], additions: [], stopped: [] }, NOW)).notLoaded, []);
+});
+
+// Ruling R18: Brown Bag knows its own QR lists by their tag when one comes
+// back as a snapshot, so a code made the way the app makes it always has one.
+test("a QR code made the way the app makes it always has a Brown Bag tag", async () => {
+  const { shareWarnings } = await import("../js/view.js");
+  const state = { split: { current: [], older: [] }, data: {}, allergies: { status: "loaded", savedAt: null, updatedAt: null } };
+  const list = { patient: PATIENT, current: [], additions: [], stopped: [], allergies: { cards: [], statements: [], saidNone: null } };
+  for (const status of ["loaded", "failed", "refused", "not-loaded"]) {
+    const bundle = buildShareBundle(list, NOW, shareWarnings(Object.assign({}, state, { allergies: { status, savedAt: null, updatedAt: null } })));
+    assert.deepEqual(bundle.meta.tag.filter((t) => t.system === TAGS).map((t) => t.code), ["allergies-" + status]);
+  }
+  const failed = buildShareBundle(list, NOW, shareWarnings(Object.assign({}, state, { dataFailed: true })));
+  assert.ok(failed.meta.tag.some((t) => t.system === TAGS && t.code === "allergies-failed"));
+});
+
+test("a disagreement counts once, as on the home button", async () => {
+  const { shareMedicineCount } = await import("../js/share.js");
+  const { medicineCount, arrangeList } = await import("../js/view.js");
+  const split = { current: [grouped(), recordItem("metformin", "861007")], older: [] };
+  const groups = groupShareBundle(await shared(split.current));
+  assert.equal(shareMedicineCount(groups), medicineCount(arrangeList(split, {}), []));
+  assert.equal(shareMedicineCount(groups), 2);
+});
+
+test("at level 0 another record is its source and month only", async () => {
+  const { arrangeList, shareListFrom } = await import("../js/view.js");
+  const list = shareListFrom(PATIENT, arrangeList({ current: [grouped()], older: [] }, { answers: [ANSWER("valley-clinic-demo")] }), []);
+  assert.deepEqual(notesOf(statementsOf(buildShareBundle(list, NOW, {}, 1))[0]).slice(-1), ["Other record: SMART sandbox, 10 mg, once a day, 2026-03"]);
+  assert.deepEqual(notesOf(statementsOf(buildShareBundle(list, NOW, {}, 0))[0]).slice(-1), ["Other record: SMART sandbox, 2026-03"]);
+});
+
+// Two sources often give the same code, so the same key: each side is still
+// its own source's words, never the shown record's (Riley's methotrexate).
+test("sides with the same code keep their own words", async () => {
+  const weekly = Object.assign({}, SIDES[0], { name: "lisinopril 20 MG Oral Tablet", key: "rx:314077", dose: "20 mg", frequency: "once a week" });
+  const card = grouped({ group: Object.assign({}, grouped().group, { verdicts: ["schedule"], sides: [weekly, SIDES[1]] }) });
+  const meds = statementsOf(await shared([card]));
+  assert.deepEqual(meds.map((m) => [m.dosage[0].text, notesOf(m)]), [
+    ["20 mg · once a week", ["From records: SMART sandbox", "Records disagree"]],
+    ["20 mg · once a day", ["From records: Valley Clinic (test records)", "Records disagree", "Prescribed by Dr. Patel"]]
+  ]);
+  // A status side that's stopped says so in FHIR's own word, not the patient's.
+  const status = grouped({ group: Object.assign({}, grouped().group, { verdicts: ["status"], sides: [Object.assign({}, weekly, { frequency: "once a day", status: "not-current", recordStatus: "stopped" }), SIDES[1]] }) });
+  const both = await shared([status]);
+  assert.deepEqual(statementsOf(both).map((m) => m.status), ["completed", "active"]);
+  assert.deepEqual(groupShareBundle(both).disagree[0].sides.map((row) => row.status), ["completed", "active"]);
+  assert.deepEqual(groupShareBundle(both).patientSaysStopped, []);
+});

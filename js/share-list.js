@@ -2,7 +2,7 @@
 // (design 2026-11-23). "See what's inside" is the same list as short text
 // (js/inside.js); a test checks nothing staff see is left out of it.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, staffSaysNone, dateLines, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, staffSaysNone, dateLines, disagreeRows, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 import { drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
@@ -24,6 +24,8 @@ export function drawShareList(parent, groups, level) {
   medicineNotices(groups).forEach(function (text) { add(block, "p", text, "notice"); });
   var fills = fillsNote(groups);
   if (fills) note(block, fills);
+  // No count: its rows are sides, not medicines.
+  if (disagreeRows(groups).length) part(block, DISAGREE_TITLE, disagreeRows(groups), "", level + 2, true);
   part(block, "From records", groups.fromRecords, emptyPartText(groups, "records"), level + 2, recordsPartial(groups));
   if (groups.fromClaims && groups.fromClaims.length) {
     part(block, "Filled, not in the health record", groups.fromClaims, "", level + 2);

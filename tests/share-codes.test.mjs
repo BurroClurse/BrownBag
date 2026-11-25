@@ -131,3 +131,47 @@ test("codes are dropped before the code gets too dense, and a medicine never is"
   // The limit is 161 itself, not the size under it.
   assert.equal(widest, 161, levels.join(" "));
 });
+
+// Spec section 9: codes go first, then "Other record" notes shorten, but a
+// disagreement's two sides are never trimmed away: the list is too long first.
+const SIDE = (id, name, dose, asOf, key) => ({ sourceId: id, sourceName: name, kind: "records", asOf, name: "lisinopril " + dose.toUpperCase() + " Oral Tablet", dose, route: null, frequency: "once a day", status: "current", recordStatus: "active", key });
+const GROUPED = Object.assign(med(), {
+  question: { kind: "dose", why: null, groupId: "29046", fingerprint: "fp" },
+  group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic"], verdicts: ["dose"], fingerprint: "fp", notes: [], sides: [SIDE("smart-sandbox", "SMART sandbox", "10 mg", "2026-03-02", "rx:314076"), SIDE("valley", "Valley Clinic", "20 mg", "2026-10-05", "rx:314077")] }
+});
+const bothSides = (bundle) => {
+  const tag = bundle.meta.tag.filter((t) => t.code === "differs")[0];
+  const at = tag.display.split(" ").map(Number);
+  return at.length === 2 && at.every((i) => bundle.entry[i].resource.note.some((n) => n.text === "Records disagree"));
+};
+
+test("a disagreement is never trimmed away", async () => {
+  const { fitsInQr } = await import("../js/share.js");
+  const fits = async (l, level) => { const p = await packShare(buildShareBundle(l, NOW, {}, level), BASE); return fitsInQr(p.prefix, p.digits); };
+  let count = 40;
+  while (await fits(list([GROUPED].concat(many(count))), 2)) count += 1;
+  // Just over the limit with codes: fewer codes, and both sides, until nothing fits.
+  let seen = 0;
+  for (; ; count += 1) {
+    const l = list([GROUPED].concat(many(count)));
+    const fitting = [];
+    for (const level of [2, 1, 0]) {
+      const bundle = buildShareBundle(l, NOW, {}, level);
+      assert.ok(bothSides(bundle), "level " + level);
+      if (await fits(l, level)) fitting.push(level);
+    }
+    seen += fitting.length;
+    if (!fitting.length) {
+      const bundle = await shareBundleFor(l, NOW, {}, BASE);
+      assert.ok(bothSides(bundle), "still both sides, so the too long screen shows");
+      const packed = await packShare(bundle, BASE);
+      assert.equal(fitsInQr(packed.prefix, packed.digits), false);
+      break;
+    }
+  }
+  assert.ok(seen > 0);
+  // When nothing fits, the app says the list is too long, as it does today.
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /var fits = fitsInQr\(packed\.prefix, packed\.digits\);/);
+  assert.match(app, /fits \? "Show this to the person checking your medicines" : "Your list is too long for one QR code"/);
+});

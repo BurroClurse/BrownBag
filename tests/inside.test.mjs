@@ -96,3 +96,23 @@ test("it's read from the code itself, and opens with no signal", () => {
   assert.match(read("js/app.js"), /drawInside\(page, groups/);
   for (const file of ["inside", "share-list"]) assert.ok(read("sw.js").includes('"./js/' + file + '.js"'), file);
 });
+
+// Until Task 8 draws its own part, a disagreement's sides still show: they
+// aren't under From records any more, so nothing may hide them.
+test("both sides of a disagreement are on the staff page, in See what's inside and in the file's text", async () => {
+  const { patientSummary } = await import("../js/ips.js");
+  const side = (id, name, dose, key) => ({ sourceId: id, sourceName: name, kind: "records", asOf: "2026-03-02", name: "lisinopril " + dose + " Oral Tablet", dose, route: null, frequency: "once a day", status: "current", recordStatus: "active", key });
+  const asked = item({ question: { kind: "dose", why: null, groupId: "1", fingerprint: "fp" }, group: { id: "1", sources: ["SMART sandbox", "Valley Clinic"], verdicts: ["dose"], fingerprint: "fp", notes: [], sides: [side("a", "SMART sandbox", "10 MG", "rx:314076"), side("b", "Valley Clinic", "20 MG", "rx:314077")] } });
+  const list = Object.assign({}, LIST, { current: [asked] });
+  const groups = groupsOf(list, FINE);
+  assert.equal(groups.disagree[0].sides.length, 2);
+  for (const root of [draw(drawInside, groups), draw(drawShareList, groups, 1)]) {
+    const text = root.textContent;
+    assert.ok(text.includes("Records disagree: ask the patient"), text);
+    assert.ok(text.includes("lisinopril 10 MG Oral Tablet") && text.includes("lisinopril 20 MG Oral Tablet"));
+    assert.ok(text.includes("Valley Clinic") && text.includes("SMART sandbox"));
+    assert.ok(!text.includes("No medicines from records."), "not said to be none");
+  }
+  const file = JSON.stringify(patientSummary(JSON.parse(JSON.stringify(buildShareBundle(list, NOW, FINE))), { now: NOW, uuid: () => "00000000-0000-4000-8000-000000000001" }));
+  assert.ok(file.includes("Records disagree: ask the patient") && file.includes("lisinopril 10 MG Oral Tablet") && file.includes("lisinopril 20 MG Oral Tablet"));
+});

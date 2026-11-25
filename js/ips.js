@@ -3,7 +3,7 @@
 // a valid link, so every part is read, checked and written again; nothing is
 // copied whole, and anything unexpected means no file. No DOM here.
 
-import { AS_NEEDED_NOTE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, fillsNote, groupShareBundle, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, staffSaysNone, timeText } from "./share.js";
+import { AS_NEEDED_NOTE, DISAGREE_TITLE, disagreeRows, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, fillsNote, groupShareBundle, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, staffSaysNone, timeText } from "./share.js";
 import { localDate } from "./view.js";
 import { isUnspecified, noneCode, statementOf } from "./allergies.js";
 
@@ -126,6 +126,7 @@ function medicineWords(groups) {
   var words = warnings(medicineNotices(groups).concat(groups.recordsSavedAt ? savedCopyText(groups) : [], fillsNote(groups) || []));
   dateLines(groups, timeText).forEach(function (text) { words.push(["p", text]); });
   words.push(["p", medicinesTitle(groups)]);
+  list(words, DISAGREE_TITLE, disagreeRows(groups));
   if (groups.fromRecords.length) list(words, "From records", groups.fromRecords);
   else if (emptyPartText(groups, "records")) words.push(["p", (recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   list(words, "Filled, not in the health record", groups.fromClaims);

@@ -34,6 +34,30 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The QR code with a disagreement** (2026-11-25, Task 7; test right away: it
+changes what the person checking medicines sees). Checked only in headless
+Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
+certificate); screenshots `task-7-riley-*.png` in
+`.superpowers/sdd/2026-11-25-medication-reconciliation/`. Run
+`node tools/reconcile-patients.mjs` first, then
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as Riley
+(link below). On both virtual phones:
+
+- Show my QR code: it shows (not "too long"), and scans with the phone's
+  camera into `share.html`.
+- See what's inside, Medicines (9): "Records disagree: ask the patient" comes
+  first, with two rows each for atorvastatin, lisinopril (10 MG from SMART
+  sandbox, 20 MG from Valley Clinic (test records)) and methotrexate ("once a
+  week" from SMART sandbox, "once a day" from Valley Clinic), each saying
+  "Records disagree" and its own source. Then From records (6); sertraline's
+  source is "SMART sandbox, Valley Clinic (test records)".
+- The staff page, opened from the scan with the 6 digits, shows the same.
+  The rows wrap well on the iPhone SE size, and VoiceOver and TalkBack read
+  each row's source with it.
+- Known for now: atorvastatin's two rows read the same; which one is stopped
+  is only in the code. Task 8 draws the part properly.
+
 **Allergies, names and birth dates as real sources write them** (2026-11-25,
 Task 6d). Checked only in headless Chromium (iPhone 15 size, PIN lock, the live
 sandbox, self-signed certificate). Run `node tools/reconcile-patients.mjs`

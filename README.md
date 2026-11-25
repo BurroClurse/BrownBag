@@ -112,6 +112,13 @@ screen to make that work.
   says they're not taking. Each says who says so, and when it was last updated.
   A source with no medicines to give is named under the heading ("<Source>: no
   information about medicines" or "<Source>: no medicines known").
+- When the patient's records disagree and they haven't said which is right,
+  each source's version comes first, under "Records disagree: ask the
+  patient", noted "Records disagree" (and "Patient isn't sure" when they said
+  so). The same goes for a Not taking mark against a newer prescription: the
+  record and the mark. A version the patient chose says "Patient confirmed
+  this", with each other source's as "Other record". For now each version is
+  its own row; a card per medicine is planned.
 - **Save as FHIR file** saves an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
   warning that it isn't locked. A list where something didn't load can't be saved.
@@ -253,7 +260,17 @@ statement. From records it also carries RxNorm and NDC codes and, when the whole
 can be coded, its amount and timing; the words are always there. Codes are left
 out when they'd make the QR code more than 161 squares across.
 A source's "no medicines" line travels as a Bundle tag (`no-medicines`), never
-as a medicine. The packing borrows the trimming rules and
+as a medicine. When sources disagree and the patient hasn't settled it, or
+isn't sure, each source's version is its own `MedicationStatement` with its own
+source and words, and a `differs` tag lists their entry numbers. A Not taking
+mark against a newer record travels the same way: the record and the patient's
+mark. An answered one is the chosen version, with the others as notes. A source
+other than the first that didn't load is named in a `source-not-loaded` tag.
+Brown Bag's own tags carry their value in `display` and mean nothing to another
+system, so an older staff page still shows every version, each with its notes.
+When the list is long, codes go first, then the other versions' notes shorten
+to the source and month; a version is never left out, and the list is too long
+for one QR code first. The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.
 
@@ -274,7 +291,9 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   and can be tried with the home server's test clinic. The patient is asked only
   what they do (how much, how often, whether they still take it), one card at a
   time, with "Not sure, ask my doctor". Home and My medicines say how many there
-  are to check, and staff see a "Records disagree: ask the patient" part.
+  are to check. Staff already see a "Records disagree: ask the patient" part,
+  one row per version; next it shows each medicine's versions on one card,
+  with the patient's answer first, and names a source that didn't load.
 - **A second QR code** (idea): a flip on the QR screen, one side today's code, the
   other a SMART Health Link a clinic's system can read.
 - **Scanning pill bottles** (idea): a small model on the phone reads a
@@ -296,8 +315,8 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 - **When sources disagree** (being built): every source's version is
   kept and compared fresh on each update; nothing is overwritten. The
   comparing is built and runs on every update; with one source the list is
-  as before. The QR code and
-  the FHIR file carry both sides of anything unresolved. Design:
+  as before. The QR code carries both sides of anything unresolved (built);
+  the FHIR file is next, with a `DetectedIssue` for each. Design:
   [`docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md`](docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md);
   plan: [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
 - **More health systems and insurers** (named, not designed): Epic, Oracle Health,

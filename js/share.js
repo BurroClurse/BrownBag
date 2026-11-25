@@ -8,6 +8,7 @@
 import { fillNote, completedNote } from "./claims.js";
 import { holdText } from "./meds.js";
 import { olderText, dateText, fillRowsFrom, isDirections, takeRows } from "./card.js";
+import { sideWords } from "./reconcile.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -62,38 +63,23 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
       birthDate: list.patient.birthDate
     }
   }];
+  // Statements that disagree go in side by side, and one differs tag holds
+  // their entry numbers.
+  var differs = [];
+  function addAll(statements) {
+    var at = statements.map(function (statement) {
+      entries.push({ resource: statement });
+      return entries.length - 1;
+    });
+    if (at.length > 1) differs.push(at.join(" "));
+  }
   list.current.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), statusFor(item), null, dosageParts(item, level));
-    addCodes(statement, item, level);
-    if (item.origin === "claims") {
-      // Filled through insurance, but not in the health record.
-      statement.informationSource = { display: item.source };
-      statement.note = [{ text: CLAIMS_ONLY_NOTE }];
-    } else {
-      statement.note = [{ text: "From records: " + item.source }];
-    }
-    if (item.prescriber) {
-      statement.note.push({ text: "Prescribed by " + item.prescriber });
-    }
-    if (HOLD_NOTES[holdText(item)]) {
-      statement.note.push({ text: HOLD_NOTES[holdText(item)] });
-    }
-    if (item.completedButFilled) {
-      statement.note.push({ text: completedNote(item.completedButFilled, item.recordStatus) });
-    }
-    if (item.fills) {
-      statement.note.push({ text: fillNote(item.fills) });
-    }
-    if (item.asNeededAt) {
-      statement.dosage = statement.dosage || [{}];
-      statement.dosage[0].asNeededBoolean = true;
-      statement.note.push({ text: AS_NEEDED_NOTE });
-    } else if (item.prn) {
-      statement.dosage = statement.dosage || [{}];
-      statement.dosage[0].asNeededBoolean = true;
-      statement.note.push({ text: RECORDS_AS_NEEDED_NOTE });
-    }
-    entries.push({ resource: statement });
+    addAll(currentStatements(item, level));
+  });
+  // A card to check that isn't current still reaches staff.
+  var shown = list.current.map(function (item) { return item.key; });
+  (list.toCheck || []).forEach(function (item) {
+    if (shown.indexOf(item.key) === -1) addAll(currentStatements(item, level));
   });
   list.additions.forEach(function (addition) {
     var statement = statementFor(addition.name, addition.rxcui, dosageText(addition), "active", withUnitCode(addition, level));
@@ -102,10 +88,11 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
     entries.push({ resource: statement });
   });
   list.stopped.forEach(function (item) {
-    var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped", null, dosageParts(item, level));
-    addCodes(statement, item, level);
-    statement.informationSource = SELF;
-    statement.effectivePeriod = { end: item.stoppedAt };
+    var statement = stoppedStatement(item, item.stoppedAt, level);
+    // "I don't take this anymore": what each source said stays with it.
+    var sides = item.answer && item.group ? item.group.sides : [];
+    sides.forEach(function (side) { addNote(statement, otherRecordNote(side, level)); });
+    addGroupNotes(statement, item);
     entries.push({ resource: statement });
   });
   if (list.allergies) {
@@ -134,6 +121,14 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
   if (warnings.unnamed) {
     tags.push({ system: TAGS, code: "records-unnamed", display: String(warnings.unnamed) });
   }
+  // A second source that didn't load, by name. The first one's failure is
+  // records-incomplete.
+  (warnings.sourceStatus || []).slice(1).forEach(function (source) {
+    if (!source.loaded && source.name) tags.push({ system: TAGS, code: "source-not-loaded", display: source.name });
+  });
+  differs.forEach(function (numbers) {
+    tags.push({ system: TAGS, code: "differs", display: numbers });
+  });
   // A source that said it has no information about medicines, or knows of
   // none: "no-info:<Source>" or "none-known:<Source>".
   (warnings.noMedicines || []).forEach(function (said) {
@@ -154,6 +149,168 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
   return bundle;
 }
 
+// Staff notes (spec section 9).
+var DISAGREE_NOTE = "Records disagree";
+var UNSURE_NOTE = "Patient isn't sure";
+var ASKED_VERDICTS = ["status", "dose", "schedule"];
+
+// One current card's statements. Until the patient answers, or when they
+// aren't sure, each side is its own statement, so nothing one source says is
+// lost. A Not taking mark against a record is the record and the mark.
+function currentStatements(item, level) {
+  var answer = item.answer || null;
+  var question = answer ? null : item.question;
+  var sides = item.group && item.group.sides.length > 1 ? item.group.sides : null;
+  var out;
+  if (question && isMark(question.fingerprint)) {
+    var asked = sides && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
+    var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE]) : [recordStatement(item, level)];
+    out = records.concat(stoppedStatement(item, markedAt(question.fingerprint), level));
+  } else if (question && sides) {
+    out = sideStatements(item, sides, level, [DISAGREE_NOTE]);
+  } else if (answer && answer.choice === "not-sure" && sides && !isMark(answer.fingerprint)) {
+    out = sideStatements(item, sides, level, [DISAGREE_NOTE, UNSURE_NOTE]);
+  } else if (answer && answer.choice === "not-sure") {
+    out = [recordStatement(item, level)];
+    addNote(out[0], UNSURE_NOTE);
+  } else if (answer && chosenSide(item)) {
+    var chosen = chosenSide(item);
+    var statement = sideStatement(item, chosen, level);
+    // The day as the answer wrote it, the same day the patient's card shows.
+    addNote(statement, "Patient confirmed this, " + String(answer.answeredAt).slice(0, 10));
+    (item.group ? item.group.sides : []).forEach(function (side) {
+      if (side.sourceId !== chosen.sourceId) addNote(statement, otherRecordNote(side, level));
+    });
+    out = [statement];
+  } else {
+    out = [recordStatement(item, level)];
+  }
+  out.forEach(function (one) { addGroupNotes(one, item); });
+  return out;
+}
+
+// A mark question's fingerprint is "mark:<marked on>><newest record>" (ruling R2).
+function isMark(fingerprint) {
+  return String(fingerprint || "").indexOf("mark:") === 0;
+}
+
+function markedAt(fingerprint) {
+  var text = String(fingerprint);
+  return text.slice(5, text.lastIndexOf(">"));
+}
+
+// The side an answer chose, as the records say it now, else as it was then.
+function chosenSide(item) {
+  var find = function (sides) { return (sides || []).filter(function (side) { return side.sourceId === item.answer.choice; })[0]; };
+  return (item.group && find(item.group.sides)) || find(item.answer.sides) || null;
+}
+
+// The staff notes go right after each side's source.
+function sideStatements(item, sides, level, notes) {
+  return sides.map(function (side) {
+    var statement = sideStatement(item, side, level);
+    statement.note.splice.apply(statement.note, [1, 0].concat(notes.map(function (text) { return { text: text }; })));
+    return statement;
+  });
+}
+
+// The card's own record has everything it said. Another source's has only
+// what its side says: never the shown record's codes, prescriber or fills.
+function sideStatement(item, side, level) {
+  if (side === ownSide(item)) return recordStatement(item, level, side.sourceName);
+  var coded = /^rx:(\d+)/.exec(String(side.key || ""));
+  var statement = statementFor(side.name || item.name, coded ? coded[1] : null, dosageText(side), sideStatus(side), null, dosageParts(side, 0));
+  statement.note = [{ text: "From records: " + side.sourceName }];
+  // The patient's As needed mark is on the card, so on every side.
+  if (item.asNeededAt) asNeeded(statement, AS_NEEDED_NOTE);
+  return statement;
+}
+
+// The side that is the card's own record. Two sources with the same code
+// share a key, so the source has to match too; failing that, a key only one
+// side has.
+function ownSide(item) {
+  var sides = (item.group && item.group.sides) || [];
+  var same = sides.filter(function (side) { return side.key === item.key; });
+  return same.filter(function (side) { return side.sourceName === item.source; })[0] || (same.length === 1 ? same[0] : null);
+}
+
+// "completed", not "stopped": a stopped statement is the patient's own mark
+// on every staff page.
+function sideStatus(side) {
+  if (side.status === "not-current") return "completed";
+  if (side.status !== "current") return "unknown";
+  if (side.recordStatus === "on-hold") return "on-hold";
+  return OWN_STATUS.indexOf(side.recordStatus) !== -1 ? side.recordStatus : "active";
+}
+
+// "Other record: <Source>, <words>, <YYYY-MM>". At level 0, where the list
+// is longest, only the source and month.
+function otherRecordNote(side, level) {
+  var month = /^\d{4}(?:-\d{2})?/.exec(String(side.asOf || ""));
+  return "Other record: " + [side.sourceName].concat(level ? sideWords(side) : [], month ? month[0] : []).join(", ");
+}
+
+function addGroupNotes(statement, item) {
+  ((item.group && item.group.notes) || []).forEach(function (text) { addNote(statement, text); });
+}
+
+function addNote(statement, text) {
+  statement.note = (statement.note || []).concat({ text: text });
+}
+
+function asNeeded(statement, note) {
+  statement.dosage = statement.dosage || [{}];
+  statement.dosage[0].asNeededBoolean = true;
+  statement.note.push({ text: note });
+}
+
+// A current record as today. from: the source note's names; a group whose
+// records agree names every source.
+function recordStatement(item, level, from) {
+  var statement = statementFor(item.name, item.rxcui, dosageText(item), statusFor(item), null, dosageParts(item, level));
+  addCodes(statement, item, level);
+  if (item.origin === "claims") {
+    // Filled through insurance, but not in the health record.
+    statement.informationSource = { display: item.source };
+    statement.note = [{ text: CLAIMS_ONLY_NOTE }];
+  } else {
+    statement.note = [{ text: "From records: " + (from || sourcesOf(item)) }];
+  }
+  if (item.prescriber) {
+    statement.note.push({ text: "Prescribed by " + item.prescriber });
+  }
+  if (HOLD_NOTES[holdText(item)]) {
+    statement.note.push({ text: HOLD_NOTES[holdText(item)] });
+  }
+  if (item.completedButFilled) {
+    statement.note.push({ text: completedNote(item.completedButFilled, item.recordStatus) });
+  }
+  if (item.fills) {
+    statement.note.push({ text: fillNote(item.fills) });
+  }
+  if (item.asNeededAt) {
+    asNeeded(statement, AS_NEEDED_NOTE);
+  } else if (item.prn) {
+    asNeeded(statement, RECORDS_AS_NEEDED_NOTE);
+  }
+  return statement;
+}
+
+function sourcesOf(item) {
+  var names = ((item.group && item.group.sources) || []).filter(function (name, index, all) { return name && all.indexOf(name) === index; });
+  return names.length > 1 ? names.join(", ") : item.source;
+}
+
+// The patient's Not taking mark, as today.
+function stoppedStatement(item, at, level) {
+  var statement = statementFor(item.name, item.rxcui, dosageText(item), "stopped", null, dosageParts(item, level));
+  addCodes(statement, item, level);
+  statement.informationSource = SELF;
+  statement.effectivePeriod = { end: at };
+  return statement;
+}
+
 var NO_MEDICINES = {
   "no-info": function (name) { return name + ": no information about medicines"; },
   "none-known": function (name) { return name + ": no medicines known"; }
@@ -164,6 +321,31 @@ function noMedicinesFrom(tags) {
     var found = /^([a-z-]+):(.+)$/.exec(String(tag.display || ""));
     return found && NO_MEDICINES[found[1]] ? { source: found[2], kind: found[1] } : null;
   }).filter(Boolean);
+}
+
+function notLoadedFrom(tags) {
+  return tags.filter(function (tag) { return tag && tag.system === TAGS && tag.code === "source-not-loaded"; })
+    .map(function (tag) { return typeof tag.display === "string" ? tag.display.trim() : ""; })
+    .filter(function (name, index, all) { return name && all.indexOf(name) === index; });
+}
+
+// Each differs tag's statements, as { name, sides } in `disagree`, by
+// entry number. A number that isn't a medicine, or is in an earlier tag,
+// is skipped; fewer than two left and the tag says nothing.
+function linkedFrom(tags, entries, disagree) {
+  var linked = {};
+  tags.forEach(function (tag) {
+    if (!tag || tag.system !== TAGS || tag.code !== "differs") return;
+    var at = String(tag.display || "").split(" ").filter(function (word, index, all) {
+      var resource = /^[1-9]\d{0,3}$/.test(word) && entries[Number(word)] && entries[Number(word)].resource;
+      return resource && resource.resourceType === "MedicationStatement" && !linked[Number(word)] && all.indexOf(word) === index;
+    });
+    if (at.length < 2) return;
+    var group = { name: null, sides: [] };
+    disagree.push(group);
+    at.forEach(function (word) { linked[Number(word)] = group; });
+  });
+  return linked;
 }
 
 export function groupShareBundle(bundle) {
@@ -183,6 +365,8 @@ export function groupShareBundle(bundle) {
     // A count that isn't one still means there are some.
     unnamed: unnamed ? (/^[1-9]\d{0,3}$/.test(unnamed.display) ? Number(unnamed.display) : 1) : 0,
     noMedicines: noMedicinesFrom(tags),
+    notLoaded: notLoadedFrom(tags),
+    disagree: [],
     fromRecords: [],
     fromClaims: [],
     asNeeded: [],
@@ -190,7 +374,8 @@ export function groupShareBundle(bundle) {
     patientSaysStopped: [],
     allergies: allergyTags(tags)
   };
-  (bundle.entry || []).forEach(function (entry) {
+  var linked = linkedFrom(tags, bundle.entry || [], groups.disagree);
+  (bundle.entry || []).forEach(function (entry, index) {
     var resource = entry.resource || {};
     if (resource.resourceType === "Patient") {
       groups.patient = { name: (resource.name && resource.name[0] && resource.name[0].text) || "", birthDate: resource.birthDate || "" };
@@ -218,6 +403,14 @@ export function groupShareBundle(bundle) {
     if (stopped) {
       var stoppedOn = resource.effectivePeriod && resource.effectivePeriod.end;
       if (stoppedOn) row.facts.unshift(["Not taking since", dateText(stoppedOn)]);
+    }
+    if (linked[index]) {
+      // One side of a disagreement: only in its own part.
+      if (who) row.facts.push(["Who says", who]);
+      row.status = resource.status;
+      linked[index].name = linked[index].name || name;
+      linked[index].sides.push(row);
+    } else if (stopped) {
       groups.patientSaysStopped.push(row);
     } else if (who) {
       row.facts.push(["Who says", who]);
@@ -694,7 +887,8 @@ async function transform(bytes, stream) {
 
 // The same number as the home button: current, filled and added.
 export function shareMedicineCount(groups) {
-  return groups.fromRecords.length + (groups.fromClaims || []).length + (groups.asNeeded || []).length + groups.addedByPatient.length;
+  // A disagreement is one card on the patient's list.
+  return groups.fromRecords.length + (groups.disagree || []).length + (groups.fromClaims || []).length + (groups.asNeeded || []).length + groups.addedByPatient.length;
 }
 
 // What staff are told about the medicines that aren't listed, right under the
@@ -712,7 +906,15 @@ export function medicineNotices(groups) {
 }
 
 export function recordsPartial(groups) {
-  return Boolean(groups.incomplete || ((groups.unnamed || (groups.noMedicines || []).length) && !groups.fromRecords.length));
+  return Boolean(groups.incomplete || ((groups.unnamed || (groups.noMedicines || []).length) && !groups.fromRecords.length && !(groups.disagree || []).length));
+}
+
+// Until the staff page has its own part for them (Task 8), each side of a
+// disagreement is a row under this title, group by group.
+export var DISAGREE_TITLE = "Records disagree: ask the patient";
+
+export function disagreeRows(groups) {
+  return (groups.disagree || []).reduce(function (rows, group) { return rows.concat(group.sides); }, []);
 }
 
 // The ones under As needed that the patient didn't add.
@@ -726,6 +928,8 @@ export function emptyPartText(groups, part) {
   if (part === "records") {
     if (groups.incomplete) return "None loaded.";
     if ((groups.noMedicines || []).length && !groups.unnamed && !othersAsNeeded(groups).length) return null;
+    // Records that disagree are still from records.
+    if (!groups.unnamed && (groups.disagree || []).length && !othersAsNeeded(groups).length) return "All under Records disagree.";
     if (!groups.unnamed) return othersAsNeeded(groups).length ? "All under As needed." : "No medicines from records.";
     return othersAsNeeded(groups).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
   }

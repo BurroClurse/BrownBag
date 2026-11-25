@@ -2,7 +2,7 @@
 // boxes or extra words (Tyler, 2026-11-23). It reads what comes out of the
 // code, the same as the staff page does.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, disagreeRows, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 
 // Draws into parent, starting with the patient's name. Returns that heading.
 // made: what was made, when it isn't a QR code.
@@ -16,6 +16,7 @@ export function drawInside(parent, groups, made) {
   add(parent, "h2", medicinesTitle(groups));
   medicineNotices(groups).forEach(function (text) { warn(parent, text); });
   if (groups.claimsNotLoaded) warn(parent, "Insurance fills couldn't be loaded.");
+  items(parent, DISAGREE_TITLE, disagreeRows(groups));
   if (groups.fromRecords.length) items(parent, "From records", groups.fromRecords);
   else if (emptyPartText(groups, "records")) lines(parent, [(recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   items(parent, "Filled, not in the health record", groups.fromClaims);

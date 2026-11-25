@@ -230,13 +230,15 @@ export function isAsNeeded(entry) {
   return Boolean(entry.asNeededAt || entry.prn || (entry.schedule && entry.schedule.asNeeded));
 }
 
-// What goes on the QR code: older prescriptions are left off (spec).
+// What goes on the QR code: older prescriptions are left off (spec). The
+// cards to check go too, so a disagreement reaches staff whatever list it's on.
 export function shareListFrom(patient, arranged, additions) {
   return {
     patient: { name: patient.name, birthDate: patient.birthDate },
     current: arranged.current,
     additions: additions,
-    stopped: arranged.stopped
+    stopped: arranged.stopped,
+    toCheck: arranged.toCheck || []
   };
 }
 
@@ -400,6 +402,8 @@ export function shareWarnings(state) {
     ownMissing: state.dataFailed,
     unnamed: state.split.placeholders || 0,
     noMedicines: state.split.noMedicines || [],
+    // A second source that didn't load is named for staff.
+    sourceStatus: state.split.sourceStatus || [],
     allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt }
   };
 }
