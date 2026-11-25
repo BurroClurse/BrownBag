@@ -22,6 +22,7 @@ import { dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
+import { connectionsView, keepReturn } from "./connections.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
 import { swipeAway } from "./swipe.js";
@@ -89,6 +90,11 @@ var state = {
   updating: false,
   offline: false,
   needsSignIn: false,
+  // Which way the connections screen was reached: "setup" (the first run, or
+  // back from a sign-in) or "more" (More options).
+  recordsFrom: "more",
+  // The sign-in that just came back didn't finish.
+  signInFailed: false,
   // Sign out was tapped: nothing may save a pass after this.
   signedOut: false,
   // Signed out, and Open my saved list was tapped.
@@ -641,7 +647,7 @@ function render() {
   } else if (state.screen === "install") {
     drawInstall();
   } else if (state.screen === "records") {
-    drawRecordsFrom();
+    drawConnections();
   } else {
     drawHome(arranged);
   }
@@ -810,7 +816,10 @@ function drawMore() {
     status: recordsStatus(state, timeText),
     homeScreen: Boolean(installTip(navigator.userAgent)) && !isStandalone()
   }), {
-    "open-records": function () { go("records", "records-from-heading"); },
+    "open-records": function () {
+      state.recordsFrom = "more";
+      go("records", "records-from-heading");
+    },
     "save-backup": saveBackup,
     "restore-backup": function () { picker.click(); },
     "open-install": function () { go("install", "install-heading"); },
@@ -2057,6 +2066,7 @@ function drawNotices() {
       var update = add(row, "a", "Sign in", "button secondary");
       update.id = "notice-sign-in";
       update.href = signInLink(state.patientId);
+      update.addEventListener("click", function () { keepReturn(sessionStorage, "home"); });
     }
     if (note.kind === "install") {
       var actions = add(row, "div", null, "notice-actions");
@@ -2094,37 +2104,81 @@ function drawInstall() {
   }).id = "install-done";
 }
 
-// Where the records come from, for someone signed in: when each part was last
-// updated, a way to update it, and the sources that aren't connected.
-function drawRecordsFrom() {
-  var top = add(root, "div", null, "screen-top");
-  button(top, "Done", "secondary big", function () {
-    history.back();
-  }).id = "records-done";
-  var title = add(root, "h1", "Health records");
+// The connections screen (design 2026-11-25): where the records come from,
+// how current each is, and a way to connect or update it. The first run comes
+// here after the lock, and every sign-in started here comes back here. Under
+// More options it's Health records.
+function drawConnections() {
+  var linked = Boolean(state.patientId);
+  var view = connectionsView({ from: state.recordsFrom, connected: linked, online: navigator.onLine });
+  if (view.done) {
+    var top = add(root, "div", null, "screen-top");
+    button(top, "Done", "secondary big", connectionsDone).id = "records-done";
+  }
+  var title = add(root, "h1", view.heading);
   title.id = "records-from-heading";
   title.tabIndex = -1;
-  var source = connected()[0];
-  var status = recordsStatus(state, timeText);
-  var card = add(root, "section", null, "source-card");
-  add(card, "h2", source.name);
-  add(card, "p", source.note, "med-line");
-  var list = add(card, "dl", null, "facts");
-  status.rows.forEach(function (row) {
-    var pair = add(list, "div");
-    add(pair, "dt", row[0]);
-    add(pair, "dd", row[1]);
+  if (view.intro) add(root, "p", view.intro);
+  if (view.offline) add(root, "p", view.offline, "notice");
+  connected().forEach(function (source) {
+    var card = add(root, "section", null, "source-card");
+    add(card, "h2", source.name);
+    add(card, "p", source.note, "med-line");
+    if (state.signInFailed) add(card, "p", "Sign-in didn't finish. Try again.", "error");
+    if (!linked) {
+      signInButton(card, "Connect", "primary", signInLink()).id = "connect-" + source.id;
+      return;
+    }
+    add(card, "p", "\u2713 Connected", "connected-mark");
+    var status = recordsStatus(state, timeText);
+    var list = add(card, "dl", null, "facts");
+    status.rows.forEach(function (row) {
+      var pair = add(list, "div");
+      add(pair, "dt", row[0]);
+      add(pair, "dd", row[1]);
+    });
+    if (status.note) add(card, "p", status.note, "flag");
+    if (!status.signIn) {
+      var update = button(card, state.updating ? "Updating…" : "Update now", "primary big", updateNow);
+      update.id = "update-now";
+      if (state.updating) update.setAttribute("aria-busy", "true");
+    }
+    signInButton(card, "Sign in again", status.signIn ? "primary" : "secondary", signInLink(state.patientId)).id = "sign-in-again";
   });
-  if (status.note) add(card, "p", status.note, "flag");
-  if (!status.signIn) {
-    var update = button(card, state.updating ? "Updating…" : "Update now", "primary big", updateNow);
-    update.id = "update-now";
-    if (state.updating) update.setAttribute("aria-busy", "true");
-  }
-  var again = add(card, "a", "Sign in again", "button big " + (status.signIn ? "primary" : "secondary"));
-  again.id = "sign-in-again";
-  again.href = signInLink(state.patientId);
   drawNotConnected(root);
+  // Setting up, the way on is at the end too, after the last connection.
+  if (view.done === "home") {
+    button(add(root, "div", null, "screen-bottom"), "Done", "primary big", connectionsDone).id = "records-done-end";
+  }
+}
+
+// From More options there's a step to go back to. Back from a sign-in, or
+// setting up, there isn't: Done goes home.
+function connectionsDone() {
+  if (history.state && history.state.bb === "records") {
+    history.back();
+  } else {
+    state.signInFailed = false;
+    go("home", "show-qr");
+  }
+}
+
+// Each sign-in started here comes back here.
+function signInButton(parent, text, kind, href) {
+  var link = add(parent, "a", text, "button big " + kind);
+  link.href = href;
+  link.addEventListener("click", function () { keepReturn(sessionStorage, state.recordsFrom); });
+  return link;
+}
+
+// Opens the connections screen on its own (the first run, back from a
+// sign-in), with no step to go back to.
+function openConnections(from) {
+  state.recordsFrom = from;
+  state.screen = "records";
+  state.focusId = "records-from-heading";
+  render();
+  window.scrollTo(0, 0);
 }
 
 // The backup stays encrypted. It also carries the lock settings (never the

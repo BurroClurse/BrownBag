@@ -342,6 +342,9 @@ button.secondary.big, .button.secondary.big { border-color: var(--teal); }
   font-size: 0.95rem;
 }
 
+/* The connections screen's "Connected", in the update note's green. */
+.connected-mark { color: #1d7a3a; font-weight: 700; margin: 0.25rem 0; }
+
 .notice-bar {
   flex: none;
   background: var(--warn-bg);

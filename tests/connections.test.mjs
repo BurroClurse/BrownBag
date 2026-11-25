@@ -60,3 +60,27 @@ test("with no signal it says so", () => {
 test("the connections code works with no signal", () => {
   assert.ok(read("sw.js").includes('"./js/connections.js"'));
 });
+
+const body = (file, name) => {
+  const text = read(file);
+  const at = text.indexOf("function " + name + "(");
+  return at === -1 ? "" : text.slice(at).split("\n}\n")[0];
+};
+
+test("Health records is the connections screen", () => {
+  const app = read("js/app.js");
+  assert.ok(!app.includes("function drawRecordsFrom("));
+  const screen = body("js/app.js", "drawConnections");
+  assert.ok(screen.length > 100);
+  // Each sign-in from here comes back here.
+  assert.ok(screen.includes("signInButton("));
+  assert.ok(body("js/app.js", "signInButton").includes("keepReturn(sessionStorage, state.recordsFrom)"));
+  // Back from a sign-in there's no step to go back to: Done goes home.
+  assert.ok(screen.includes("connectionsDone"));
+  assert.ok(body("js/app.js", "connectionsDone").includes('history.state.bb === "records"'));
+  assert.ok(!screen.includes("DISCLAIMER"));
+});
+
+test("home's Sign in note comes back home", () => {
+  assert.ok(body("js/app.js", "drawNotices").includes('keepReturn(sessionStorage, "home")'));
+});
