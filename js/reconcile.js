@@ -3,7 +3,7 @@
 // sources agree. Worked out fresh from the records every time, never stored
 // as buckets. No DOM here, so Node's test runner can check it.
 
-import { formOf, strengthsOf, statusWord } from "./meds.js";
+import { formOf, strengthOf, strengthsOf, statusWord } from "./meds.js";
 import { firstWord, words } from "./add-check.js";
 
 // Only these matches put two records in one group.
@@ -347,6 +347,19 @@ function fingerprintOf(entries) {
     var side = sideOf(entry);
     return { sourceId: side.sourceId, strength: strengthsOf(entry.item.name), dose: side.dose || null, frequency: side.frequency || null, status: side.status };
   }).sort(function (a, b) { return a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0; }));
+}
+
+// One side in words, the same everywhere it's shown: its dose and how
+// often. The strength goes first when the dose doesn't say it, so a 10 MG
+// and a 20 MG side never read the same.
+export function sideWords(side) {
+  var dose = side.dose || "";
+  var often = side.frequency || "";
+  if (!dose && !often) return "See the record";
+  var strength = strengthOf(side.name);
+  var squeeze = function (text) { return text.replace(/\s+/g, "").toLowerCase(); };
+  var says = strength && squeeze(dose).indexOf(squeeze(strength)) !== -1;
+  return [says ? null : strength, dose, often].filter(Boolean).join(", ");
 }
 
 // A source that sent only some records can't vouch for what it left out.

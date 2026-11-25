@@ -10,10 +10,29 @@ var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oc
 // "Mar 2, 2023", or only the month or year when that's all the record has.
 // Anything else is shown as it came.
 export function dateText(date) {
-  var parts = /^(\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01])(?:T.*)?)?)?$/.exec(String(date));
+  var parts = datePartsOf(date);
   if (!parts) return String(date);
   if (!parts[2]) return parts[1];
   return MONTHS[Number(parts[2]) - 1] + " " + (parts[3] ? Number(parts[3]) + ", " : "") + parts[1];
+}
+
+// "Oct 2026": the month and year only, for when a record was written.
+export function monthText(date) {
+  var parts = datePartsOf(date);
+  if (!parts) return String(date);
+  return parts[2] ? MONTHS[Number(parts[2]) - 1] + " " + parts[1] : parts[1];
+}
+
+// "Mar 3": the day, for something the patient did this year or so. A date
+// with no day says its month and year instead.
+export function dayText(date) {
+  var parts = datePartsOf(date);
+  if (!parts || !parts[3]) return monthText(date);
+  return MONTHS[Number(parts[2]) - 1] + " " + Number(parts[3]);
+}
+
+function datePartsOf(date) {
+  return /^(\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01])(?:T.*)?)?)?$/.exec(String(date));
 }
 
 // A whole instruction ("Take 1 by mouth…") isn't a "how often".

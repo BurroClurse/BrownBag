@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { dateText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
+import { dateText, dayText, monthText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
 import { buildShareBundle, fitsInQr, groupShareBundle, packShare } from "../js/share.js";
 import { drawShareList } from "../js/share-list.js";
 import { makeAddition } from "../js/view.js";
@@ -181,4 +181,15 @@ test("a hospital order says so", () => {
   const card = patientCard({ ...item({}), hospital: true }, false);
   assert.equal(card.flags[0], "Hospital order");
   assert.ok(!patientCard(item({}), false).flags.includes("Hospital order"));
+});
+
+test("month and day words say only as much as the date has", () => {
+  assert.equal(monthText("2026-10-02"), "Oct 2026");
+  assert.equal(monthText("2026-10"), "Oct 2026");
+  assert.equal(monthText("2026"), "2026");
+  assert.equal(dayText("2026-03-03"), "Mar 3");
+  assert.equal(dayText("2026-03-03T10:00:00Z"), "Mar 3");
+  // No day to give.
+  assert.equal(dayText("2026-10"), "Oct 2026");
+  assert.equal(dayText("2026"), "2026");
 });

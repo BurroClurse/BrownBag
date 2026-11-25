@@ -11,7 +11,7 @@ import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, ma
 import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
 import { ingredientsFor, searchDrugs } from "./rxnorm.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded, keysOf } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
 import { saveRecords, loadLastRecords, loadRecordsFor } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
@@ -102,7 +102,13 @@ var state = {
 };
 
 function emptyData() {
-  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, unnamedAre: {}, noKnownAllergies: null };
+  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, unnamedAre: {}, noKnownAllergies: null, answers: [] };
+}
+
+// Data saved before answers existed has none.
+function withAnswers(data) {
+  if (!Array.isArray(data.answers)) data.answers = [];
+  return data;
 }
 
 // Locks Brown Bag again after 5 minutes without a tap, or 5 minutes away
@@ -604,7 +610,7 @@ function useSaved(saved) {
 
 async function loadAdditions() {
   try {
-    state.data = await loadPatientData(localStorage, state.key, state.patientId);
+    state.data = withAnswers(await loadPatientData(localStorage, state.key, state.patientId));
     state.dataFailed = false;
   } catch (error) {
     state.data = emptyData();
@@ -1678,7 +1684,7 @@ function drawAddCheck(form, result, addition, how) {
   if (result.kind === "stopped") {
     add(panel, "p", "You marked " + theirs + " Not taking on " + shortDate(match.stoppedAt) + ".");
     if (!how.editing) button(panel, "I'm taking it again", "primary big", function () {
-      delete state.data.stopped[match.key];
+      unstop(match);
       recordChange("unstopped", match.name);
       closeAddForm();
       state.announce = match.name + " moved back to " + backToList(match).name + ".";
@@ -1784,7 +1790,7 @@ function drawStopped(parent, arranged) {
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
     button(row, "Undo", "secondary card-action", function () {
-      delete state.data.stopped[entry.key];
+      unstop(entry);
       recordChange("unstopped", entry.name);
       state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
       state.focusId = backToList(entry).focusId;
@@ -2264,7 +2270,7 @@ function backupPicker() {
       } else {
         count = await importBackup(localStorage, state.key, text);
       }
-      state.data = await loadPatientData(localStorage, state.key, state.patientId);
+      state.data = withAnswers(await loadPatientData(localStorage, state.key, state.patientId));
       state.dataFailed = false;
       said = restoreMessage(count) + " Nothing on this phone was replaced.";
     } catch (error) {
@@ -2316,17 +2322,29 @@ function medRow(list, entry) {
   return row;
 }
 
+// Undo Not taking: every key's mark goes, so no source's copy stays hidden,
+// and so does an "I don't take this anymore" answer that put it there.
+function unstop(entry) {
+  keysOf(entry).forEach(function (key) { delete state.data.stopped[key]; });
+  if (entry.answer && entry.answer.choice === "not-taking") {
+    state.data.answers = (state.data.answers || []).filter(function (answer) { return answer !== entry.answer; });
+  }
+}
+
 // The two buttons under a current medicine: "As needed" (or Undo, on one
-// already there) and "Not taking". Not taking clears an As needed mark.
+// already there) and "Not taking". Not taking clears an As needed mark. A
+// mark is saved under every key the card answers to (keysOf), so on a card
+// joined from several sources it covers them all.
 function markButtons(row, entry) {
   var actions = add(row, "div", null, "card-actions");
   if (!state.data.asNeeded) state.data.asNeeded = {};
+  var keys = keysOf(entry);
   // The records' own can't be moved back.
   if (entry.prn) {
     // Only Not taking.
   } else if (entry.asNeededAt) {
     button(actions, "Undo", "secondary", function () {
-      delete state.data.asNeeded[entry.key];
+      keys.forEach(function (key) { delete state.data.asNeeded[key]; });
       recordChange("regular", entry.name);
       state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
       state.focusId = backToList(entry).focusId;
@@ -2334,7 +2352,8 @@ function markButtons(row, entry) {
     }, "Undo As needed: " + entry.name);
   } else {
     button(actions, "As needed", "secondary", function () {
-      state.data.asNeeded[entry.key] = today();
+      var at = today();
+      keys.forEach(function (key) { state.data.asNeeded[key] = at; });
       recordChange("as-needed", entry.name);
       state.announce = entry.name + " moved to As needed.";
       state.focusId = "as-needed-heading";
@@ -2342,11 +2361,12 @@ function markButtons(row, entry) {
     }, "As needed: " + entry.name);
   }
   button(actions, "Not taking", "stop", function () {
-    if (state.data.asNeeded[entry.key]) {
-      delete state.data.asNeeded[entry.key];
+    if (keys.some(function (key) { return state.data.asNeeded[key]; })) {
+      keys.forEach(function (key) { delete state.data.asNeeded[key]; });
       recordChange("regular", entry.name);
     }
-    state.data.stopped[entry.key] = today();
+    var at = today();
+    keys.forEach(function (key) { state.data.stopped[key] = at; });
     recordChange("stopped", entry.name);
     state.announce = entry.name + " moved to Not taking.";
     state.focusId = "stopped-heading";

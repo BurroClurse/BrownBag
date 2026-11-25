@@ -3,6 +3,8 @@
 // under each medicine.
 
 import { listDate } from "./offline.js";
+import { dayText, monthText } from "./card.js";
+import { sideWords } from "./reconcile.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
@@ -19,31 +21,195 @@ export function formatName(patient) {
   return (given + " " + (name.family || "")).trim() || "Name not recorded";
 }
 
+// Every key a card answers to, once each: its own, a fill card's others
+// (claims.js), then each source's record in a group. A mark saved under any
+// of them is this card's.
+export function keysOf(entry) {
+  var keys = [entry.key].concat(entry.otherKeys || [], entry.group ? entry.group.sides.map(function (side) { return side.key; }) : []);
+  return keys.filter(function (key, index) { return key && keys.indexOf(key) === index; });
+}
+
 // Current medicines the patient marked "Not taking" move to their own group
 // (stoppedAt). Ones they marked "As needed" stay current, with asNeededAt,
 // and show in the As needed group. Not taking wins if both are set. A mark
 // for a medicine that is no longer current is ignored.
+//
+// A mark never hides a medicine a record still gives (spec, section 8): a
+// current record dated after its mark, or a source whose copy wasn't marked,
+// keeps the card on the list with a question. So does a disagreement between
+// sources. toCheck is every card with a question, in list order. An answer
+// counts only while its groupId and fingerprint both match.
 export function arrangeList(split, data) {
   var marks = (data && data.stopped) || {};
   var needed = (data && data.asNeeded) || {};
+  var answers = (data && data.answers) || [];
   var has = function (map, key) { return Object.prototype.hasOwnProperty.call(map, key); };
   var current = [];
   var stopped = [];
   split.current.forEach(function (entry) {
-    // A fill-only card can answer to several keys (claims.js); a mark saved
-    // under any of them counts.
-    var keys = [entry.key].concat(entry.otherKeys || []);
-    var marked = keys.filter(function (key) { return has(marks, key); })[0];
+    // A fill-only card can answer to several keys (claims.js), and a group
+    // to each source's; a mark saved under any of them counts.
+    var keys = keysOf(entry);
     var neededKey = keys.filter(function (key) { return has(needed, key); })[0];
-    if (marked !== undefined) {
-      stopped.push(Object.assign({}, entry, { key: marked, stoppedAt: marks[marked] }));
-    } else if (neededKey !== undefined) {
-      current.push(Object.assign({}, entry, { key: neededKey, asNeededAt: needed[neededKey] }));
-    } else {
-      current.push(entry);
+    var groupId = entry.group ? entry.group.id : entry.key;
+    // A copy goes by the marked key, so Undo finds it, and keeps the rest,
+    // so Undo clears every key the mark was saved under.
+    function rekeyed(key) {
+      var own = [entry.key].concat(entry.otherKeys || []);
+      return { key: key, otherKeys: own.filter(function (one) { return one !== key; }) };
     }
+    function stop(key, at, answer) {
+      stopped.push(Object.assign({}, entry, rekeyed(key), { stoppedAt: at }, answer ? { answer: answer } : {}));
+    }
+    function keep(more) {
+      var copy = neededKey !== undefined ? Object.assign(rekeyed(neededKey), { asNeededAt: needed[neededKey] }) : {};
+      current.push(Object.keys(more).length || neededKey !== undefined ? Object.assign({}, entry, copy, more) : entry);
+    }
+    // One question per card, and its answer settles the card.
+    function ask(question) {
+      var answer = answerFor(answers, groupId, question.fingerprint);
+      if (answer && answer.choice === "not-taking") {
+        var mark = question.mark;
+        stop(mark ? mark.key : entry.key, mark ? mark.at : answer.answeredAt, answer);
+      } else if (answer) {
+        keep({ answer: answer });
+      } else {
+        keep({ question: { kind: question.kind, why: question.why, groupId: groupId, fingerprint: question.fingerprint } });
+      }
+    }
+    var marked = markState(entry, marks);
+    if (marked.ask) return ask(marked.ask);
+    if (marked.stop) return stop(marked.stop.key, marked.stop.at);
+    var asked = verdictQuestion(entry, answers);
+    if (asked) return ask(asked);
+    keep({});
   });
-  return { current: current, older: split.older, stopped: stopped };
+  var older = split.older.map(function (entry) {
+    var asked = verdictQuestion(entry, answers);
+    if (!asked) return entry;
+    var answer = answerFor(answers, entry.group.id, asked.fingerprint);
+    return Object.assign({}, entry, answer ? { answer: answer } : { question: { kind: asked.kind, why: asked.why, groupId: entry.group.id, fingerprint: asked.fingerprint } });
+  });
+  var toCheck = current.concat(older).filter(function (entry) { return entry.question; });
+  return { current: current, older: older, stopped: stopped, toCheck: toCheck };
+}
+
+// The newest answer saved for this group and fingerprint, or null.
+function answerFor(answers, groupId, fingerprint) {
+  return answers.filter(function (answer) { return answer.groupId === groupId && answer.fingerprint === fingerprint; }).pop() || null;
+}
+
+// Clearly after: "2026-11" is after 2026-10-05, but "2026-10" might not be.
+function after(a, b) {
+  if (a.length !== b.length && (a.indexOf(b) === 0 || b.indexOf(a) === 0)) return false;
+  return a > b;
+}
+
+function dayOf(date) {
+  var found = typeof date === "string" && /^\d{4}(?:-\d{2}(?:-\d{2})?)?/.exec(date);
+  return found ? found[0] : null;
+}
+
+// What the Not taking marks on a card say: nothing (no mark), stop (every
+// current record is marked, and none is newer than its mark), or ask. Each
+// source's record is its own member; a card with no group is one member with
+// all its keys. A mark covers only the member it was made on.
+function markState(entry, marks) {
+  var members;
+  if (entry.group) {
+    var sides = entry.group.sides.filter(function (side) { return side.status === "current"; });
+    members = (sides.length ? sides : entry.group.sides).map(function (side) {
+      // The card's own record also answers to its other keys and its date.
+      var own = side.key === entry.key;
+      return { side: side, keys: own ? keysOf({ key: side.key, otherKeys: entry.otherKeys }) : [side.key], date: newer(side.asOf, own ? entry.lastDate : null) };
+    });
+  } else {
+    members = [{ side: null, keys: keysOf(entry), date: entry.lastDate || null }];
+  }
+  members.forEach(function (member) { member.mark = markOf(member.keys, marks); });
+  var markedOnes = members.filter(function (member) { return member.mark; });
+  if (!markedOnes.length) return {};
+  var mark = markedOnes.reduce(function (latest, member) { return later(member.mark, latest); }, null);
+  var left = members.filter(function (member) { return !member.mark; });
+  if (left.length) {
+    // The newest source still listing it is the one named.
+    var other = left[left.length - 1];
+    var since = dayOf(other.side.asOf);
+    return { ask: {
+      kind: "status",
+      why: "You marked this Not taking" + (dayOf(mark.at) ? " on " + dayText(dayOf(mark.at)) : "") + ". " + other.side.sourceName + " lists it current" + (since ? ", " + monthText(since) : "") + ".",
+      fingerprint: "mark:" + mark.at + ">" + (since || ""),
+      mark: mark
+    } };
+  }
+  // An undated mark or record can't be put in order: it stays as marked.
+  var renewed = members.filter(function (member) {
+    return dayOf(member.mark.at) && dayOf(member.date) && after(dayOf(member.date), dayOf(member.mark.at));
+  }).pop();
+  if (renewed) {
+    return { ask: {
+      kind: "status",
+      why: "You marked Not taking on " + dayText(renewed.mark.at) + ". Your records have a newer prescription, " + dayText(dayOf(renewed.date)) + ".",
+      fingerprint: "mark:" + renewed.mark.at + ">" + dayOf(renewed.date),
+      mark: renewed.mark
+    } };
+  }
+  return { stop: mark };
+}
+
+// The latest mark under these keys, as { key, at }, or null. The first key
+// wins a tie, as it did before.
+function markOf(keys, marks) {
+  return keys.reduce(function (latest, key) {
+    return Object.prototype.hasOwnProperty.call(marks, key) ? later({ key: key, at: marks[key] }, latest) : latest;
+  }, null);
+}
+
+function later(mark, latest) {
+  if (!latest) return mark;
+  var a = dayOf(mark.at);
+  var b = dayOf(latest.at);
+  return a && (!b || a > b) ? mark : latest;
+}
+
+function newer(a, b) {
+  var dayA = dayOf(a);
+  var dayB = dayOf(b);
+  if (!dayA) return dayB ? b : null;
+  if (!dayB) return a;
+  return dayB > dayA ? b : a;
+}
+
+// Asked in this order; "worded" never asks.
+var ASKED = ["status", "dose", "schedule"];
+
+// The question a group's disagreement asks, or null. When an answer for this
+// group no longer matches, it says what changed since.
+function verdictQuestion(entry, answers) {
+  if (!entry.group) return null;
+  var kind = ASKED.filter(function (verdict) { return entry.group.verdicts.indexOf(verdict) !== -1; })[0];
+  if (!kind) return null;
+  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id; }).pop();
+  return { kind: kind, why: before ? changedText(before.sides || [], entry.group.sides) : null, fingerprint: entry.group.fingerprint };
+}
+
+var STATUS_WORDS = { current: "current", "not-current": "stopped" };
+
+// What changed since the answer: a source gone, or one saying something new.
+function changedText(then, now) {
+  if (!then.length) return null;
+  var lines = [];
+  then.forEach(function (old) {
+    var side = now.filter(function (one) { return one.sourceId === old.sourceId; })[0];
+    if (!side) lines.push(old.sourceName + " didn't load.");
+    else if (sideWords(side) !== sideWords(old)) lines.push(side.sourceName + " now says " + sideWords(side) + ".");
+    else if (side.status !== old.status && STATUS_WORDS[side.status]) lines.push(side.sourceName + " now says " + STATUS_WORDS[side.status] + ".");
+  });
+  now.forEach(function (side) {
+    var known = then.some(function (old) { return old.sourceId === side.sourceId; });
+    if (!known) lines.push(side.sourceName + " now says " + sideWords(side) + ".");
+  });
+  return lines.join(" ") || null;
 }
 
 // Taken only when needed: the records say so, the patient marked it, or they

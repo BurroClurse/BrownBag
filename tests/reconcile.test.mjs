@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { personOf, samePerson, matchOf, plainName, GROUPS, verdictsFor, dailyAmount, isWeekly, reconcile } from "../js/reconcile.js";
+import { personOf, samePerson, matchOf, plainName, GROUPS, verdictsFor, dailyAmount, isWeekly, reconcile, sideWords } from "../js/reconcile.js";
 import { snapshotSource } from "../js/snapshot.js";
 import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus } from "../js/meds.js";
 
@@ -517,4 +517,13 @@ test("a newer snapshot that says current asks about a stop", () => {
     .concat([stoppedOn("a-atorvastatin", "617310", "atorvastatin 20 MG Oral Tablet", "2026-06-01")]));
   var statin = only(reconcile([stopped, snapshotSource(bundle, "Mercy Health")], MAP), /^atorvastatin/);
   assert.deepEqual(statin.group.verdicts, ["status"]);
+});
+
+test("a side reads as its dose and how often, with the strength when the dose doesn't say it", () => {
+  assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: "10 mg", frequency: "once a day" }), "10 mg, once a day");
+  assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: null, frequency: "Take 1 tablet daily" }), "10 MG, Take 1 tablet daily");
+  assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: "1 tablet", frequency: "once a day" }), "10 MG, 1 tablet, once a day");
+  assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: "10mg", frequency: null }), "10mg");
+  assert.equal(sideWords({ name: "Lisinopril", dose: "20 mg" }), "20 mg");
+  assert.equal(sideWords({ name: "Lisinopril 10 MG Oral Tablet", dose: null, frequency: null }), "See the record");
 });

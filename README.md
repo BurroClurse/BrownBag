@@ -58,6 +58,7 @@ screen to make that work.
 - **Medicines** from the records: repeats merged, strengths of one drug grouped,
   directions in full, on-hold ones marked, older prescriptions folded away.
 - **As needed** and **Not taking** move a medicine to its own part, with Undo.
+  A prescription dated after a Not taking mark puts the medicine back on the list.
   **I'm taking this**, on an older prescription, asks first.
 - **Filled**: how many times, and when last, from insurance claims. A prescription
   the record calls finished but filled since is current again, and says so. Fills the

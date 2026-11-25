@@ -34,6 +34,13 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Marks and a newer prescription** (2026-11-25, step 1 of when sources disagree).
+Checked by tests only; nothing new is drawn yet. On a virtual phone with the
+sandbox: mark a medicine Not taking, then Undo, and As needed, then Undo, as
+before. A medicine marked Not taking before a newer prescription of it shows on
+My medicines again, not under Not taking. Marking it Not taking again moves it
+there. A backup made before this change still restores.
+
 **Lock first, then the connections screen** (2026-11-25, design
 `docs/superpowers/specs/2026-11-25-connections-design.md`). Touches sign-in
 and the lock, so it's a test-right-away change, but the virtual phones run on
