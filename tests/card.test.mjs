@@ -288,3 +288,15 @@ test("an answer of not sure keeps both sides", () => {
   assert.deepEqual(card.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "20 mg, once a day"]]);
   assert.ok(!card.flags.some((text) => /don't agree/.test(text)), "asked no more");
 });
+
+// The name and the dose come from the same record, so a card never reads
+// 20 MG with the 10 MG record's dose.
+test("an answer of one side names that side's medicine", () => {
+  const sides = [Object.assign({}, SIDES[0], { dose: "1 tablet" }), SIDES[1]];
+  const answer = { groupId: "29046", fingerprint: "fp", sides, choice: "smart-sandbox", answeredAt: "2026-11-25" };
+  const card = patientCard(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer }), true);
+  assert.equal(card.name, "lisinopril 10 MG Oral Tablet");
+  assert.deepEqual(card.take[0], ["Dose", "1 tablet"]);
+  assert.equal(patientCard(asked("dose"), true).name, undefined, "no name of its own before an answer");
+  assert.match(readFileSync(new URL("../js/app.js", import.meta.url), "utf8"), /drawCard\(row, card\.name \|\| entry\.name, card\)/);
+});

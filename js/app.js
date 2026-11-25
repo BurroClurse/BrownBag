@@ -2343,7 +2343,8 @@ function afterBackup(said) {
 
 function medRow(list, entry) {
   var row = add(list, "li");
-  drawCard(row, entry.name, patientCard(entry, state.split.claims === "loaded"));
+  var card = patientCard(entry, state.split.claims === "loaded");
+  drawCard(row, card.name || entry.name, card);
   return row;
 }
 

@@ -102,6 +102,9 @@ export function patientCard(entry, claimsLoaded) {
   // How many flags go above the take rows: what the records disagree on
   // comes first, as the question it is. Other cards keep today's order.
   if (lead.length) card.lead = lead.length;
+  // A chosen side names the card too, so its name and dose are one record's.
+  var chosen = !question && entry.answer ? chosenSide(entry) : null;
+  if (chosen && chosen.name) card.name = chosen.name;
   return card;
 }
 
