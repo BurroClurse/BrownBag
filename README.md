@@ -206,8 +206,9 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   are to check, and staff see a "Records disagree: ask the patient" part.
 - **A second QR code** (idea): a flip on the QR screen, one side today's code, the
   other a SMART Health Link a clinic's system can read.
-- **Other ideas:** scanning pill bottles to add or update a medicine, and
-  reminders to open Brown Bag before an appointment.
+- **Other ideas:** scanning pill bottles to add or update a medicine,
+  reminders to open Brown Bag before an appointment, and, with several sources,
+  a line for each saying when Brown Bag last read it.
 
 ### Back end
 
@@ -231,6 +232,8 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   for server deployment, and the privacy page says what that server keeps, for how
   long, and how it's deleted.
 - **Sending changes back to the clinic** (idea), with the clinic's permission.
+- **HL7's validator on every push** (idea): a GitHub Action checks the test files
+  and the FHIR file Brown Bag makes against HL7's own FHIR and IPS rules.
 
 ## Files
 
