@@ -485,6 +485,7 @@ button.stop { background: var(--stop); border-color: var(--stop); color: #FFFFFF
    under them as a note. */
 .help-row { display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
 .help-row h2, .help-row p { margin-top: 0; margin-bottom: 0; }
+
 button.help-button {
   flex: none;
   width: 44px;
@@ -547,6 +548,10 @@ button.help-button {
 .help-row.section-help h2, .help-row.section-help h3 { flex: 1 1 auto; margin: 0; }
 .screen-medicines .help-row.section-help { margin: 1.25rem 0 0.6rem; }
 .section-help + .help-panel { margin-top: 0; }
+/* A page title with its "?" right after it, at the left like other titles,
+   and bigger than the section headers under it. */
+.help-row.title-help, .screen-medicines .help-row.title-help { justify-content: flex-start; gap: 0.6rem; margin: 0.75rem 0 0.25rem; }
+.help-row.title-help h1 { flex: 0 1 auto; margin: 0; font-size: min(2.2rem, 12vw); line-height: 1.15; overflow-wrap: anywhere; }
 
 /* The 6 digits on the QR screen: blurred until tapped. */
 .qr-overlay button.code-reveal {

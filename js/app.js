@@ -814,12 +814,17 @@ function drawMedicines(arranged) {
   // The one being edited was removed.
   if (state.editing && !editedNow()) closeAddForm();
   medicinesDone("screen-top", "medicines-done");
-  // Shown, it read "My medicines" right over "Medicines (7)"; the two section
-  // headers say what's here. Screen readers still hear the page's name.
-  var title = add(root, "h1", "My medicines", "visually-hidden");
-  title.id = "medicines-heading";
-  title.tabIndex = -1;
-  note(root, DISCLAIMER);
+  // The note about the list sits behind a "?" beside the title (Tyler,
+  // 2026-11-25), so the page opens on Allergies.
+  helpHeading(root, "My medicines", "medicines-heading", "About this list", function (panel) {
+    add(panel, "p", DISCLAIMER);
+  }, function (row, text, id) {
+    row.classList.add("title-help");
+    var h = add(row, "h1", text);
+    h.id = id;
+    h.tabIndex = -1;
+    return h;
+  });
   drawAllergies(root);
   // No number when some didn't load: it would read as the whole.
   var medicines = medicinesBlock(root, medicinesPartial(state) ? "Medicines" : "Medicines (" + medicineCount(arranged, state.data.additions) + ")", 2);

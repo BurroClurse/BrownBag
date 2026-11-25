@@ -9,8 +9,14 @@ const app = read("js/app.js");
 const css = read("css/brownbag.css");
 const body = (name) => app.slice(app.indexOf("function " + name + "(")).split("\n}\n")[0];
 
-test("the page title is for screen readers only", () => {
-  assert.match(body("drawMedicines"), /add\(root, "h1", "My medicines", "visually-hidden"\)/);
+test("the title shows, with the note behind a ? beside it (Tyler, 2026-11-25)", () => {
+  const draw = body("drawMedicines");
+  assert.ok(draw.includes('helpHeading(root, "My medicines", "medicines-heading", "About this list"'));
+  assert.ok(draw.includes("DISCLAIMER"));
+  assert.ok(!draw.includes("note(root, DISCLAIMER)"));
+  assert.ok(!draw.includes("visually-hidden"));
+  assert.match(css, /\.help-row\.title-help[^{]*\{[^}]*justify-content: flex-start/);
+  assert.match(css, /\.help-row\.title-help h1 \{[^}]*font-size: min\(2\.2rem, 12vw\)/);
 });
 
 test("Allergies is a section header above its box, not inside it", () => {
