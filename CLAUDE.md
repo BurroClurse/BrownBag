@@ -15,3 +15,8 @@ Standing rules from Tyler.
 - **Ask before approval, one question at a time.** Before Tyler approves a design
   or plan, ask him about each call made on his behalf, and anything else still in
   question, as its own question. Don't fold them into a list for him to check.
+- **Tell Tyler when something needs testing on his Mac.** Cloud sessions can't
+  reach the Mac's iPhone simulator, Android emulator or his iPhone. Whenever a
+  change is ready for a phone check, say so plainly, with what to check and the
+  commands to run (`prompts/phone-pass.md` runs the pass), and add it to
+  "Waiting for the next pass" in `docs/NEEDS-TESTING.md`.
