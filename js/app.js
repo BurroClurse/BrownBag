@@ -8,8 +8,8 @@ import { openWithPassword, saveWithPassword } from "./backup-popups.js";
 import { closePopups, openPopup, popupButton, popupLine } from "./popup.js";
 import { LOCK_KEY, lockMethod } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
-import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
-import { ingredientsFor, searchDrugs } from "./rxnorm.js";
+import { ingredientsFor, rxcuiForNdc, searchDrugs } from "./rxnorm.js";
+import { listFromSearch } from "./med-list.js";
 import { reconcile } from "./reconcile.js";
 import { loadDemoSource } from "./demo-source.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
@@ -18,7 +18,7 @@ import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signe
 import { saveRecords, loadLastRecords, loadRecordsFor, splitToSave, splitFromSaved } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { heldBack, recordReader, waitLeft } from "./read.js";
+import { recordReader, waitLeft } from "./read.js";
 import { ALREADY_LISTED, allergiesTitle, closedLine, isSevere, removedUnnamed, removeUnnamedQuestion, readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
 import { cardName, dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
@@ -455,7 +455,7 @@ async function loadFresh(client, found, total) {
   // limit, so neither ever holds up the list.
   var allergies = readAllergies(recordReader(client), patientId, SOURCE, extras)
     .then(function (result) { found.allergies = result; });
-  var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras);
+  var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras, rxcuiForNdc);
   // Only the home test server has a second source (js/demo-source.js).
   var demo = loadDemoSource(location, patient, patientId, globalThis.fetch.bind(globalThis));
   var medicines = await loadMedicines(client, patientId);
@@ -643,50 +643,24 @@ async function loadAdditions() {
 }
 
 // Prescriptions and "what the patient says" records, each with the
-// Medication records they point to (_include), all pages (pageLimit 0).
-// If one kind fails to load, the screen says so instead of showing less.
-// This is one source's list; loadFresh joins it with any others.
+// Medication records they point to (_include), all pages (pageLimit 0), as
+// Bundles so a reference can find its Medication by fullUrl. If one kind
+// fails to load, the screen says so instead of showing less. This is one
+// source's list (js/med-list.js); loadFresh joins it with any others.
 async function loadMedicines(client, patientId) {
-  var items = [];
-  var placeholders = 0;
-  var failed = false;
-  var leftOut = false;
-  var kinds = [["MedicationRequest", fromMedicationRequest], ["MedicationStatement", fromMedicationStatement]];
+  var results = {};
+  var kinds = ["MedicationRequest", "MedicationStatement"];
   for (var i = 0; i < kinds.length; i += 1) {
-    var type = kinds[i][0];
-    var convert = kinds[i][1];
     try {
-      var resources = await client.request(
-        type + "?patient=" + encodeURIComponent(patientId) + "&_include=" + type + ":medication",
-        { pageLimit: 0, flat: true }
+      results[kinds[i]] = await client.request(
+        kinds[i] + "?patient=" + encodeURIComponent(patientId) + "&_include=" + kinds[i] + ":medication",
+        { pageLimit: 0, flat: false }
       );
-      if (heldBack(resources)) leftOut = true;
-      var medications = new Map(resources
-        .filter(function (r) { return r && r.resourceType === "Medication"; })
-        .map(function (r) { return ["Medication/" + r.id, r]; }));
-      resources
-        .filter(function (r) { return r && r.resourceType === type && usableRecord(r); })
-        .forEach(function (r) {
-          var item = convert(r, SOURCE, medications);
-          if (isPlaceholderDrug(item)) {
-            placeholders += 1;
-          } else {
-            items.push(item);
-          }
-        });
     } catch (error) {
-      failed = true;
+      results[kinds[i]] = error instanceof Error ? error : new Error("Couldn't load " + kinds[i] + ".");
     }
   }
-  var merged = dedupe(items);
-  var rxcuis = merged.map(function (item) { return item.rxcui; }).filter(Boolean);
-  var ingredients = rxcuis.length ? await ingredientsFor(rxcuis) : new Map();
-  var split = splitByStatus(groupByIngredient(merged, ingredients));
-  split.failed = failed;
-  split.heldBack = leftOut;
-  split.placeholders = placeholders;
-  split.ingredientOf = ingredients;
-  return split;
+  return listFromSearch(results, SOURCE, globalThis.fetch.bind(globalThis));
 }
 
 // One screen at a time: "home" (the bag and two big buttons), "medicines"

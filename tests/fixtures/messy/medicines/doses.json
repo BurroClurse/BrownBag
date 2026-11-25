@@ -1,0 +1,17 @@
+{
+  "_about": "How often and how much, as FAERS, HL7 examples, the NDC directory and Epic write them (findings D7, D8; cases 13-20).",
+  "weekly": ["15MG/WEEK", "15 MG, QWK", "10 MG, QW", "20 MG, PER WEEK", "5 MG, 1/WEEK", "1 time per week", "Take 6 tablets by mouth every Monday", "every 7 days", "Q7D", "50,000 IU 1/MO ORAL", "every 28 days", "Apply to affected areas four times daily on Monday of each week", "once weekly", "2 times a week"],
+  "notWeekly": ["Take 1 tablet by mouth daily", "Take 1 tablet daily for a week", "25 MG, BID", "every 6 hours", "Q6H PRN", "every 3 days", "Q2D"],
+  "lorazepam": ["Lorazepam .5 mg tablet", "lorazepam 5 MG Oral Tablet"],
+  "metformin": "metformin 1,000 mg tablet",
+  "micrograms": ["levothyroxine 88 ug", "levothyroxine 88 µg", "levothyroxine 88 ?G", "Levothyroxine Sodium 88micrograms tablet (product)", "levothyroxine 88 MUG"],
+  "microgramsAgainst": { "same": "levothyroxine 0.088 MG Oral Tablet", "different": "levothyroxine 0.88 MG Oral Tablet" },
+  "units": [["insulin 1000 IU", "1000 UNT"], ["vitamin D 1000 UT", "1000 UNT"], ["vitamin D 30 IE", "30 UNT"], ["insulin 100 units/mL", "100 UNT/ML"], ["Lantus 100 unit/ml injectable solution", "100 UNT/ML"], ["Novolog 100u/ml", "100 UNT/ML"], ["insulin 100 [iU]/mL", "100 UNT/ML"], ["Nystatin 100,000 u/ml oral suspension", "100000 UNT/ML"]],
+  "codedMicrograms": {
+    "name": "levothyroxine sodium 0.088 MG Oral Tablet",
+    "inMicrograms": { "doseAndRate": [{ "doseQuantity": { "value": 88, "unit": "ug" } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } },
+    "inTablets": { "doseAndRate": [{ "doseQuantity": { "value": 1, "unit": "tablet" } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }
+  },
+  "epicMgPerKg": { "text": "Take 100 mg by mouth 1 (one) time each day., Historical Med", "doseAndRate": [{ "type": { "coding": [{ "system": "http://epic.com/CodeSystem/dose-rate-type", "code": "ordered" }] }, "doseQuantity": { "value": 100.0, "unit": "mg/kg" } }] },
+  "combination": ["aspirin-acetaminophen-caffeine (EXCEDRIN MIGRAINE) 250-250-65 MG per tablet", "acetaminophen 250 MG / aspirin 250 MG / caffeine 65 MG Oral Tablet"]
+}

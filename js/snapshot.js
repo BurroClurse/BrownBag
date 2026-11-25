@@ -2,7 +2,7 @@
 // Brown Bag list opened again. It joins the reconciling as one more source,
 // dated by when it was made. No DOM here, so Node's test runner can check it.
 
-import { fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus } from "./meds.js";
+import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus, medicationsFrom, noMedicinesKind } from "./meds.js";
 
 var TAGS = "https://burroclurse.github.io/BrownBag/tags";
 
@@ -31,7 +31,14 @@ function isOwnExport(bundle, entries) {
 }
 
 function hasOwnDate(resource) {
+  if (resource.resourceType === "MedicationRequest") return Boolean(resource.authoredOn);
   return Boolean(resource.dateAsserted || resource.effectiveDateTime || (resource.effectivePeriod && resource.effectivePeriod.start));
+}
+
+// A record with no date of its own is as old as the list.
+function datedBy(resource, asOf) {
+  if (!asOf || hasOwnDate(resource)) return resource;
+  return Object.assign({}, resource, resource.resourceType === "MedicationRequest" ? { authoredOn: asOf } : { dateAsserted: asOf });
 }
 
 // bundle is a FHIR Bundle of type collection or document, or the result is
@@ -44,16 +51,24 @@ export function snapshotSource(bundle, name) {
   var patientEntry = entries.filter(function (entry) { return entry.resource.resourceType === "Patient"; })[0] || null;
   var own = isOwnExport(bundle, entries);
 
+  // An IPS names its Medications by urn:uuid; some files hold prescriptions
+  // instead of statements.
+  var medications = medicationsFrom(entries);
   var items = [];
   var placeholders = 0;
+  var noMedicines = [];
   entries.forEach(function (entry) {
     var resource = entry.resource;
-    if (resource.resourceType !== "MedicationStatement" || !usableRecord(resource)) return;
+    var convert = resource.resourceType === "MedicationStatement" ? fromMedicationStatement : resource.resourceType === "MedicationRequest" ? fromMedicationRequest : null;
+    if (!convert || !usableRecord(resource)) return;
     var from = resource.informationSource && resource.informationSource.reference;
     if (own && from && patientEntry && from === patientEntry.fullUrl) return;
-    // A statement with no date of its own is as old as the list.
-    var dated = !asOf || hasOwnDate(resource) ? resource : Object.assign({}, resource, { dateAsserted: asOf });
-    var item = fromMedicationStatement(dated, name);
+    var kind = noMedicinesKind(resource, medications);
+    if (kind) {
+      if (!noMedicines.some(function (said) { return said.kind === kind; })) noMedicines.push({ source: name, kind: kind });
+      return;
+    }
+    var item = convert(datedBy(resource, asOf), name, medications);
     if (isPlaceholderDrug(item)) placeholders += 1;
     else items.push(item);
   });
@@ -63,6 +78,7 @@ export function snapshotSource(bundle, name) {
   split.failed = false;
   split.heldBack = false;
   split.placeholders = placeholders;
+  split.noMedicines = noMedicines;
   return {
     id: "snapshot:" + asOf + ":" + name,
     name: name,

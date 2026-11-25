@@ -4,7 +4,7 @@
 // started for it; the published app never asks. No DOM here, so Node's test
 // runner can check it.
 
-import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus } from "./meds.js";
+import { fromMedicationRequest, fromMedicationStatement, usableRecord, isPlaceholderDrug, dedupe, groupByIngredient, splitByStatus, noMedicinesKind } from "./meds.js";
 
 export var DEMO_ID = "valley-clinic-demo";
 export var DEMO_NAME = "Valley Clinic (test records)";
@@ -33,8 +33,15 @@ export function demoSource(json, patient, search) {
   var birthDate = patient && patient.birthDate;
   var items = [];
   var placeholders = 0;
+  var noMedicines = [];
   [[json.requests, fromMedicationRequest], [json.statements, fromMedicationStatement]].forEach(function (pair) {
     (Array.isArray(pair[0]) ? pair[0] : []).filter(usableRecord).forEach(function (resource) {
+      // As a real source can say it has none to give.
+      var kind = noMedicinesKind(resource);
+      if (kind) {
+        if (!noMedicines.some(function (said) { return said.kind === kind; })) noMedicines.push({ source: DEMO_NAME, kind: kind });
+        return;
+      }
       var item = pair[1](resource, DEMO_NAME);
       if (isPlaceholderDrug(item)) placeholders += 1;
       else items.push(item);
@@ -46,6 +53,7 @@ export function demoSource(json, patient, search) {
   // A clinic file can say it sent only some records, as a real source can.
   split.heldBack = json.heldBack === true;
   split.placeholders = placeholders;
+  split.noMedicines = noMedicines;
   return {
     id: DEMO_ID,
     name: DEMO_NAME,

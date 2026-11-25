@@ -206,7 +206,7 @@ test("a saved copy from before groups opens", async () => {
   const storage = memoryStorage();
   await saveRecords(storage, await key(), SAVED);
   const opened = splitFromSaved(await loadLastRecords(storage, await key()));
-  assert.deepEqual(opened, { current: SAVED.current, older: [], failed: false, placeholders: 0, heldBack: false, claims: null, keptOut: [], sourceStatus: [] });
+  assert.deepEqual(opened, { current: SAVED.current, older: [], failed: false, placeholders: 0, noMedicines: [], heldBack: false, claims: null, keptOut: [], sourceStatus: [] });
   const arranged = arrangeList(opened, {});
   assert.deepEqual(arranged.current, SAVED.current);
   assert.deepEqual(arranged.toCheck, []);
@@ -215,7 +215,7 @@ test("a saved copy from before groups opens", async () => {
 test("the test source opens with no signal, and its records are never kept", () => {
   const worker = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
   assert.ok(worker.includes('"./js/demo-source.js"'));
-  assert.match(worker, /var CACHE = "brownbag-v91";/);
+  assert.match(worker, /var CACHE = "brownbag-v92";/);
   assert.equal(loadWorker().routeFor("https://burroclurse.github.io/BrownBag/_home/demo-source.json"), "network");
   assert.equal(loadWorker().routeFor("https://burroclurse.github.io/BrownBag/js/demo-source.js"), "app");
 });

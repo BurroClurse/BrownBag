@@ -84,7 +84,7 @@ function part(parent, text, rows, empty, level, partial) {
   var section = add(parent, "section");
   add(section, "h" + level, partial ? text : text + " (" + rows.length + ")", "part-title");
   if (!rows.length) {
-    add(section, "p", empty, "med-line");
+    if (empty) add(section, "p", empty, "med-line");
     return;
   }
   rowsInto(section, rows);

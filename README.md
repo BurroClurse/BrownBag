@@ -56,7 +56,14 @@ screen to make that work.
   known. A record that names no allergen is the last row; the patient can say
   what it is, or remove it if it repeats another. Staff still see the record.
 - **Medicines** from the records: repeats merged, strengths of one drug grouped,
-  directions in full, on-hold ones marked, older prescriptions folded away.
+  directions in full, on-hold ones marked, older prescriptions folded away. Another
+  release type (12 or 24 hour, XL), salt (tartrate, succinate) or form (eye drops,
+  tablets) is its own line, and so is a combination such as Excedrin beside
+  Tylenol.
+- A source that says it has no information about the patient's medicines, or
+  knows of none, gets a line of its own ("<Source> has no information about your
+  medicines." or "<Source> says: no medicines known."), never a card, and the
+  list never reads as none.
 - **As needed** and **Not taking** move a medicine to its own part, with Undo.
   A prescription dated after a Not taking mark puts the medicine back on the list.
   **I'm taking this**, on an older prescription, asks first.
@@ -93,6 +100,8 @@ screen to make that work.
 - Allergies come first, then the medicines in parts: from records, filled but not
   in the health record, as needed, added by the patient, and what the patient
   says they're not taking. Each says who says so, and when it was last updated.
+  A source with no medicines to give is named under the heading ("<Source>: no
+  information about medicines" or "<Source>: no medicines known").
 - **Save as FHIR file** saves an
   [International Patient Summary](https://hl7.org/fhir/uv/ips/) (2.0.1), after a
   warning that it isn't locked. A list where something didn't load can't be saved.
@@ -136,26 +145,40 @@ SMART configuration offers a `revocation_endpoint` is told to end its side
 3. `GET MedicationRequest?patient={id}&_include=MedicationRequest:medication`, all pages.
 4. `GET MedicationStatement?patient={id}&_include=MedicationStatement:medication`, all pages.
 5. `GET ExplanationOfBenefit?patient={id}`, all pages, keeping pharmacy
-   claims: the drug (RxNorm), the fill date and the insurer. It starts
+   claims: the drug (RxNorm, or an NDC looked up in RxNav's `ndcstatus` by the
+   fill's date), the fill date and the insurer. It starts
    alongside steps 3 and 4 with its own 6-second limit, so a slow insurer
    never holds up the medicines.
 6. `GET AllergyIntolerance?patient={id}`, all pages, alongside, with its own
    6-second limit. Mistaken, ruled-out and past entries are left out.
-7. RxNav ingredient lookups, to group strengths of the same drug and match
-   fills to medicines.
+7. RxNav lookups for each RxNorm code: its ingredients and salt
+   (`related?tty=IN+PIN`), and its term type and whether RxNorm retired it for
+   another code (`historystatus`), asked together under one time limit. They
+   group strengths of the same drug and match fills to medicines, but only of
+   the same form and salt.
 
 Nothing is written to the health record. Nothing runs on a schedule.
 
-Records that name no medicine ("Medication", no drug code) are left out; a note
-on My medicines and the staff page counts them. An allergy entry that doesn't say
+A record goes by its most specific RxNorm code (the one marked `userSelected`,
+else a product before its parts and ingredients), so Epic's Excedrin, coded
+acetaminophen first, isn't Tylenol. A record coded only by ingredient or brand
+name (Cerner's "lisinopril") never joins another by code. A record finds its
+Medication whether it's contained, a document's `urn:uuid`, or an address.
+Release words, the time ("24 HR") and salt words are part of the form wherever
+the name says them, and a form the name doesn't say never matches.
+
+Records that name no medicine ("Medication", "Unknown medication", "None", no
+drug code) are left out; a note on My medicines and the staff page counts them.
+An IPS "no medication" entry (`no-medication-info`, `no-known-medications`) is
+never a medicine: it's kept as that source's line. An allergy entry that doesn't say
 what it's to gets its own row, or a note for staff, with everything else it says.
 
 **Unknown is never none.** When medicines, insurance fills, allergies or the
 patient's own additions couldn't be loaded, or the server says it left
 something out, My medicines and the staff page say so and no empty part says
 "none". Home and the Medicines heading leave the number off when the
-medicines or the patient's own part didn't load, or no record has a medicine
-name.
+medicines or the patient's own part didn't load, no record has a medicine
+name, or a source said it has no medicines to give.
 
 ### Keeping it on the phone
 
@@ -182,7 +205,8 @@ RxNorm codes for drug ingredients, and "no known allergies" as a confirmed
 statement. From records it also carries RxNorm and NDC codes and, when the whole direction
 can be coded, its amount and timing; the words are always there. Codes are left
 out when they'd make the QR code more than 161 squares across.
-The packing borrows the trimming rules and
+A source's "no medicines" line travels as a Bundle tag (`no-medicines`), never
+as a medicine. The packing borrows the trimming rules and
 numeric encoding of [SMART Health Cards](https://spec.smarthealth.cards/).
 The list never passes through a server.
 
@@ -244,6 +268,14 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   Synthea, copied into several sources and roughed up the way real ones are, so
   every run counts wrong joins and wrong splits; plus openFDA, FAERS, RxNorm and
   CMS synthetic claims. Before real patients, a pharmacist reviews the rules.
+- **Records as real sources write them** (medicines built; allergies, names
+  and birth dates planned): Epic's, Cerner's, claims' and IPS's ways of writing
+  medicines are read as described above. Next, the same for allergies ("NKA",
+  IPS "no information about allergies"), names ("SMART, JOE", an old name
+  first, any alphabet) and birth dates. Research:
+  [`docs/superpowers/research/2026-11-25-messy-data-findings.md`](docs/superpowers/research/2026-11-25-messy-data-findings.md);
+  plan: Task 6d of
+  [`docs/superpowers/plans/2026-11-25-medication-reconciliation.md`](docs/superpowers/plans/2026-11-25-medication-reconciliation.md).
 - **HL7's validator on every push** (idea): a GitHub Action checks the test files
   and the FHIR file Brown Bag makes against HL7's own FHIR and IPS rules.
 
@@ -256,6 +288,7 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 | `share.html` | The page staff see after scanning. |
 | `js/app.js`, `js/view.js` | Screens and the plain helpers behind them. |
 | `js/meds.js` | FHIR records into one deduplicated list. |
+| `js/med-list.js` | One source's search answers into its list: references, RxNav term types, "no medicines" entries. |
 | `js/claims.js` | Insurance pharmacy claims into fills, matched to the list. |
 | `js/reconcile.js` | Whether two sources are the same person, and how two records match. |
 | `js/snapshot.js` | A shared list opened again (an IPS file or Brown Bag list) as one more dated source. |

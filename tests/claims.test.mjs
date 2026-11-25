@@ -54,22 +54,23 @@ test("attachFills counts exact-code fills on the matching medicine", () => {
   assert.deepEqual(out.current[0].fills, { count: 3, last: "2026-09-21", insurers: ["Aetna"], cash: false });
 });
 
+// Task 6c: the form has to match too, so these names say theirs.
 test("attachFills matches by ingredient when the codes differ", () => {
-  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG")], older: [], failed: false };
+  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG Oral Tablet")], older: [], failed: false };
   const ingredients = new Map([["1", { rxcui: "29046" }], ["2", { rxcui: "29046" }]]);
-  const out = attachFills(split, fillsFromClaims([claim("2", "lisinopril 20 MG", "2026-09-21")]), ingredients, NOW);
+  const out = attachFills(split, fillsFromClaims([claim("2", "lisinopril 20 MG Oral Tablet", "2026-09-21")]), ingredients, NOW);
   assert.equal(out.current[0].fills.count, 1);
   assert.equal(out.current.length, 1);
 });
 
 test("an ingredient match that fits two medicines goes to the later one", () => {
   const split = {
-    current: [item("rx:1", "1", "Metoprolol A", "current", "2020-01-01"), item("rx:2", "2", "Metoprolol B", "current", "2025-06-01")],
+    current: [item("rx:1", "1", "Metoprolol A 25 MG Oral Tablet", "current", "2020-01-01"), item("rx:2", "2", "Metoprolol B 50 MG Oral Tablet", "current", "2025-06-01")],
     older: [],
     failed: false
   };
   const ingredients = new Map([["1", { rxcui: "6918" }], ["2", { rxcui: "6918" }], ["3", { rxcui: "6918" }]]);
-  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol", "2026-09-21")]), ingredients, NOW);
+  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol 100 MG Oral Tablet", "2026-09-21")]), ingredients, NOW);
   assert.equal(out.current.find((i) => i.key === "rx:2").fills.count, 1);
   assert.equal(out.current.find((i) => i.key === "rx:1").fills.count, 0);
 });
@@ -188,8 +189,8 @@ test("mergeClaims keeps the medicines and only marks the claims when they didn't
 });
 
 test("mergeClaims uses both ingredient lists to match fills", () => {
-  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG")], older: [], failed: false, ingredientOf: new Map([["1", { rxcui: "29046" }]]) };
-  const result = { status: "loaded", fills: fillsFromClaims([claim("2", "lisinopril 20 MG", "2026-09-21")]), ingredientOf: new Map([["2", { rxcui: "29046" }]]) };
+  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG Oral Tablet")], older: [], failed: false, ingredientOf: new Map([["1", { rxcui: "29046" }]]) };
+  const result = { status: "loaded", fills: fillsFromClaims([claim("2", "lisinopril 20 MG Oral Tablet", "2026-09-21")]), ingredientOf: new Map([["2", { rxcui: "29046" }]]) };
   const out = mergeClaims(split, result, NOW);
   assert.equal(out.current.length, 1);
   assert.equal(out.current[0].fills.count, 1);
@@ -219,13 +220,13 @@ test("a fill dated only by month counts as recent", () => {
 
 test("an ingredient match goes to the current medicine before a finished one", () => {
   const split = {
-    current: [item("rx:1", "1", "Metoprolol A", "current", "2020-01-01"), item("rx:4", "4", "Metoprolol C", "current", "2021-01-01")],
-    older: [item("rx:2", "2", "Metoprolol B", "older", "2025-06-01")],
+    current: [item("rx:1", "1", "Metoprolol A 25 MG Oral Tablet", "current", "2020-01-01"), item("rx:4", "4", "Metoprolol C 75 MG Oral Tablet", "current", "2021-01-01")],
+    older: [item("rx:2", "2", "Metoprolol B 50 MG Oral Tablet", "older", "2025-06-01")],
     failed: false
   };
   const same = { rxcui: "6918" };
   const ingredients = new Map([["1", same], ["2", same], ["3", same], ["4", same]]);
-  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol", "2026-09-21")]), ingredients, NOW);
+  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol 100 MG Oral Tablet", "2026-09-21")]), ingredients, NOW);
   assert.equal(out.current.length, 2);
   assert.equal(out.current.find((i) => i.key === "rx:4").fills.count, 1);
   assert.equal(out.older[0].fills.count, 0);

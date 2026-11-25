@@ -34,6 +34,26 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Medicines as real sources write them** (2026-11-25, Task 6c). Checked only
+in headless Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
+certificate). Run `node tools/reconcile-patients.mjs` first, then
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. On both virtual
+phones:
+
+- Loria Jenkins and Riley Reconcile read the same as before this change
+  (Loria: My medicines (5), 8 older; Riley: My medicines (9), 1 older). The
+  medicines now load as whole pages, so check every card is still there.
+- The "no information" line: save a clinic file for Loria at
+  `tests/fixtures/reconcile/clinics/e7de504a-311d-49be-b2bc-566a328bcc72.json`
+  holding only the `noInfo` statement from
+  `tests/fixtures/messy/medicines/ips-none.json` (delete it afterwards). My
+  medicines (4) says "Valley Clinic (test records) has no information about
+  your medicines." above the cards, and See what's inside says "Valley Clinic
+  (test records): no information about medicines" under Medicines (4). Check
+  the line wraps well on the iPhone SE size, and VoiceOver and TalkBack read
+  it in place.
+
 **Riley and Jordan, test patients whose records disagree** (2026-11-25, step
 2 of when sources disagree). Checked only in headless Chromium (iPhone 15
 size, PIN lock, the live sandbox, self-signed certificate). Run

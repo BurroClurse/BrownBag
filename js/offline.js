@@ -42,12 +42,14 @@ export async function loadRecordsFor(storage, key, patientId) {
 }
 
 // The list's part of the saved copy: every card with its group, and which
-// sources stayed out or didn't load. The ingredient map is looked up again.
+// sources stayed out, didn't load or said they have no medicines. The
+// ingredient map is looked up again.
 export function splitToSave(split) {
   return {
     current: split.current,
     older: split.older,
     placeholders: split.placeholders || 0,
+    noMedicines: split.noMedicines || [],
     heldBack: Boolean(split.heldBack),
     claims: split.claims || null,
     keptOut: split.keptOut || [],
@@ -64,6 +66,7 @@ export function splitFromSaved(saved) {
     older: saved.older,
     failed: false,
     placeholders: saved.placeholders || 0,
+    noMedicines: saved.noMedicines || [],
     heldBack: Boolean(saved.heldBack),
     claims: saved.claims || null,
     keptOut: saved.keptOut || [],

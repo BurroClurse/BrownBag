@@ -247,6 +247,9 @@ export function emptyRecordsText(split, arranged) {
   if (arranged.current.some(function (entry) { return fromRecords(entry) && !isAsNeeded(entry); })) return null;
   if (arranged.current.some(fromRecords)) return "Your current medicines are under As needed.";
   if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records Not taking.";
+  // A source that has no information, or knows of none, says so itself
+  // (sourceNotices). Unknown is never none.
+  if ((split.noMedicines || []).length) return null;
   if (split.older.some(fromRecords)) return "No current medicines in your records.";
   return "No medicines in your records.";
 }
@@ -256,9 +259,15 @@ var KEPT_OUT = {
   "no-identity": function (name) { return name + " didn't share a name and birth date, so its records aren't on your list."; }
 };
 
+var NO_MEDICINES = {
+  "no-info": function (name) { return name + " has no information about your medicines."; },
+  "none-known": function (name) { return name + " says: no medicines known."; }
+};
+
 // A source that stayed out, or a second one that didn't load, so its
 // medicines are never missing without a word. The first source's failure
-// has its own message, as before.
+// has its own message, as before. So does a source whose only word is that
+// it has no medicines to give.
 export function sourceNotices(split) {
   var kept = (split.keptOut || []).filter(function (source) { return KEPT_OUT[source.why]; }).map(function (source) {
     return KEPT_OUT[source.why](source.name);
@@ -269,7 +278,10 @@ export function sourceNotices(split) {
   var held = (split.sourceStatus || []).slice(1).filter(function (source) { return source.loaded && !source.complete; }).map(function (source) {
     return source.name + " didn't send some of your medicines.";
   });
-  return kept.concat(failed, held);
+  var none = (split.noMedicines || []).filter(function (said) { return NO_MEDICINES[said.kind]; }).map(function (said) {
+    return NO_MEDICINES[said.kind](said.source);
+  });
+  return kept.concat(failed, held, none);
 }
 
 // Whether the first source, the patient's own health system, held records
@@ -363,10 +375,12 @@ export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
 
-// Some of the medicines didn't load, or no record has a medicine name: no
-// number anywhere, which would read as the whole.
+// Some of the medicines didn't load, or no record has a medicine name, or
+// a source said it has none to give: no number anywhere, which would read
+// as the whole (or as none).
 export function medicinesPartial(state) {
-  return someMissing(state) || Boolean(state.split.placeholders && !arrangeList(state.split, state.data).current.some(function (entry) { return entry.origin !== "claims" || entry.asNeededAt; }));
+  var unsaid = state.split.placeholders || (state.split.noMedicines || []).length;
+  return someMissing(state) || Boolean(unsaid && !arrangeList(state.split, state.data).current.some(function (entry) { return entry.origin !== "claims" || entry.asNeededAt; }));
 }
 
 function someMissing(state) {
@@ -383,6 +397,7 @@ export function shareWarnings(state) {
     incomplete: someMissing(state),
     ownMissing: state.dataFailed,
     unnamed: state.split.placeholders || 0,
+    noMedicines: state.split.noMedicines || [],
     allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt }
   };
 }

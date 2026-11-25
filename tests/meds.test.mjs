@@ -447,7 +447,8 @@ test("records keep their id, lastUpdated and dateAsserted", () => {
 test("formOf reads the form", () => {
   assert.equal(formOf("Sertraline 50 MG Oral Tablet [Zoloft]"), "oral tablet");
   assert.equal(formOf("lisinopril 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet"), "oral tablet");
-  assert.equal(formOf("24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"), "extended release oral tablet");
+  // Task 6c: release time and salt are part of the form, wherever they're said.
+  assert.equal(formOf("24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"), "24 hr hydrochloride extended release oral tablet");
   assert.equal(formOf("fish oil"), null);
 });
 

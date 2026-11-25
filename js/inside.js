@@ -17,7 +17,7 @@ export function drawInside(parent, groups, made) {
   medicineNotices(groups).forEach(function (text) { warn(parent, text); });
   if (groups.claimsNotLoaded) warn(parent, "Insurance fills couldn't be loaded.");
   if (groups.fromRecords.length) items(parent, "From records", groups.fromRecords);
-  else lines(parent, [(recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
+  else if (emptyPartText(groups, "records")) lines(parent, [(recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   items(parent, "Filled, not in the health record", groups.fromClaims);
   items(parent, "As needed", groups.asNeeded);
   items(parent, "Added by patient", groups.addedByPatient);

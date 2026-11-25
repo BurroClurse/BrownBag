@@ -127,7 +127,7 @@ function medicineWords(groups) {
   dateLines(groups, timeText).forEach(function (text) { words.push(["p", text]); });
   words.push(["p", medicinesTitle(groups)]);
   if (groups.fromRecords.length) list(words, "From records", groups.fromRecords);
-  else words.push(["p", (recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
+  else if (emptyPartText(groups, "records")) words.push(["p", (recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   list(words, "Filled, not in the health record", groups.fromClaims);
   list(words, "As needed", groups.asNeeded);
   list(words, "Added by patient", groups.addedByPatient);

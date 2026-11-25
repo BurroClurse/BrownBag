@@ -55,35 +55,59 @@ function ingredientKey(ingredientOf, rxcui) {
   return found ? found.rxcui : null;
 }
 
+// The salt the ingredient lookup found (metoprolol succinate), else the
+// ingredient itself. Null when it wasn't looked up.
+function saltKey(ingredientOf, rxcui) {
+  var found = rxcui && ingredientOf && ingredientOf.get(rxcui);
+  return found ? (found.salt ? found.salt.rxcui : found.rxcui) : null;
+}
+
+// Its first word, with FAERS's trailing dots ("METOPROLOL.") left off.
+function firstWordOf(name) {
+  return firstWord(String(name || "").replace(/\.+(?=\s|$)/g, " "));
+}
+
 // How two records match, strongest first, or null:
-// rxcui, name (same words), ingredients (same ingredient and form),
-// form (same ingredient, other form), combo (shared ingredient in a
+// rxcui, name (same words), ingredients (same ingredient, salt and form),
+// form (same ingredient, other form or salt), combo (shared ingredient in a
 // combination), name-only (first words agree, nothing coded to confirm).
+// A record coded only by ingredient (Cerner's "lisinopril") fits every
+// strength and salt, so it's name-only at most. A form the name doesn't
+// say is never the same form.
 export function matchOf(a, b, ingredientOf) {
+  var word = firstWordOf(a.name);
+  var nameOnly = word !== "" && word === firstWordOf(b.name) ? "name-only" : null;
+  if (a.ingredientOnly || b.ingredientOnly) return nameOnly;
   if (a.rxcui && a.rxcui === b.rxcui) return "rxcui";
   var plain = plainName(a.name);
   if (plain && plain === plainName(b.name)) return "name";
   var keyA = ingredientKey(ingredientOf, a.rxcui);
   var keyB = ingredientKey(ingredientOf, b.rxcui);
   if (keyA && keyB) {
-    if (keyA === keyB) return formOf(a.name) === formOf(b.name) ? "ingredients" : "form";
+    if (keyA === keyB) {
+      var form = formOf(a.name);
+      var sameSalt = saltKey(ingredientOf, a.rxcui) === saltKey(ingredientOf, b.rxcui);
+      return form !== null && form === formOf(b.name) && sameSalt ? "ingredients" : "form";
+    }
     var inB = keyB.split("+");
     var shared = keyA.split("+").some(function (id) { return inB.indexOf(id) !== -1; });
     if (shared) return "combo";
     return null;
   }
-  var word = firstWord(a.name);
-  return word !== "" && word === firstWord(b.name) ? "name-only" : null;
+  return nameOnly;
 }
 
 // Verdicts, in the order a card asks about them.
 var VERDICTS = ["status", "dose", "schedule", "worded"];
 var DAYS = { s: 1 / 86400, min: 1 / 1440, h: 1 / 24, d: 1, wk: 7, mo: 30, a: 365 };
 var DAILY_UNITS = ["h", "d", "wk", "mo", "a"];
-// Weekly or longer, in words.
-var WEEKLY = /\b(weekly|biweekly|monthly|bimonthly|once a (?:week|month)|every (?:other )?(?:week|month)|every \d+ (?:weeks?|months?))\b/i;
+// Weekly or longer, in words, as FAERS and records write it: "15MG/WEEK",
+// "QWK", "PER WEEK", "every Monday", "1/MO", "on Monday of each week".
+var WEEKLY = /\b(weekly|wkly|biweekly|monthly|bimonthly|once a (?:week|month)|every (?:other )?(?:week|month)|every \d+ (?:weeks?|months?)|(?:per|each|q) ?(?:week|wk|month)|times? a (?:week|month)|qw|qwk|qmo|every (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?)\b|\/\s*(?:week|wk|mo|month)\b/i;
+// "every 7 days", "Q7D", "every 28 days": a week or more.
+var EVERY_DAYS = /\b(?:every (\d+) days?|q(\d+) ?d(?:ays?)?)\b/gi;
 // Masses are compared in mg, so 0.025 MG and 25 MCG are one strength.
-var MASS = { g: 1000, mg: 1, mcg: 0.001 };
+var MASS = { g: 1000, gram: 1000, grams: 1000, mg: 1, milligram: 1, milligrams: 1, mcg: 0.001, ug: 0.001, "\u00b5g": 0.001, "\u03bcg": 0.001, microgram: 0.001, micrograms: 0.001 };
 
 // A unit is free text, so "constructor" must not find Object.prototype's.
 function massOf(unit) {
@@ -173,7 +197,10 @@ export function dailyAmount(item) {
 export function isWeekly(item) {
   var repeat = repeatOf(item);
   var coded = Boolean(repeat) && (["wk", "mo", "a"].indexOf(repeat.periodUnit) !== -1 || (repeat.periodUnit === "d" && repeat.period >= 7));
-  return coded || WEEKLY.test(item.frequency || "");
+  var words = String(item.frequency || "");
+  return coded || WEEKLY.test(words) || Array.from(words.matchAll(EVERY_DAYS)).some(function (found) {
+    return Number(found[1] || found[2]) >= 7;
+  });
 }
 
 function dosesDiffer(a, b) {
@@ -501,6 +528,9 @@ export function reconcile(sources, ingredientOf) {
     failed: Boolean(first.split.failed),
     heldBack: included.some(function (source) { return Boolean(source.split.heldBack); }),
     placeholders: included.reduce(function (sum, source) { return sum + (source.split.placeholders || 0); }, 0),
+    // A source that says it has no medicines, or knows of none, is said by
+    // name. One kept out says nothing about this patient.
+    noMedicines: included.reduce(function (all, source) { return all.concat(source.split.noMedicines || []); }, []),
     keptOut: keptOut,
     sourceStatus: sourceStatus
   });

@@ -134,6 +134,11 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
   if (warnings.unnamed) {
     tags.push({ system: TAGS, code: "records-unnamed", display: String(warnings.unnamed) });
   }
+  // A source that said it has no information about medicines, or knows of
+  // none: "no-info:<Source>" or "none-known:<Source>".
+  (warnings.noMedicines || []).forEach(function (said) {
+    if (NO_MEDICINES[said.kind]) tags.push({ system: TAGS, code: "no-medicines", display: said.kind + ":" + said.source });
+  });
   if (list.allergies) {
     tags.push({ system: TAGS, code: "allergies-" + warnings.allergies.status });
     if (warnings.allergies.savedAt) {
@@ -147,6 +152,18 @@ export function buildShareBundle(list, now, warnings = {}, level = 0) {
     bundle.meta = { tag: tags };
   }
   return bundle;
+}
+
+var NO_MEDICINES = {
+  "no-info": function (name) { return name + ": no information about medicines"; },
+  "none-known": function (name) { return name + ": no medicines known"; }
+};
+
+function noMedicinesFrom(tags) {
+  return tags.filter(function (tag) { return tag && tag.system === TAGS && tag.code === "no-medicines"; }).map(function (tag) {
+    var found = /^([a-z-]+):(.+)$/.exec(String(tag.display || ""));
+    return found && NO_MEDICINES[found[1]] ? { source: found[2], kind: found[1] } : null;
+  }).filter(Boolean);
 }
 
 export function groupShareBundle(bundle) {
@@ -165,6 +182,7 @@ export function groupShareBundle(bundle) {
     ownMissing: Boolean(of("own-missing")),
     // A count that isn't one still means there are some.
     unnamed: unnamed ? (/^[1-9]\d{0,3}$/.test(unnamed.display) ? Number(unnamed.display) : 1) : 0,
+    noMedicines: noMedicinesFrom(tags),
     fromRecords: [],
     fromClaims: [],
     asNeeded: [],
@@ -689,11 +707,12 @@ export function medicineNotices(groups) {
     var one = groups.unnamed === 1;
     out.push("The records also have " + groups.unnamed + (one ? " entry" : " entries") + " with no medicine name, so " + (one ? "it isn't" : "they aren't") + " listed. Ask the patient.");
   }
+  (groups.noMedicines || []).forEach(function (said) { out.push(NO_MEDICINES[said.kind](said.source)); });
   return out;
 }
 
 export function recordsPartial(groups) {
-  return Boolean(groups.incomplete || (groups.unnamed && !groups.fromRecords.length));
+  return Boolean(groups.incomplete || ((groups.unnamed || (groups.noMedicines || []).length) && !groups.fromRecords.length));
 }
 
 // The ones under As needed that the patient didn't add.
@@ -701,10 +720,12 @@ function othersAsNeeded(groups) {
   return groups.asNeeded.filter(function (row) { return !row.added; });
 }
 
-// What an empty part says. "None" only when that much is known.
+// What an empty part says. "None" only when that much is known. Null when
+// a source's own word (medicineNotices) is all there is to say.
 export function emptyPartText(groups, part) {
   if (part === "records") {
     if (groups.incomplete) return "None loaded.";
+    if ((groups.noMedicines || []).length && !groups.unnamed && !othersAsNeeded(groups).length) return null;
     if (!groups.unnamed) return othersAsNeeded(groups).length ? "All under As needed." : "No medicines from records.";
     return othersAsNeeded(groups).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
   }

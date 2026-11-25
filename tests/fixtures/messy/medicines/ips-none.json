@@ -1,0 +1,6 @@
+{
+  "_about": "IPS 'no medication' entries (cases 31-32). Codes and displays from https://hl7.org/fhir/uv/ips/CodeSystem-absent-unknown-uv-ips.json; the rest is made up.",
+  "noInfo": { "resourceType": "MedicationStatement", "id": "no-med-info", "status": "active", "medicationCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips", "code": "no-medication-info", "display": "No information about medications" }] }, "effectiveDateTime": "2026-10-01" },
+  "noneKnown": { "resourceType": "MedicationStatement", "id": "no-known-meds", "status": "active", "medicationCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips", "code": "no-known-medications", "display": "No known medications" }] }, "effectiveDateTime": "2026-10-01" },
+  "noneKnownByReference": { "resourceType": "MedicationStatement", "id": "no-known-meds-ref", "status": "active", "medicationReference": { "reference": "#none" }, "contained": [{ "resourceType": "Medication", "id": "none", "code": { "coding": [{ "system": "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips", "code": "no-known-medications" }] } }] }
+}
