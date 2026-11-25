@@ -20,6 +20,15 @@ built-in sandbox patient, or Chantell Bartell (claims and an allergy). The
 README has a link that signs in as each. The demo patient Avery Brownbag is wiped by the
 sandbox every night.
 
+Test patients whose records disagree: Riley Reconcile and Jordan Partial. The
+sandbox deletes them every night, so run `node tools/reconcile-patients.mjs`
+first, then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. After setting up
+the lock, open the home server's address with one of these added:
+
+- Riley: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLXJpbGV5IiwiIiwiQVVUTyIsMSwxLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwxLCIiXQ%2Ffhir`
+- Jordan: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLWpvcmRhbiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir`
+
 ## Test right away, not in the batch
 
 Claude runs both simulators straight after a change, without waiting for a
@@ -34,247 +43,94 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
-**Save as FHIR file with a disagreement** (2026-11-25, Task 9; test right
-away: it's saved from the staff page). Not checked on a phone yet. The file's
-contents are covered by `tests/ips.test.mjs`, and HL7's validator passed the
-test files with 0 errors. Run `node tools/reconcile-patients.mjs`, then
-`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
-`git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as
-Riley. On both virtual phones:
+**Found in the 2026-11-25 pass, not fixed yet.** No app code was changed in the
+pass. Each needs a fix, then a check on both virtual phones.
 
-- On the staff page, Save as FHIR file saves one .json file, as before.
-- Open it: the Medicines section's title is "Medicines (records disagree on 3
-  medicines)", and its text starts with "Records disagree on 3 medicines. Ask
-  the patient.", then "Records disagree: ask the patient" with both versions of
-  atorvastatin, lisinopril and methotrexate, each under its source and month.
-  The word "DetectedIssue" is nowhere in the file.
-- Answer one card "Not sure, ask my doctor", make a new code, save again: its
-  versions say "Patient isn't sure". Answer all three with a version: the
-  title is "Medicines", and each chosen one has "Other record" notes.
-- See what's inside, Save as FHIR file, gives the same file.
+- **The staff page's code box cuts off the 6th digit at 200 percent text**
+  (iPhone simulator, Settings ▸ Accessibility ▸ Larger Text at Accessibility
+  Large). The box fills the width but the digits are 66 px with wide spacing,
+  so the last digit sits past the edge; at the largest size only 2 and a half
+  show. Typing still works. Normal text size is fine (box 272 px, digits fit).
+  The Android emulator couldn't show it: the system font scale didn't reach
+  Chrome's page.
+- **Past 200 percent text on the iPhone** (beyond WCAG's 200 percent, so lower
+  priority): My medicines scrolls sideways from Accessibility XXL (page 400 px
+  wide on a 393 px screen; 449 px at the largest size, where "+ Add a
+  medicine" runs to the edge). On the QR screen the title fills the screen
+  from Accessibility XL, so the code starts below the fold and the patient
+  has to scroll to show it. At Accessibility Large (about 200 percent) both
+  are fine.
+- **Back after signing out skips the connections screen.** Sign out, Sign in,
+  unlock, Connect, then the phone's Back button (or Safari's) lands on
+  "You're signed out", not on Connect your health records. On a first run
+  (lock, connections, Connect, Back) it comes back to the lock and then the
+  connections screen, as it should. Same on both virtual phones.
+- **Deny at the sandbox's approval page never comes back to Brown Bag.** The
+  sandbox shows its own text, `{"error":"invalid_request","error_description":"Unauthorized"}`,
+  and doesn't return to the app, so "Sign-in didn't finish. Try again." can't
+  show. Back twice reaches "Choose a test patient". Same on both virtual
+  phones. This is how the sandbox answers Deny; decide whether Brown Bag can
+  do anything about it before calling the check failed or dropped.
 
-**The staff page with a disagreement, and the fill hint** (2026-11-25, Task 8;
-test right away: it changes what the person checking medicines sees).
-Checked only in headless Chromium (iPhone 15 size, PIN lock, the live
-sandbox, self-signed certificate); screenshots `task-8-riley-*.png` in
-`.superpowers/sdd/2026-11-25-medication-reconciliation/`. Run
-`node tools/reconcile-patients.mjs` first (it now gives Riley's metformin fill
-60 tablets for 30 days), then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`,
-then `git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as
-Riley. On both virtual phones:
+**Answering a disagreement: "Not sure, ask my doctor"** (Tasks 8 and 9). The
+rest of both entries passed on 2026-11-25 (see Tested). Blocked: the answer
+buttons are plan Task 10, not built yet. When they are, on both virtual
+phones, signed in as Riley:
 
-- The staff page (scan the QR code, type the 6 digits), Medicines (9): the
-  first part is "Records disagree: ask the patient (3)", one card each for
-  atorvastatin, lisinopril and methotrexate. Each card has two versions, each
-  under its source and month ("SMART sandbox, Jan 2026", "Valley Clinic (test
-  records), Oct 2026"), with a line between them. Atorvastatin's say "Records
-  say: current" and "Records say: stopped". Then From records (6).
-- On From records, metformin hydrochloride 500 MG has the row "From the fill:
-  about 2 a day (60 for 30 days)". My medicines never says it.
-- See what's inside says the same, in the same order.
-- Answer one card "Not sure, ask my doctor", make a new code: that card on
-  the staff page starts with "Patient isn't sure".
-- The cards wrap well on the iPhone SE size, and VoiceOver and TalkBack read
-  each version's source and month before its name.
+- Answer one card "Not sure, ask my doctor" and make a new code: that card on
+  the staff page starts with "Patient isn't sure", and in Save as FHIR file
+  its versions say "Patient isn't sure".
+- Answer all three with a version: the file's Medicines title is "Medicines",
+  and each chosen one has "Other record" notes.
 
-**The QR code with a disagreement** (2026-11-25, Task 7; test right away: it
-changes what the person checking medicines sees). Checked only in headless
-Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
-certificate); screenshots `task-7-riley-*.png` in
-`.superpowers/sdd/2026-11-25-medication-reconciliation/`. Run
-`node tools/reconcile-patients.mjs` first, then
-`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
-`git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as Riley
-(link below). On both virtual phones:
+**TalkBack on the disagreement screens** (Tasks 6b to 8). Checked on
+2026-11-25 only in Chrome's accessibility tree on the Android emulator, which
+TalkBack reads from: the staff page reads each version's source and month just
+before its name; My medicines reads each side's source with its dose; the
+"don't match your name and birth date" line is read whole, before the cards.
+TalkBack itself wasn't switched on (the emulator is shared and very slow).
 
-- Show my QR code: it shows (not "too long"), and scans with the phone's
-  camera into `share.html`.
-- See what's inside, Medicines (9): "Records disagree: ask the patient" comes
-  first, with two rows each for atorvastatin, lisinopril (10 MG from SMART
-  sandbox, 20 MG from Valley Clinic (test records)) and methotrexate ("once a
-  week" from SMART sandbox, "once a day" from Valley Clinic), each saying
-  "Records disagree", its own source and its own "Record date". Then From records (6); sertraline's
-  source is "SMART sandbox, Valley Clinic (test records)".
-- The staff page, opened from the scan with the 6 digits, shows the same.
-  The rows wrap well on the iPhone SE size, and VoiceOver and TalkBack read
-  each row's source with it.
-- Atorvastatin's two rows say "Records say: current" and "Records say:
-  stopped". (Task 8 draws the part as one card per medicine, each version
-  under its source and month in place of the "Records disagree" and "Record
-  date" rows; check it as its entry says.)
-
-**Allergies, names and birth dates as real sources write them** (2026-11-25,
-Task 6d). Checked only in headless Chromium (iPhone 15 size, PIN lock, the live
-sandbox, self-signed certificate). Run `node tools/reconcile-patients.mjs`
-first, then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
-`git checkout -- tests/fixtures/reconcile/clinics` when done. On both virtual
-phones:
-
-- Loria Jenkins reads as before: My medicines (6), metoprolol's dose
-  disagreement with Valley Clinic (test records), no allergies, "I have no
-  known allergies" offered.
-- Loria again at `/?demo=someone-else`, unlocked: "Records from Valley Clinic
-  (test records) don't match your name and birth date, so they aren't on your
-  list." above the cards, and My medicines (4). The line wraps well on the
-  iPhone SE size, and VoiceOver and TalkBack read it whole.
-- Chantell Bartell: Allergies (1), closed "Mold, 1 unnamed"; open, Mold and
-  the Unnamed allergy row ("Environment (same day as Mold)"). On the QR code's
-  See what's inside: Mold, and "Records also have an unnamed allergy:
-  environment, recorded Feb 28, 1979 (same day as Mold). Ask the patient."
-- Nothing else on screen changed: the rest is in the tests
-  (`tests/messy-allergies.test.mjs`, `tests/messy-people.test.mjs`).
-
-**Medicines as real sources write them** (2026-11-25, Task 6c). Checked only
-in headless Chromium (iPhone 15 size, PIN lock, the live sandbox, self-signed
-certificate). Run `node tools/reconcile-patients.mjs` first, then
-`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
-`git checkout -- tests/fixtures/reconcile/clinics` when done. On both virtual
-phones:
-
-- Riley Reconcile reads the same as before this change: My medicines (9), 1
-  older. The medicines now load as whole pages, so check every card is still
-  there.
-- Loria Jenkins with the test clinic: My medicines (6), 9 older. Her own
-  "Simvistatin 10 MG" and "Lasix 40mg" are coded only by strength, so they no
-  longer join the clinic's (now "simvastatin 10 MG Oral Tablet", stopped,
-  under Older, and "furosemide 40 MG Oral Tablet"): no simvastatin question,
-  and Lasix and furosemide are two cards. Metoprolol still asks how much.
-- The "no information" line: save a clinic file for Loria at
-  `tests/fixtures/reconcile/clinics/e7de504a-311d-49be-b2bc-566a328bcc72.json`
-  holding only the `noInfo` statement from
-  `tests/fixtures/messy/medicines/ips-none.json` (delete it afterwards). My
-  medicines (4) says "Valley Clinic (test records) has no information about
-  your medicines." above the cards, and See what's inside says "Valley Clinic
-  (test records): no information about medicines" under Medicines (4). Check
-  the line wraps well on the iPhone SE size, and VoiceOver and TalkBack read
-  it in place.
-
-**Riley and Jordan, test patients whose records disagree** (2026-11-25, step
-2 of when sources disagree). Checked only in headless Chromium (iPhone 15
-size, PIN lock, the live sandbox, self-signed certificate). Run
-`node tools/reconcile-patients.mjs` first (the sandbox deletes them every
-night), then start the home server with
-`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. They aren't on Brown Bag's
-list of test patients, so after setting up the lock, open the home server's
-address with one of these added, which signs in as that patient with no
-approval page:
-
-- Riley: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLXJpbGV5IiwiIiwiQVVUTyIsMSwxLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwxLCIiXQ%2Ffhir`
-- Jordan: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLWpvcmRhbiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir`
-
-On both virtual phones:
-
-- Riley Reconcile: My medicines (9). Lisinopril 20 MG says "Your records
-  don't agree on how much you take." with "SMART sandbox" 10 MG and "Valley
-  Clinic (test records)" 20 MG sides. Methotrexate says "…how often you take
-  it." with "once a week" against "once a day". Atorvastatin says "…whether
-  you still take it." with sides ending ", current" and ", stopped".
-  Levothyroxine says "Marked stopped in your records, but filled" and a date
-  last month. Sertraline is one card (Zoloft and generic agree). Both
-  metformins, the lisinopril with hydrochlorothiazide, and amlodipine (Valley
-  Clinic only) are their own cards. Under Older prescriptions (1), the
-  ondansetron IV says "Hospital order".
-- Jordan Partial: "Some records didn't load." on Home and My medicines with
-  no count (intended: Home doesn't say which source). On My medicines,
-  "Valley Clinic (test records) didn't send some of your medicines." (the
-  sandbox sent everything, so there's no "Your health system…" line).
-  Simvastatin and metformin each say "…whether you still take it.";
-  simvastatin's clinic side is dated 2026 (the year it stopped, by year only)
-  and comes after the sandbox's Dec 2025 side, metformin's has no date.
-  Amlodipine is one card.
-- The long side labels wrap well on the iPhone SE size, and VoiceOver and
-  TalkBack read each side's source with its dose.
-
-**Two sources on one list, with the home server's test clinic** (2026-11-25,
-step 2 of when sources disagree). Checked only in headless Chromium (iPhone
-15 size, PIN lock, Loria Jenkins on the live sandbox, self-signed
-certificate). Needs the home server started with
-`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. On both virtual phones,
-signed in as Loria Jenkins:
-
-- My medicines (6): metoprolol shows "Your records don't agree on how much
-  you take." under its name, above both sides, "SMART sandbox, Aug 1992:
-  100 MG, 1, once a day" and "Valley Clinic (test records), Oct 2026:
-  100 MG, 2, once a day". Since Task 6c, Simvistatin and Lasix no longer
-  join the clinic's (see "Medicines as real sources write them" above), so
-  it's My medicines (6); lisinopril (Valley Clinic only) is there.
-- Open the app again at `/?demo=someone-else` and unlock: after the update,
-  "Records from Valley Clinic (test records) don't match your name and birth
-  date, so they aren't on your list." (worded so since Task 6d) and My
-  medicines (4).
-- Started without the variable: My medicines (4), the same list as before
-  this change, with no notice.
-- The long side labels wrap well on the iPhone SE size, and VoiceOver and
-  TalkBack read each side's source with its dose.
-
-**Marks and a newer prescription** (2026-11-25, step 1 of when sources disagree).
-Checked by tests only; nothing new is drawn yet. On a virtual phone with the
-sandbox: mark a medicine Not taking, then Undo, and As needed, then Undo, as
-before. A medicine marked Not taking before a newer prescription of it shows on
-My medicines again, not under Not taking. Marking it Not taking again moves it
-there. A backup made before this change still restores.
+**Marks and a newer prescription** (2026-11-25, step 1). Passed on both
+virtual phones on 2026-11-25 (see Tested), except: a backup made before this
+change still restores. That needs a backup file made by the older app.
 
 **Lock first, then the connections screen** (2026-11-25, design
-`docs/superpowers/specs/2026-11-25-connections-design.md`). Touches sign-in
-and the lock, so it's a test-right-away change, but the virtual phones run on
-Tyler's Mac and this was built in a cloud session. Checked only in headless
-Chromium with a PIN and Chantell Bartell on the live sandbox: first run goes
-lock, then Connect your health records; Connect, the test patients, Back
-(unlock, back on the screen); a full sign-in comes back to the screen with
-Connected and Done; Done goes home; reopening goes home with the update
-check. Still to check on both virtual phones and Tyler's iPhone:
+`docs/superpowers/specs/2026-11-25-connections-design.md`). Passed on both
+virtual phones on 2026-11-25: the README's test-patient link with no lock
+(lock set-up, then the screen); More options, Health records, Sign in again,
+Approve (back to Health records, and Done goes home); Sign out, then Sign in
+(unlock, then the screen, no saved list shown). Still to check:
 
-- Face ID set-up first, then the screen; Face ID again after the sandbox.
+- Face ID set-up first, then the screen; Face ID again after the sandbox
+  (Tyler's iPhone).
 - The Home Screen app: the sandbox sign-in comes back into the app, not
-  Safari, and lands on the connections screen.
+  Safari, and lands on the connections screen (Tyler's iPhone).
 - Home's "Sign in" note (expired pass) comes back home, not to the screen.
-- More options, Health records, Sign in again: comes back to Health records,
-  and Done goes home.
-- Cancel at the sandbox's approval page: back on the screen with "Sign-in
-  didn't finish. Try again."
-- Sign out, then Sign in: unlock, then the screen, with no saved list shown.
-- The README's test-patient links on a phone with no lock: lock set-up, then
-  the screen.
+  Not reproduced: no way to expire the pass on a virtual phone.
+- Cancel at the sandbox's approval page: see "Deny at the sandbox's approval
+  page" above.
 
-**The "?" pills** (2026-11-24): passed in Chrome and on the virtual iPhone. Not yet on the
-Android emulator, nor with high contrast colors on.
-
-**The folded Allergies box and the severe mark** (2026-11-24): passed in Chrome and on the
-virtual iPhone. Not yet on the Android emulator. A nurse or pharmacist has yet to check
+**The folded Allergies box and the severe mark** (2026-11-24): passed on both
+virtual phones (Android on 2026-11-25). A nurse or pharmacist has yet to check
 which reactions are marked severe.
 
-**Remove on the unnamed allergy** (2026-11-24): passed in Chrome and on the virtual
-iPhone, including See what's inside. Not yet on the Android emulator.
+**As needed, Not taking, the staff code box and the "?" headings** (PR #3).
+Passed on 2026-11-25 (see Tested). Still to check:
 
-**As needed, Not taking, the staff code box and the "?" headings** (PR #3,
-merged and live 2026-11-24). Checked only in headless Chromium (sandbox
-sign-in, PIN, Loria Jenkins), not yet on a virtual phone or Tyler's iPhone.
-The staff page changed, so it goes first:
-
-- Staff page: the short "Patient's 6-digit code" box, big digits that fit
-  at the largest text size, the full-width Open button; no "Your care team
-  confirms it" note on it or on See what's inside (the two match; Tyler,
-  2026-11-24); the "Patient takes only as needed" and "Patient says not
-  taking" groups; Medicines (N) on the staff page equals My medicines (N)
-  on home, As needed included.
-- A QR code made before this change still opens on the staff page.
-- My medicines: "As needed" and "Not taking" side by side on each card,
-  stacking at the largest text size; the As needed part and its Undo;
-  Not taking on an As needed medicine; As needed on a "Filled, not in your
-  records" medicine, and its Undo going back there.
-- The "?" beside As needed, Added by me, Filled, not in your records, and Not
-  taking: VoiceOver and TalkBack read the heading, then "About
-  …, collapsed"; the explanation opens under the heading.
-- The "… is under Not taking" panel when adding a medicine marked Not
-  taking, and its "I'm taking it again" button.
-- With no signal: mark one As needed, then open the QR code. The "isn't
-  fully up to date" alert says "Marked … As needed".
-- A backup made before this change still restores (it has no As needed
-  marks), and one made after it brings the As needed marks back.
-- See what's inside on Android: the phone's own Back button, TalkBack, and
-  whether a camera reads the slightly smaller code on a short screen.
-- The sign-in list on Android: the phone's own Back button and TalkBack. Claude
-  in Chrome stood in for the emulator (the Mac's disk was full).
+- A QR code made before this change still opens on the staff page (needs an
+  old code and its 6 digits).
+- As needed on a "Filled, not in your records" medicine, and its Undo going
+  back there: no test patient has one (Riley's lisinopril 20 MG fill joins
+  her lisinopril 10 MG card).
+- A backup made before this change still restores, and one made after it
+  brings the As needed marks back.
+- The "?" headings and See what's inside with TalkBack itself (Chrome's
+  accessibility tree reads "About …, collapsed" right after each heading).
+- Whether a camera reads the slightly smaller code on a short screen (real
+  phone).
+- The two buttons stacking at the largest text size on Android: the system
+  font scale didn't reach Chrome's page. They stack on the iPhone simulator
+  at 200 percent text.
 
 ## Not done yet
 
@@ -296,8 +152,76 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - Face ID unlock after the content security policy (the simulators have no Face ID).
 - Airplane mode off with a saved list open: signed in, it updates by itself; signed
   out, "Sign in again to update it." The virtual phones used a stand-in signal.
+- Scan Riley's QR code (records that disagree) with the iPhone's camera: it opens
+  `share.html`. The virtual phones read the code from a screenshot instead.
 
 ## Tested
+
+**2026-11-25 pass, Android emulator (Chrome) and iPhone 15 simulator (Safari),
+on the home server with the test clinic, Riley and Jordan put back on the
+sandbox the same day.** Widths also on a temporary iPhone SE (3rd generation)
+simulator, and in Android Chrome at 375 and 320 wide. The QR codes were read
+from screenshots by the Mac (a stand-in for a camera). The Android emulator
+renders very slowly and Chrome showed "isn't responding" several times; each
+time Wait was pressed and the step run again. Passed:
+
+- The QR code with a disagreement (Task 7): shows, reads into `share.html`,
+  See what's inside and the staff page list Medicines (9) with "Records
+  disagree: ask the patient" first (atorvastatin current and stopped,
+  lisinopril 10 and 20 MG, methotrexate weekly and daily), then From records;
+  sertraline names both sources.
+- The staff page with a disagreement, and the fill hint (Task 8): "Records
+  disagree: ask the patient (3)", one card each with its source and month,
+  From records (6), metformin's "From the fill: about 2 a day (60 for 30
+  days)" and nowhere on My medicines; See what's inside says the same, in the
+  same order. Wraps on the iPhone SE and at 320 wide. ("Not sure" is still
+  waiting.)
+- Save as FHIR file with a disagreement (Task 9): one .json from the staff
+  page and one from See what's inside, the same apart from ids and time;
+  Medicines section "Medicines (records disagree on 3 medicines)", text starts
+  "Records disagree on 3 medicines. Ask the patient.", no "DetectedIssue";
+  the popup starts on Cancel. ("Not sure" is still waiting.)
+- Allergies, names and birth dates as real sources write them (Task 6d):
+  Loria as before; Loria at `?demo=someone-else` (the line above the cards, My
+  medicines (4)); Chantell's Allergies (1), "Mold, 1 unnamed", the Unnamed
+  allergy row, and See what's inside's unnamed allergy line.
+- Medicines as real sources write them (Task 6c): Riley (9, 1 older), Loria
+  (6, 9 older; Lasix and furosemide two cards; simvastatin under Older;
+  metoprolol asks how much), and the "no information" line on My medicines
+  (4) and See what's inside, with a temporary clinic file (deleted after).
+- Riley and Jordan: every card as the entry said (lisinopril, methotrexate,
+  atorvastatin, levothyroxine, one sertraline, the hospital ondansetron under
+  Older); Jordan's "Some records didn't load." on Home with no count, Valley
+  Clinic's line on My medicines, simvastatin dated 2026 by year after Dec
+  2025, metformin's clinic side undated, one amlodipine.
+- Two sources on one list: Loria's metoprolol sides, `?demo=someone-else`, and
+  without the test clinic My medicines (4) with no notice.
+- Marks and a newer prescription: Not taking and Undo, As needed and Undo; a
+  medicine marked Not taking the day before a newer prescription comes back to
+  My medicines ("You marked Not taking on Nov 24. Your records have a newer
+  prescription, Nov 25."), and Not taking again moves it there. (The earlier
+  day was made by moving the page's clock back one day.)
+- The "?" pills on Android, and with high contrast colors (forced colors,
+  emulated in Chrome): labelled "About …", collapsed, 44 px, the explanation
+  opening right under its heading, the outline kept.
+- The folded Allergies box and the severe mark on Android: "Allergies (2) · 1
+  severe", Penicillin with Trouble breathing marked Severe, the folded line
+  "Mold, Penicillin, 1 unnamed".
+- Remove on the unnamed allergy on Android: the popup starts on "No, keep
+  it", which keeps it; "Yes, remove it" leaves "You removed an unnamed allergy
+  from this list." with Show it again; See what's inside still lists it,
+  "patient thinks it's already listed".
+- PR #3: As needed and Not taking side by side, stacking at 200 percent text
+  on the iPhone; the As needed part and Undo; Not taking on an As needed
+  medicine; the "… is under Not taking" panel and I'm taking it again; with no
+  signal (Android, Chrome's offline stand-in) the QR alert says "Marked
+  furosemide 40 MG Oral Tablet As needed"; no "Your care team confirms it" on
+  the staff page or See what's inside; the staff page's As needed (with
+  "Patient says as needed") and Patient says not taking groups; Medicines (4)
+  on the staff page equals My medicines (4) on home; the short code box at
+  normal text; Android's Back button on See what's inside (back to the code,
+  then closes it) and on the sign-in list on a first run (one of three Back
+  presses was lost while Chrome wasn't responding).
 
 **The status bar strip** is wheat while the paper ball falls: passed on Tyler's iPhone
 2026-11-24.
