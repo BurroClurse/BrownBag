@@ -1,6 +1,6 @@
 # Brown Bag: when sources disagree about a medicine
 
-Status: draft for Tyler's approval, 2026-11-25. Not built. A builder check
+Status: approved by Tyler, 2026-11-25. Not built yet. A builder check
 ran on 2026-11-25; its questions are settled below. Tyler answered each of
 Claude's calls one at a time on 2026-11-25: he confirmed every one marked
 "Claude's call" that's still in this document, and changed three (the fill
