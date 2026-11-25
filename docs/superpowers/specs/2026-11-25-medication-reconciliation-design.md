@@ -1,6 +1,8 @@
 # Brown Bag: when sources disagree about a medicine
 
-Status: draft for Tyler's approval, 2026-11-25. Not built.
+Status: draft for Tyler's approval, 2026-11-25. Not built. A builder check
+ran on 2026-11-25; its questions are settled below, marked "from the
+builder check", or answered by Tyler.
 
 ## Why
 
@@ -372,8 +374,8 @@ again, and the staff page says "Patient isn't sure".
 
 Two, both with only one source connected:
 
-1. **A Not taking mark no longer hides a newer prescription** (Claude's
-   call, a safety fix). When the medicine has a current record dated after
+1. **A Not taking mark no longer hides a newer prescription** (a safety
+   fix; Tyler, 2026-11-25: "yes, make the change"). When the medicine has a current record dated after
    the mark, the card goes back on the main list with "You marked Not
    taking on Mar 3. Your records have a newer prescription, Oct 2." and
    the review asks "Do you still take it?". As needed marks are left as
@@ -464,6 +466,15 @@ the sandbox live:
 - **A snapshot:** an IPS Bundle from another source, and one of Brown
   Bag's own QR Bundles with patient additions.
 - **Answers:** an answer that still matches, and one whose group changed.
+
+**Trying it on a phone** (Tyler, 2026-11-25, option a): the two-clinics
+fixture can be loaded as a second source only when the app is served from
+the home test server (`https://localhost:8443`, `tools/serve.mjs`), so the
+review cards, the "Records disagree" staff part and the QR code can be
+checked on both virtual phones. The live app on GitHub Pages never offers
+it and never contacts anything new; its content security policy doesn't
+change. A test pins that the fixture source can't load from any other
+address.
 
 ## Build order (Claude's call)
 
