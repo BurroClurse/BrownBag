@@ -235,6 +235,10 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   made-up person, connected separately, so reconciliation meets a real second
   health system. Needs more than one connection, which comes with Medicare.
 - **Sending changes back to the clinic** (idea), with the clinic's permission.
+- **Testing at scale** (idea): tens of thousands of synthetic patients from
+  Synthea, copied into several sources and roughed up the way real ones are, so
+  every run counts wrong joins and wrong splits; plus openFDA, FAERS, RxNorm and
+  CMS synthetic claims. Before real patients, a pharmacist reviews the rules.
 - **HL7's validator on every push** (idea): a GitHub Action checks the test files
   and the FHIR file Brown Bag makes against HL7's own FHIR and IPS rules.
 

@@ -166,3 +166,28 @@ an idea becomes a plan only after its own design.
     medicines), connected as two separate sign-ins. That's how one person ends
     up with two charts in real life. It needs Brown Bag to hold more than one
     connection, which comes with Medicare (connections design).
+- [ ] **23. Matching has been tested on dozens of cases, not tens of thousands.**
+  A real app would meet tens of thousands of records from many sources, and
+  the rare shapes only show up at that scale.
+  - Now: hand-made fixtures, the real sandbox records, Riley Reconcile and
+    Jordan Partial, and the 54 real-world cases in
+    `docs/superpowers/research/2026-11-25-messy-data-findings.md`.
+  - Idea (Tyler, 2026-11-25): test on tens of thousands of records and many
+    data sets before real patients.
+    - **Generated, with known answers:** Synthea (open source, runs on a
+      laptop) makes thousands of synthetic patients in FHIR R4. A Brown Bag
+      tool copies each into two or three "sources" and roughs them up the way
+      the findings show real sources do (codes at other levels, brand for
+      generic, ".5 mg", "QW", "LAST, FIRST", a datetime birth date, a typo).
+      Because the tool did the roughing up, it knows which records are the same
+      medicine and the same person, so every run can count wrong joins and
+      wrong splits, not just pass or fail.
+    - **Real public data:** openFDA's NDC directory and FAERS drug names
+      (millions of strings people typed), RxNorm's full list of current
+      products, and CMS's synthetic Medicare claims.
+    - **What to measure:** wrong joins (two medicines or two people made one)
+      should be zero. Wrong splits are the cost of being careful. Also the
+      time to reconcile a long list on an old phone.
+    - **Careful:** credentialed real-patient sets (for example MIMIC) can't go
+      in the repo or near the app. Before real patients, a pharmacist reviews
+      the matching rules, and Brown Bag is still not a medical device.
