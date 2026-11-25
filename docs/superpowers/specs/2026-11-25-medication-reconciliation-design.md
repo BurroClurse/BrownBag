@@ -97,11 +97,17 @@ design") both wait on this design.
   (levels 2, 1, 0).
 - The sandbox records include hospital orders: one test patient
   (`tests/fixtures/2a89ee40-...-requests.json`) has 2 `inpatient`, 3
-  `outpatient` and 43 `community` MedicationRequests. `meds.js` doesn't
-  read `category` today, so a hospital order shows as current.
-- The Medicare plan already has a same-person check (family name, first
+  `outpatient` and 43 `community` MedicationRequests. Both inpatient ones
+  are `completed`, so they're already under Older. But `meds.js` doesn't
+  read `category`, so an active hospital order from a hospital source
+  would show as current.
+- The Medicare plan (not built) has a same-person check (family name, first
   given name, birth date) and keeps each source's raw fills, recombining
-  them on each update (`combineSources`).
+  them on each update (`combineSources`). No same-person check exists in
+  the code yet.
+- `docs/LIMITS.md` #16: "joining two cards joins their marks. If the
+  patient marked one copy Not taking to tidy the list, the one they take
+  must not go with it."
 
 ## Approaches
 
@@ -165,8 +171,12 @@ For a snapshot, the patient in its Bundle is compared the same way.
 
 ### 3. Matching: levels, and how sure each is
 
-Statements from different sources join a **group** when they match. The
-levels, strongest first:
+Statements from **different** sources join a **group** when they match.
+Within one source, nothing changes: `dedupe` and `groupByIngredient` work as
+today, so two current strengths in one record (metoprolol tartrate 25 mg
+and metoprolol succinate 100 mg) stay two cards, and one source alone never
+produces a verdict (Claude's call, from the builder check: it keeps today's
+list exactly as it is with one source). The levels, strongest first:
 
 1. **Same RxCUI.**
 2. **Same product by name:** the plain name (claims.js `plainName`:
@@ -200,19 +210,33 @@ Within a group, the core compares its current statements from records
 (kinds order, statement, snapshot):
 
 - **Same:** nothing below differs. One card, every source named.
-- **Dose differs:** the strengths differ (`strengthOf` from the RxNorm
-  name), and the daily amount isn't the same. The daily amount is only
-  worked out when both directions are fully coded (amount, frequency,
-  period); 2 x 10 mg a day and 1 x 20 mg a day are the same.
+- **Dose differs:** either of these (Claude's calls, from the builder
+  check):
+  - The strengths differ (`strengthOf` from the RxNorm name), unless both
+    directions are fully coded (amount, frequency, period) and the daily
+    amount is the same: 2 x 10 mg a day and 1 x 20 mg a day are the same.
+    When the directions are words, different strengths still ask the
+    patient: which bottle they have is theirs to say.
+  - The strengths are the same, both amounts are coded, and they differ
+    (1 tablet vs 2 tablets).
 - **Schedule differs:** both schedules are coded and differ. A difference
   that involves a weekly or longer period (methotrexate weekly vs daily)
   is always this verdict, and the card says "how often" plainly.
 - **Status differs:** one records source says current and another says not
-  current, and the not-current one is dated after the current one. (An
-  older stopped record beside a newer active one is just history, as
-  today.)
-- **Worded differently:** the directions don't match and aren't both coded.
-  Staff only; both wordings shown.
+  current, unless the not-current one is clearly older. An R4
+  MedicationRequest has no stop date, so the not-current record's date is
+  the latest of: the end of its period (`validityPeriod.end`,
+  `effectivePeriod.end`), `meta.lastUpdated`, and its own date
+  (`authoredOn`, effective start). When that date is before the current
+  record's own date, it's history, as today: no question. Otherwise, or
+  when either has no date, it's a question (Claude's call, from the
+  builder check: a question when the order can't be known, since a missed
+  stop is worse than one extra card).
+  A fill doesn't settle it: a recent fill shows beside the choices as
+  evidence ("Filled Oct 2026"), and the question is still asked.
+- **Worded differently:** the strengths are the same and the directions
+  don't match, but they aren't both coded. Staff only; both wordings
+  shown.
 - **One source:** only one source has it. Normal. Never a question.
 
 A group can have more than one verdict. A source that failed to load or
@@ -248,6 +272,19 @@ A card with several verdicts asks one question per card, in the order
 status, dose, schedule. "I don't take this anymore" ends it.
 
 ### 6. The review cards
+
+**Before an answer** (and from build step 2 on, before the review cards
+exist), a group with a patient question is **one card**, counted once in
+"My medicines (N)" (Claude's call, from the builder check). It shows no
+single dose. Instead:
+
+```text
+Lisinopril
+Your records don't agree on how much you take.
+  Valley Clinic, Mar 2026:  10 mg, once a day
+  Mercy Health, Oct 2026:   20 mg, once a day
+[ Check this ]          (from step 4 on)
+```
 
 On My medicines, under the Allergies box and above Medicines, when there's
 anything to check:
@@ -302,15 +339,26 @@ Do you still take it?
 ### 7. Answers, and when they're asked again
 
 ```text
-Answer { fingerprint, choice: <statement's recordRef> | "not-taking" | "not-sure", answeredAt }
+Answer {
+  groupId       stable: the group's ingredient key (rxcui of its ingredients
+                from the ingredient map), else its lowest member key
+  fingerprint   hash of the disagreeing sides
+  sides         [{ sourceId, sourceName, asOf, dose, schedule, status }]
+                as they were when answered (encrypted with the rest)
+  choice        a side's sourceId | "not-taking" | "not-sure"
+  answeredAt
+}
 ```
 
-The **fingerprint** is a hash of the group's disagreeing statements, sorted:
-each one's `sourceId`, `recordRef`, dose words, schedule words and status.
-An answer applies only while the fingerprint matches. When any of those
-change (a new record, a changed dose, a source that drops out), the
-question comes back, and the card says what changed: "Mercy Health now
-says 40 mg". Answers never move to a group they weren't given on.
+(Claude's calls, from the builder check.) The **fingerprint** is a hash of
+the group's disagreeing sides, sorted: each one's `sourceId`, dose words,
+schedule words and status. It leaves out `recordRef` and dates, so a newer
+copy of the same record saying the same thing never asks again. An answer
+applies only while the fingerprint matches. When it changes (a changed
+dose, a new source, a source that drops out), the question comes back, and
+the card compares the saved `sides` with the new ones to say what changed:
+"Mercy Health now says 40 mg". An answer is looked up by `groupId` and
+applies only to that group; it never moves to another one.
 
 Answers are saved with the patient's other data (`state.data.answers`),
 in the same encrypted copy and the same backups. Because they're keyed by
@@ -330,8 +378,24 @@ Two, both with only one source connected:
    taking on Mar 3. Your records have a newer prescription, Oct 2." and
    the review asks "Do you still take it?". As needed marks are left as
    they are.
+   - "Yes, I take it" deletes the mark (`data.stopped[key]`). "No" keeps
+     the mark and saves an answer, so it isn't asked again for that
+     prescription.
+   - Until it's answered, the QR code carries it as a disagreement
+     between the record and the patient's mark: the record's statement,
+     and the patient's Not taking statement, tied by a `differs` tag.
+
+**Marks in a group from several sources** (Claude's call, from the builder
+check, following `docs/LIMITS.md` #16). Marks stay keyed by each member's
+own key, as today, and a mark covers only the member it was made on. A
+group goes under Not taking only when every current member is marked.
+When some are marked and some aren't (the patient marked Clinic A's copy
+Not taking, and Clinic B lists it current), that's a status question:
+"You marked this Not taking on Mar 3. Mercy Health lists it current, Oct
+2026." So joining cards never hides the one they take.
 2. **Hospital orders go under Older prescriptions**, labelled "Hospital
-   order".
+   order". Today's sandbox ones are already completed, so in practice only
+   the label is new until a hospital source is connected.
 
 ### 9. The QR code, See what's inside and the FHIR file
 
@@ -420,7 +484,8 @@ staff correctly.
 ## Left to the builder
 
 - The hash for fingerprints (WebCrypto SHA-256 of a canonical JSON string is
-  fine), and how `recordRef` is written.
+  fine), and how `recordRef` is written (it's for staff notes and tests,
+  not the fingerprint).
 - Parsing the form words from RxNorm names, and which form words count as
   the same form.
 - The exact wording of "Other record" notes, within the QR size.
