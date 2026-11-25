@@ -1851,6 +1851,17 @@ would leave a blank button, so the mark gets a plain color there.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 65: The logo that came late
+
+**What changed:** the logo shows right away on home, even on weak signal.
+
+**Why it was slow:** each time home was drawn, the app made a new picture, and the service
+worker asked the network first, for up to 3 seconds. Now home keeps one picture, and the
+icons come from the phone first, then get updated for next time. Code and pages still ask
+the network first, so fixes arrive right away.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

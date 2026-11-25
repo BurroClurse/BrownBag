@@ -3,7 +3,7 @@
 // It never keeps health data. Records (FHIR), the sign-in server and RxNav
 // always go straight to the network and are never cached.
 
-var CACHE = "brownbag-v80";
+var CACHE = "brownbag-v81";
 // On weak Wi-Fi, stop waiting after this long and use the phone's copy.
 var NETWORK_WAIT_MS = 3000;
 
@@ -62,12 +62,15 @@ var APP_FILES = [
 
 // "app": this site's own files (the two libraries in vendor/ included),
 // network first so updates show, cache when offline. "network": everything
-// else, untouched.
+// else, untouched. "picture": the icons, which rarely change, from the phone first.
 self.routeFor = function (url) {
   var parsed = new URL(url);
   // Only Brown Bag's own folder. Other sites published on the same address
   // (other repos on burroclurse.github.io) are left alone.
   var scope = self.registration ? self.registration.scope : self.location.origin + "/";
+  if (parsed.href.indexOf(scope + "icons/") === 0) {
+    return "picture";
+  }
   if (parsed.href.indexOf(scope) === 0) {
     return "app";
   }
@@ -115,6 +118,20 @@ self.answerFor = async function (request, ms) {
   }
 };
 
+// The phone's copy right away, and the newest kept for next time. keep holds the
+// worker open until that's done.
+self.pictureFor = async function (request, keep) {
+  var parsed = new URL(request.url);
+  var plain = parsed.origin + parsed.pathname;
+  var saved = await caches.match(plain);
+  if (!saved) return self.answerFor(request, NETWORK_WAIT_MS);
+  keep(fetch(plain, { cache: "no-cache", credentials: "same-origin" }).then(function (response) {
+    if (!response.ok) return;
+    return caches.open(CACHE).then(function (cache) { return cache.put(plain, response.clone()); });
+  }).catch(function () {}));
+  return saved;
+};
+
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE).then(function (cache) {
     return cache.addAll(APP_FILES.map(function (url) { return new Request(url, { cache: "reload" }); }));
@@ -139,7 +156,9 @@ self.addEventListener("fetch", function (event) {
   var request = event.request;
   if (request.method !== "GET") return;
   var route = self.routeFor(request.url);
-  if (route === "app") {
+  if (route === "picture") {
+    event.respondWith(self.pictureFor(request, function (work) { event.waitUntil(work); }));
+  } else if (route === "app") {
     event.respondWith(self.answerFor(request, NETWORK_WAIT_MS));
   }
 });

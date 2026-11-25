@@ -707,6 +707,11 @@ function leaveMedicines() {
   if (unsaved.length) state.announce = unsaved.join(" ");
 }
 
+// One picture, kept: a new one each time could show late on weak signal.
+var homeLogo = document.createElement("img");
+homeLogo.src = "icons/logo-trimmed.png";
+homeLogo.alt = "";
+
 function drawHome(arranged) {
   drawNotices();
   add(root, "h1", shortName(state.patient.name), "home-name");
@@ -714,9 +719,7 @@ function drawHome(arranged) {
   bag.type = "button";
   bag.id = "home-bag";
   bag.setAttribute("aria-label", "Show my QR code");
-  var logo = add(bag, "img");
-  logo.src = "icons/logo-trimmed.png";
-  logo.alt = "";
+  bag.appendChild(homeLogo);
   bag.addEventListener("click", openQr);
   var actions = add(root, "div", null, "home-actions");
   button(actions, "Show my QR code", "primary big", openQr).id = "show-qr";

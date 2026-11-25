@@ -183,7 +183,7 @@ The list never passes through a server.
 | `js/older.js` | Older prescriptions the patient says they still take. |
 | `js/inside.js` | See what's inside: everything in the code as one short text. |
 | `js/signed-out.js` | When a signed-out phone can open its saved list: no signal, or a sign-in that couldn't start. |
-| `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data. |
+| `js/offline.js`, `sw.js` | The saved list and the app's own files for no signal. The service worker never stores health data; it asks the network first, except for the pictures. |
 | `js/install.js` | Home Screen steps and backup helpers. |
 | `css/brownbag.css`, `icons/`, `manifest.webmanifest` | Look, logo and Home Screen install. |
 | `vendor/` | The two libraries the app uses (fhirclient, qrcode-generator), unchanged copies with their licenses (`vendor/LICENSES.md`). |
