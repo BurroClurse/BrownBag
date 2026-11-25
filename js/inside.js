@@ -2,7 +2,7 @@
 // boxes or extra words (Tyler, 2026-11-23). It reads what comes out of the
 // code, the same as the staff page does.
 
-import { allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
+import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, disagreeParts, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 
 // Draws into parent, starting with the patient's name. Returns that heading.
 // made: what was made, when it isn't a QR code.
@@ -16,8 +16,9 @@ export function drawInside(parent, groups, made) {
   add(parent, "h2", medicinesTitle(groups));
   medicineNotices(groups).forEach(function (text) { warn(parent, text); });
   if (groups.claimsNotLoaded) warn(parent, "Insurance fills couldn't be loaded.");
+  items(parent, DISAGREE_TITLE, disagreeParts(groups));
   if (groups.fromRecords.length) items(parent, "From records", groups.fromRecords);
-  else lines(parent, [(recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
+  else if (emptyPartText(groups, "records")) lines(parent, [(recordsPartial(groups) ? "From records: " : "") + emptyPartText(groups, "records")]);
   items(parent, "Filled, not in the health record", groups.fromClaims);
   items(parent, "As needed", groups.asNeeded);
   items(parent, "Added by patient", groups.addedByPatient);
@@ -37,18 +38,31 @@ function drawAllergies(parent, groups) {
   allergyParts(allergies).forEach(function (one) { items(parent, one.title, one.rows); });
 }
 
-// One bullet each: the name, then its lines.
+// One bullet each: the name, then its lines. A disagreement is one bullet:
+// the patient's answer, then each side under its source and date.
 function items(parent, text, rows) {
   if (!rows || !rows.length) return;
   add(parent, "h3", text);
   var list = add(parent, "ul");
   rows.forEach(function (row) {
     var item = add(list, "li");
-    add(item, "strong", row.name);
-    (row.take ? [joined(row.take)].concat(row.flags, joined(row.facts.concat(row.rxnorm ? [["RxNorm", row.rxnorm]] : []))) : row.lines)
-      .filter(Boolean)
-      .forEach(function (line) { add(item, "div", line); });
+    if (!row.sides) {
+      oneItem(item, row);
+      return;
+    }
+    if (row.answer) add(item, "div", row.answer);
+    row.sides.forEach(function (side) {
+      if (side.label) add(item, "div", side.label);
+      oneItem(item, side.row);
+    });
   });
+}
+
+function oneItem(item, row) {
+  add(item, "strong", row.name);
+  (row.take ? [joined(row.take)].concat(row.flags, joined(row.facts.concat(row.rxnorm ? [["RxNorm", row.rxnorm]] : []))) : row.lines)
+    .filter(Boolean)
+    .forEach(function (line) { add(item, "div", line); });
 }
 
 function joined(rows) {

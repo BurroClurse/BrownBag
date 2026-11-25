@@ -41,6 +41,45 @@ export async function loadRecordsFor(storage, key, patientId) {
   }
 }
 
+// The list's part of the saved copy: every card with its group, and which
+// sources stayed out, didn't load or said they have no medicines. The
+// ingredient map is looked up again.
+export function splitToSave(split) {
+  return {
+    current: split.current,
+    older: split.older,
+    placeholders: split.placeholders || 0,
+    noMedicines: split.noMedicines || [],
+    heldBack: Boolean(split.heldBack),
+    claims: split.claims || null,
+    keptOut: split.keptOut || [],
+    sourceStatus: split.sourceStatus || []
+  };
+}
+
+// A saved copy as a list again. One saved before sources were joined has
+// no groups and no source notes, and opens as it did; the next update
+// rebuilds it.
+export function splitFromSaved(saved) {
+  return {
+    current: saved.current,
+    older: saved.older,
+    failed: false,
+    placeholders: saved.placeholders || 0,
+    noMedicines: saved.noMedicines || [],
+    heldBack: Boolean(saved.heldBack),
+    claims: saved.claims || null,
+    keptOut: (saved.keptOut || []).map(keptOutNow),
+    sourceStatus: saved.sourceStatus || []
+  };
+}
+
+// A list saved before the wording changed says "someone-else" for a source
+// whose name and birth date didn't match.
+function keptOutNow(source) {
+  return source && source.why === "someone-else" ? Object.assign({}, source, { why: "no-match" }) : source;
+}
+
 // The saved list's date for the notes on home: "Nov 21", with the year only
 // when it isn't this year.
 export function listDate(savedAt, now) {

@@ -1,0 +1,42 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "meta": {
+    "tag": [{ "system": "https://burroclurse.github.io/BrownBag/tags", "code": "records-updated-on", "display": "2026-05-20" }]
+  },
+  "timestamp": "2026-05-21T09:00:00Z",
+  "entry": [
+    {
+      "fullUrl": "resource:0",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "text": "Loria Jenkins" }],
+        "birthDate": "1937-07-15"
+      }
+    },
+    {
+      "fullUrl": "resource:1",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "861007", "display": "metformin hydrochloride 500 MG Oral Tablet" }]
+        },
+        "subject": { "reference": "resource:0" },
+        "note": [{ "text": "From records: Valley Clinic" }],
+        "dosage": [{ "text": "Take 1 tablet twice a day with meals" }]
+      }
+    },
+    {
+      "fullUrl": "resource:2",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "status": "active",
+        "medicationCodeableConcept": { "text": "fish oil" },
+        "subject": { "reference": "resource:0" },
+        "informationSource": { "reference": "resource:0" },
+        "dosage": [{ "text": "1 capsule a day" }]
+      }
+    }
+  ]
+}

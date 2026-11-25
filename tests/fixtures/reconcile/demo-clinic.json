@@ -1,0 +1,59 @@
+{
+  "patient": {
+    "resourceType": "Patient",
+    "id": "demo-clinic-patient",
+    "name": [{ "use": "official", "family": "Jenkins", "given": ["Loria"] }],
+    "birthDate": "1937-07-15"
+  },
+  "requests": [
+    {
+      "resourceType": "MedicationRequest",
+      "id": "demo-metoprolol",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "866414", "display": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet [Toprol]" }],
+        "text": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet [Toprol]"
+      },
+      "authoredOn": "2026-10-05",
+      "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 2 } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "demo-simvastatin",
+      "status": "stopped",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314231", "display": "simvastatin 10 MG Oral Tablet" }],
+        "text": "simvastatin 10 MG Oral Tablet"
+      },
+      "authoredOn": "2026-09-12",
+      "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 1 } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "demo-lasix",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "313988", "display": "furosemide 40 MG Oral Tablet" }],
+        "text": "furosemide 40 MG Oral Tablet"
+      },
+      "authoredOn": "2026-08-20",
+      "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 1 } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "demo-lisinopril",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314076", "display": "lisinopril 10 MG Oral Tablet" }],
+        "text": "lisinopril 10 MG Oral Tablet"
+      },
+      "authoredOn": "2026-10-05",
+      "dosageInstruction": [{ "doseAndRate": [{ "doseQuantity": { "value": 10, "unit": "mg" } }], "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } } }]
+    }
+  ],
+  "statements": []
+}

@@ -1,0 +1,17 @@
+{
+  "_about": "Pharmacy claims as CARIN and Blue Button write them (findings D6; cases 11-12, 27-30). The package display and dates are from CARIN's EOBPharmacy1 example; NDCs and RxCUIs are RxNav's.",
+  "tartrateRecord": { "resourceType": "MedicationRequest", "id": "tartrate", "status": "completed", "intent": "order", "authoredOn": "2025-01-10", "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "866924", "display": "metoprolol tartrate 25 MG Oral Tablet" }] } },
+  "succinateFill": { "code": "866412", "display": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet", "date": "2026-10-15" },
+  "oralDexamethasone": { "resourceType": "MedicationRequest", "id": "dex-oral", "status": "completed", "intent": "order", "authoredOn": "2025-02-01", "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197582", "display": "dexamethasone 4 MG Oral Tablet" }] } },
+  "eyeDropFill": { "code": "309692", "display": "dexamethasone 1 MG/ML Ophthalmic Suspension", "date": "2026-10-20" },
+  "repackagerNdc": "71335-0158-1",
+  "changedNdc": "45802064287",
+  "carinPackages": ["Prozac, 100 CAPSULE in 1 BOTTLE (0777-3105-02) (package)", "Prozac, 30 CAPSULE in 1 BOTTLE (0777-3105-30) (package)"],
+  "carinEob": {
+    "resourceType": "ExplanationOfBenefit", "status": "active", "use": "claim",
+    "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "pharmacy" }] },
+    "insurer": { "display": "Test Health Plan" },
+    "billablePeriod": { "start": "2019-10-30" },
+    "item": [{ "sequence": 1, "servicedDate": "2019-07-02", "productOrService": { "coding": [{ "system": "http://hl7.org/fhir/sid/ndc", "code": "0777-3105-02", "display": "Prozac, 100 CAPSULE in 1 BOTTLE (0777-3105-02) (package)" }] } }]
+  }
+}

@@ -9,7 +9,10 @@ import { checkAddition } from "../js/add-check.js";
 
 const RX = "http://www.nlm.nih.gov/research/umls/rxnorm";
 const NDC = "http://hl7.org/fhir/sid/ndc";
-const rec = (text, code, system = RX) => fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-01-01", medicationCodeableConcept: { text, coding: code ? [{ system, code }] : [] } }, "S", new Map());
+// RxNav's word on these codes: products. Without it, a code with no name
+// counts only as an ingredient's (Task 6c).
+const PRODUCTS = new Map(["197884", "861007", "860975"].map((code) => [code, { tty: "SCD" }]));
+const rec = (text, code, system = RX, types = PRODUCTS) => fromMedicationRequest({ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-01-01", medicationCodeableConcept: { text, coding: code ? [{ system, code }] : [] } }, "S", new Map(), types);
 const cards = (...records) => dedupe(records).length;
 const asks = (typed, listed) => (checkAddition({ name: typed, dose: "", frequency: "" }, [{ name: listed, origin: "records", key: "k" }], new Map()) || { kind: null }).kind;
 
@@ -23,6 +26,8 @@ test("capital letters alone never make two cards", () => {
 
 test("different codes never join, even with the same words", () => {
   assert.equal(cards(rec("Metformin Hydrochloride", "861007"), rec("Metformin Hydrochloride", "860975")), 2);
+  // Nor without RxNav, when neither code can be trusted.
+  assert.equal(cards(rec("Metformin Hydrochloride", "861007", RX, null), rec("Metformin Hydrochloride", "860975", RX, null)), 2);
 });
 
 // docs/LIMITS.md, 16 and 18.

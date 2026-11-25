@@ -1,0 +1,301 @@
+{
+  "patient": {
+    "resourceType": "Patient",
+    "id": "brownbag-recon-riley-clinic",
+    "meta": {
+      "lastUpdated": "2026-11-25T00:00:00Z"
+    },
+    "name": [
+      {
+        "use": "official",
+        "given": [
+          "Riley"
+        ],
+        "family": "Reconcile",
+        "text": "Riley Reconcile"
+      }
+    ],
+    "gender": "female",
+    "birthDate": "1948-06-02"
+  },
+  "requests": [
+    {
+      "resourceType": "MedicationRequest",
+      "id": "brownbag-recon-riley-clinic-lisinopril",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "314077",
+            "display": "lisinopril 20 MG Oral Tablet"
+          }
+        ],
+        "text": "lisinopril 20 MG Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "authoredOn": "2026-10-26",
+      "dosageInstruction": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 1,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "brownbag-recon-riley-clinic-methotrexate",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "105585",
+            "display": "methotrexate 2.5 MG Oral Tablet"
+          }
+        ],
+        "text": "methotrexate 2.5 MG Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "authoredOn": "2026-10-16",
+      "dosageInstruction": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 4,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "brownbag-recon-riley-clinic-sertraline",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "312941",
+            "display": "sertraline 50 MG Oral Tablet"
+          }
+        ],
+        "text": "sertraline 50 MG Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "authoredOn": "2026-09-26",
+      "dosageInstruction": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 1,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "brownbag-recon-riley-clinic-metformin-er",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "860975",
+            "display": "24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"
+          }
+        ],
+        "text": "24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "authoredOn": "2026-10-06",
+      "dosageInstruction": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 2,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "brownbag-recon-riley-clinic-lisinopril-hctz",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "197886",
+            "display": "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet"
+          }
+        ],
+        "text": "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "authoredOn": "2026-10-26",
+      "dosageInstruction": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 1,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "brownbag-recon-riley-clinic-amlodipine",
+      "status": "active",
+      "intent": "order",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "197361",
+            "display": "amlodipine 5 MG Oral Tablet"
+          }
+        ],
+        "text": "amlodipine 5 MG Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "authoredOn": "2026-11-05",
+      "dosageInstruction": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 1,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "statements": [
+    {
+      "resourceType": "MedicationStatement",
+      "id": "brownbag-recon-riley-clinic-atorvastatin",
+      "status": "stopped",
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "617310",
+            "display": "atorvastatin 20 MG Oral Tablet"
+          }
+        ],
+        "text": "atorvastatin 20 MG Oral Tablet"
+      },
+      "subject": {
+        "reference": "Patient/brownbag-recon-riley-clinic"
+      },
+      "effectivePeriod": {
+        "start": "2024-12-25",
+        "end": "2026-10-11"
+      },
+      "dateAsserted": "2026-10-11",
+      "dosage": [
+        {
+          "timing": {
+            "repeat": {
+              "frequency": 1,
+              "period": 1,
+              "periodUnit": "d"
+            }
+          },
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 1,
+                "unit": "tablet"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

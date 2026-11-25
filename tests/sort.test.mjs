@@ -99,3 +99,16 @@ test("the QR code keeps the full name", async () => {
   const { shareListFrom } = await import("../js/view.js");
   assert.equal(shareListFrom({ name: "Avery Brownbag", birthDate: "1950-03-14" }, LIST, ADDED).patient.name, "Avery Brownbag");
 });
+
+// My medicines draws from the sorted list, so the cards to check must come
+// through it, in the order they show.
+test("sorting keeps the cards to check, with their questions", () => {
+  const question = { kind: "dose", why: null, groupId: "g", fingerprint: "fp" };
+  const asked = med("zinc", { question });
+  const older = med("b-old", { question });
+  const list = { current: [med("warfarin"), asked], stopped: [], older: [med("c"), older], toCheck: [asked, older] };
+  const out = sortArranged(list, [], "name");
+  assert.deepEqual(names(out.arranged.toCheck), ["zinc", "b-old"]);
+  assert.equal(out.arranged.toCheck[0].question, question);
+  assert.deepEqual(sortArranged(LIST, [], "name").arranged.toCheck, []);
+});

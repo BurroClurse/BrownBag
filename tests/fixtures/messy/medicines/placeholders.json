@@ -1,0 +1,5 @@
+{
+  "_about": "Words records use when they don't name a medicine (case 25), as typed in sandbox and converted data.",
+  "placeholders": ["Unknown medication", "Med", "Rx", "None", "No current medications"],
+  "realNames": ["Little Pink Pill for water retention", "Medrol"]
+}

@@ -28,12 +28,21 @@ export function saveSort(storage, how) {
   }
 }
 
-// Each part of the list sorted on its own: new arrays, the same entries.
+// Each part of the list sorted on its own: new arrays, the same entries, so
+// each keeps its question or answer. The cards to check follow the order
+// they show in.
 export function sortArranged(arranged, additions, how) {
   var order = ORDERS[known(how)];
   var sorted = function (list) { return list.slice().sort(order); };
+  var current = sorted(arranged.current);
+  var older = sorted(arranged.older);
   return {
-    arranged: { current: sorted(arranged.current), stopped: sorted(arranged.stopped), older: sorted(arranged.older) },
+    arranged: {
+      current: current,
+      stopped: sorted(arranged.stopped),
+      older: older,
+      toCheck: current.concat(older).filter(function (entry) { return entry.question; })
+    },
     additions: sorted(additions)
   };
 }

@@ -14,7 +14,7 @@ const NOW = new Date("2026-11-24T12:00:00Z");
 const PATIENT = { name: "Avery Brownbag", birthDate: "1950-03-14" };
 const BASE = "https://burroclurse.github.io/BrownBag/";
 const DOSAGE = { sequence: 1, route: { text: "Oral", coding: [{ system: "http://snomed.info/sct", code: "26643006" }] }, timing: { repeat: { frequency: 2, period: 1, periodUnit: "d" } }, doseAndRate: [{ type: { text: "ordered" }, doseQuantity: { value: 1, unit: "tablet", system: UCUM, code: "{tbl}" } }] };
-const med = (o) => fromMedicationRequest(Object.assign({ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-09-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: NDC, code: "00093-1111-01" }, { system: RX, code: "314076" }, { system: "http://snomed.info/sct", code: "386873009" }, { code: "none" }] }, dosageInstruction: [DOSAGE] }, o), "SMART sandbox");
+const med = (o) => fromMedicationRequest(Object.assign({ resourceType: "MedicationRequest", status: "active", authoredOn: "2026-09-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: NDC, code: "00093-1111-01" }, { system: RX, code: "314076", display: "lisinopril 10 MG Oral Tablet" }, { system: "http://snomed.info/sct", code: "386873009" }, { code: "none" }] }, dosageInstruction: [DOSAGE] }, o), "SMART sandbox");
 const list = (current, o) => Object.assign({ patient: PATIENT, current, additions: [], stopped: [] }, o);
 const first = (item, level = 2) => buildShareBundle(list([item]), NOW, {}, level).entry[1].resource;
 const directions = (dosage) => { const { text, ...rest } = first(med({ dosageInstruction: [dosage] })).dosage[0]; return rest; };
@@ -60,7 +60,7 @@ test("anything else in the direction means no coded directions", () => {
 });
 
 test("only the shown record's codes travel, never two records' mixed", () => {
-  const one = dedupe([med(), med({ authoredOn: "2026-10-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: RX, code: "314076" }, { system: NDC, code: "newer" }] }, dosageInstruction: [{ text: "1 daily" }] })])[0];
+  const one = dedupe([med(), med({ authoredOn: "2026-10-01", medicationCodeableConcept: { text: "lisinopril 10 MG", coding: [{ system: RX, code: "314076", display: "lisinopril 10 MG Oral Tablet" }, { system: NDC, code: "newer" }] }, dosageInstruction: [{ text: "1 daily" }] })])[0];
   const resource = first(one);
   assert.deepEqual(resource.medicationCodeableConcept.coding.map((c) => c.code), ["314076", "newer"]);
   assert.equal(resource.dosage[0].timing && resource.dosage[0].timing.repeat, undefined);
@@ -107,7 +107,7 @@ async function squares(bundle) {
 // Names that don't shrink, so each size is reached with few medicines.
 function many(count) {
   let seed = 7; const word = () => Array.from({ length: 16 }, () => { seed = (seed * 1103515245 + 12345) % 2147483648; return "abcdefghijklmnopqrstuvwxyz"[seed % 26]; }).join("");
-  return Array.from({ length: count }, (_, i) => med({ medicationCodeableConcept: { text: word(), coding: [{ system: RX, code: String(100000 + i * 7919) }, { system: NDC, code: String(10000000000 + i * 7919131) }] } }));
+  return Array.from({ length: count }, (_, i) => med({ medicationCodeableConcept: { text: word(), coding: [{ system: RX, code: String(100000 + i * 7919), display: "drug 10 MG Oral Tablet" }, { system: NDC, code: String(10000000000 + i * 7919131) }] } }));
 }
 
 test("codes are dropped before the code gets too dense, and a medicine never is", async () => {
@@ -130,4 +130,96 @@ test("codes are dropped before the code gets too dense, and a medicine never is"
   assert.deepEqual([...seen].sort(), [0, 1, 2], levels.join(" "));
   // The limit is 161 itself, not the size under it.
   assert.equal(widest, 161, levels.join(" "));
+});
+
+// Spec section 9: codes go first, then "Other record" notes shorten, but a
+// disagreement's two sides are never trimmed away: the list is too long first.
+const SIDE = (id, name, dose, asOf, key) => ({ sourceId: id, sourceName: name, kind: "records", asOf, name: "lisinopril " + dose.toUpperCase() + " Oral Tablet", dose, route: null, frequency: "once a day", status: "current", recordStatus: "active", key });
+const GROUPED = Object.assign(med(), {
+  question: { kind: "dose", why: null, groupId: "29046", fingerprint: "fp" },
+  group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic"], verdicts: ["dose"], fingerprint: "fp", notes: [], sides: [SIDE("smart-sandbox", "SMART sandbox", "10 mg", "2026-03-02", "rx:314076"), SIDE("valley", "Valley Clinic", "20 mg", "2026-10-05", "rx:314077")] }
+});
+const bothSides = (bundle) => {
+  const tag = bundle.meta.tag.filter((t) => t.code === "differs")[0];
+  const at = tag.display.split(" ").map(Number);
+  return at.length === 2 && at.every((i) => bundle.entry[i].resource.note.some((n) => n.text === "Records disagree"));
+};
+
+test("a disagreement is never trimmed away", async () => {
+  const { fitsInQr } = await import("../js/share.js");
+  // Level -1 is level 0 without the sides' dates, the last thing trimmed.
+  const build = (l, level) => level < 0 ? buildShareBundle(l, NOW, {}, 0, true) : buildShareBundle(l, NOW, {}, level);
+  const fits = async (l, level) => { const p = await packShare(build(l, level), BASE); return fitsInQr(p.prefix, p.digits); };
+  let count = 40;
+  while (await fits(list([GROUPED].concat(many(count))), 2)) count += 1;
+  // Just over the limit with codes: fewer codes, then no dates, and both
+  // sides, until nothing fits.
+  let seen = 0;
+  for (; ; count += 1) {
+    const l = list([GROUPED].concat(many(count)));
+    const fitting = [];
+    for (const level of [2, 1, 0, -1]) {
+      const bundle = build(l, level);
+      assert.ok(bothSides(bundle), "level " + level);
+      if (await fits(l, level)) fitting.push(level);
+    }
+    seen += fitting.length;
+    if (!fitting.length) {
+      const bundle = await shareBundleFor(l, NOW, {}, BASE);
+      assert.ok(bothSides(bundle), "still both sides, so the too long screen shows");
+      const packed = await packShare(bundle, BASE);
+      assert.equal(fitsInQr(packed.prefix, packed.digits), false);
+      break;
+    }
+  }
+  assert.ok(seen > 0);
+  // When nothing fits, the app says the list is too long, as it does today.
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /var fits = fitsInQr\(packed\.prefix, packed\.digits\);/);
+  assert.match(app, /fits \? "Show this to the person checking your medicines" : "Your list is too long for one QR code"/);
+});
+
+// The dates go last, and only when the code wouldn't fit with them.
+test("a side's date is dropped only when level 0 doesn't fit", async () => {
+  const { fitsInQr } = await import("../js/share.js");
+  const dated = (bundle) => bundle.entry.filter((e) => (e.resource.note || []).some((n) => /^Record date: /.test(n.text))).length;
+  const fits = async (bundle) => { const p = await packShare(bundle, BASE); return fitsInQr(p.prefix, p.digits); };
+  let seed = 3; const letter = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return "abcdefghijklmnopqrstuvwxyz"[seed % 26]; };
+  // One letter of name at a time, until level 0 with dates is just too long.
+  let count = 40;
+  while (await fits(buildShareBundle(list([GROUPED].concat(many(count))), NOW, {}, 0))) count += 1;
+  count -= 1;
+  let name = "Avery Brownbag ";
+  const at = (n) => list([GROUPED].concat(many(count)), { patient: { name: n, birthDate: "1950-03-14" } });
+  assert.equal(dated(await shareBundleFor(at(name), NOW, {}, BASE)), 2, "fits with its dates");
+  while (await fits(buildShareBundle(at(name), NOW, {}, 0))) name += letter();
+  const bundle = await shareBundleFor(at(name), NOW, {}, BASE);
+  assert.equal(dated(bundle), 0, "dates dropped");
+  assert.ok(bothSides(bundle), "never a side");
+  assert.ok(await fits(bundle));
+});
+
+// Ruling R31: the fill hint is optional staff help, so it's the first thing
+// to go at level 0, never kept while another record's note is shortened.
+test("the fill hint is dropped first at level 0", async () => {
+  const fills = { count: 1, last: "2026-10-21", insurers: ["Aetna"], cash: false, sizedOn: "2026-10-21", suggests: { perDay: 2, quantity: 60, days: 30 } };
+  const hinted = (bundle) => bundle.entry.filter((e) => (e.resource.note || []).some((n) => /^Fill suggests /.test(n.text))).length;
+  const item = Object.assign(med(), { fills });
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 2)), 1);
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 1)), 1);
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 0)), 0);
+  assert.equal(hinted(buildShareBundle(list([item]), NOW, {}, 0, true)), 0);
+  // The fill itself stays at every level.
+  assert.ok(buildShareBundle(list([item]), NOW, {}, 0).entry[1].resource.note.some((n) => n.text === "Last filled 2026-10-21 (Aetna claims), 1 fill"));
+  // A short list keeps it: the app's own choice is level 2.
+  assert.equal(hinted(await shareBundleFor(list([item]), NOW, {}, BASE)), 1);
+  // Wherever another record's note is shortened, the hint is already gone.
+  const answered = Object.assign({}, GROUPED, { fills, answer: { groupId: "29046", fingerprint: "fp", sides: GROUPED.group.sides, choice: "smart-sandbox", answeredAt: "2026-11-25T15:00:00.000Z" } });
+  for (const level of [2, 1, 0]) {
+    const bundle = buildShareBundle(list([answered]), NOW, {}, level);
+    const other = bundle.entry[1].resource.note.map((n) => n.text).filter((t) => t.startsWith("Other record: "));
+    const short = other.length && other.every((t) => t.split(", ").length === 2);
+    assert.ok(other.length, "level " + level);
+    assert.ok(!(short && hinted(bundle)), "level " + level);
+  }
 });

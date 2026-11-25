@@ -1,0 +1,1436 @@
+{
+  "plain": {
+    "resourceType": "Bundle",
+    "meta": {
+      "profile": [
+        "http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"
+      ]
+    },
+    "identifier": {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:uuid:00000000-0000-4000-8000-000000000008"
+    },
+    "type": "document",
+    "timestamp": "2026-11-25T09:00:00.000Z",
+    "entry": [
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000009",
+        "resource": {
+          "resourceType": "Composition",
+          "status": "preliminary",
+          "type": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "60591-5",
+                "display": "Patient summary Document"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "date": "2026-11-24T12:00:00.000Z",
+          "author": [
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+            },
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000002"
+            }
+          ],
+          "title": "Patient summary from Brown Bag",
+          "section": [
+            {
+              "title": "Medicines",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "10160-0",
+                    "display": "History of Medication use Narrative"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Meds last updated: <2026-11-24T11:00:00.000Z></p><p>QR code made: <2026-11-24T12:00:00.000Z></p><p>Medicines (2)</p><p>From records</p><ul><li>lisinopril 10 MG. Dose: 1 tablet. How taken: Oral. How often: 2 times a day. Prescribed by: Dr. Patel. Source: SMART sandbox</li></ul><p>Added by patient</p><ul><li>Vitamin D. Dose: 1 capsule. How often: At bedtime</li></ul><p>Patient says not taking</p><ul><li>warfarin 5 MG. Dose: 1 tablet. How taken: Oral. How often: 2 times a day. Not taking since: Oct 1, 2026</li></ul></div>"
+              },
+              "entry": [
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000003"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000004"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000005"
+                }
+              ]
+            },
+            {
+              "title": "Allergies",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "48765-2",
+                    "display": "Allergies and adverse reactions Document"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Allergies last updated: <2026-11-24T11:00:00.000Z></p><p>From records (SMART sandbox)</p><ul><li>Mold. Reaction: Hives, severe (records)</li></ul><p>From patient</p><ul><li>Latex. Reaction: Itching</li></ul></div>"
+              },
+              "entry": [
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000006"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000007"
+                }
+              ]
+            },
+            {
+              "title": "Problems",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "11450-4",
+                    "display": "Problem list - Reported"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Brown Bag doesn&#39;t read health problems.</p></div>"
+              },
+              "emptyReason": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                    "code": "unavailable",
+                    "display": "Unavailable"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000001",
+        "resource": {
+          "resourceType": "Patient",
+          "name": [
+            {
+              "text": "Avery Brownbag"
+            }
+          ],
+          "birthDate": "1950-03-14"
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000002",
+        "resource": {
+          "resourceType": "Device",
+          "deviceName": [
+            {
+              "name": "Brown Bag",
+              "type": "user-friendly-name"
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000003",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "active",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "314076"
+              }
+            ],
+            "text": "lisinopril 10 MG"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "note": [
+            {
+              "text": "From records: SMART sandbox"
+            },
+            {
+              "text": "Prescribed by Dr. Patel"
+            }
+          ],
+          "dosage": [
+            {
+              "text": "1 tablet · Oral · 2 times a day",
+              "timing": {
+                "repeat": {
+                  "frequency": 2,
+                  "period": 1,
+                  "periodUnit": "d"
+                }
+              },
+              "route": {
+                "text": "Oral"
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "tablet",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{tbl}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000004",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "active",
+          "medicationCodeableConcept": {
+            "text": "Vitamin D"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "informationSource": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "dosage": [
+            {
+              "text": "1 capsule · At bedtime",
+              "timing": {
+                "repeat": {
+                  "frequency": 1,
+                  "period": 1,
+                  "periodUnit": "d",
+                  "when": [
+                    "HS"
+                  ]
+                }
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "capsule",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{capsule}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000005",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "stopped",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "314076"
+              }
+            ],
+            "text": "warfarin 5 MG"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "dateAsserted": "2026-10-01",
+          "informationSource": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "dosage": [
+            {
+              "text": "1 tablet · Oral · 2 times a day",
+              "timing": {
+                "repeat": {
+                  "frequency": 2,
+                  "period": 1,
+                  "periodUnit": "d"
+                }
+              },
+              "route": {
+                "text": "Oral"
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "tablet",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{tbl}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000006",
+        "resource": {
+          "resourceType": "AllergyIntolerance",
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                "code": "active"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "84489001"
+              }
+            ],
+            "text": "Mold"
+          },
+          "note": [
+            {
+              "text": "From records: SMART sandbox"
+            }
+          ],
+          "reaction": [
+            {
+              "manifestation": [
+                {
+                  "coding": [
+                    {
+                      "system": "http://snomed.info/sct",
+                      "code": "126485001"
+                    }
+                  ],
+                  "text": "Hives"
+                }
+              ],
+              "severity": "severe"
+            }
+          ],
+          "patient": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          }
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000007",
+        "resource": {
+          "resourceType": "AllergyIntolerance",
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                "code": "active"
+              }
+            ]
+          },
+          "verificationStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+                "code": "unconfirmed"
+              }
+            ]
+          },
+          "category": [
+            "environment"
+          ],
+          "code": {
+            "text": "Latex"
+          },
+          "recordedDate": "2026-11-23",
+          "reaction": [
+            {
+              "manifestation": [
+                {
+                  "text": "Itching"
+                }
+              ]
+            }
+          ],
+          "patient": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "recorder": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "asserter": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    ]
+  },
+  "savedCopy": {
+    "resourceType": "Bundle",
+    "meta": {
+      "profile": [
+        "http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"
+      ]
+    },
+    "identifier": {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:uuid:00000000-0000-4000-8000-000000000008"
+    },
+    "type": "document",
+    "timestamp": "2026-11-25T09:00:00.000Z",
+    "entry": [
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000009",
+        "resource": {
+          "resourceType": "Composition",
+          "status": "preliminary",
+          "type": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "60591-5",
+                "display": "Patient summary Document"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "date": "2026-11-24T12:00:00.000Z",
+          "author": [
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+            },
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000002"
+            }
+          ],
+          "title": "Patient summary from Brown Bag",
+          "section": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/StructureDefinition/note",
+                  "valueAnnotation": {
+                    "text": "The From records part is a copy saved on <2026-11-20T10:00:00.000Z>. It may be out of date. Insurance fills couldn't be loaded. That doesn't mean this list is wrong: what's here comes from the records and the patient. A medicine only insurance knows about may not be listed."
+                  }
+                }
+              ],
+              "title": "Medicines (saved copy, insurance fills not loaded)",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "10160-0",
+                    "display": "History of Medication use Narrative"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><strong>The From records part is a copy saved on <2026-11-20T10:00:00.000Z>. It may be out of date.</strong></p><p><strong>Insurance fills couldn&#39;t be loaded. That doesn&#39;t mean this list is wrong: what&#39;s here comes from the records and the patient. A medicine only insurance knows about may not be listed.</strong></p><p>Meds last updated: <2026-11-20T10:00:00.000Z></p><p>QR code made: <2026-11-24T12:00:00.000Z></p><p>Medicines (2)</p><p>From records</p><ul><li>lisinopril 10 MG. Dose: 1 tablet. How taken: Oral. How often: 2 times a day. Prescribed by: Dr. Patel. Source: SMART sandbox</li></ul><p>Added by patient</p><ul><li>Vitamin D. Dose: 1 capsule. How often: At bedtime</li></ul><p>Patient says not taking</p><ul><li>warfarin 5 MG. Dose: 1 tablet. How taken: Oral. How often: 2 times a day. Not taking since: Oct 1, 2026</li></ul></div>"
+              },
+              "entry": [
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000003"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000004"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000005"
+                }
+              ]
+            },
+            {
+              "title": "Allergies",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "48765-2",
+                    "display": "Allergies and adverse reactions Document"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Allergies last updated: <2026-11-24T11:00:00.000Z></p><p>From records (SMART sandbox)</p><ul><li>Mold. Reaction: Hives, severe (records)</li></ul><p>From patient</p><ul><li>Latex. Reaction: Itching</li></ul></div>"
+              },
+              "entry": [
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000006"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000007"
+                }
+              ]
+            },
+            {
+              "title": "Problems",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "11450-4",
+                    "display": "Problem list - Reported"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Brown Bag doesn&#39;t read health problems.</p></div>"
+              },
+              "emptyReason": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                    "code": "unavailable",
+                    "display": "Unavailable"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000001",
+        "resource": {
+          "resourceType": "Patient",
+          "name": [
+            {
+              "text": "Avery Brownbag"
+            }
+          ],
+          "birthDate": "1950-03-14"
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000002",
+        "resource": {
+          "resourceType": "Device",
+          "deviceName": [
+            {
+              "name": "Brown Bag",
+              "type": "user-friendly-name"
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000003",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "active",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "314076"
+              }
+            ],
+            "text": "lisinopril 10 MG"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "note": [
+            {
+              "text": "From records: SMART sandbox"
+            },
+            {
+              "text": "Prescribed by Dr. Patel"
+            }
+          ],
+          "dosage": [
+            {
+              "text": "1 tablet · Oral · 2 times a day",
+              "timing": {
+                "repeat": {
+                  "frequency": 2,
+                  "period": 1,
+                  "periodUnit": "d"
+                }
+              },
+              "route": {
+                "text": "Oral"
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "tablet",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{tbl}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000004",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "active",
+          "medicationCodeableConcept": {
+            "text": "Vitamin D"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "informationSource": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "dosage": [
+            {
+              "text": "1 capsule · At bedtime",
+              "timing": {
+                "repeat": {
+                  "frequency": 1,
+                  "period": 1,
+                  "periodUnit": "d",
+                  "when": [
+                    "HS"
+                  ]
+                }
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "capsule",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{capsule}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000005",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "stopped",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "314076"
+              }
+            ],
+            "text": "warfarin 5 MG"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "dateAsserted": "2026-10-01",
+          "informationSource": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "dosage": [
+            {
+              "text": "1 tablet · Oral · 2 times a day",
+              "timing": {
+                "repeat": {
+                  "frequency": 2,
+                  "period": 1,
+                  "periodUnit": "d"
+                }
+              },
+              "route": {
+                "text": "Oral"
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "tablet",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{tbl}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000006",
+        "resource": {
+          "resourceType": "AllergyIntolerance",
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                "code": "active"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "84489001"
+              }
+            ],
+            "text": "Mold"
+          },
+          "note": [
+            {
+              "text": "From records: SMART sandbox"
+            }
+          ],
+          "reaction": [
+            {
+              "manifestation": [
+                {
+                  "coding": [
+                    {
+                      "system": "http://snomed.info/sct",
+                      "code": "126485001"
+                    }
+                  ],
+                  "text": "Hives"
+                }
+              ],
+              "severity": "severe"
+            }
+          ],
+          "patient": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          }
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000007",
+        "resource": {
+          "resourceType": "AllergyIntolerance",
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                "code": "active"
+              }
+            ]
+          },
+          "verificationStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+                "code": "unconfirmed"
+              }
+            ]
+          },
+          "category": [
+            "environment"
+          ],
+          "code": {
+            "text": "Latex"
+          },
+          "recordedDate": "2026-11-23",
+          "reaction": [
+            {
+              "manifestation": [
+                {
+                  "text": "Itching"
+                }
+              ]
+            }
+          ],
+          "patient": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "recorder": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "asserter": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    ]
+  },
+  "unnamed": {
+    "resourceType": "Bundle",
+    "meta": {
+      "profile": [
+        "http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"
+      ]
+    },
+    "identifier": {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:uuid:00000000-0000-4000-8000-000000000010"
+    },
+    "type": "document",
+    "timestamp": "2026-11-25T09:00:00.000Z",
+    "entry": [
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000011",
+        "resource": {
+          "resourceType": "Composition",
+          "status": "preliminary",
+          "type": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "60591-5",
+                "display": "Patient summary Document"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "date": "2026-11-24T12:00:00.000Z",
+          "author": [
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+            },
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000002"
+            }
+          ],
+          "title": "Patient summary from Brown Bag",
+          "section": [
+            {
+              "title": "Medicines",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "10160-0",
+                    "display": "History of Medication use Narrative"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><strong>The records also have 2 entries with no medicine name, so they aren&#39;t listed. Ask the patient.</strong></p><p>Meds last updated: <2026-11-24T11:00:00.000Z></p><p>QR code made: <2026-11-24T12:00:00.000Z></p><p>Medicines (2)</p><p>From records</p><ul><li>lisinopril 10 MG. Dose: 1 tablet. How taken: Oral. How often: 2 times a day. Prescribed by: Dr. Patel. Source: SMART sandbox</li></ul><p>Added by patient</p><ul><li>Vitamin D. Dose: 1 capsule. How often: At bedtime</li></ul><p>Patient says not taking</p><ul><li>warfarin 5 MG. Dose: 1 tablet. How taken: Oral. How often: 2 times a day. Not taking since: Oct 1, 2026</li></ul></div>"
+              },
+              "entry": [
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000003"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000004"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000005"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000006"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000007"
+                }
+              ]
+            },
+            {
+              "title": "Allergies",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "48765-2",
+                    "display": "Allergies and adverse reactions Document"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Allergies last updated: <2026-11-24T11:00:00.000Z></p><p>From records (SMART sandbox)</p><ul><li>Mold. Reaction: Hives, severe (records)</li></ul><p>From patient</p><ul><li>Latex. Reaction: Itching</li></ul></div>"
+              },
+              "entry": [
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000008"
+                },
+                {
+                  "reference": "urn:uuid:00000000-0000-4000-8000-000000000009"
+                }
+              ]
+            },
+            {
+              "title": "Problems",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "11450-4",
+                    "display": "Problem list - Reported"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Brown Bag doesn&#39;t read health problems.</p></div>"
+              },
+              "emptyReason": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                    "code": "unavailable",
+                    "display": "Unavailable"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000001",
+        "resource": {
+          "resourceType": "Patient",
+          "name": [
+            {
+              "text": "Avery Brownbag"
+            }
+          ],
+          "birthDate": "1950-03-14"
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000002",
+        "resource": {
+          "resourceType": "Device",
+          "deviceName": [
+            {
+              "name": "Brown Bag",
+              "type": "user-friendly-name"
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000003",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "active",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "314076"
+              }
+            ],
+            "text": "lisinopril 10 MG"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "note": [
+            {
+              "text": "From records: SMART sandbox"
+            },
+            {
+              "text": "Prescribed by Dr. Patel"
+            }
+          ],
+          "dosage": [
+            {
+              "text": "1 tablet · Oral · 2 times a day",
+              "timing": {
+                "repeat": {
+                  "frequency": 2,
+                  "period": 1,
+                  "periodUnit": "d"
+                }
+              },
+              "route": {
+                "text": "Oral"
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "tablet",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{tbl}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000004",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "active",
+          "medicationCodeableConcept": {
+            "text": "Vitamin D"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "informationSource": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "dosage": [
+            {
+              "text": "1 capsule · At bedtime",
+              "timing": {
+                "repeat": {
+                  "frequency": 1,
+                  "period": 1,
+                  "periodUnit": "d",
+                  "when": [
+                    "HS"
+                  ]
+                }
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "capsule",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{capsule}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000005",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "stopped",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "314076"
+              }
+            ],
+            "text": "warfarin 5 MG"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          },
+          "dateAsserted": "2026-10-01",
+          "informationSource": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "dosage": [
+            {
+              "text": "1 tablet · Oral · 2 times a day",
+              "timing": {
+                "repeat": {
+                  "frequency": 2,
+                  "period": 1,
+                  "periodUnit": "d"
+                }
+              },
+              "route": {
+                "text": "Oral"
+              },
+              "doseAndRate": [
+                {
+                  "doseQuantity": {
+                    "value": 1,
+                    "unit": "tablet",
+                    "system": "http://unitsofmeasure.org",
+                    "code": "{tbl}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000006",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "unknown",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/data-absent-reason",
+                "code": "unknown",
+                "display": "Unknown"
+              }
+            ],
+            "text": "Medicine name not in the record"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000007",
+        "resource": {
+          "resourceType": "MedicationStatement",
+          "status": "unknown",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/data-absent-reason",
+                "code": "unknown",
+                "display": "Unknown"
+              }
+            ],
+            "text": "Medicine name not in the record"
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "_effectiveDateTime": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000008",
+        "resource": {
+          "resourceType": "AllergyIntolerance",
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                "code": "active"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "84489001"
+              }
+            ],
+            "text": "Mold"
+          },
+          "note": [
+            {
+              "text": "From records: SMART sandbox"
+            }
+          ],
+          "reaction": [
+            {
+              "manifestation": [
+                {
+                  "coding": [
+                    {
+                      "system": "http://snomed.info/sct",
+                      "code": "126485001"
+                    }
+                  ],
+                  "text": "Hives"
+                }
+              ],
+              "severity": "severe"
+            }
+          ],
+          "patient": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          }
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000009",
+        "resource": {
+          "resourceType": "AllergyIntolerance",
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                "code": "active"
+              }
+            ]
+          },
+          "verificationStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+                "code": "unconfirmed"
+              }
+            ]
+          },
+          "category": [
+            "environment"
+          ],
+          "code": {
+            "text": "Latex"
+          },
+          "recordedDate": "2026-11-23",
+          "reaction": [
+            {
+              "manifestation": [
+                {
+                  "text": "Itching"
+                }
+              ]
+            }
+          ],
+          "patient": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "recorder": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "asserter": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    ]
+  },
+  "empty": {
+    "resourceType": "Bundle",
+    "meta": {
+      "profile": [
+        "http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"
+      ]
+    },
+    "identifier": {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:uuid:00000000-0000-4000-8000-000000000003"
+    },
+    "type": "document",
+    "timestamp": "2026-11-25T09:00:00.000Z",
+    "entry": [
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000004",
+        "resource": {
+          "resourceType": "Composition",
+          "status": "preliminary",
+          "type": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "60591-5",
+                "display": "Patient summary Document"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+          },
+          "date": "2026-11-24T12:00:00.000Z",
+          "author": [
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000001"
+            },
+            {
+              "reference": "urn:uuid:00000000-0000-4000-8000-000000000002"
+            }
+          ],
+          "title": "Patient summary from Brown Bag",
+          "section": [
+            {
+              "title": "Medicines",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "10160-0",
+                    "display": "History of Medication use Narrative"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Meds last updated: <2026-11-24T11:00:00.000Z></p><p>QR code made: <2026-11-24T12:00:00.000Z></p><p>Medicines (0)</p><p>No medicines from records.</p></div>"
+              },
+              "emptyReason": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                    "code": "unavailable",
+                    "display": "Unavailable"
+                  }
+                ]
+              }
+            },
+            {
+              "title": "Allergies",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "48765-2",
+                    "display": "Allergies and adverse reactions Document"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Allergies last updated: <2026-11-24T11:00:00.000Z></p><p>None in the records. The patient hasn&#39;t said.</p></div>"
+              },
+              "emptyReason": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                    "code": "unavailable",
+                    "display": "Unavailable"
+                  }
+                ]
+              }
+            },
+            {
+              "title": "Problems",
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "11450-4",
+                    "display": "Problem list - Reported"
+                  }
+                ]
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Brown Bag doesn&#39;t read health problems.</p></div>"
+              },
+              "emptyReason": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/list-empty-reason",
+                    "code": "unavailable",
+                    "display": "Unavailable"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000001",
+        "resource": {
+          "resourceType": "Patient",
+          "name": [
+            {
+              "text": "Avery Brownbag"
+            }
+          ],
+          "birthDate": "1950-03-14"
+        }
+      },
+      {
+        "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000002",
+        "resource": {
+          "resourceType": "Device",
+          "deviceName": [
+            {
+              "name": "Brown Bag",
+              "type": "user-friendly-name"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

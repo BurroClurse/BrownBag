@@ -3,7 +3,7 @@
 // It never keeps health data. Records (FHIR), the sign-in server and RxNav
 // always go straight to the network and are never cached.
 
-var CACHE = "brownbag-v89";
+var CACHE = "brownbag-v92";
 // On weak Wi-Fi, stop waiting after this long and use the phone's copy.
 var NETWORK_WAIT_MS = 3000;
 
@@ -26,6 +26,7 @@ var APP_FILES = [
   "./js/app.js",
   "./js/view.js",
   "./js/meds.js",
+  "./js/med-list.js",
   "./js/rxnorm.js",
   "./js/share.js",
   "./js/share-view.js",
@@ -43,6 +44,9 @@ var APP_FILES = [
   "./js/pass.js",
   "./js/idle.js",
   "./js/claims.js",
+  "./js/reconcile.js",
+  "./js/snapshot.js",
+  "./js/demo-source.js",
   "./js/add-choices.js",
   "./js/add-check.js",
   "./js/allergies.js",
@@ -71,6 +75,10 @@ self.routeFor = function (url) {
   var scope = self.registration ? self.registration.scope : self.location.origin + "/";
   if (parsed.href.indexOf(scope + "icons/") === 0) {
     return "picture";
+  }
+  // The home server's test records are records too, so never kept.
+  if (parsed.href.indexOf(scope + "_home/") === 0) {
+    return "network";
   }
   if (parsed.href.indexOf(scope) === 0) {
     return "app";

@@ -8,17 +8,19 @@ import { openWithPassword, saveWithPassword } from "./backup-popups.js";
 import { closePopups, openPopup, popupButton, popupLine } from "./popup.js";
 import { LOCK_KEY, lockMethod } from "./lock.js";
 import { shouldShowInstallHint, dismissInstallHint, installTip, installSteps, markInstallDone, backupFileName, restoreMessage, restoreProblem, withLockRecord } from "./install.js";
-import { fromMedicationRequest, fromMedicationStatement, dedupe, groupByIngredient, splitByStatus, usableRecord, isPlaceholderDrug } from "./meds.js";
-import { ingredientsFor, searchDrugs } from "./rxnorm.js";
+import { ingredientsFor, rxcuiForNdc, searchDrugs } from "./rxnorm.js";
+import { listFromSearch } from "./med-list.js";
+import { reconcile } from "./reconcile.js";
+import { loadDemoSource } from "./demo-source.js";
 import { shareBundleFor, packShare, fitsInQr, unpackShare, groupShareBundle, timeText } from "./share.js";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded } from "./view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, medicinesPartial, shareWarnings, noticesFor, logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, isAsNeeded, keysOf, sourceNotices, firstHeldBack } from "./view.js";
 import { SIGNED_OUT_KEY, mayOpenSaved, signedOutLine, wantsSaved } from "./signed-out.js";
-import { saveRecords, loadLastRecords, loadRecordsFor } from "./offline.js";
+import { saveRecords, loadLastRecords, loadRecordsFor, splitToSave, splitFromSaved } from "./offline.js";
 import { passFromState, clientStateFromPass, savePass, loadPass, deletePass, refreshRefused, withTimeout, storePassFrom, passExpired, allPasses, deleteAllPasses, revokePass, whenSignalBack } from "./pass.js";
 import { shouldLock } from "./idle.js";
-import { heldBack, recordReader, waitLeft } from "./read.js";
+import { recordReader, waitLeft } from "./read.js";
 import { ALREADY_LISTED, allergiesTitle, closedLine, isSevere, removedUnnamed, removeUnnamedQuestion, readAllergies, keepAllergies, unnamedOf, arrangeAllergies, reactionLine, allergyLines, sameAllergen, longDate, allergyNotes, allergyDraftStarted, unsavedAllergyText, setMyReaction, removeMine, putBack, saysNone, unnamedRow, unnamedForm, tied, keepDrafts, startedDraft, showsSymbol, saysNoneKnown, couldBe, unnamedQuestion, ALLERGENS, REACTIONS } from "./allergies.js";
-import { dateText, drawCard, patientCard } from "./card.js";
+import { cardName, dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
@@ -102,7 +104,13 @@ var state = {
 };
 
 function emptyData() {
-  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, unnamedAre: {}, noKnownAllergies: null };
+  return { additions: [], stopped: {}, asNeeded: {}, allergies: [], allergyReactions: {}, unnamedAre: {}, noKnownAllergies: null, answers: [] };
+}
+
+// Data saved before answers existed has none.
+function withAnswers(data) {
+  if (!Array.isArray(data.answers)) data.answers = [];
+  return data;
 }
 
 // Locks Brown Bag again after 5 minutes without a tap, or 5 minutes away
@@ -447,14 +455,39 @@ async function loadFresh(client, found, total) {
   // limit, so neither ever holds up the list.
   var allergies = readAllergies(recordReader(client), patientId, SOURCE, extras)
     .then(function (result) { found.allergies = result; });
-  var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras);
-  var split = mergeClaims(await loadMedicines(client, patientId), await claims, new Date());
+  var claims = readClaims(recordReader(client), patientId, ingredientsFor, extras, rxcuiForNdc);
+  // Only the home test server has a second source (js/demo-source.js).
+  var demo = loadDemoSource(location, patient, patientId, globalThis.fetch.bind(globalThis));
+  var medicines = await loadMedicines(client, patientId);
+  var sources = [{ id: "smart-sandbox", name: SOURCE, kind: "records", refreshes: true, patient: patient, split: medicines }];
+  var other = await demo;
+  if (other) sources.push(other);
+  // With one source, reconcile gives its list back as it was.
+  var ingredientOf = await withIngredients(medicines.ingredientOf, sources.slice(1));
+  var joined = Object.assign(reconcile(sources, ingredientOf), { ingredientOf: ingredientOf });
+  var split = mergeClaims(joined, await claims, new Date());
   await allergies;
   return {
     patientId: patientId,
     patient: { name: formatName(patient), birthDate: patient.birthDate || "" },
     split: split
   };
+}
+
+// The ingredient map with the other sources' codes added, so the same
+// medicine at another strength joins across sources as it does within one.
+async function withIngredients(known, others) {
+  var map = new Map(known || []);
+  var missing = others.reduce(function (all, source) { return all.concat(source.split.current, source.split.older); }, [])
+    .map(function (item) { return item.rxcui; })
+    .filter(function (code, i, all) { return code && !map.has(code) && all.indexOf(code) === i; });
+  if (!missing.length) return known || map;
+  try {
+    (await ingredientsFor(missing)).forEach(function (value, code) { map.set(code, value); });
+  } catch (error) {
+    // They join by code and name only this time.
+  }
+  return map;
 }
 
 // Puts the allergies that loaded on screen, or keeps this patient's saved
@@ -501,17 +534,13 @@ function usePatient(result) {
 
 async function keepFreshCopy() {
   try {
-    await saveRecords(localStorage, state.key, {
+    await saveRecords(localStorage, state.key, Object.assign({
       patientId: state.patientId,
-      patient: state.patient,
-      current: state.split.current,
-      older: state.split.older,
-      placeholders: state.split.placeholders || 0,
-      heldBack: Boolean(state.split.heldBack),
-      claims: state.split.claims || null,
+      patient: state.patient
+    }, splitToSave(state.split), {
       allergies: allergiesToSave(),
       savedAt: new Date().toISOString()
-    });
+    }));
   } catch (error) {
     // Not saved for offline use this time. The list still shows.
   }
@@ -596,7 +625,7 @@ async function signInUnavailable(error, where) {
 function useSaved(saved) {
   state.patientId = saved.patientId;
   state.patient = saved.patient;
-  state.split = { current: saved.current, older: saved.older, failed: false, placeholders: saved.placeholders || 0, heldBack: Boolean(saved.heldBack), claims: saved.claims || null };
+  state.split = splitFromSaved(saved);
   state.savedAt = saved.savedAt;
   state.updatedAt = null;
   state.allergies = keepAllergies(null, saved.allergies);
@@ -604,7 +633,7 @@ function useSaved(saved) {
 
 async function loadAdditions() {
   try {
-    state.data = await loadPatientData(localStorage, state.key, state.patientId);
+    state.data = withAnswers(await loadPatientData(localStorage, state.key, state.patientId));
     state.dataFailed = false;
   } catch (error) {
     state.data = emptyData();
@@ -614,49 +643,24 @@ async function loadAdditions() {
 }
 
 // Prescriptions and "what the patient says" records, each with the
-// Medication records they point to (_include), all pages (pageLimit 0).
-// If one kind fails to load, the screen says so instead of showing less.
+// Medication records they point to (_include), all pages (pageLimit 0), as
+// Bundles so a reference can find its Medication by fullUrl. If one kind
+// fails to load, the screen says so instead of showing less. This is one
+// source's list (js/med-list.js); loadFresh joins it with any others.
 async function loadMedicines(client, patientId) {
-  var items = [];
-  var placeholders = 0;
-  var failed = false;
-  var leftOut = false;
-  var kinds = [["MedicationRequest", fromMedicationRequest], ["MedicationStatement", fromMedicationStatement]];
+  var results = {};
+  var kinds = ["MedicationRequest", "MedicationStatement"];
   for (var i = 0; i < kinds.length; i += 1) {
-    var type = kinds[i][0];
-    var convert = kinds[i][1];
     try {
-      var resources = await client.request(
-        type + "?patient=" + encodeURIComponent(patientId) + "&_include=" + type + ":medication",
-        { pageLimit: 0, flat: true }
+      results[kinds[i]] = await client.request(
+        kinds[i] + "?patient=" + encodeURIComponent(patientId) + "&_include=" + kinds[i] + ":medication",
+        { pageLimit: 0, flat: false }
       );
-      if (heldBack(resources)) leftOut = true;
-      var medications = new Map(resources
-        .filter(function (r) { return r && r.resourceType === "Medication"; })
-        .map(function (r) { return ["Medication/" + r.id, r]; }));
-      resources
-        .filter(function (r) { return r && r.resourceType === type && usableRecord(r); })
-        .forEach(function (r) {
-          var item = convert(r, SOURCE, medications);
-          if (isPlaceholderDrug(item)) {
-            placeholders += 1;
-          } else {
-            items.push(item);
-          }
-        });
     } catch (error) {
-      failed = true;
+      results[kinds[i]] = error instanceof Error ? error : new Error("Couldn't load " + kinds[i] + ".");
     }
   }
-  var merged = dedupe(items);
-  var rxcuis = merged.map(function (item) { return item.rxcui; }).filter(Boolean);
-  var ingredients = rxcuis.length ? await ingredientsFor(rxcuis) : new Map();
-  var split = splitByStatus(groupByIngredient(merged, ingredients));
-  split.failed = failed;
-  split.heldBack = leftOut;
-  split.placeholders = placeholders;
-  split.ingredientOf = ingredients;
-  return split;
+  return listFromSearch(results, SOURCE, globalThis.fetch.bind(globalThis));
 }
 
 // One screen at a time: "home" (the bag and two big buttons), "medicines"
@@ -1264,9 +1268,10 @@ function drawRecords(parent, arranged) {
   if (state.split.failed) {
     add(section, "p", "Couldn't load medicines from " + SOURCE + ". Sign out and sign in again to retry.", "error");
   }
-  if (state.split.heldBack) {
+  if (firstHeldBack(state.split)) {
     add(section, "p", "Your health system didn't send some of your medicines. Ask your care team.", "notice");
   }
+  sourceNotices(state.split).forEach(function (text) { add(section, "p", text, "notice"); });
   var empty = emptyRecordsText(state.split, arranged);
   if (empty && !state.split.failed && !state.split.heldBack) {
     add(section, "p", empty);
@@ -1298,7 +1303,7 @@ function drawRecords(parent, arranged) {
       } else if (!state.adding) {
         // One form at a time.
         var actions = add(row, "div", null, "card-actions");
-        var take = button(actions, "I'm taking this", "secondary", function () { askOlder(entry, take); }, "I'm taking this: " + entry.name);
+        var take = button(actions, "I'm taking this", "secondary", function () { askOlder(entry, take); }, "I'm taking this: " + cardName(entry));
       }
     });
   }
@@ -1678,7 +1683,7 @@ function drawAddCheck(form, result, addition, how) {
   if (result.kind === "stopped") {
     add(panel, "p", "You marked " + theirs + " Not taking on " + shortDate(match.stoppedAt) + ".");
     if (!how.editing) button(panel, "I'm taking it again", "primary big", function () {
-      delete state.data.stopped[match.key];
+      unstop(match);
       recordChange("unstopped", match.name);
       closeAddForm();
       state.announce = match.name + " moved back to " + backToList(match).name + ".";
@@ -1783,13 +1788,14 @@ function drawStopped(parent, arranged) {
   var list = add(section, "ul", null, "meds");
   arranged.stopped.forEach(function (entry) {
     var row = medRow(list, entry);
+    var name = cardName(entry);
     button(row, "Undo", "secondary card-action", function () {
-      delete state.data.stopped[entry.key];
-      recordChange("unstopped", entry.name);
-      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      unstop(entry);
+      recordChange("unstopped", name);
+      state.announce = name + " moved back to " + backToList(entry).name + ".";
       state.focusId = backToList(entry).focusId;
       save();
-    }, "Undo Not taking: " + entry.name);
+    }, "Undo Not taking: " + name);
   });
 }
 
@@ -2264,7 +2270,7 @@ function backupPicker() {
       } else {
         count = await importBackup(localStorage, state.key, text);
       }
-      state.data = await loadPatientData(localStorage, state.key, state.patientId);
+      state.data = withAnswers(await loadPatientData(localStorage, state.key, state.patientId));
       state.dataFailed = false;
       said = restoreMessage(count) + " Nothing on this phone was replaced.";
     } catch (error) {
@@ -2312,46 +2318,62 @@ function afterBackup(said) {
 
 function medRow(list, entry) {
   var row = add(list, "li");
-  drawCard(row, entry.name, patientCard(entry, state.split.claims === "loaded"));
+  drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded"));
   return row;
 }
 
+// Undo Not taking: every key's mark goes, so no source's copy stays hidden,
+// and so does an "I don't take this anymore" answer that put it there.
+function unstop(entry) {
+  keysOf(entry).forEach(function (key) { delete state.data.stopped[key]; });
+  if (entry.answer && entry.answer.choice === "not-taking") {
+    state.data.answers = (state.data.answers || []).filter(function (answer) { return answer !== entry.answer; });
+  }
+}
+
 // The two buttons under a current medicine: "As needed" (or Undo, on one
-// already there) and "Not taking". Not taking clears an As needed mark.
+// already there) and "Not taking". Not taking clears an As needed mark. A
+// mark is saved under every key the card answers to (keysOf), so on a card
+// joined from several sources it covers them all.
 function markButtons(row, entry) {
   var actions = add(row, "div", null, "card-actions");
   if (!state.data.asNeeded) state.data.asNeeded = {};
+  var keys = keysOf(entry);
+  // The name the card shows, so the buttons say the same.
+  var name = cardName(entry);
   // The records' own can't be moved back.
   if (entry.prn) {
     // Only Not taking.
   } else if (entry.asNeededAt) {
     button(actions, "Undo", "secondary", function () {
-      delete state.data.asNeeded[entry.key];
-      recordChange("regular", entry.name);
-      state.announce = entry.name + " moved back to " + backToList(entry).name + ".";
+      keys.forEach(function (key) { delete state.data.asNeeded[key]; });
+      recordChange("regular", name);
+      state.announce = name + " moved back to " + backToList(entry).name + ".";
       state.focusId = backToList(entry).focusId;
       save();
-    }, "Undo As needed: " + entry.name);
+    }, "Undo As needed: " + name);
   } else {
     button(actions, "As needed", "secondary", function () {
-      state.data.asNeeded[entry.key] = today();
-      recordChange("as-needed", entry.name);
-      state.announce = entry.name + " moved to As needed.";
+      var at = today();
+      keys.forEach(function (key) { state.data.asNeeded[key] = at; });
+      recordChange("as-needed", name);
+      state.announce = name + " moved to As needed.";
       state.focusId = "as-needed-heading";
       save();
-    }, "As needed: " + entry.name);
+    }, "As needed: " + name);
   }
   button(actions, "Not taking", "stop", function () {
-    if (state.data.asNeeded[entry.key]) {
-      delete state.data.asNeeded[entry.key];
-      recordChange("regular", entry.name);
+    if (keys.some(function (key) { return state.data.asNeeded[key]; })) {
+      keys.forEach(function (key) { delete state.data.asNeeded[key]; });
+      recordChange("regular", name);
     }
-    state.data.stopped[entry.key] = today();
-    recordChange("stopped", entry.name);
-    state.announce = entry.name + " moved to Not taking.";
+    var at = today();
+    keys.forEach(function (key) { state.data.stopped[key] = at; });
+    recordChange("stopped", name);
+    state.announce = name + " moved to Not taking.";
     state.focusId = "stopped-heading";
     save();
-  }, "Not taking: " + entry.name);
+  }, "Not taking: " + name);
 }
 
 // Fills the insurer paid for that the health record doesn't list.

@@ -97,6 +97,11 @@ ul.meds > li > button.card-action { display: block; width: 100%; min-height: 48p
 .facts { border-top: 1px solid var(--line); margin-top: 0.7rem; padding-top: 0.5rem; font-size: 1rem; }
 .flag { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 0.5rem 0.8rem; margin: 0.6rem 0 0; font-weight: 600; overflow-wrap: anywhere; }
 .med-line { color: var(--muted); margin: 0.1rem 0; overflow-wrap: anywhere; }
+/* Staff page: one card per medicine the records disagree on, each source's
+   version under its own name and date, with a line between them. */
+.disagree > .flag:first-child { margin: 0 0 0.6rem; }
+.disagree .side + .side { border-top: 2px solid var(--line); margin-top: 0.85rem; padding-top: 0.75rem; }
+.side-label { color: var(--muted); font-weight: 600; margin: 0 0 0.2rem; overflow-wrap: anywhere; }
 
 .button, button {
   display: inline-block;

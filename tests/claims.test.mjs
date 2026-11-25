@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fillsFromClaims, attachFills, completedLine, claimsLabel, fillNote, readClaims, mergeClaims } from "../js/claims.js";
+import { fillsFromClaims, attachFills, completedLine, claimsLabel, fillNote, suggestNote, readClaims, mergeClaims } from "../js/claims.js";
 
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 const NOW = new Date("2026-11-21T12:00:00Z");
@@ -31,8 +31,8 @@ test("fillsFromClaims keeps pharmacy claims and reads drug, date and insurer", (
     claim("308191", "amoxicillin 500 MG Oral Capsule", "2026-10-10", "NO_INSURANCE")
   ]);
   assert.deepEqual(fills, [
-    { rxcui: "314076", name: "lisinopril 10 MG Oral Tablet", date: "2026-09-21", insurer: "Aetna", cash: false },
-    { rxcui: "308191", name: "amoxicillin 500 MG Oral Capsule", date: "2026-10-10", insurer: null, cash: true }
+    { rxcui: "314076", name: "lisinopril 10 MG Oral Tablet", date: "2026-09-21", insurer: "Aetna", cash: false, quantity: null, daysSupply: null },
+    { rxcui: "308191", name: "amoxicillin 500 MG Oral Capsule", date: "2026-10-10", insurer: null, cash: true, quantity: null, daysSupply: null }
   ]);
 });
 
@@ -51,25 +51,26 @@ test("attachFills counts exact-code fills on the matching medicine", () => {
   ]);
   const out = attachFills(split, fills, new Map(), NOW);
   assert.equal(out.claims, "loaded");
-  assert.deepEqual(out.current[0].fills, { count: 3, last: "2026-09-21", insurers: ["Aetna"], cash: false });
+  assert.deepEqual(out.current[0].fills, { count: 3, last: "2026-09-21", insurers: ["Aetna"], cash: false, sizedOn: null, suggests: null });
 });
 
+// Task 6c: the form has to match too, so these names say theirs.
 test("attachFills matches by ingredient when the codes differ", () => {
-  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG")], older: [], failed: false };
+  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG Oral Tablet")], older: [], failed: false };
   const ingredients = new Map([["1", { rxcui: "29046" }], ["2", { rxcui: "29046" }]]);
-  const out = attachFills(split, fillsFromClaims([claim("2", "lisinopril 20 MG", "2026-09-21")]), ingredients, NOW);
+  const out = attachFills(split, fillsFromClaims([claim("2", "lisinopril 20 MG Oral Tablet", "2026-09-21")]), ingredients, NOW);
   assert.equal(out.current[0].fills.count, 1);
   assert.equal(out.current.length, 1);
 });
 
 test("an ingredient match that fits two medicines goes to the later one", () => {
   const split = {
-    current: [item("rx:1", "1", "Metoprolol A", "current", "2020-01-01"), item("rx:2", "2", "Metoprolol B", "current", "2025-06-01")],
+    current: [item("rx:1", "1", "Metoprolol A 25 MG Oral Tablet", "current", "2020-01-01"), item("rx:2", "2", "Metoprolol B 50 MG Oral Tablet", "current", "2025-06-01")],
     older: [],
     failed: false
   };
   const ingredients = new Map([["1", { rxcui: "6918" }], ["2", { rxcui: "6918" }], ["3", { rxcui: "6918" }]]);
-  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol", "2026-09-21")]), ingredients, NOW);
+  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol 100 MG Oral Tablet", "2026-09-21")]), ingredients, NOW);
   assert.equal(out.current.find((i) => i.key === "rx:2").fills.count, 1);
   assert.equal(out.current.find((i) => i.key === "rx:1").fills.count, 0);
 });
@@ -188,8 +189,8 @@ test("mergeClaims keeps the medicines and only marks the claims when they didn't
 });
 
 test("mergeClaims uses both ingredient lists to match fills", () => {
-  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG")], older: [], failed: false, ingredientOf: new Map([["1", { rxcui: "29046" }]]) };
-  const result = { status: "loaded", fills: fillsFromClaims([claim("2", "lisinopril 20 MG", "2026-09-21")]), ingredientOf: new Map([["2", { rxcui: "29046" }]]) };
+  const split = { current: [item("rx:1", "1", "Lisinopril 10 MG Oral Tablet")], older: [], failed: false, ingredientOf: new Map([["1", { rxcui: "29046" }]]) };
+  const result = { status: "loaded", fills: fillsFromClaims([claim("2", "lisinopril 20 MG Oral Tablet", "2026-09-21")]), ingredientOf: new Map([["2", { rxcui: "29046" }]]) };
   const out = mergeClaims(split, result, NOW);
   assert.equal(out.current.length, 1);
   assert.equal(out.current[0].fills.count, 1);
@@ -219,13 +220,13 @@ test("a fill dated only by month counts as recent", () => {
 
 test("an ingredient match goes to the current medicine before a finished one", () => {
   const split = {
-    current: [item("rx:1", "1", "Metoprolol A", "current", "2020-01-01"), item("rx:4", "4", "Metoprolol C", "current", "2021-01-01")],
-    older: [item("rx:2", "2", "Metoprolol B", "older", "2025-06-01")],
+    current: [item("rx:1", "1", "Metoprolol A 25 MG Oral Tablet", "current", "2020-01-01"), item("rx:4", "4", "Metoprolol C 75 MG Oral Tablet", "current", "2021-01-01")],
+    older: [item("rx:2", "2", "Metoprolol B 50 MG Oral Tablet", "older", "2025-06-01")],
     failed: false
   };
   const same = { rxcui: "6918" };
   const ingredients = new Map([["1", same], ["2", same], ["3", same], ["4", same]]);
-  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol", "2026-09-21")]), ingredients, NOW);
+  const out = attachFills(split, fillsFromClaims([claim("3", "metoprolol 100 MG Oral Tablet", "2026-09-21")]), ingredients, NOW);
   assert.equal(out.current.length, 2);
   assert.equal(out.current.find((i) => i.key === "rx:4").fills.count, 1);
   assert.equal(out.older[0].fills.count, 0);
@@ -277,4 +278,72 @@ test("different strengths with no record keep their own cards", () => {
     { rxcui: "312940", name: "sertraline 25 MG Oral Tablet", date: "2026-10-21", insurer: "Aetna", cash: false }
   ], new Map([["312941", same], ["312940", same]]), NOW);
   assert.equal(out.current.length, 2);
+});
+
+// The fill hint (Task 8): how much a fill was for, and for how many days,
+// as CARIN Blue Button writes it. Staff see it; it never settles anything.
+const CARIN = "http://hl7.org/fhir/us/carin-bb/CodeSystem/C4BBSupportingInfoType";
+function sized(date, quantity, days, more = {}) {
+  const c = claim("314076", "lisinopril 10 MG Oral Tablet", date);
+  if (quantity !== null) c.item[0].quantity = { value: quantity };
+  if (days !== null) {
+    c.item[0].informationSequence = [1];
+    c.supportingInfo = [{ sequence: 1, category: { coding: [{ code: "dayssupply" }] }, valueQuantity: { value: days } }];
+  }
+  return Object.assign(c, more);
+}
+const summary = (claims) => attachFills({ current: [item("rx:314076", "314076", "Lisinopril")], older: [] }, fillsFromClaims(claims), new Map(), NOW).current[0].fills;
+
+test("60 for 30 days suggests 2 a day", () => {
+  const fills = fillsFromClaims([sized("2026-09-21", 60, 30)]);
+  assert.equal(fills[0].quantity, 60);
+  assert.equal(fills[0].daysSupply, 30);
+  const out = summary([sized("2026-09-21", 60, 30)]);
+  assert.deepEqual(out.suggests, { perDay: 2, quantity: 60, days: 30 });
+  assert.equal(suggestNote(out), "Fill suggests about 2 a day (60 for 30 days)");
+  // To the nearest half: 50 for 30 days is about 1.5.
+  assert.equal(suggestNote(summary([sized("2026-09-21", 50, 30)])), "Fill suggests about 1.5 a day (50 for 30 days)");
+});
+
+test("the days supply is the item's own, else the claim's only one, from any system", () => {
+  const carin = sized("2026-09-21", 60, 30);
+  carin.supportingInfo[0].category.coding[0].system = CARIN;
+  assert.equal(fillsFromClaims([carin])[0].daysSupply, 30);
+  // The item points to the second one.
+  const two = sized("2026-09-21", 60, 30);
+  two.supportingInfo.push({ sequence: 2, category: { coding: [{ system: CARIN, code: "dayssupply" }] }, valueQuantity: { value: 90 } });
+  two.item[0].informationSequence = [2];
+  assert.equal(fillsFromClaims([two])[0].daysSupply, 90);
+  // Not pointed to, but the only one on the claim.
+  const only = sized("2026-09-21", 60, 30);
+  delete only.item[0].informationSequence;
+  assert.equal(fillsFromClaims([only])[0].daysSupply, 30);
+  // Two and none pointed to: no guess.
+  two.item[0].informationSequence = [];
+  assert.equal(fillsFromClaims([two])[0].daysSupply, null);
+  // Another kind of supporting info isn't a days supply.
+  const other = sized("2026-09-21", 60, 30);
+  other.supportingInfo[0].category.coding[0].code = "refillnum";
+  assert.equal(fillsFromClaims([other])[0].daysSupply, null);
+});
+
+test("the newest fill with both numbers is the one that counts", () => {
+  const out = summary([sized("2026-10-21", 30, 30), sized("2026-11-01", 90, null), sized("2026-08-21", 60, 30)]);
+  assert.deepEqual(out.suggests, { perDay: 1, quantity: 30, days: 30 });
+  // The newest says nothing sensible: no hint, not an older one instead.
+  assert.equal(summary([sized("2026-10-21", 1, 90), sized("2026-08-21", 60, 30)]).suggests, null);
+});
+
+test("no hint without days supply, or out of range", () => {
+  assert.equal(suggestNote(summary([sized("2026-09-21", 60, null)])), null);
+  assert.equal(suggestNote(summary([sized("2026-09-21", null, 30)])), null);
+  assert.equal(suggestNote(summary([sized("2026-09-21", 1, 90)])), null);
+  assert.equal(suggestNote(summary([sized("2026-09-21", 400, 30)])), null);
+  assert.equal(suggestNote(summary([sized("2026-09-21", 360, 30)])), "Fill suggests about 12 a day (360 for 30 days)");
+  assert.equal(suggestNote(summary([sized("2026-09-21", 15, 30)])), "Fill suggests about 0.5 a day (15 for 30 days)");
+  assert.equal(suggestNote(summary([sized("2026-09-21", 0, 30)])), null);
+  // A list saved before the hint, and no fills at all.
+  assert.equal(suggestNote({ count: 3, last: "2026-09-21", insurers: ["Aetna"], cash: false }), null);
+  assert.equal(suggestNote(null), null);
+  assert.equal(fillNote(summary([sized("2026-09-21", 60, 30)])), "Last filled 2026-09-21 (Aetna claims), 1 fill");
 });

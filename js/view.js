@@ -3,6 +3,8 @@
 // under each medicine.
 
 import { listDate } from "./offline.js";
+import { dayText, monthText } from "./card.js";
+import { isOwnSide, sideWords } from "./reconcile.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
@@ -19,31 +21,214 @@ export function formatName(patient) {
   return (given + " " + (name.family || "")).trim() || "Name not recorded";
 }
 
+// Every key a card answers to, once each: its own, a fill card's others
+// (claims.js), then each source's record in a group. A mark saved under any
+// of them is this card's.
+export function keysOf(entry) {
+  var keys = [entry.key].concat(entry.otherKeys || [], entry.group ? entry.group.sides.map(function (side) { return side.key; }) : []);
+  return keys.filter(function (key, index) { return key && keys.indexOf(key) === index; });
+}
+
 // Current medicines the patient marked "Not taking" move to their own group
 // (stoppedAt). Ones they marked "As needed" stay current, with asNeededAt,
 // and show in the As needed group. Not taking wins if both are set. A mark
 // for a medicine that is no longer current is ignored.
+//
+// A mark never hides a medicine a record still gives (spec, section 8): a
+// current record dated after its mark, or a source whose copy wasn't marked,
+// keeps the card on the list with a question. So does a disagreement between
+// sources. toCheck is every card with a question, in list order. An answer
+// counts only while its groupId and fingerprint both match.
 export function arrangeList(split, data) {
   var marks = (data && data.stopped) || {};
   var needed = (data && data.asNeeded) || {};
+  var answers = (data && data.answers) || [];
   var has = function (map, key) { return Object.prototype.hasOwnProperty.call(map, key); };
   var current = [];
   var stopped = [];
   split.current.forEach(function (entry) {
-    // A fill-only card can answer to several keys (claims.js); a mark saved
-    // under any of them counts.
-    var keys = [entry.key].concat(entry.otherKeys || []);
-    var marked = keys.filter(function (key) { return has(marks, key); })[0];
+    // A fill-only card can answer to several keys (claims.js), and a group
+    // to each source's; a mark saved under any of them counts.
+    var keys = keysOf(entry);
     var neededKey = keys.filter(function (key) { return has(needed, key); })[0];
-    if (marked !== undefined) {
-      stopped.push(Object.assign({}, entry, { key: marked, stoppedAt: marks[marked] }));
-    } else if (neededKey !== undefined) {
-      current.push(Object.assign({}, entry, { key: neededKey, asNeededAt: needed[neededKey] }));
-    } else {
-      current.push(entry);
+    var groupId = entry.group ? entry.group.id : entry.key;
+    // A copy goes by the marked key, so Undo finds it, and keeps the rest,
+    // so Undo clears every key the mark was saved under. ownKey stays the
+    // card's own record's key: the marked one can be another source's.
+    function rekeyed(key) {
+      var own = [entry.key].concat(entry.otherKeys || []);
+      return { key: key, otherKeys: own.filter(function (one) { return one !== key; }), ownKey: entry.ownKey || entry.key };
     }
+    function stop(key, at, answer) {
+      stopped.push(Object.assign({}, entry, rekeyed(key), { stoppedAt: at }, answer ? { answer: answer } : {}));
+    }
+    function keep(more) {
+      var copy = neededKey !== undefined ? Object.assign(rekeyed(neededKey), { asNeededAt: needed[neededKey] }) : {};
+      current.push(Object.keys(more).length || neededKey !== undefined ? Object.assign({}, entry, copy, more) : entry);
+    }
+    // One question per card, and its answer settles the card.
+    function ask(question) {
+      var answer = answerFor(answers, groupId, question.fingerprint);
+      if (answer && answer.choice === "not-taking") {
+        var mark = question.mark;
+        stop(mark ? mark.key : entry.key, mark ? mark.at : answer.answeredAt, answer);
+      } else if (answer) {
+        keep({ answer: answer });
+      } else {
+        var asked = { kind: question.kind, why: question.why, groupId: groupId, fingerprint: question.fingerprint };
+        // What was marked, and on which source's record, for the QR code.
+        if (question.mark) asked.mark = { key: question.mark.key, at: question.mark.at, side: question.mark.side || null };
+        keep({ question: asked });
+      }
+    }
+    var marked = markState(entry, marks);
+    if (marked.ask) return ask(marked.ask);
+    if (marked.stop) return stop(marked.stop.key, marked.stop.at);
+    var asked = verdictQuestion(entry, answers);
+    if (asked) return ask(asked);
+    keep({});
   });
-  return { current: current, older: split.older, stopped: stopped };
+  var older = split.older.map(function (entry) {
+    var asked = verdictQuestion(entry, answers);
+    if (!asked) return entry;
+    var answer = answerFor(answers, entry.group.id, asked.fingerprint);
+    return Object.assign({}, entry, answer ? { answer: answer } : { question: { kind: asked.kind, why: asked.why, groupId: entry.group.id, fingerprint: asked.fingerprint } });
+  });
+  var toCheck = current.concat(older).filter(function (entry) { return entry.question; });
+  return { current: current, older: older, stopped: stopped, toCheck: toCheck };
+}
+
+// The newest answer saved for this group and fingerprint, or null.
+function answerFor(answers, groupId, fingerprint) {
+  return answers.filter(function (answer) { return answer.groupId === groupId && answer.fingerprint === fingerprint; }).pop() || null;
+}
+
+// Clearly after: "2026-11" is after 2026-10-05, but "2026-10" might not be.
+function after(a, b) {
+  if (a.length !== b.length && (a.indexOf(b) === 0 || b.indexOf(a) === 0)) return false;
+  return a > b;
+}
+
+function dayOf(date) {
+  var found = typeof date === "string" && /^\d{4}(?:-\d{2}(?:-\d{2})?)?/.exec(date);
+  return found ? found[0] : null;
+}
+
+// What the Not taking marks on a card say: nothing (no mark), stop (every
+// current record is marked, and none is newer than its mark), or ask. Each
+// source's record is its own member; a card with no group is one member with
+// all its keys. A mark covers only the member it was made on.
+function markState(entry, marks) {
+  var members;
+  if (entry.group) {
+    members = entry.group.sides.map(function (side) {
+      // The card's own record also answers to its other keys and its date.
+      var own = isOwnSide(entry, side);
+      return { side: side, current: side.status === "current", keys: own ? keysOf({ key: side.key, otherKeys: entry.otherKeys }) : [side.key], date: newer(side.asOf, own ? entry.lastDate : null) };
+    });
+  } else {
+    members = [{ side: null, current: true, keys: keysOf(entry), date: entry.lastDate || null }];
+  }
+  members.forEach(function (member) {
+    member.mark = markOf(member.keys, marks);
+    if (member.mark) member.mark.side = member.side;
+  });
+  // With no current record at all, every record counts, as before.
+  var counted = members.some(function (member) { return member.current; }) ? members.filter(function (member) { return member.current; }) : members;
+  var markedOnes = counted.filter(function (member) { return member.mark; });
+  if (!markedOnes.length) return {};
+  var mark = markedOnes.reduce(function (latest, member) { return later(member.mark, latest); }, null);
+  // Only a current record is said to list it current: the newest dated one.
+  var left = counted.filter(function (member) { return !member.mark && member.current; });
+  if (left.length) {
+    var dated = left.filter(function (member) { return dayOf(member.date); });
+    var other = (dated.length ? dated : left).reduce(function (best, member) {
+      return dayOf(member.date) > dayOf(best.date) ? member : best;
+    });
+    var since = dayOf(other.date);
+    return { ask: {
+      kind: "status",
+      why: "You marked this Not taking" + (dayOf(mark.at) ? " on " + dayText(dayOf(mark.at)) : "") + ". " + other.side.sourceName + " lists it current" + (since ? ", " + monthText(since) : "") + ".",
+      fingerprint: markFingerprint(mark, counted),
+      mark: mark
+    } };
+  }
+  // An undated mark or record can't be put in order: it stays as marked.
+  var renewed = markedOnes.filter(function (member) {
+    return dayOf(member.mark.at) && dayOf(member.date) && after(dayOf(member.date), dayOf(member.mark.at));
+  }).pop();
+  if (renewed) {
+    return { ask: {
+      kind: "status",
+      why: "You marked Not taking on " + dayText(renewed.mark.at) + ". Your records have a newer prescription, " + dayText(dayOf(renewed.date)) + ".",
+      fingerprint: markFingerprint(renewed.mark, counted),
+      mark: renewed.mark
+    } };
+  }
+  return { stop: mark };
+}
+
+// The mark and the newest current record, marked or not, so any record
+// newer than the answer asks again.
+function markFingerprint(mark, members) {
+  var newest = members.reduce(function (date, member) { return newer(member.date, date); }, null);
+  return "mark:" + mark.at + ">" + (dayOf(newest) || "");
+}
+
+// The latest mark under these keys, as { key, at }, or null. The first key
+// wins a tie, as it did before.
+function markOf(keys, marks) {
+  return keys.reduce(function (latest, key) {
+    return Object.prototype.hasOwnProperty.call(marks, key) ? later({ key: key, at: marks[key] }, latest) : latest;
+  }, null);
+}
+
+function later(mark, latest) {
+  if (!latest) return mark;
+  var a = dayOf(mark.at);
+  var b = dayOf(latest.at);
+  return a && (!b || a > b) ? mark : latest;
+}
+
+function newer(a, b) {
+  var dayA = dayOf(a);
+  var dayB = dayOf(b);
+  if (!dayA) return dayB ? b : null;
+  if (!dayB) return a;
+  return dayB > dayA ? b : a;
+}
+
+// Asked in this order; "worded" never asks.
+var ASKED = ["status", "dose", "schedule"];
+
+// The question a group's disagreement asks, or null. When an answer for this
+// group no longer matches, it says what changed since.
+function verdictQuestion(entry, answers) {
+  if (!entry.group) return null;
+  var kind = ASKED.filter(function (verdict) { return entry.group.verdicts.indexOf(verdict) !== -1; })[0];
+  if (!kind) return null;
+  // A mark's answer was about the mark, not what the sources say.
+  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id && String(answer.fingerprint).indexOf("mark:") !== 0; }).pop();
+  return { kind: kind, why: before ? changedText(before.sides || [], entry.group.sides) : null, fingerprint: entry.group.fingerprint };
+}
+
+var STATUS_WORDS = { current: "current", "not-current": "stopped" };
+
+// What changed since the answer: a source gone, or one saying something new.
+function changedText(then, now) {
+  if (!then.length) return null;
+  var lines = [];
+  then.forEach(function (old) {
+    var side = now.filter(function (one) { return one.sourceId === old.sourceId; })[0];
+    if (!side) lines.push(old.sourceName + " didn't load.");
+    else if (sideWords(side) !== sideWords(old)) lines.push(side.sourceName + " now says " + sideWords(side) + ".");
+    else if (side.status !== old.status && STATUS_WORDS[side.status]) lines.push(side.sourceName + " now says " + STATUS_WORDS[side.status] + ".");
+  });
+  now.forEach(function (side) {
+    var known = then.some(function (old) { return old.sourceId === side.sourceId; });
+    if (!known) lines.push(side.sourceName + " now says " + sideWords(side) + ".");
+  });
+  return lines.join(" ") || null;
 }
 
 // Taken only when needed: the records say so, the patient marked it, or they
@@ -52,13 +237,15 @@ export function isAsNeeded(entry) {
   return Boolean(entry.asNeededAt || entry.prn || (entry.schedule && entry.schedule.asNeeded));
 }
 
-// What goes on the QR code: older prescriptions are left off (spec).
+// What goes on the QR code: older prescriptions are left off (spec). The
+// cards to check go too, so a disagreement reaches staff whatever list it's on.
 export function shareListFrom(patient, arranged, additions) {
   return {
     patient: { name: patient.name, birthDate: patient.birthDate },
     current: arranged.current,
     additions: additions,
-    stopped: arranged.stopped
+    stopped: arranged.stopped,
+    toCheck: arranged.toCheck || []
   };
 }
 
@@ -69,8 +256,53 @@ export function emptyRecordsText(split, arranged) {
   if (arranged.current.some(function (entry) { return fromRecords(entry) && !isAsNeeded(entry); })) return null;
   if (arranged.current.some(fromRecords)) return "Your current medicines are under As needed.";
   if (arranged.stopped.some(fromRecords)) return "You've marked all the medicines from your records Not taking.";
+  // A source that has no information, or knows of none, says so itself
+  // (sourceNotices). Unknown is never none.
+  if ((split.noMedicines || []).length) return null;
   if (split.older.some(fromRecords)) return "No current medicines in your records.";
   return "No medicines in your records.";
+}
+
+// "someone-else" is how a list saved before 2026-11-25 says "no-match".
+var KEPT_OUT = {
+  "no-match": function (name) { return "Records from " + name + " don't match your name and birth date, so they aren't on your list."; },
+  "no-identity": function (name) { return name + " didn't share a name and birth date, so its records aren't on your list."; }
+};
+KEPT_OUT["someone-else"] = KEPT_OUT["no-match"];
+
+var NO_MEDICINES = {
+  "no-info": function (name) { return name + " has no information about your medicines."; },
+  "none-known": function (name) { return name + " says: no medicines known."; }
+};
+
+// A source that stayed out, or a second one that didn't load, so its
+// medicines are never missing without a word. The first source's failure
+// has its own message, as before. So does a source whose only word is that
+// it has no medicines to give.
+export function sourceNotices(split) {
+  var kept = (split.keptOut || []).filter(function (source) { return KEPT_OUT[source.why]; }).map(function (source) {
+    return KEPT_OUT[source.why](source.name);
+  });
+  var failed = (split.sourceStatus || []).slice(1).filter(function (source) { return !source.loaded; }).map(function (source) {
+    return "Couldn't load medicines from " + source.name + ".";
+  });
+  var held = (split.sourceStatus || []).slice(1).filter(function (source) { return source.loaded && !source.complete; }).map(function (source) {
+    return source.name + " didn't send some of your medicines.";
+  });
+  var none = (split.noMedicines || []).filter(function (said) { return NO_MEDICINES[said.kind]; }).map(function (said) {
+    return NO_MEDICINES[said.kind](said.source);
+  });
+  return kept.concat(failed, held, none);
+}
+
+// Whether the first source, the patient's own health system, held records
+// back. Only that one gets the unnamed line; a later source is named. A list
+// saved before sources were joined has no sourceStatus, so it counts as first.
+export function firstHeldBack(split) {
+  if (!split.heldBack) return false;
+  var status = split.sourceStatus;
+  if (!status || !status.length) return true;
+  return status[0].complete === false;
 }
 
 // Where a medicine goes when "I stopped this" is undone.
@@ -154,10 +386,12 @@ export function medicineCount(arranged, additions) {
   return arranged.current.length + additions.length;
 }
 
-// Some of the medicines didn't load, or no record has a medicine name: no
-// number anywhere, which would read as the whole.
+// Some of the medicines didn't load, or no record has a medicine name, or
+// a source said it has none to give: no number anywhere, which would read
+// as the whole (or as none).
 export function medicinesPartial(state) {
-  return someMissing(state) || Boolean(state.split.placeholders && !arrangeList(state.split, state.data).current.some(function (entry) { return entry.origin !== "claims" || entry.asNeededAt; }));
+  var unsaid = state.split.placeholders || (state.split.noMedicines || []).length;
+  return someMissing(state) || Boolean(unsaid && !arrangeList(state.split, state.data).current.some(function (entry) { return entry.origin !== "claims" || entry.asNeededAt; }));
 }
 
 function someMissing(state) {
@@ -174,6 +408,9 @@ export function shareWarnings(state) {
     incomplete: someMissing(state),
     ownMissing: state.dataFailed,
     unnamed: state.split.placeholders || 0,
+    noMedicines: state.split.noMedicines || [],
+    // A second source that didn't load is named for staff.
+    sourceStatus: state.split.sourceStatus || [],
     allergies: state.dataFailed ? { status: "failed", savedAt: null } : { status: state.allergies.status, savedAt: state.allergies.savedAt, updatedAt: state.allergies.updatedAt }
   };
 }

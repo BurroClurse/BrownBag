@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { dateText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
+import { cardName, dateText, dayText, monthText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
 import { buildShareBundle, fitsInQr, groupShareBundle, packShare } from "../js/share.js";
 import { drawShareList } from "../js/share-list.js";
 import { makeAddition } from "../js/view.js";
@@ -175,4 +175,175 @@ test("the staff page and My medicines draw the same card", () => {
   const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
   for (const file of ["js/app.js", "js/share-list.js"]) assert.match(read(file), /import \{[^}]*drawCard[^}]*\} from "\.\/card\.js"/, file);
   assert.ok(read("sw.js").includes('"./js/card.js"'), "opens with no signal");
+});
+
+test("a hospital order says so", () => {
+  const card = patientCard({ ...item({}), hospital: true }, false);
+  assert.equal(card.flags[0], "Hospital order");
+  assert.ok(!patientCard(item({}), false).flags.includes("Hospital order"));
+});
+
+test("month and day words say only as much as the date has", () => {
+  assert.equal(monthText("2026-10-02"), "Oct 2026");
+  assert.equal(monthText("2026-10"), "Oct 2026");
+  assert.equal(monthText("2026"), "2026");
+  assert.equal(dayText("2026-03-03"), "Mar 3");
+  assert.equal(dayText("2026-03-03T10:00:00Z"), "Mar 3");
+  // No day to give.
+  assert.equal(dayText("2026-10"), "Oct 2026");
+  assert.equal(dayText("2026"), "2026");
+});
+
+// A group from two sources, as reconcile builds it, with the question
+// arrangeList puts on it.
+const SIDES = [
+  { sourceId: "smart-sandbox", sourceName: "SMART sandbox", kind: "records", asOf: "2026-03-02", name: "lisinopril 10 MG Oral Tablet", dose: "10 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314076" },
+  { sourceId: "valley-clinic-demo", sourceName: "Valley Clinic (test records)", kind: "records", asOf: "2026-10-05", name: "lisinopril 20 MG Oral Tablet", dose: "20 mg", route: null, frequency: "once a day", status: "current", recordStatus: "active", key: "rx:314077" }
+];
+const GROUPED = item({ key: "rx:314077", name: "lisinopril 20 MG Oral Tablet", rxcui: "314077", dose: "20 mg", route: null, source: "Valley Clinic (test records)",
+  group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], sides: SIDES, fingerprint: "fp", notes: [] } });
+const asked = (kind, why, more) => Object.assign({}, GROUPED, { question: { kind, why: why || null, groupId: "29046", fingerprint: "fp" } }, more);
+
+test("an unanswered disagreement shows both sides", () => {
+  const card = patientCard(asked("dose"), true);
+  assert.equal(card.flags[0], "Your records don't agree on how much you take.");
+  assert.deepEqual(card.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "20 mg, once a day"]]);
+  assert.equal(patientCard(asked("schedule"), true).flags[0], "Your records don't agree on how often you take it.");
+  assert.equal(patientCard(asked("status"), true).flags[0], "Your records don't agree on whether you still take it.");
+});
+
+test("what changed comes after the card line", () => {
+  const card = patientCard(asked("dose", "Valley Clinic (test records) now says 20 mg, once a day."), true);
+  assert.deepEqual(card.flags.slice(0, 2), ["Your records don't agree on how much you take.", "Valley Clinic (test records) now says 20 mg, once a day."]);
+});
+
+test("a side with no date names only its source", () => {
+  const undated = asked("dose");
+  undated.group = Object.assign({}, undated.group, { sides: [SIDES[0], Object.assign({}, SIDES[1], { asOf: null })] });
+  assert.deepEqual(patientCard(undated, true).take[1], ["Valley Clinic (test records)", "20 mg, once a day"]);
+});
+
+// A Not taking mark beside a newer prescription is the patient's mark
+// against a record, not two records, so it says only what happened.
+test("a mark's question says what the mark and the record say", () => {
+  const why = "You marked Not taking on Mar 3. Your records have a newer prescription, Oct 2.";
+  const card = patientCard(item({ question: { kind: "status", why, groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02" } }), true);
+  assert.deepEqual(card.flags, [why]);
+  assert.deepEqual(card.take, [["Dose", "1 tablet"], ["How taken", "Oral"], ["How often", "once a day"]]);
+});
+
+test("an answered card says what the patient said, and when", () => {
+  const answer = (choice) => ({ groupId: "29046", fingerprint: "fp", sides: SIDES, choice, answeredAt: "2026-11-25T15:00:00.000Z" });
+  const said = (entry) => entry.facts.filter(([label]) => label === "You said");
+  const chose = patientCard(Object.assign({}, GROUPED, { answer: answer("smart-sandbox") }), true);
+  assert.deepEqual(said(chose), [["You said", "10 mg, once a day (Nov 25)"]]);
+  assert.ok(!chose.flags.some((text) => /don't agree/.test(text)), "no question once answered");
+  assert.deepEqual(chose.take, [["Dose", "10 mg"], ["How often", "once a day"]], "the side they chose");
+  assert.deepEqual(said(patientCard(Object.assign({}, GROUPED, { answer: answer("not-sure") }), true)), [["You said", "Not sure, ask my doctor (Nov 25)"]]);
+  assert.deepEqual(said(patientCard(Object.assign({}, GROUPED, { answer: answer("not-taking") }), true)), [["You said", "I don't take this anymore (Nov 25)"]]);
+  assert.deepEqual(said(patientCard(item({ answer: { groupId: "rx:314076", fingerprint: "mark:x", sides: [], choice: "taking", answeredAt: "2026-11-25" } }), true)), [["You said", "Yes, I take it (Nov 25)"]]);
+  const status = [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
+  const stopped = Object.assign({}, GROUPED, { answer: Object.assign(answer("valley-clinic-demo"), { sides: status }) });
+  assert.deepEqual(said(patientCard(stopped, true)), [["You said", "No, I stopped (Nov 25)"]]);
+  stopped.answer.choice = "smart-sandbox";
+  assert.deepEqual(said(patientCard(stopped, true)), [["You said", "Yes, I take it (Nov 25)"]]);
+});
+
+test("a status question says which side lists it current and which stopped", () => {
+  const status = asked("status");
+  status.group = Object.assign({}, status.group, { verdicts: ["status"], sides: [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" }), Object.assign({}, SIDES[1], { sourceId: "x", sourceName: "Lakeside", asOf: "2026-11-01", status: "unknown" })] });
+  assert.deepEqual(patientCard(status, true).take, [
+    ["SMART sandbox, Mar 2026", "10 mg, once a day, current"],
+    ["Valley Clinic (test records), Oct 2026", "20 mg, once a day, stopped"],
+    ["Lakeside, Nov 2026", "20 mg, once a day"]
+  ]);
+  // A dose question says only the dose.
+  assert.equal(patientCard(asked("dose"), true).take[0][1], "10 mg, once a day");
+});
+
+test("a question card leads with what the records disagree on", () => {
+  const li = new Node("li");
+  drawCard(li, "lisinopril 20 MG Oral Tablet", patientCard(asked("dose", "Valley Clinic (test records) now says 20 mg, once a day."), true));
+  assert.deepEqual(li.kids.map((kid) => kid.className), ["med-name", "flag", "flag", "take", "facts"]);
+  assert.equal(li.kids[1].textContent, "Your records don't agree on how much you take.");
+  assert.equal(li.kids[2].textContent, "Valley Clinic (test records) now says 20 mg, once a day.");
+  // Its other flags stay after the rows, as on every card.
+  const held = new Node("li");
+  drawCard(held, "x", patientCard(asked("dose", null, { hospital: true }), true));
+  assert.deepEqual(held.kids.map((kid) => kid.className), ["med-name", "flag", "take", "flag", "facts"]);
+  assert.equal(held.kids[3].textContent, "Hospital order");
+});
+
+test("an answer of one side shows that side's dose", () => {
+  const answer = { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "smart-sandbox", answeredAt: "2026-11-25" };
+  const withRoute = Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides: [Object.assign({}, SIDES[0], { route: "Oral" }), SIDES[1]] }), answer });
+  assert.deepEqual(patientCard(withRoute, true).take, [["Dose", "10 mg"], ["How taken", "Oral"], ["How often", "once a day"]]);
+  answer.choice = "valley-clinic-demo";
+  assert.deepEqual(patientCard(withRoute, true).take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+});
+
+test("an answer of not sure keeps both sides", () => {
+  const answer = { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "not-sure", answeredAt: "2026-11-25" };
+  const card = patientCard(Object.assign({}, GROUPED, { answer }), true);
+  assert.deepEqual(card.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "20 mg, once a day"]]);
+  assert.ok(!card.flags.some((text) => /don't agree/.test(text)), "asked no more");
+});
+
+// The name and the dose come from the same record, so a card never reads
+// 20 MG with the 10 MG record's dose.
+test("an answer of one side names that side's medicine", () => {
+  const sides = [Object.assign({}, SIDES[0], { dose: "1 tablet" }), SIDES[1]];
+  const answer = { groupId: "29046", fingerprint: "fp", sides, choice: "smart-sandbox", answeredAt: "2026-11-25" };
+  const card = patientCard(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer }), true);
+  assert.equal(card.name, "lisinopril 10 MG Oral Tablet");
+  assert.deepEqual(card.take[0], ["Dose", "1 tablet"]);
+  assert.equal(patientCard(asked("dose"), true).name, undefined, "no name of its own before an answer");
+  assert.equal(cardName(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer })), "lisinopril 10 MG Oral Tablet");
+  assert.equal(cardName(asked("dose")), "lisinopril 20 MG Oral Tablet");
+});
+
+// What a screen reader hears on the buttons is the name the card shows.
+test("My medicines names a card the same way on the card, its buttons and what's said", () => {
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /drawCard\(row, cardName\(entry\), patientCard\(entry, /);
+  assert.doesNotMatch(app, /": " \+ entry\.name\)/, "button labels");
+  assert.doesNotMatch(app, /announce = entry\.name \+/, "announcements");
+});
+
+// The facts go with the record the dose came from: never another source's
+// prescriber or dates beside the chosen side's dose.
+const CHOSEN = (choice) => Object.assign({}, GROUPED, {
+  prescriber: "Dr Valley", start: "2026-10-05", end: "2027-10-05",
+  doseHistory: [{ name: "lisinopril 10 MG Oral Tablet", date: "2025-01-01" }, { name: "lisinopril 20 MG Oral Tablet", date: "2026-10-05" }],
+  answer: { groupId: "29046", fingerprint: "fp", sides: SIDES, choice, answeredAt: "2026-11-25" }
+});
+test("a chosen side from another source keeps only its own facts", () => {
+  const facts = patientCard(CHOSEN("smart-sandbox"), true).facts;
+  const labels = facts.map(([label]) => label);
+  for (const label of ["Prescribed by", "Since", "Until", "Dose change"]) assert.ok(!labels.includes(label), label);
+  assert.deepEqual(facts.filter(([label]) => label === "Source"), [["Source", "SMART sandbox"]]);
+  assert.deepEqual(facts.at(-1), ["You said", "10 mg, once a day (Nov 25)"]);
+});
+
+test("a chosen side that is the shown record keeps the card as it is", () => {
+  const card = patientCard(CHOSEN("valley-clinic-demo"), true);
+  assert.equal(card.name, undefined);
+  assert.deepEqual(card.facts.slice(0, 4), [["Prescribed by", "Dr Valley"], ["Since", "Oct 5, 2026"], ["Until", "Oct 5, 2027"], ["Dose change", "10 MG to 20 MG, Oct 5, 2026"]]);
+  assert.ok(card.facts.some(([label, text]) => label === "Source" && text === "Valley Clinic (test records)"));
+});
+
+// Two sources often give the same code, so the same key. The source decides
+// which side is the card's own record, never the key alone.
+test("an answer of the second source with the same code shows that source's dose", () => {
+  const sides = [Object.assign({}, SIDES[0], { key: "rx:314077" }), SIDES[1]];
+  const shown = item({ key: "rx:314077", sourceId: "smart-sandbox", source: "SMART sandbox", dose: "10 mg", route: null, prescriber: "Dr. Patel",
+    group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["dose"], sides, fingerprint: "fp", notes: [] } });
+  const answer = { groupId: "29046", fingerprint: "fp", sides, choice: "valley-clinic-demo", answeredAt: "2026-11-25" };
+  const card = patientCard(Object.assign({}, shown, { answer }), true);
+  assert.deepEqual(card.take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+  assert.deepEqual(card.facts.filter(([label]) => label === "Source"), [["Source", "Valley Clinic (test records)"]]);
+  assert.ok(!card.facts.some(([label]) => label === "Prescribed by"), "not the shown record's prescriber");
+  // The card's own source chosen: its own details.
+  const own = patientCard(Object.assign({}, shown, { answer: Object.assign({}, answer, { choice: "smart-sandbox" }) }), true);
+  assert.deepEqual(own.facts.filter(([label]) => label === "Prescribed by" || label === "Source"), [["Prescribed by", "Dr. Patel"], ["Source", "SMART sandbox"]]);
 });

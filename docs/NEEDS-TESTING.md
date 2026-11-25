@@ -20,6 +20,15 @@ built-in sandbox patient, or Chantell Bartell (claims and an allergy). The
 README has a link that signs in as each. The demo patient Avery Brownbag is wiped by the
 sandbox every night.
 
+Test patients whose records disagree: Riley Reconcile and Jordan Partial. The
+sandbox deletes them every night, so run `node tools/reconcile-patients.mjs`
+first, then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. After setting up
+the lock, open the home server's address with one of these added:
+
+- Riley: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLXJpbGV5IiwiIiwiQVVUTyIsMSwxLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwxLCIiXQ%2Ffhir`
+- Jordan: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLWpvcmRhbiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir`
+
 ## Test right away, not in the batch
 
 Claude runs both simulators straight after a change, without waiting for a
@@ -34,67 +43,94 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Found in the 2026-11-25 pass, not fixed yet.** No app code was changed in the
+pass. Each needs a fix, then a check on both virtual phones.
+
+- **The staff page's code box cuts off the 6th digit at 200 percent text**
+  (iPhone simulator, Settings ▸ Accessibility ▸ Larger Text at Accessibility
+  Large). The box fills the width but the digits are 66 px with wide spacing,
+  so the last digit sits past the edge; at the largest size only 2 and a half
+  show. Typing still works. Normal text size is fine (box 272 px, digits fit).
+  The Android emulator couldn't show it: the system font scale didn't reach
+  Chrome's page.
+- **Past 200 percent text on the iPhone** (beyond WCAG's 200 percent, so lower
+  priority): My medicines scrolls sideways from Accessibility XXL (page 400 px
+  wide on a 393 px screen; 449 px at the largest size, where "+ Add a
+  medicine" runs to the edge). On the QR screen the title fills the screen
+  from Accessibility XL, so the code starts below the fold and the patient
+  has to scroll to show it. At Accessibility Large (about 200 percent) both
+  are fine.
+- **Back after signing out skips the connections screen.** Sign out, Sign in,
+  unlock, Connect, then the phone's Back button (or Safari's) lands on
+  "You're signed out", not on Connect your health records. On a first run
+  (lock, connections, Connect, Back) it comes back to the lock and then the
+  connections screen, as it should. Same on both virtual phones.
+- **Deny at the sandbox's approval page never comes back to Brown Bag.** The
+  sandbox shows its own text, `{"error":"invalid_request","error_description":"Unauthorized"}`,
+  and doesn't return to the app, so "Sign-in didn't finish. Try again." can't
+  show. Back twice reaches "Choose a test patient". Same on both virtual
+  phones. This is how the sandbox answers Deny; decide whether Brown Bag can
+  do anything about it before calling the check failed or dropped.
+
+**Answering a disagreement: "Not sure, ask my doctor"** (Tasks 8 and 9). The
+rest of both entries passed on 2026-11-25 (see Tested). Blocked: the answer
+buttons are plan Task 10, not built yet. When they are, on both virtual
+phones, signed in as Riley:
+
+- Answer one card "Not sure, ask my doctor" and make a new code: that card on
+  the staff page starts with "Patient isn't sure", and in Save as FHIR file
+  its versions say "Patient isn't sure".
+- Answer all three with a version: the file's Medicines title is "Medicines",
+  and each chosen one has "Other record" notes.
+
+**TalkBack on the disagreement screens** (Tasks 6b to 8). Checked on
+2026-11-25 only in Chrome's accessibility tree on the Android emulator, which
+TalkBack reads from: the staff page reads each version's source and month just
+before its name; My medicines reads each side's source with its dose; the
+"don't match your name and birth date" line is read whole, before the cards.
+TalkBack itself wasn't switched on (the emulator is shared and very slow).
+
+**Marks and a newer prescription** (2026-11-25, step 1). Passed on both
+virtual phones on 2026-11-25 (see Tested), except: a backup made before this
+change still restores. That needs a backup file made by the older app.
+
 **Lock first, then the connections screen** (2026-11-25, design
-`docs/superpowers/specs/2026-11-25-connections-design.md`). Touches sign-in
-and the lock, so it's a test-right-away change, but the virtual phones run on
-Tyler's Mac and this was built in a cloud session. Checked only in headless
-Chromium with a PIN and Chantell Bartell on the live sandbox: first run goes
-lock, then Connect your health records; Connect, the test patients, Back
-(unlock, back on the screen); a full sign-in comes back to the screen with
-Connected and Done; Done goes home; reopening goes home with the update
-check. Still to check on both virtual phones and Tyler's iPhone:
+`docs/superpowers/specs/2026-11-25-connections-design.md`). Passed on both
+virtual phones on 2026-11-25: the README's test-patient link with no lock
+(lock set-up, then the screen); More options, Health records, Sign in again,
+Approve (back to Health records, and Done goes home); Sign out, then Sign in
+(unlock, then the screen, no saved list shown). Still to check:
 
-- Face ID set-up first, then the screen; Face ID again after the sandbox.
+- Face ID set-up first, then the screen; Face ID again after the sandbox
+  (Tyler's iPhone).
 - The Home Screen app: the sandbox sign-in comes back into the app, not
-  Safari, and lands on the connections screen.
+  Safari, and lands on the connections screen (Tyler's iPhone).
 - Home's "Sign in" note (expired pass) comes back home, not to the screen.
-- More options, Health records, Sign in again: comes back to Health records,
-  and Done goes home.
-- Cancel at the sandbox's approval page: back on the screen with "Sign-in
-  didn't finish. Try again."
-- Sign out, then Sign in: unlock, then the screen, with no saved list shown.
-- The README's test-patient links on a phone with no lock: lock set-up, then
-  the screen.
+  Not reproduced: no way to expire the pass on a virtual phone.
+- Cancel at the sandbox's approval page: see "Deny at the sandbox's approval
+  page" above.
 
-**The "?" pills** (2026-11-24): passed in Chrome and on the virtual iPhone. Not yet on the
-Android emulator, nor with high contrast colors on.
-
-**The folded Allergies box and the severe mark** (2026-11-24): passed in Chrome and on the
-virtual iPhone. Not yet on the Android emulator. A nurse or pharmacist has yet to check
+**The folded Allergies box and the severe mark** (2026-11-24): passed on both
+virtual phones (Android on 2026-11-25). A nurse or pharmacist has yet to check
 which reactions are marked severe.
 
-**Remove on the unnamed allergy** (2026-11-24): passed in Chrome and on the virtual
-iPhone, including See what's inside. Not yet on the Android emulator.
+**As needed, Not taking, the staff code box and the "?" headings** (PR #3).
+Passed on 2026-11-25 (see Tested). Still to check:
 
-**As needed, Not taking, the staff code box and the "?" headings** (PR #3,
-merged and live 2026-11-24). Checked only in headless Chromium (sandbox
-sign-in, PIN, Loria Jenkins), not yet on a virtual phone or Tyler's iPhone.
-The staff page changed, so it goes first:
-
-- Staff page: the short "Patient's 6-digit code" box, big digits that fit
-  at the largest text size, the full-width Open button; no "Your care team
-  confirms it" note on it or on See what's inside (the two match; Tyler,
-  2026-11-24); the "Patient takes only as needed" and "Patient says not
-  taking" groups; Medicines (N) on the staff page equals My medicines (N)
-  on home, As needed included.
-- A QR code made before this change still opens on the staff page.
-- My medicines: "As needed" and "Not taking" side by side on each card,
-  stacking at the largest text size; the As needed part and its Undo;
-  Not taking on an As needed medicine; As needed on a "Filled, not in your
-  records" medicine, and its Undo going back there.
-- The "?" beside As needed, Added by me, Filled, not in your records, and Not
-  taking: VoiceOver and TalkBack read the heading, then "About
-  …, collapsed"; the explanation opens under the heading.
-- The "… is under Not taking" panel when adding a medicine marked Not
-  taking, and its "I'm taking it again" button.
-- With no signal: mark one As needed, then open the QR code. The "isn't
-  fully up to date" alert says "Marked … As needed".
-- A backup made before this change still restores (it has no As needed
-  marks), and one made after it brings the As needed marks back.
-- See what's inside on Android: the phone's own Back button, TalkBack, and
-  whether a camera reads the slightly smaller code on a short screen.
-- The sign-in list on Android: the phone's own Back button and TalkBack. Claude
-  in Chrome stood in for the emulator (the Mac's disk was full).
+- A QR code made before this change still opens on the staff page (needs an
+  old code and its 6 digits).
+- As needed on a "Filled, not in your records" medicine, and its Undo going
+  back there: no test patient has one (Riley's lisinopril 20 MG fill joins
+  her lisinopril 10 MG card).
+- A backup made before this change still restores, and one made after it
+  brings the As needed marks back.
+- The "?" headings and See what's inside with TalkBack itself (Chrome's
+  accessibility tree reads "About …, collapsed" right after each heading).
+- Whether a camera reads the slightly smaller code on a short screen (real
+  phone).
+- The two buttons stacking at the largest text size on Android: the system
+  font scale didn't reach Chrome's page. They stack on the iPhone simulator
+  at 200 percent text.
 
 ## Not done yet
 
@@ -116,8 +152,76 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - Face ID unlock after the content security policy (the simulators have no Face ID).
 - Airplane mode off with a saved list open: signed in, it updates by itself; signed
   out, "Sign in again to update it." The virtual phones used a stand-in signal.
+- Scan Riley's QR code (records that disagree) with the iPhone's camera: it opens
+  `share.html`. The virtual phones read the code from a screenshot instead.
 
 ## Tested
+
+**2026-11-25 pass, Android emulator (Chrome) and iPhone 15 simulator (Safari),
+on the home server with the test clinic, Riley and Jordan put back on the
+sandbox the same day.** Widths also on a temporary iPhone SE (3rd generation)
+simulator, and in Android Chrome at 375 and 320 wide. The QR codes were read
+from screenshots by the Mac (a stand-in for a camera). The Android emulator
+renders very slowly and Chrome showed "isn't responding" several times; each
+time Wait was pressed and the step run again. Passed:
+
+- The QR code with a disagreement (Task 7): shows, reads into `share.html`,
+  See what's inside and the staff page list Medicines (9) with "Records
+  disagree: ask the patient" first (atorvastatin current and stopped,
+  lisinopril 10 and 20 MG, methotrexate weekly and daily), then From records;
+  sertraline names both sources.
+- The staff page with a disagreement, and the fill hint (Task 8): "Records
+  disagree: ask the patient (3)", one card each with its source and month,
+  From records (6), metformin's "From the fill: about 2 a day (60 for 30
+  days)" and nowhere on My medicines; See what's inside says the same, in the
+  same order. Wraps on the iPhone SE and at 320 wide. ("Not sure" is still
+  waiting.)
+- Save as FHIR file with a disagreement (Task 9): one .json from the staff
+  page and one from See what's inside, the same apart from ids and time;
+  Medicines section "Medicines (records disagree on 3 medicines)", text starts
+  "Records disagree on 3 medicines. Ask the patient.", no "DetectedIssue";
+  the popup starts on Cancel. ("Not sure" is still waiting.)
+- Allergies, names and birth dates as real sources write them (Task 6d):
+  Loria as before; Loria at `?demo=someone-else` (the line above the cards, My
+  medicines (4)); Chantell's Allergies (1), "Mold, 1 unnamed", the Unnamed
+  allergy row, and See what's inside's unnamed allergy line.
+- Medicines as real sources write them (Task 6c): Riley (9, 1 older), Loria
+  (6, 9 older; Lasix and furosemide two cards; simvastatin under Older;
+  metoprolol asks how much), and the "no information" line on My medicines
+  (4) and See what's inside, with a temporary clinic file (deleted after).
+- Riley and Jordan: every card as the entry said (lisinopril, methotrexate,
+  atorvastatin, levothyroxine, one sertraline, the hospital ondansetron under
+  Older); Jordan's "Some records didn't load." on Home with no count, Valley
+  Clinic's line on My medicines, simvastatin dated 2026 by year after Dec
+  2025, metformin's clinic side undated, one amlodipine.
+- Two sources on one list: Loria's metoprolol sides, `?demo=someone-else`, and
+  without the test clinic My medicines (4) with no notice.
+- Marks and a newer prescription: Not taking and Undo, As needed and Undo; a
+  medicine marked Not taking the day before a newer prescription comes back to
+  My medicines ("You marked Not taking on Nov 24. Your records have a newer
+  prescription, Nov 25."), and Not taking again moves it there. (The earlier
+  day was made by moving the page's clock back one day.)
+- The "?" pills on Android, and with high contrast colors (forced colors,
+  emulated in Chrome): labelled "About …", collapsed, 44 px, the explanation
+  opening right under its heading, the outline kept.
+- The folded Allergies box and the severe mark on Android: "Allergies (2) · 1
+  severe", Penicillin with Trouble breathing marked Severe, the folded line
+  "Mold, Penicillin, 1 unnamed".
+- Remove on the unnamed allergy on Android: the popup starts on "No, keep
+  it", which keeps it; "Yes, remove it" leaves "You removed an unnamed allergy
+  from this list." with Show it again; See what's inside still lists it,
+  "patient thinks it's already listed".
+- PR #3: As needed and Not taking side by side, stacking at 200 percent text
+  on the iPhone; the As needed part and Undo; Not taking on an As needed
+  medicine; the "… is under Not taking" panel and I'm taking it again; with no
+  signal (Android, Chrome's offline stand-in) the QR alert says "Marked
+  furosemide 40 MG Oral Tablet As needed"; no "Your care team confirms it" on
+  the staff page or See what's inside; the staff page's As needed (with
+  "Patient says as needed") and Patient says not taking groups; Medicines (4)
+  on the staff page equals My medicines (4) on home; the short code box at
+  normal text; Android's Back button on See what's inside (back to the code,
+  then closes it) and on the sign-in list on a first run (one of three Back
+  presses was lost while Chrome wasn't responding).
 
 **The status bar strip** is wheat while the paper ball falls: passed on Tyler's iPhone
 2026-11-24.

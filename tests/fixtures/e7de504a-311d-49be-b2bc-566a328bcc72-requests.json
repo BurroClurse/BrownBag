@@ -1,0 +1,1374 @@
+{
+ "resourceType": "Bundle",
+ "id": "5d430c6e-42f1-4461-8b89-51a41b827bda",
+ "meta": {
+  "lastUpdated": "2026-11-25T12:13:14.963-05:00"
+ },
+ "type": "searchset",
+ "total": 20,
+ "link": [
+  {
+   "relation": "self",
+   "url": "https://r4.smarthealthit.org/MedicationRequest?_count=500&_include=MedicationRequest%3Amedication&patient=e7de504a-311d-49be-b2bc-566a328bcc72"
+  }
+ ],
+ "entry": [
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/1e45d6a2-23a2-49da-a79e-2cdabafa6874",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "1e45d6a2-23a2-49da-a79e-2cdabafa6874",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:10:44.043-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/f2cb2479-69d7-4426-8b1c-d8f178f5e8ae"
+    },
+    "authoredOn": "1987-05-02T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/b5dfc83f-4427-4780-bf30-448e0a780283",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "b5dfc83f-4427-4780-bf30-448e0a780283",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:10:20.899-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1719286",
+       "display": "10 ML Furosemide 10 MG/ML Injection"
+      }
+     ],
+     "text": "10 ML Furosemide 10 MG/ML Injection"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/502f0e81-b393-4e8e-9479-c8aeb2ef09e8"
+    },
+    "authoredOn": "1993-02-06T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/b85bbc6a-e6d9-4337-80ea-a5a3faefc7ae"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/6a962595-d67e-402a-8abf-7c2353131767",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "6a962595-d67e-402a-8abf-7c2353131767",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:09:58.322-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/ddde3621-4a7b-4d7c-a28c-fb92750309e9"
+    },
+    "authoredOn": "1985-05-02T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/42aaee61-31d1-4ed7-a74d-b2f0c02927cf",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "42aaee61-31d1-4ed7-a74d-b2f0c02927cf",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:08:39.198-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "311989",
+       "display": "Nitrofurantoin 5 MG/ML Oral Suspension"
+      }
+     ],
+     "text": "Nitrofurantoin 5 MG/ML Oral Suspension"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/10079705-40c6-4095-81e8-dbc06081c140"
+    },
+    "authoredOn": "1991-08-11T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/34d08111-03d1-405b-8462-9600ed778676"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/65979a67-6ce9-4233-ba14-18bcd8152898",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "65979a67-6ce9-4233-ba14-18bcd8152898",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:08:09.554-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/2a29472a-8992-443e-b8d5-2c7110fb36f3"
+    },
+    "authoredOn": "1990-05-01T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/f10fe577-4ae6-4b93-9278-4ade5756205b",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "f10fe577-4ae6-4b93-9278-4ade5756205b",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:08:07.394-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "749882",
+       "display": "Norinyl 1+50 28 Day Pack"
+      }
+     ],
+     "text": "Norinyl 1+50 28 Day Pack"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/fd675c55-b79f-4427-9af8-150f50d87443"
+    },
+    "authoredOn": "1986-05-18T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/155b0c34-9dc8-4dd3-8a87-fc31a0f3e573",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "155b0c34-9dc8-4dd3-8a87-fc31a0f3e573",
+    "meta": {
+     "versionId": "7",
+     "lastUpdated": "2025-09-30T03:07:53.868-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "866414",
+       "display": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet [Toprol]"
+      }
+     ],
+     "text": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet [Toprol]"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/863bae3c-628c-4a38-b27c-9fe9f4b88c5c"
+    },
+    "authoredOn": "1992-08-10T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/b85bbc6a-e6d9-4337-80ea-a5a3faefc7ae"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"7\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/13b6cfed-ffb7-421b-a720-651a6f2c4c7a",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "13b6cfed-ffb7-421b-a720-651a6f2c4c7a",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:07:16.010-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "749882",
+       "display": "Norinyl 1+50 28 Day Pack"
+      }
+     ],
+     "text": "Norinyl 1+50 28 Day Pack"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/eae775ec-53a5-4efd-8bd7-b398a62f0549"
+    },
+    "authoredOn": "1987-05-13T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/cf7d5f3d-718d-4841-9f3a-ba965d8e9102",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "cf7d5f3d-718d-4841-9f3a-ba965d8e9102",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:05:34.984-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "235389",
+       "display": "Mestranol / Norethynodrel [Enovid]"
+      }
+     ],
+     "text": "Mestranol / Norethynodrel [Enovid]"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/840f6b83-f7b8-45b2-ad92-acbfb25e56d2"
+    },
+    "authoredOn": "1985-05-23T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    }
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/ef9ce4d7-cdc7-4f4c-9658-e5cf84591f8f",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "ef9ce4d7-cdc7-4f4c-9658-e5cf84591f8f",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:05:08.934-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/1e767ecb-4d2b-4af7-8132-e7c4e44e9196"
+    },
+    "authoredOn": "1988-05-01T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/17a73c76-a238-4abc-9110-7116b3d45dbb",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "17a73c76-a238-4abc-9110-7116b3d45dbb",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:04:50.993-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "310965",
+       "display": "Ibuprofen 200 MG Oral Tablet"
+      }
+     ],
+     "text": "Ibuprofen 200 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/609ace30-a2e1-4e08-9112-ef403a5c83bf"
+    },
+    "authoredOn": "1989-04-30T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "asNeededBoolean": true
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/8b5394ce-4a27-4c5b-87cc-0d50376b0e07",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "8b5394ce-4a27-4c5b-87cc-0d50376b0e07",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:04:40.598-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "315971",
+       "display": "Lasix 40mg"
+      }
+     ],
+     "text": "Lasix 40mg"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/863bae3c-628c-4a38-b27c-9fe9f4b88c5c"
+    },
+    "authoredOn": "1992-08-10T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/b85bbc6a-e6d9-4337-80ea-a5a3faefc7ae"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/946f465f-a842-4941-9cae-e87a7abbbbb5",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "946f465f-a842-4941-9cae-e87a7abbbbb5",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:04:29.531-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "1094107",
+       "display": "Phenazopyridine hydrochloride 100 MG Oral Tablet"
+      }
+     ],
+     "text": "Phenazopyridine hydrochloride 100 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/10079705-40c6-4095-81e8-dbc06081c140"
+    },
+    "authoredOn": "1991-08-11T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/34d08111-03d1-405b-8462-9600ed778676"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/5c816376-0948-4c02-9c8f-07f1696f4bbf",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "5c816376-0948-4c02-9c8f-07f1696f4bbf",
+    "meta": {
+     "versionId": "6",
+     "lastUpdated": "2026-02-05T02:19:01.131-05:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "active",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/b9c4c78f-3707-4bf6-8c40-0702e70274bf"
+    },
+    "authoredOn": "1992-04-30T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"6\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/d8e30a8b-a5d1-4e16-b366-8fcbefcd36a0",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "d8e30a8b-a5d1-4e16-b366-8fcbefcd36a0",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:01:37.974-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "313782",
+       "display": "Acetaminophen 325 MG Oral Tablet"
+      }
+     ],
+     "text": "Acetaminophen 325 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/a3abb6c6-55f7-4609-9e0b-16a5cc068cec"
+    },
+    "authoredOn": "1987-07-19T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "asNeededBoolean": true
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/149db8d1-a1ec-4501-bbcb-21c9477ce0a3",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "149db8d1-a1ec-4501-bbcb-21c9477ce0a3",
+    "meta": {
+     "versionId": "2",
+     "lastUpdated": "2021-04-07T03:01:13.955-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/5070fd07-ae2c-4266-b053-2251fa88270c"
+    },
+    "authoredOn": "1986-05-02T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"2\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/ca90fcd0-4031-411e-ba14-5cb207091375",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "ca90fcd0-4031-411e-ba14-5cb207091375",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:00:32.228-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "309043",
+       "display": "12 HR Cefaclor 500 MG Extended Release Oral Tablet"
+      }
+     ],
+     "text": "12 HR Cefaclor 500 MG Extended Release Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/609ace30-a2e1-4e08-9112-ef403a5c83bf"
+    },
+    "authoredOn": "1989-04-30T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "additionalInstruction": [
+       {
+        "coding": [
+         {
+          "system": "http://snomed.info/sct",
+          "code": "418577003",
+          "display": "Take at regular intervals. Complete the prescribed course unless otherwise directed."
+         }
+        ],
+        "text": "Take at regular intervals. Complete the prescribed course unless otherwise directed."
+       }
+      ],
+      "timing": {
+       "repeat": {
+        "frequency": 2,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/c4a86ba5-c88a-4d80-8a89-47dd199f3039",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "c4a86ba5-c88a-4d80-8a89-47dd199f3039",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T03:00:29.486-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/f8a67926-0a56-4231-a637-cd07794fd4aa"
+    },
+    "authoredOn": "1991-05-01T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/8ebf8075-1368-4b5e-898c-c812600ba9f9",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "8ebf8075-1368-4b5e-898c-c812600ba9f9",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T02:59:56.703-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "316672",
+       "display": "Simvistatin 10 MG"
+      }
+     ],
+     "text": "Simvistatin 10 MG"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/c221924a-5da1-48df-ab60-ce6e3caa59e1"
+    },
+    "authoredOn": "1989-05-01T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "reasonReference": [
+     {
+      "reference": "Condition/3dfcf7a3-02bf-44f9-ba13-a29a4741c229"
+     }
+    ],
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 1,
+        "periodUnit": "d"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  },
+  {
+   "fullUrl": "https://r4.smarthealthit.org/MedicationRequest/5c994a74-0973-482d-81c4-bcd7cdb81521",
+   "resource": {
+    "resourceType": "MedicationRequest",
+    "id": "5c994a74-0973-482d-81c4-bcd7cdb81521",
+    "meta": {
+     "versionId": "4",
+     "lastUpdated": "2021-04-07T02:57:04.798-04:00",
+     "tag": [
+      {
+       "system": "https://smarthealthit.org/tags",
+       "code": "synthea-5-2019"
+      }
+     ]
+    },
+    "status": "stopped",
+    "intent": "order",
+    "medicationCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+       "code": "857005",
+       "display": "Acetaminophen 325 MG / HYDROcodone Bitartrate 7.5 MG Oral Tablet"
+      }
+     ],
+     "text": "Acetaminophen 325 MG / HYDROcodone Bitartrate 7.5 MG Oral Tablet"
+    },
+    "subject": {
+     "reference": "Patient/e7de504a-311d-49be-b2bc-566a328bcc72"
+    },
+    "encounter": {
+     "reference": "Encounter/f73d63e9-f99d-46bc-8551-f9bacff30311"
+    },
+    "authoredOn": "1951-05-31T09:49:33+00:00",
+    "requester": {
+     "reference": "Practitioner/89af50db-f85c-497f-aa1f-f1c5cea70bc7"
+    },
+    "dosageInstruction": [
+     {
+      "sequence": 1,
+      "timing": {
+       "repeat": {
+        "frequency": 1,
+        "period": 6,
+        "periodUnit": "h"
+       }
+      },
+      "asNeededBoolean": false,
+      "doseAndRate": [
+       {
+        "type": {
+         "coding": [
+          {
+           "system": "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+           "code": "ordered",
+           "display": "Ordered"
+          }
+         ]
+        },
+        "doseQuantity": {
+         "value": 1
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   },
+   "response": {
+    "status": "200 OK",
+    "etag": "W/\"4\""
+   }
+  }
+ ]
+}

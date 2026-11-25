@@ -9,6 +9,7 @@ import { heldBack } from "./read.js";
 
 var SNOMED = "http://snomed.info/sct";
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+var IPS_ABSENT = "http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips";
 // Codes that mean "no code", so they never say two records are one allergy.
 var NO_CODE = /data-absent-reason|NullFlavor/i;
 var SEVERITIES = ["mild", "moderate", "severe"];
@@ -26,8 +27,26 @@ var NONE_CODES = {
   "716186003": "No known allergy",
   "409137002": "No known drug allergy",
   "429625007": "No known food allergy",
-  "428607008": "No known environmental allergy"
+  "428607008": "No known environmental allergy",
+  "716184000": "No known latex allergy"
 };
+// IPS's own code for none (absent-unknown-uv-ips), said as SNOMED's is.
+var IPS_NONE = { "no-known-allergies": "No known allergy" };
+
+function noneOf(coding) {
+  if (coding.system === SNOMED && isNoneCode(coding.code)) return NONE_CODES[coding.code];
+  return coding.system === IPS_ABSENT && Object.prototype.hasOwnProperty.call(IPS_NONE, coding.code) ? IPS_NONE[coding.code] : null;
+}
+
+// Codes that hold the allergen's place but don't say what it is: "no
+// information", a nullFlavor or data-absent-reason, and "Allergy to
+// substance", which is what a C-CDA "no known allergies" becomes when a
+// converter drops its negation. Their words are never an allergen's name.
+var PLACE_HOLDERS = [[IPS_ABSENT, "no-allergy-info"], [SNOMED, "419199007"]];
+function holdsPlace(coding) {
+  return NO_CODE.test(coding.system || "") || PLACE_HOLDERS.some(function (pair) { return coding.system === pair[0] && coding.code === pair[1]; });
+}
+var PLACE_WORDS = ["noinformation", "no information", "no information about allergies", "unknown", "allergy to substance"];
 
 // "Allergic disposition": someone tends to have allergies, but not to what.
 export var UNSPECIFIED = { system: SNOMED, code: "609328004" };
@@ -36,6 +55,30 @@ var UNSPECIFIED_NAME = "Allergic disposition";
 export function isUnspecified(resource) {
   var coded = codesOf(resource.code).some(function (c) { return c.system === SNOMED && c.code === UNSPECIFIED.code; });
   return (coded || words(resource.code).toLowerCase() === UNSPECIFIED_NAME.toLowerCase()) && !(resource.reaction || []).length;
+}
+
+// A record whose code only holds a place, with no reaction: it says there
+// may be an allergy, not to what, so it's the unnamed-allergy row.
+function namesNothing(resource) {
+  var codes = codesOf(resource.code);
+  return codes.length > 0 && codes.every(holdsPlace) && !allergenWords(resource.code) && !(resource.reaction || []).length;
+}
+
+// The allergen's words, leaving out a placeholder's ("NoInformation", "Unknown").
+function allergenWords(concept) {
+  var codes = (concept && concept.coding) || [];
+  var said = function (text) {
+    var plain = plainName(text);
+    return plain && PLACE_WORDS.indexOf(plain) === -1 && !codes.some(function (c) { return c && holdsPlace(c) && plainName(c.display) === plain; });
+  };
+  // A real code's name before words or a code that say none, so "NKA"
+  // over RxNorm penicillin is shown as the penicillin.
+  var real = codesOf(concept).concat(codes).filter(function (c) { return c && c.display && !holdsPlace(c) && !noneOf(c); })[0];
+  // Words or a code that say none are never an allergen's name: with a
+  // reaction and nothing else, it's an unnamed allergy.
+  var text = concept && said(concept.text) ? concept.text : "";
+  if (text && !noneSaid(text) && !onlyNoneWords(text)) return withoutKind(text);
+  return real ? withoutKind(real.display) : "";
 }
 
 // The sentence the staff page and the popup use: whose records, and who to ask.
@@ -103,7 +146,7 @@ export function unnamedDetails(resource, named) {
   var age = resource.onsetAge || {};
   var onset = dated(resource.onsetDateTime) || (age.value !== undefined ? tidy("at " + age.value + " " + (age.unit || "")) : "") || dated((resource.onsetPeriod || {}).start) || tidy(resource.onsetString);
   var day = /^\d{4}-\d\d-\d\d$/.test(fhir.recordedDate || "") ? fhir.recordedDate : null;
-  var sameDay = named.filter(function (other) { return day && fhirOf(other).recordedDate === day; }).map(function (other) { return words(other.code); })
+  var sameDay = named.filter(function (other) { return day && fhirOf(other).recordedDate === day; }).map(function (other) { return allergenWords(other.code); })
     .filter(function (name, i, all) { return name && all.indexOf(name) === i; });
   var say = function (label, text) { return text ? label + text : null; };
   var out = [
@@ -210,12 +253,45 @@ function isNoneCode(code) {
   return Object.prototype.hasOwnProperty.call(NONE_CODES, code);
 }
 
+// "No known allergies" as the records say it: a code, or the whole entry's
+// words. A code that says none, beside words that name something, is an
+// allergy, and so are words that say none of one thing and name another
+// ("NKA to food, allergic to penicillin").
+// Only a record with nothing else to say: a real code beside it ("NKA" over
+// RxNorm penicillin) or a reaction (NKDA, anaphylaxis) makes it an allergy.
 export function statementOf(resource, name) {
-  var none = codesOf(resource.code).filter(function (c) { return c.system === SNOMED && isNoneCode(c.code); })[0];
-  // A code that says none, beside words that name something, is an allergy.
-  if (none && (!name || name === UNNAMED || /\b(no|none|not|nil|nka|nkda|denies|negative|without)\b/i.test(name))) return NONE_CODES[none.code];
-  if (/^no known allerg(y|ies)$/i.test(name)) return "No known allergy";
-  return /^no known (drug|medication|food|environmental) allerg(y|ies)$/i.test(name) ? name : null;
+  var codes = codesOf(resource.code);
+  if (codes.some(function (c) { return !noneOf(c) && !holdsPlace(c); }) || (resource.reaction || []).length) return null;
+  var none = codes.map(noneOf).filter(Boolean)[0];
+  var said = noneSaid(name);
+  if (none && (!name || name === UNNAMED || said || onlyNoneWords(name))) return none;
+  return said;
+}
+
+var NONE_KINDS = { nka: "", nkda: "drug", nkma: "medication", nkfa: "food" };
+// The words to read: lower case, no dots ("N.K.A."), and a restatement in
+// brackets left off when it says none too ("No Known Allergies (NKA)").
+function noneText(name) {
+  var text = String(name || "").toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+  var bracket = /^(.+?) ?\(([^()]*)\)$/.exec(text);
+  return bracket && (noneSaid(bracket[2].trim()) || NONE_ONLY.test(bracket[2].replace(/[^a-z]+/g, " ").trim())) ? bracket[1].trim() : text;
+}
+
+// The whole entry, any case, a dot allowed after.
+function noneSaid(name) {
+  var text = noneText(name);
+  var kind = Object.prototype.hasOwnProperty.call(NONE_KINDS, text) ? NONE_KINDS[text] : null;
+  var sentence = /^(?:patient has )?no known (?:(drug|medication|food|environmental|latex) )?allerg(?:y|ies)$/.exec(text);
+  if (sentence) kind = sentence[1] || "";
+  return kind === null ? null : "No known " + (kind ? kind + " " : "") + "allergy";
+}
+
+// Words beside a none code that only say none ("No known allergies on file",
+// "Patient denies drug allergies"), as one sentence: anything else, even
+// "allergic to latex", could name an allergen.
+var NONE_ONLY = /^(patient )?(has |reports )?(no|none|nil|denies|denied|negative|nka|nkda|nkma|not known)( known)?( (drug|medication|food|environmental|latex))?( allerg(y|ies))?( on file| reported)?$/;
+function onlyNoneWords(name) {
+  return NONE_ONLY.test(noneText(name).replace(/[^a-z]+/g, " ").trim());
 }
 
 function worst(a, b) {
@@ -276,8 +352,8 @@ function joinFhir(a, b) {
 }
 
 function itemFrom(resource, sourceName) {
-  var name = words(resource.code);
-  var codes = codesOf(resource.code).filter(function (c) { return !NO_CODE.test(c.system || "") && !(c.system === SNOMED && isNoneCode(c.code)); });
+  var name = allergenWords(resource.code);
+  var codes = codesOf(resource.code).filter(function (c) { return !holdsPlace(c) && !noneOf(c); });
   var keys = codes.map(function (c) { return "alg:" + (c.system || "") + "|" + c.code; });
   if (name) keys.push("alg:name:" + plainName(name));
   // Nothing to tell it by: its id, else what it does say.
@@ -350,7 +426,7 @@ export function fromAllergyRecords(resources, sourceName) {
       if (statements.indexOf(statement) === -1) statements.push(statement);
       return;
     }
-    if (isUnspecified(resource)) {
+    if (isUnspecified(resource) || namesNothing(resource)) {
       blank.push(resource);
       return;
     }

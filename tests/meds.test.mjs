@@ -9,7 +9,10 @@ import {
   splitByStatus,
   groupByIngredient,
   doseChange,
-  usableRecord
+  usableRecord,
+  statusWord,
+  formOf,
+  strengthOf
 } from "../js/meds.js";
 
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
@@ -394,4 +397,63 @@ test("each item keeps the status the record gave it", () => {
   const drug = { medicationCodeableConcept: { text: "Warfarin" } };
   assert.equal(fromMedicationRequest(Object.assign({ status: "stopped" }, drug), "S").recordStatus, "stopped");
   assert.equal(fromMedicationStatement(Object.assign({ status: "not-taken" }, drug), "S").recordStatus, "not-taken");
+});
+
+const CATEGORY = "http://terminology.hl7.org/CodeSystem/medicationrequest-category";
+const inCategory = (code) => ({ category: [{ coding: [{ system: CATEGORY, code }] }] });
+
+test("an inpatient request is a hospital order, never current", () => {
+  const hospital = fromMedicationRequest(request("197361", "amlodipine 5 MG Oral Tablet", "2026-01-02", "active", inCategory("inpatient")), SOURCE);
+  assert.equal(hospital.hospital, true);
+  assert.equal(hospital.status, "older");
+  ["discharge", "outpatient", "community"].forEach((code) => {
+    const item = fromMedicationRequest(request("197361", "amlodipine 5 MG Oral Tablet", "2026-01-02", "active", inCategory(code)), SOURCE);
+    assert.equal(item.hospital, false);
+    assert.equal(item.status, "current");
+  });
+});
+
+test("statusWord follows the spec", () => {
+  const word = (status) => statusWord(fromMedicationRequest(request("1", "a 5 MG Oral Tablet", "2026-01-01", status), SOURCE));
+  assert.equal(word("active"), "current");
+  assert.equal(word("on-hold"), "current");
+  ["completed", "stopped", "cancelled"].forEach((status) => assert.equal(word(status), "not-current"));
+  assert.equal(word("draft"), "unknown");
+  assert.equal(word("unknown"), "unknown");
+  const said = (status, period) => statusWord(fromMedicationStatement({ resourceType: "MedicationStatement", status, effectivePeriod: period, medicationCodeableConcept: { text: "x" } }, SOURCE));
+  assert.equal(said("not-taken"), "not-current");
+  assert.equal(said("on-hold"), "unknown");
+  assert.equal(said("unknown"), "current");
+  assert.equal(said("unknown", { end: "2026-02-01" }), "unknown");
+});
+
+test("records keep their id, lastUpdated and dateAsserted", () => {
+  const item = fromMedicationStatement({
+    resourceType: "MedicationStatement", id: "s1", status: "active",
+    meta: { lastUpdated: "2026-09-01T00:00:00Z" }, dateAsserted: "2026-08-30",
+    effectivePeriod: { end: "2026-10-01" }, medicationCodeableConcept: { text: "x" }
+  }, SOURCE);
+  assert.equal(item.recordRef, "MedicationStatement/s1");
+  assert.equal(item.updated, "2026-09-01T00:00:00Z");
+  assert.equal(item.asserted, "2026-08-30");
+  assert.equal(item.stoppedOn, "2026-10-01");
+  const bare = fromMedicationRequest(request("1", "a", "2020-01-01"), SOURCE);
+  assert.equal(bare.recordRef, null);
+  assert.equal(bare.updated, null);
+  assert.equal(bare.asserted, null);
+  assert.equal(bare.stoppedOn, null);
+});
+
+test("formOf reads the form", () => {
+  assert.equal(formOf("Sertraline 50 MG Oral Tablet [Zoloft]"), "oral tablet");
+  assert.equal(formOf("lisinopril 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet"), "oral tablet");
+  // Task 6c: release time and salt are part of the form, wherever they're said.
+  assert.equal(formOf("24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet"), "24 hr hydrochloride extended release oral tablet");
+  assert.equal(formOf("fish oil"), null);
+});
+
+test("strengthOf and formOf read patch strengths like MG/24HR", () => {
+  assert.equal(strengthOf("estradiol 0.1 MG/24HR Transdermal System"), "0.1 MG/24HR");
+  assert.equal(formOf("estradiol 0.1 MG/24HR Transdermal System"), "transdermal system");
+  assert.equal(strengthOf("fentanyl 25 MCG/HR Transdermal System"), "25 MCG/HR");
 });

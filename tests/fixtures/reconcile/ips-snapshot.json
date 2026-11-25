@@ -1,0 +1,57 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "timestamp": "2026-06-01T14:05:00Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:1d0c6a30-0000-4000-8000-000000000001",
+      "resource": {
+        "resourceType": "Composition",
+        "status": "final",
+        "type": { "coding": [{ "system": "http://loinc.org", "code": "60591-5", "display": "Patient summary Document" }] },
+        "subject": { "reference": "urn:uuid:1d0c6a30-0000-4000-8000-000000000002" },
+        "date": "2026-06-01",
+        "author": [{ "display": "Mercy Health" }],
+        "title": "Patient summary",
+        "section": []
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1d0c6a30-0000-4000-8000-000000000002",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "family": "Jenkins", "given": ["Loria"] }],
+        "birthDate": "1937-07-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1d0c6a30-0000-4000-8000-000000000003",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314077", "display": "lisinopril 20 MG Oral Tablet" }]
+        },
+        "subject": { "reference": "urn:uuid:1d0c6a30-0000-4000-8000-000000000002" },
+        "dosage": [
+          {
+            "doseAndRate": [{ "doseQuantity": { "value": 20, "unit": "mg" } }],
+            "timing": { "repeat": { "frequency": 1, "period": 1, "periodUnit": "d" } }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1d0c6a30-0000-4000-8000-000000000004",
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "617310", "display": "atorvastatin 20 MG Oral Tablet" }]
+        },
+        "subject": { "reference": "urn:uuid:1d0c6a30-0000-4000-8000-000000000002" },
+        "dosage": [{ "text": "Take 1 tablet at night" }]
+      }
+    }
+  ]
+}

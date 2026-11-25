@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText } from "../js/view.js";
+import { formatName, arrangeList, shareListFrom, makeAddition, localDate, latestOnly, emptyRecordsText, medicineCount, medicinesButtonText, noticesFor , logChange, changeAlert, backToList, draftStarted, unsavedText, keepChanges, updateDoneText, updatedToast, UPDATED_SHOWS_MS, UPDATED_FADE_MS, swooshFrom, foundText, keysOf } from "../js/view.js";
 
 function item(key, name, extra = {}) {
   return Object.assign({
@@ -355,4 +355,216 @@ test("the name search says match for one, matches for more", () => {
   assert.equal(foundText(0), "No matches. You can still add it.");
   assert.equal(foundText(1), "1 match. Pick it, or keep what you typed.");
   assert.equal(foundText(4), "4 matches. Pick one, or keep what you typed.");
+});
+
+// A card from two sources (reconcile.js): one side each, oldest first.
+function side(key, sourceId, sourceName, extra = {}) {
+  return Object.assign({
+    sourceId, sourceName, kind: "refreshing", asOf: "2026-03-01", dose: "10 mg", route: "Oral", frequency: null,
+    status: "current", recordStatus: "active", key, name: "Lisinopril 10 MG Oral Tablet"
+  }, extra);
+}
+function twoSources(verdicts = ["dose"], sides) {
+  sides = sides || [
+    side("rx:1", "clinic-a", "Valley Clinic"),
+    side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-10-01", dose: "20 mg", name: "Lisinopril 20 MG Oral Tablet" })
+  ];
+  return item("rx:2", "Lisinopril 20 MG Oral Tablet", {
+    group: { id: "29046", sources: ["Valley Clinic", "Mercy Health"], verdicts, sides, fingerprint: "fp-now", notes: [] }
+  });
+}
+
+test("keysOf gives every key a card answers to, once each, in order", () => {
+  assert.deepEqual(keysOf({ key: "fill:1", otherKeys: ["rx:2"], group: { sides: [{ key: "rx:2" }, { key: "rx:3" }] } }), ["fill:1", "rx:2", "rx:3"]);
+  assert.deepEqual(keysOf({ key: "rx:1" }), ["rx:1"]);
+});
+
+test("a Not taking mark doesn't hide a newer prescription", () => {
+  const card = item("rx:1", "Lisinopril", { lastDate: "2026-10-02" });
+  const arranged = arrangeList({ current: [card], older: [] }, { stopped: { "rx:1": "2026-03-03" } });
+  assert.deepEqual(arranged.current.map((i) => i.key), ["rx:1"]);
+  assert.equal(arranged.stopped.length, 0);
+  assert.deepEqual(arranged.toCheck.map((i) => i.key), ["rx:1"]);
+  assert.equal(arranged.toCheck[0].question.kind, "status");
+  assert.equal(arranged.toCheck[0].question.why, "You marked Not taking on Mar 3. Your records have a newer prescription, Oct 2.");
+});
+
+test("a newer prescription's question is answered by its mark and date", () => {
+  const card = item("rx:1", "Lisinopril", { lastDate: "2026-10-02" });
+  const answer = (choice) => ({ groupId: "rx:1", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice, answeredAt: "2026-11-25" });
+  const no = arrangeList({ current: [card], older: [] }, { stopped: { "rx:1": "2026-03-03" }, answers: [answer("not-taking")] });
+  assert.deepEqual(no.stopped.map((i) => [i.key, i.stoppedAt]), [["rx:1", "2026-03-03"]]);
+  assert.deepEqual(no.toCheck, []);
+  const unsure = arrangeList({ current: [card], older: [] }, { stopped: { "rx:1": "2026-03-03" }, answers: [answer("not-sure")] });
+  assert.deepEqual(unsure.current.map((i) => i.key), ["rx:1"]);
+  assert.deepEqual(unsure.toCheck, []);
+  assert.equal(unsure.current[0].answer.choice, "not-sure");
+  assert.equal(unsure.current[0].question, undefined);
+  // A still newer prescription asks again.
+  const newer = arrangeList({ current: [Object.assign({}, card, { lastDate: "2026-11-20" })], older: [] }, { stopped: { "rx:1": "2026-03-03" }, answers: [answer("not-taking")] });
+  assert.equal(newer.toCheck.length, 1);
+  assert.equal(newer.toCheck[0].question.why, "You marked Not taking on Mar 3. Your records have a newer prescription, Nov 20.");
+});
+
+test("a mark on one side of a group asks", () => {
+  const arranged = arrangeList({ current: [twoSources([])], older: [] }, { stopped: { "rx:1": "2026-03-03" } });
+  assert.equal(arranged.stopped.length, 0);
+  assert.deepEqual(arranged.current.map((i) => i.key), ["rx:2"]);
+  assert.equal(arranged.toCheck.length, 1);
+  assert.deepEqual([arranged.toCheck[0].question.kind, arranged.toCheck[0].question.why], ["status", "You marked this Not taking on Mar 3. Mercy Health lists it current, Oct 2026."]);
+});
+
+test("marks on every side stop the group", () => {
+  const arranged = arrangeList({ current: [twoSources()], older: [] }, { stopped: { "rx:1": "2026-11-01", "rx:2": "2026-11-01" } });
+  assert.equal(arranged.current.length, 0);
+  assert.deepEqual(arranged.stopped.map((i) => [i.name, i.stoppedAt]), [["Lisinopril 20 MG Oral Tablet", "2026-11-01"]]);
+  assert.deepEqual(arranged.toCheck, []);
+});
+
+test("a side's mark from before its record still asks", () => {
+  // Mercy Health's record is newer than the mark on it.
+  const arranged = arrangeList({ current: [twoSources()], older: [] }, { stopped: { "rx:1": "2026-11-01", "rx:2": "2026-09-01" } });
+  assert.equal(arranged.stopped.length, 0);
+  assert.equal(arranged.toCheck[0].question.why, "You marked Not taking on Sep 1. Your records have a newer prescription, Oct 1.");
+});
+
+test("a group asks one question, in the order status, dose, schedule", () => {
+  const ask = (verdicts) => arrangeList({ current: [twoSources(verdicts)], older: [] }, {}).toCheck.map((i) => i.question);
+  assert.deepEqual(ask(["dose"]), [{ kind: "dose", why: null, groupId: "29046", fingerprint: "fp-now" }]);
+  assert.deepEqual(ask(["dose", "schedule"]).map((q) => q.kind), ["dose"]);
+  assert.deepEqual(ask(["status", "dose"]).map((q) => q.kind), ["status"]);
+  assert.deepEqual(ask(["schedule", "worded"]).map((q) => q.kind), ["schedule"]);
+  assert.deepEqual(ask(["worded"]), []);
+  assert.deepEqual(ask([]), []);
+});
+
+test("an answer holds while the fingerprint matches", () => {
+  const card = twoSources();
+  const answers = [{ groupId: "29046", fingerprint: "fp-now", sides: card.group.sides, choice: "clinic-b", answeredAt: "2026-11-25" }];
+  const arranged = arrangeList({ current: [card], older: [] }, { answers });
+  assert.deepEqual(arranged.toCheck, []);
+  assert.equal(arranged.current[0].answer.choice, "clinic-b");
+  assert.equal(arranged.current[0].question, undefined);
+  // Another group's answer never moves to this one.
+  const other = arrangeList({ current: [card], older: [] }, { answers: [Object.assign({}, answers[0], { groupId: "1998" })] });
+  assert.equal(other.toCheck.length, 1);
+  assert.equal(other.toCheck[0].question.why, null);
+});
+
+test("I don't take this anymore puts the group under Not taking", () => {
+  const card = twoSources();
+  const answers = [{ groupId: "29046", fingerprint: "fp-now", sides: card.group.sides, choice: "not-taking", answeredAt: "2026-11-25" }];
+  const arranged = arrangeList({ current: [card], older: [] }, { answers });
+  assert.deepEqual(arranged.stopped.map((i) => [i.key, i.stoppedAt]), [["rx:2", "2026-11-25"]]);
+  assert.deepEqual(arranged.toCheck, []);
+});
+
+test("a changed side asks again and says what changed", () => {
+  const then = [
+    side("rx:1", "clinic-a", "Valley Clinic"),
+    side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-10-01", dose: "20 mg", name: "Lisinopril 20 MG Oral Tablet" })
+  ];
+  const now = [then[0], side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-11-01", dose: "40 mg", name: "Lisinopril 40 MG Oral Tablet" })];
+  const answers = [{ groupId: "29046", fingerprint: "fp-then", sides: then, choice: "clinic-b", answeredAt: "2026-10-20" }];
+  const changed = arrangeList({ current: [twoSources(["dose"], now)], older: [] }, { answers });
+  assert.equal(changed.toCheck.length, 1);
+  assert.equal(changed.toCheck[0].answer, undefined);
+  assert.equal(changed.toCheck[0].question.why, "Mercy Health now says 40 mg.");
+  // The source the answer named is gone.
+  const county = side("rx:3", "clinic-c", "County Clinic", { asOf: "2026-09-01", dose: "20 mg", name: "Lisinopril 20 MG Oral Tablet" });
+  const gone = arrangeList({ current: [twoSources(["dose"], [then[0], county])], older: [] }, { answers: [Object.assign({}, answers[0], { sides: then.concat(county) })] });
+  assert.equal(gone.toCheck[0].question.why, "Mercy Health didn't load.");
+});
+
+test("As needed stays with a question", () => {
+  const arranged = arrangeList({ current: [twoSources()], older: [] }, { asNeeded: { "rx:1": "2026-11-20" } });
+  assert.deepEqual(arranged.current.map((i) => i.asNeededAt), ["2026-11-20"]);
+  assert.equal(arranged.toCheck.length, 1);
+  assert.equal(arranged.toCheck[0].asNeededAt, "2026-11-20");
+  assert.equal(arranged.toCheck[0].question.kind, "dose");
+});
+
+test("a card with no group never gets a question", () => {
+  const arranged = arrangeList({ current: [item("rx:1", "Lisinopril"), item("rx:2", "Metformin")], older: [item("rx:3", "Old one", { status: "older" })] }, { stopped: { "rx:2": "2026-10-01" } });
+  assert.deepEqual(arranged.toCheck, []);
+  arranged.current.concat(arranged.stopped, arranged.older).forEach((card) => assert.equal(card.question, undefined));
+});
+
+test("a marked copy still answers to all the card's keys", () => {
+  const entry = { key: "fill:1", otherKeys: ["fill:2"], name: "Sertraline", status: "current" };
+  const stopped = arrangeList({ current: [entry], older: [] }, { stopped: { "fill:1": "2026-10-01", "fill:2": "2026-11-01" } }).stopped[0];
+  // The newest mark names it; Undo clears both.
+  assert.equal(stopped.key, "fill:2");
+  assert.deepEqual(keysOf(stopped).sort(), ["fill:1", "fill:2"]);
+  const needed = arrangeList({ current: [entry], older: [] }, { asNeeded: { "fill:2": "2026-11-01" } }).current[0];
+  assert.deepEqual(keysOf(needed).sort(), ["fill:1", "fill:2"]);
+});
+
+test("a marked side's newer record asks again after an answer", () => {
+  const card = twoSources([]);
+  const marks = { stopped: { "rx:1": "2026-03-03" } };
+  const asked = arrangeList({ current: [card], older: [] }, marks).toCheck[0].question;
+  assert.equal(asked.fingerprint, "mark:2026-03-03>2026-10-01");
+  const answers = [{ groupId: "29046", fingerprint: asked.fingerprint, sides: card.group.sides, choice: "not-taking", answeredAt: "2026-11-01" }];
+  assert.equal(arrangeList({ current: [card], older: [] }, Object.assign({ answers }, marks)).stopped.length, 1);
+  // Valley Clinic, the marked one, writes it again.
+  const renewed = twoSources([], [
+    side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-10-01", dose: "20 mg", name: "Lisinopril 20 MG Oral Tablet" }),
+    side("rx:1", "clinic-a", "Valley Clinic", { asOf: "2026-11-20" })
+  ]);
+  const again = arrangeList({ current: [renewed], older: [] }, Object.assign({ answers }, marks));
+  assert.equal(again.stopped.length, 0);
+  assert.equal(again.toCheck.length, 1);
+  assert.equal(again.toCheck[0].question.fingerprint, "mark:2026-03-03>2026-11-20");
+});
+
+test("the sentence names the newest dated source still listing it", () => {
+  const card = twoSources([], [
+    side("rx:1", "clinic-a", "Valley Clinic"),
+    side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-10-01", dose: "20 mg", name: "Lisinopril 20 MG Oral Tablet" }),
+    side("rx:3", "clinic-c", "County Clinic", { asOf: null })
+  ]);
+  const question = arrangeList({ current: [card], older: [] }, { stopped: { "rx:1": "2026-03-03" } }).toCheck[0].question;
+  assert.equal(question.why, "You marked this Not taking on Mar 3. Mercy Health lists it current, Oct 2026.");
+  assert.equal(question.fingerprint, "mark:2026-03-03>2026-10-01");
+});
+
+test("a side that isn't current is never said to list it current", () => {
+  const card = twoSources([], [
+    side("rx:1", "clinic-a", "Valley Clinic", { status: "not-current" }),
+    side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-10-01", status: "unknown" })
+  ]);
+  const arranged = arrangeList({ current: [card], older: [] }, { stopped: { "rx:1": "2026-11-01" } });
+  assert.deepEqual(arranged.toCheck, []);
+  assert.equal(arranged.stopped.length, 1);
+});
+
+test("what changed is never read from a mark's answer", () => {
+  const then = [
+    side("rx:1", "clinic-a", "Valley Clinic"),
+    side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-10-01", dose: "20 mg", name: "Lisinopril 20 MG Oral Tablet" })
+  ];
+  const now = [then[0], side("rx:2", "clinic-b", "Mercy Health", { asOf: "2026-11-01", dose: "40 mg", name: "Lisinopril 40 MG Oral Tablet" })];
+  const answers = [{ groupId: "29046", fingerprint: "mark:2026-03-03>2026-10-01", sides: then, choice: "not-sure", answeredAt: "2026-10-20" }];
+  const arranged = arrangeList({ current: [twoSources(["dose"], now)], older: [] }, { answers });
+  assert.equal(arranged.toCheck.length, 1);
+  assert.equal(arranged.toCheck[0].question.why, null);
+});
+
+// Two sources with the same code share a key. Only the card's own record
+// answers to its other keys, so a mark under one of them never stops the
+// other source's copy.
+test("a mark counts each side with the same key separately", () => {
+  const card = twoSources([], [
+    side("rx:1", "clinic-a", "Valley Clinic", { asOf: "2026-09-01" }),
+    side("rx:1", "clinic-b", "Mercy Health", { asOf: "2026-10-01" })
+  ]);
+  const shown = Object.assign({}, card, { key: "rx:1", sourceId: "clinic-b", source: "Mercy Health", otherKeys: ["fill:9"], lastDate: "2026-10-01" });
+  const arranged = arrangeList({ current: [shown], older: [] }, { stopped: { "fill:9": "2026-11-01" } });
+  assert.equal(arranged.stopped.length, 0, "Valley Clinic's copy wasn't marked");
+  assert.equal(arranged.toCheck[0].question.why, "You marked this Not taking on Nov 1. Valley Clinic lists it current, Sep 2026.");
+  // A side's own date, never the shown record's.
+  const older = Object.assign({}, shown, { otherKeys: [], lastDate: "2026-11-20" });
+  const renewed = arrangeList({ current: [older], older: [] }, { stopped: { "rx:1": "2026-11-01" } });
+  assert.equal(renewed.toCheck[0].question.why, "You marked Not taking on Nov 1. Your records have a newer prescription, Nov 20.");
 });

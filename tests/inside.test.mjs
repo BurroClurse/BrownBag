@@ -96,3 +96,80 @@ test("it's read from the code itself, and opens with no signal", () => {
   assert.match(read("js/app.js"), /drawInside\(page, groups/);
   for (const file of ["inside", "share-list"]) assert.ok(read("sw.js").includes('"./js/' + file + '.js"'), file);
 });
+
+// A disagreement's sides aren't under From records, so nothing may hide them.
+test("both sides of a disagreement are on the staff page, in See what's inside and in the file's text", async () => {
+  const { patientSummary } = await import("../js/ips.js");
+  const side = (id, name, dose, key) => ({ sourceId: id, sourceName: name, kind: "records", asOf: "2026-03-02", name: "lisinopril " + dose + " Oral Tablet", dose, route: null, frequency: "once a day", status: "current", recordStatus: "active", key });
+  const asked = item({ question: { kind: "dose", why: null, groupId: "1", fingerprint: "fp" }, group: { id: "1", sources: ["SMART sandbox", "Valley Clinic"], verdicts: ["dose"], fingerprint: "fp", notes: [], sides: [side("a", "SMART sandbox", "10 MG", "rx:314076"), side("b", "Valley Clinic", "20 MG", "rx:314077")] } });
+  const list = Object.assign({}, LIST, { current: [asked] });
+  const groups = groupsOf(list, FINE);
+  assert.equal(groups.disagree[0].sides.length, 2);
+  for (const root of [draw(drawInside, groups), draw(drawShareList, groups, 1)]) {
+    const text = root.textContent;
+    assert.ok(text.includes("Records disagree: ask the patient"), text);
+    assert.ok(text.includes("lisinopril 10 MG Oral Tablet") && text.includes("lisinopril 20 MG Oral Tablet"));
+    assert.ok(text.includes("Valley Clinic") && text.includes("SMART sandbox"));
+    assert.ok(!text.includes("No medicines from records."), "not said to be none");
+  }
+  const file = JSON.stringify(patientSummary(JSON.parse(JSON.stringify(buildShareBundle(list, NOW, FINE))), { now: NOW, uuid: () => "00000000-0000-4000-8000-000000000001" }));
+  assert.ok(file.includes("Records disagree: ask the patient") && file.includes("lisinopril 10 MG Oral Tablet") && file.includes("lisinopril 20 MG Oral Tablet"));
+});
+
+// Task 8: the part staff ask the patient about comes first, one card per
+// medicine, and See what's inside says every word of it.
+const side = (id, name, dose, key, asOf) => ({ sourceId: id, sourceName: name, kind: "records", asOf, name: "lisinopril " + dose + " Oral Tablet", dose, route: null, frequency: "once a day", status: "current", recordStatus: "active", key });
+const DISAGREEING = item({ question: { kind: "dose", why: null, groupId: "1", fingerprint: "fp" }, group: { id: "1", sources: ["SMART sandbox", "Valley Clinic"], verdicts: ["dose"], fingerprint: "fp", notes: [], sides: [side("a", "SMART sandbox", "10 MG", "rx:314076", "2026-03-02"), side("b", "Valley Clinic", "20 MG", "rx:314077", "2026-10-05")] } });
+
+test("the disagree part comes first on the staff page and in See what's inside", async () => {
+  const { disagreeParts } = await import("../js/share.js");
+  const list = Object.assign({}, LIST, { current: [DISAGREEING].concat(LIST.current.slice(1)) });
+  const groups = groupsOf(list, FINE);
+  const text = draw(drawInside, groups).textContent;
+  const medicines = text.indexOf("Medicines (");
+  assert.ok(medicines !== -1 && text.indexOf("Records disagree: ask the patient") > medicines);
+  assert.ok(text.indexOf("Records disagree: ask the patient") < text.indexOf("From records", medicines), text);
+  const staff = draw(drawShareList, groups, 1);
+  const titles = all(staff, "h3").map((h) => h.textContent);
+  assert.deepEqual(titles.slice(titles.indexOf("Records disagree: ask the patient (1)"), titles.indexOf("Records disagree: ask the patient (1)") + 2), ["Records disagree: ask the patient (1)", "From records (1)"]);
+  // One card holds both sides, each under its source and date.
+  const part = all(staff, "section").find((s) => s.kids[0].textContent === "Records disagree: ask the patient (1)");
+  const cards = all(part, "li");
+  assert.equal(cards.length, 1);
+  assert.deepEqual(all(cards[0], "p").filter((p) => p.className === "side-label").map((p) => p.textContent), ["SMART sandbox, Mar 2026", "Valley Clinic, Oct 2026"]);
+  assert.ok(cards[0].textContent.includes("lisinopril 10 MG Oral Tablet") && cards[0].textContent.includes("lisinopril 20 MG Oral Tablet"));
+  // Nothing staff see on it is left out of See what's inside.
+  let checked = 0;
+  for (const one of disagreeParts(groups)) {
+    for (const each of one.sides) {
+      assert.ok(text.includes(each.label), each.label);
+      assert.ok(text.includes(each.row.name), each.row.name);
+      for (const [label, value] of each.row.take.concat(each.row.facts)) { assert.ok(text.includes(label + ": " + value), label + ": " + value); checked += 1; }
+      for (const flag of each.row.flags) assert.ok(text.includes(flag), flag);
+    }
+  }
+  assert.ok(checked >= 4);
+});
+
+test("the patient's answer comes first, in both places", () => {
+  const unsure = item({ answer: { groupId: "1", fingerprint: "fp", sides: DISAGREEING.group.sides, choice: "not-sure", answeredAt: "2026-11-25T15:00:00.000Z" }, group: DISAGREEING.group });
+  const groups = groupsOf(Object.assign({}, LIST, { current: [unsure] }), FINE);
+  const staff = draw(drawShareList, groups, 1);
+  const part = all(staff, "section").find((s) => s.kids[0].textContent.startsWith("Records disagree: ask the patient"));
+  const card = all(part, "li")[0];
+  assert.equal(card.kids[0].textContent, "Patient isn't sure");
+  assert.equal(card.textContent.split("Patient isn't sure").length, 2, "said once");
+  const inside = all(draw(drawInside, groups), "li").find((li) => li.textContent.includes("Patient isn't sure"));
+  assert.equal(inside.kids[0].textContent, "Patient isn't sure");
+});
+
+test("a source that didn't load is said on the staff page, in See what's inside and in the file", async () => {
+  const { patientSummary } = await import("../js/ips.js");
+  const warnings = Object.assign({}, FINE, { sourceStatus: [{ id: "smart-sandbox", name: "SMART sandbox", loaded: true, complete: true }, { id: "valley", name: "Valley Clinic", loaded: false, complete: true }] });
+  const groups = groupsOf(LIST, warnings);
+  const staff = all(draw(drawShareList, groups, 1), "p").filter((p) => p.className === "notice").map((p) => p.textContent);
+  assert.ok(staff.includes("Valley Clinic didn't load."), JSON.stringify(staff));
+  assert.ok(draw(drawInside, groups).textContent.includes("Valley Clinic didn't load."));
+  const file = JSON.stringify(patientSummary(JSON.parse(JSON.stringify(buildShareBundle(LIST, NOW, warnings))), { now: NOW, uuid: () => "00000000-0000-4000-8000-000000000001" }));
+  assert.ok(file.includes("Valley Clinic didn&#39;t load."), "in the file's text, as XHTML writes it");
+});

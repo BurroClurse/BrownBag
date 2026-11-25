@@ -5,8 +5,11 @@
 // test runner can check it.
 
 import { heldBack } from "./read.js";
+import { plainName } from "./reconcile.js";
+import { formOf } from "./meds.js";
 
 var RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
+var NDC = "http://hl7.org/fhir/sid/ndc";
 var CLAIM_TYPE = "http://terminology.hl7.org/CodeSystem/claim-type";
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 var RECENT_DAYS = 365;
@@ -23,8 +26,17 @@ function isRealClaim(eob) {
   return NOT_A_FILL.indexOf(eob.status) === -1 && (!eob.use || eob.use === "claim");
 }
 
+// CARIN writes the package as the drug's name: "Prozac, 100 CAPSULE in 1
+// BOTTLE (0777-3105-02) (package)". The product is the part before it, so
+// two package sizes are one medicine.
+function productName(name) {
+  var found = /^(.+?),\s*\d[\d.,]*\s+\S.*\bin\s+\d.*\(package\)\s*$/i.exec(name);
+  return found ? found[1].trim() : name;
+}
+
 // One fill per item of each pharmacy claim. A claim marked NO_INSURANCE was
-// still filled, paid another way.
+// still filled, paid another way. A fill coded only by NDC keeps it, for
+// readClaims to look up.
 export function fillsFromClaims(eobs) {
   var fills = [];
   (eobs || []).filter(isPharmacy).filter(isRealClaim).forEach(function (eob) {
@@ -34,23 +46,46 @@ export function fillsFromClaims(eobs) {
       var product = line.productOrService || {};
       var codings = product.coding || [];
       var rx = codings.filter(function (c) { return c.system === RXNORM && c.code; })[0];
+      var ndc = codings.filter(function (c) { return c.system === NDC && c.code; })[0];
       var name = product.text || (rx && rx.display) || (codings[0] && codings[0].display) || null;
       var when = line.servicedDate || (line.servicedPeriod && line.servicedPeriod.start) || (eob.billablePeriod && eob.billablePeriod.start);
       if (!name && !rx) return;
-      fills.push({
+      var fill = {
         rxcui: rx ? String(rx.code) : null,
-        name: name || "",
+        name: name ? productName(String(name)) : "",
         date: when ? String(when).slice(0, 10) : "",
         insurer: cash ? null : insurer,
-        cash: cash
-      });
+        cash: cash,
+        quantity: positive(line.quantity && line.quantity.value),
+        daysSupply: daysSupplyOf(eob, line)
+      };
+      if (!rx && ndc) fill.ndc = String(ndc.code);
+      fills.push(fill);
     });
   });
   return fills;
 }
 
+function positive(value) {
+  return typeof value === "number" && isFinite(value) && value > 0 ? value : null;
+}
+
+// CARIN Blue Button's days supply (a supportingInfo coded "dayssupply";
+// insurers write their own systems): the one the item points to, else the
+// claim's only one, unless another item points to that.
+function daysSupplyOf(eob, line) {
+  var all = (eob.supportingInfo || []).filter(function (info) {
+    return info && info.category && (info.category.coding || []).some(function (c) { return c && c.code === "dayssupply"; });
+  });
+  var pointsTo = function (one, info) { return (one.informationSequence || []).indexOf(info.sequence) !== -1; };
+  var own = all.filter(function (info) { return pointsTo(line, info); })[0];
+  var only = all.length === 1 && !(eob.item || []).some(function (other) { return other !== line && pointsTo(other, all[0]); }) ? all[0] : null;
+  var found = own || only;
+  return positive(found && found.valueQuantity && found.valueQuantity.value);
+}
+
 function emptyFills() {
-  return { count: 0, last: null, insurers: [], cash: false };
+  return { count: 0, last: null, insurers: [], cash: false, sizedOn: null, suggests: null };
 }
 
 function addFill(fills, fill) {
@@ -58,6 +93,19 @@ function addFill(fills, fill) {
   if (fill.date && (!fills.last || fill.date > fills.last)) fills.last = fill.date;
   if (fill.insurer && fills.insurers.indexOf(fill.insurer) === -1) fills.insurers.push(fill.insurer);
   if (fill.cash) fills.cash = true;
+  // Only the newest fill that says both: an older one's count may be out of
+  // date, so a newest that makes no sense gives no hint at all.
+  if (fill.quantity && fill.daysSupply && (fills.sizedOn === null || fill.date > fills.sizedOn)) {
+    fills.sizedOn = fill.date;
+    fills.suggests = suggests(fill.quantity, fill.daysSupply);
+  }
+}
+
+// To the nearest half, and only when it could be a day's doses: one inhaler
+// for 90 days, or 400 grams of cream, isn't a count of doses.
+function suggests(quantity, days) {
+  var perDay = Math.round(quantity / days * 2) / 2;
+  return perDay >= 0.5 && perDay <= 12 ? { perDay: perDay, quantity: quantity, days: days } : null;
 }
 
 // The date can be a day, a month or just a year; all three parse as UTC.
@@ -80,10 +128,17 @@ function ingredientKey(ingredientOf, rxcui) {
   return found ? found.rxcui : null;
 }
 
-// "Sertraline 50 MG Oral Tablet [Zoloft]" and "sertraline 50 mg oral tablet"
-// are the same drug, strength and form. Different strengths stay different.
-function plainName(name) {
-  return String(name || "").toLowerCase().replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
+function saltKey(ingredientOf, rxcui) {
+  var found = rxcui && ingredientOf && ingredientOf.get(rxcui);
+  return found ? (found.salt ? found.salt.rxcui : found.rxcui) : null;
+}
+
+// Another form or salt is another medicine: a metoprolol succinate fill
+// isn't the tartrate prescription, and eye drops aren't the tablets. A
+// form the names don't say can't be the same one.
+function sameForm(fill, item, ingredientOf) {
+  var form = formOf(fill.name);
+  return form !== null && form === formOf(item.name) && saltKey(ingredientOf, fill.rxcui) === saltKey(ingredientOf, item.rxcui);
 }
 
 // Fills of one drug together: the same code or the same plain name. A fill
@@ -133,10 +188,10 @@ function fillOnlyItem(group) {
   };
 }
 
-// Gives each medicine its fills (same RxNorm code, else the same ingredients;
-// if that fits several, a current one first, then the one started most
-// recently). A prescription the record calls finished (completed, stopped),
-// filled within a year, moves to the current list.
+// Gives each medicine its fills (same RxNorm code, else the same ingredients,
+// form and salt; if that fits several, a current one first, then the one
+// started most recently). A prescription the record calls finished
+// (completed, stopped), filled within a year, moves to the current list.
 // Fills that match nothing become their own items.
 export function attachFills(split, fills, ingredientOf, now) {
   var current = split.current.map(function (i) { return Object.assign({}, i, { fills: emptyFills() }); });
@@ -144,9 +199,9 @@ export function attachFills(split, fills, ingredientOf, now) {
   var all = current.concat(older);
   var unmatched = [];
   (fills || []).forEach(function (fill) {
-    var exact = all.filter(function (i) { return fill.rxcui && i.rxcui === fill.rxcui; });
+    var exact = all.filter(function (i) { return fill.rxcui && i.rxcui === fill.rxcui && (!i.partCode || sameForm(fill, i, ingredientOf)); });
     var key = ingredientKey(ingredientOf, fill.rxcui);
-    var byIngredient = key ? all.filter(function (i) { return ingredientKey(ingredientOf, i.rxcui) === key; }) : [];
+    var byIngredient = key ? all.filter(function (i) { return ingredientKey(ingredientOf, i.rxcui) === key && sameForm(fill, i, ingredientOf); }) : [];
     var target = exact.length ? latestStart(exact) : (byIngredient.length ? latestStart(currentFirst(byIngredient)) : null);
     if (target) {
       addFill(target.fills, fill);
@@ -177,7 +232,8 @@ export function attachFills(split, fills, ingredientOf, now) {
 // asks for no more pages and says "failed". Never throws: "refused" means
 // this sign-in can't read claims (an older pass), "none" means no pharmacy
 // claims. request(url) returns one FHIR Bundle; lookup is ingredientsFor.
-export async function readClaims(request, patientId, lookup, ms) {
+// ndcLookup(ndc, date) is rxcuiForNdc, for fills coded only by NDC.
+export async function readClaims(request, patientId, lookup, ms, ndcLookup) {
   var deadline = Date.now() + ms;
   var timer;
   var late = new Promise(function (resolve) {
@@ -201,6 +257,8 @@ export async function readClaims(request, patientId, lookup, ms) {
     }
     var fills = fillsFromClaims(eobs);
     if (!fills.length) return { status: "none" };
+    if (ndcLookup) await withNdcCodes(fills, ndcLookup);
+    if (Date.now() >= deadline) return { status: "failed" };
     var codes = Array.from(new Set(fills.map(function (f) { return f.rxcui; }).filter(Boolean)));
     var ingredientOf = codes.length ? await lookup(codes) : new Map();
     return { status: "loaded", fills: fills, ingredientOf: ingredientOf };
@@ -209,6 +267,18 @@ export async function readClaims(request, patientId, lookup, ms) {
     return { status: status === 401 || status === 403 ? "refused" : "failed" };
   });
   return Promise.race([work, late]).finally(function () { clearTimeout(timer); });
+}
+
+// An NDC-only fill gets the RxNorm code RxNav says it had on the fill's
+// date, never a guess from a list of several. One lookup per NDC and month.
+async function withNdcCodes(fills, ndcLookup) {
+  var asked = new Map();
+  await Promise.all(fills.filter(function (fill) { return fill.ndc && !fill.rxcui; }).map(async function (fill) {
+    var key = fill.ndc + " " + fill.date.slice(0, 7);
+    if (!asked.has(key)) asked.set(key, Promise.resolve(ndcLookup(fill.ndc, fill.date)).catch(function () { return null; }));
+    var rxcui = await asked.get(key);
+    if (rxcui) fill.rxcui = String(rxcui);
+  }));
 }
 
 // Puts what readClaims found onto the medicine list. The medicines stay as
@@ -255,6 +325,14 @@ export function completedLine(date, status) {
 export function completedNote(date, status) {
   var word = STATUS_WORDS[status];
   return (word ? "Record marked " + word : "Not current in the record") + ", but filled " + date;
+}
+
+// For staff only: how much the newest fill was for. It only suggests, so it
+// never shows on My medicines.
+export function suggestNote(fills) {
+  var hint = fills && fills.suggests;
+  if (!hint) return null;
+  return "Fill suggests about " + hint.perDay + " a day (" + hint.quantity + " for " + hint.days + " days)";
 }
 
 export function fillNote(fills) {
