@@ -148,7 +148,7 @@ test("none words with a reaction are an allergy row that keeps the reaction", ()
   const nkda = { resourceType: "AllergyIntolerance", id: "ana", code: { text: "NKDA" }, reaction: [{ manifestation: [{ text: "Anaphylaxis" }], severity: "severe" }] };
   const out = read(nkda);
   assert.deepEqual(out.statements, []);
-  assert.equal(out.items.length, 1);
+  assert.deepEqual(names(out), [UNNAMED]);
   assert.deepEqual(out.items[0].reactions, [{ text: "Anaphylaxis", severity: "severe" }]);
   const staff = staffSee(out);
   assert.equal(staff.fromRecords.length, 1);
@@ -156,7 +156,14 @@ test("none words with a reaction are an allergy row that keeps the reaction", ()
   // A none code with a reaction too.
   const coded = read({ resourceType: "AllergyIntolerance", id: "c", code: { coding: [{ system: "http://snomed.info/sct", code: "716186003", display: "No known allergy" }] }, reaction: [{ manifestation: [{ text: "Hives" }] }] });
   assert.deepEqual(coded.statements, []);
+  // An unnamed allergy, never a row called "No known allergy".
+  assert.deepEqual(names(coded), [UNNAMED]);
   assert.deepEqual(coded.items[0].reactions.map((r) => r.text), ["Hives"]);
+  assert.deepEqual(coded.items[0].codes, []);
+  const codedStaff = staffSee(coded);
+  assert.deepEqual(codedStaff.fromRecords.map((a) => a.name), [UNNAMED]);
+  assert.deepEqual(codedStaff.statements, []);
+  assert.ok(!JSON.stringify(codedStaff).includes("No known allergy"));
 });
 
 test("a none code beside a real coding, with no text, is the real allergy", () => {

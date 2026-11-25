@@ -74,10 +74,11 @@ function allergenWords(concept) {
   // A real code's name before words or a code that say none, so "NKA"
   // over RxNorm penicillin is shown as the penicillin.
   var real = codesOf(concept).concat(codes).filter(function (c) { return c && c.display && !holdsPlace(c) && !noneOf(c); })[0];
+  // Words or a code that say none are never an allergen's name: with a
+  // reaction and nothing else, it's an unnamed allergy.
   var text = concept && said(concept.text) ? concept.text : "";
-  if (text && !(real && (noneSaid(text) || onlyNoneWords(text)))) return withoutKind(text);
-  var shown = real || codesOf(concept).concat(codes).filter(function (c) { return c && c.display && !holdsPlace(c); })[0];
-  return shown ? withoutKind(shown.display) : "";
+  if (text && !noneSaid(text) && !onlyNoneWords(text)) return withoutKind(text);
+  return real ? withoutKind(real.display) : "";
 }
 
 // The sentence the staff page and the popup use: whose records, and who to ask.

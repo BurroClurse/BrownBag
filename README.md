@@ -199,8 +199,8 @@ and from the whole entry's words, any case, with a dot or not: "NKA", "NKDA",
 "NKMA", "N.K.A.", "No Known Allergies (NKA)", "Patient has no known
 allergies". A none code beside words that name something is an allergy, and
 so is any "none" with a real allergen code beside it ("NKA" over RxNorm
-penicillin shows as the penicillin) or with a reaction, so nothing it says is
-lost.
+penicillin shows as the penicillin) or with a reaction (an unnamed allergy
+that keeps its reaction), so nothing it says is lost.
 
 **The same person.** A second source joins the list only when its patient has
 the same name and birth date as the first source's. The name is the
