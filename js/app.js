@@ -1896,8 +1896,8 @@ async function buildQr() {
     var sayRow = add(overlay, "div", null, "help-row");
     add(sayRow, "p", "After they scan it, tell them this code:", "qr-say");
     var why = helpBubble(sayRow, "Why tell them the code?", function (panel) {
-      add(panel, "p", "The QR code holds your list, locked. These 6 digits are its key. After the person checking your medicines scans it, their screen asks for the digits, and telling them opens your list. Someone who only sees or takes a photo of the QR code can't read it.");
-      add(panel, "p", "The digits stay hidden until you tap them, so people nearby can't see them. You get a new code each time.");
+      add(panel, "p", "Your list is locked inside the QR code, and these 6 digits unlock it. It's just an extra step so your list opens only for the person checking your medicines.");
+      add(panel, "p", "It's fine to say them out loud: the digits only open this one QR code, and you get a new code each time. They stay hidden until you tap them.");
     });
     drawCodeReveal(overlay, packed.code);
     overlay.appendChild(why);
