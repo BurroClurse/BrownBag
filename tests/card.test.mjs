@@ -238,7 +238,7 @@ test("an answered card says what the patient said, and when", () => {
   const chose = patientCard(Object.assign({}, GROUPED, { answer: answer("smart-sandbox") }), true);
   assert.deepEqual(said(chose), [["You said", "10 mg, once a day (Nov 25)"]]);
   assert.ok(!chose.flags.some((text) => /don't agree/.test(text)), "no question once answered");
-  assert.deepEqual(chose.take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+  assert.deepEqual(chose.take, [["Dose", "10 mg"], ["How often", "once a day"]], "the side they chose");
   assert.deepEqual(said(patientCard(Object.assign({}, GROUPED, { answer: answer("not-sure") }), true)), [["You said", "Not sure, ask my doctor (Nov 25)"]]);
   assert.deepEqual(said(patientCard(Object.assign({}, GROUPED, { answer: answer("not-taking") }), true)), [["You said", "I don't take this anymore (Nov 25)"]]);
   assert.deepEqual(said(patientCard(item({ answer: { groupId: "rx:314076", fingerprint: "mark:x", sides: [], choice: "taking", answeredAt: "2026-11-25" } }), true)), [["You said", "Yes, I take it (Nov 25)"]]);
@@ -247,4 +247,44 @@ test("an answered card says what the patient said, and when", () => {
   assert.deepEqual(said(patientCard(stopped, true)), [["You said", "No, I stopped (Nov 25)"]]);
   stopped.answer.choice = "smart-sandbox";
   assert.deepEqual(said(patientCard(stopped, true)), [["You said", "Yes, I take it (Nov 25)"]]);
+});
+
+test("a status question says which side lists it current and which stopped", () => {
+  const status = asked("status");
+  status.group = Object.assign({}, status.group, { verdicts: ["status"], sides: [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" }), Object.assign({}, SIDES[1], { sourceId: "x", sourceName: "Lakeside", asOf: "2026-11-01", status: "unknown" })] });
+  assert.deepEqual(patientCard(status, true).take, [
+    ["SMART sandbox, Mar 2026", "10 mg, once a day, current"],
+    ["Valley Clinic (test records), Oct 2026", "20 mg, once a day, stopped"],
+    ["Lakeside, Nov 2026", "20 mg, once a day"]
+  ]);
+  // A dose question says only the dose.
+  assert.equal(patientCard(asked("dose"), true).take[0][1], "10 mg, once a day");
+});
+
+test("a question card leads with what the records disagree on", () => {
+  const li = new Node("li");
+  drawCard(li, "lisinopril 20 MG Oral Tablet", patientCard(asked("dose", "Valley Clinic (test records) now says 20 mg, once a day."), true));
+  assert.deepEqual(li.kids.map((kid) => kid.className), ["med-name", "flag", "flag", "take", "facts"]);
+  assert.equal(li.kids[1].textContent, "Your records don't agree on how much you take.");
+  assert.equal(li.kids[2].textContent, "Valley Clinic (test records) now says 20 mg, once a day.");
+  // Its other flags stay after the rows, as on every card.
+  const held = new Node("li");
+  drawCard(held, "x", patientCard(asked("dose", null, { hospital: true }), true));
+  assert.deepEqual(held.kids.map((kid) => kid.className), ["med-name", "flag", "take", "flag", "facts"]);
+  assert.equal(held.kids[3].textContent, "Hospital order");
+});
+
+test("an answer of one side shows that side's dose", () => {
+  const answer = { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "smart-sandbox", answeredAt: "2026-11-25" };
+  const withRoute = Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides: [Object.assign({}, SIDES[0], { route: "Oral" }), SIDES[1]] }), answer });
+  assert.deepEqual(patientCard(withRoute, true).take, [["Dose", "10 mg"], ["How taken", "Oral"], ["How often", "once a day"]]);
+  answer.choice = "valley-clinic-demo";
+  assert.deepEqual(patientCard(withRoute, true).take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+});
+
+test("an answer of not sure keeps both sides", () => {
+  const answer = { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "not-sure", answeredAt: "2026-11-25" };
+  const card = patientCard(Object.assign({}, GROUPED, { answer }), true);
+  assert.deepEqual(card.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "20 mg, once a day"]]);
+  assert.ok(!card.flags.some((text) => /don't agree/.test(text)), "asked no more");
 });

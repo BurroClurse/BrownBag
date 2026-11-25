@@ -93,13 +93,30 @@ export function patientCard(entry, claimsLoaded) {
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
   if (entry.answer) say("You said", answerWords(entry) + " (" + dayText(entry.answer.answeredAt) + ")");
   var question = entry.answer ? null : entry.question;
-  var sides = question && entry.group && entry.group.sides.length > 1 ? entry.group.sides : null;
-  return {
-    // With no answer yet, no single dose: what each source says instead.
-    take: sides ? sides.map(sideRow) : takeRows(entry.dose, entry.route, entry.frequency),
-    flags: (question ? questionLines(question) : []).concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null]).filter(Boolean),
+  var lead = question ? questionLines(question).filter(Boolean) : [];
+  var card = {
+    take: takeOf(entry, question),
+    flags: lead.concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean)),
     facts: facts
   };
+  // How many flags go above the take rows: what the records disagree on
+  // comes first, as the question it is. Other cards keep today's order.
+  if (lead.length) card.lead = lead.length;
+  return card;
+}
+
+// With no answer yet, or "Not sure", no single dose: what each source says
+// instead. With a side chosen, that side's.
+function takeOf(entry, question) {
+  var answer = entry.answer;
+  var sides = entry.group && entry.group.sides.length > 1 ? entry.group.sides : null;
+  if (sides && question) return sides.map(function (side) { return sideRow(side, question.kind === "status"); });
+  if (sides && answer && answer.choice === "not-sure") {
+    return sides.map(function (side) { return sideRow(side, aboutStopping(answer.sides && answer.sides.length ? answer.sides : sides)); });
+  }
+  var chosen = answer ? chosenSide(entry) : null;
+  if (chosen) return takeRows(chosen.dose, chosen.route, chosen.frequency);
+  return takeRows(entry.dose, entry.route, entry.frequency);
 }
 
 var CARD_LINES = {
@@ -115,8 +132,24 @@ function questionLines(question) {
   return [mark ? null : CARD_LINES[question.kind], question.why];
 }
 
-function sideRow(side) {
-  return [side.sourceName + (side.asOf ? ", " + monthText(side.asOf) : ""), sideWords(side)];
+var STATUS_WORDS = { current: "current", "not-current": "stopped" };
+
+// On a question about stopping, each side says which it lists.
+function sideRow(side, withStatus) {
+  var status = withStatus && STATUS_WORDS[side.status];
+  return [side.sourceName + (side.asOf ? ", " + monthText(side.asOf) : ""), sideWords(side) + (status ? ", " + status : "")];
+}
+
+function aboutStopping(sides) {
+  return sides.some(function (one) { return one.status === "not-current"; });
+}
+
+// The side an answer chose, as the records say it now, else as it was
+// then; null for an answer that isn't a side.
+function chosenSide(entry) {
+  var answer = entry.answer;
+  var find = function (sides) { return (sides || []).filter(function (one) { return one.sourceId === answer.choice; })[0]; };
+  return (entry.group && find(entry.group.sides)) || find(answer.sides) || null;
 }
 
 var CHOICE_WORDS = { "not-taking": "I don't take this anymore", "not-sure": "Not sure, ask my doctor", taking: "Yes, I take it" };
@@ -130,16 +163,17 @@ function answerWords(entry) {
   var sides = answer.sides && answer.sides.length ? answer.sides : (entry.group ? entry.group.sides : []);
   var side = sides.filter(function (one) { return one.sourceId === answer.choice; })[0];
   if (!side) return "See the record";
-  var aboutStopping = sides.some(function (one) { return one.status === "not-current"; });
-  if (aboutStopping) return side.status === "not-current" ? "No, I stopped" : "Yes, I take it";
+  if (aboutStopping(sides)) return side.status === "not-current" ? "No, I stopped" : "Yes, I take it";
   return sideWords(side);
 }
 
 // The name goes in as text, like everything from the records.
 export function drawCard(parent, name, card) {
+  var lead = card.lead || 0;
   add(parent, "p", name, "med-name");
+  card.flags.slice(0, lead).forEach(function (text) { add(parent, "p", text, "flag"); });
   drawRows(parent, card.take, "take");
-  card.flags.forEach(function (text) { add(parent, "p", text, "flag"); });
+  card.flags.slice(lead).forEach(function (text) { add(parent, "p", text, "flag"); });
   drawRows(parent, card.facts, "facts");
 }
 
