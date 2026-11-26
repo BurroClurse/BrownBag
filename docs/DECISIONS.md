@@ -142,5 +142,6 @@ New decisions go at the end of each list, with the date.
 | R33 | A combination's plain name names every ingredient ("Hydrochlorothiazide / Lisinopril") | Longer names |
 | R40 | Partial list (the developer: "whatever's best"): home hides its line; My medicines keeps the review box without a number | One wording change |
 | R41 | To line the bag up with home: home's bag is now sized by a shared rule and no longer stretches to fill all the space (any space left over sits under it), and room is kept for "Your records don't agree" even when it isn't there | Home's bag is a little smaller (about 60 px on an iPhone 15) |
+| R42 | For "perfectly aligned": the tagline moves to the top line where home has the name; Unlock is made the same size as Show my QR code and Start over sits where My medicines is; an empty row stands in for More options. On a day home also shows "Your records don't agree", home's buttons sit one row higher, because the locked screen can't know about it without storing a hint outside the lock | The tagline is at the top instead of above the buttons; one-row offset on days with disagreements |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.

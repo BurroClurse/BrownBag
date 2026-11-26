@@ -43,6 +43,15 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Every row lines up on the unlock screen and home** (2026-11-26, second
+pass). With a Face ID lock, screenshot the unlock screen, unlock, screenshot
+home, and flip between them: the tagline is on the name's line, the bag is the
+same, Unlock is exactly where Show my QR code is (same size), Start over where
+My medicines is, and the row under them is empty where More options is.
+Headless Chromium measured every box equal at three phone sizes; only the
+words differ. (On a day home also shows "Your records don't agree", its
+buttons sit one row higher than the unlock screen's.)
+
 **The bag lines up on the unlock screen and home** (2026-11-26). On the
 iPhone 15 simulator and the Android emulator, with a Face ID or fingerprint
 lock: screenshot the unlock screen, unlock, screenshot home. The bag is the
@@ -67,7 +76,7 @@ test clinic); script `final-fix-flow.cjs`, its output and screenshots
 `node tools/reconcile-patients.mjs` first, then
 `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
 `git checkout -- tests/fixtures/reconcile/clinics` when done. Open Brown Bag
-once with a signal so it takes the new app files (cache `brownbag-v104`).
+once with a signal so it takes the new app files (cache `brownbag-v105`).
 Sign in as Riley. On both virtual phones, on My medicines:
 
 - **Check this** on Lisinopril, "I don't take this anymore", **Save**: focus
@@ -119,7 +128,7 @@ Riley. On both virtual phones, on My medicines:
 
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v104` since the final review fix), then More options ▸ Privacy:
+files (cache `brownbag-v105` since the final review fix), then More options ▸ Privacy:
 
 - "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your
