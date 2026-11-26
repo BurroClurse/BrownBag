@@ -581,6 +581,21 @@ From Tyler's real-iPhone QR check (2026-11-25) and the Task 10b report. Each cal
 - [ ] **7. Partial birth dates and the old-fill note (Tyler confirmed 2026-11-26):** "Born 1974" / "Born May 1974"; the note is on screen only, never in the QR code or the FHIR file.
 - [ ] **8. Commit:** "Keep the list out of shared links, read birth dates plainly, and note old fills".
 
+### Task 10d: Keep the locked list in the staff tab, and the rest of Tyler's Task 10c answers (added 2026-11-26)
+
+Task 10c (commit 4484292) clears the list from the staff page's address as soon as it opens. Its review found that iPhone Safari reloads tabs it put aside, so staff coming back from another app would see "This link has no list in it." Tyler chose to rethink it. Each call below is Tyler's answer.
+
+**Files:** `js/share.js`, `js/share-view.js` (the staff tab); `js/launch.js` (failed start); `privacy.html`; `docs/LIMITS.md`, `docs/NEEDS-TESTING.md`, `README.md`; `sw.js`.
+
+- [ ] **1. The staff tab keeps the locked list.** When `share.html` takes the list from the part after `#`, it also keeps that same locked text (exactly what the QR code holds, never the unlocked list) with this tab only: `sessionStorage` or the page's own `history.state`, whichever survives a reload and Safari restoring a put-aside tab (say which and why). The address stays cleared. On a reload, or when the tab comes back, with no `#` list, the page uses the kept locked list and shows the 6-digit code box again; staff type the code to see it. It's kept until the tab closes, with no time limit. A new `#` list opened in the same tab replaces it. A copied or shared address, or the address opened in a new tab, still shows "This link has no list in it." Nothing unlocked is ever stored. Test: Node tests of the take/keep/restore steps with fake location, history and storage; headless Chromium: open Chantell-like link, address cleared, reload shows the code box, the code shows the list, Save as FHIR file works, a new tab with the plain address shows the no-list message, a second link in the same tab replaces the first.
+- [ ] **2. Back from a failed sign-in start returns to the picker.** In `js/launch.js`, when sign-in can't start ("Couldn't start sign-in") or while it's starting, the browser's Back goes to "Choose a test patient" (e.g. `history.replaceState(null, "", signInLink())` before drawing the failure, as the Task 10c review suggests). The one-Back fix from Task 10c stays: after a real sign-in page, Back still reaches the picker once and then the connections screen. "Try again" still starts sign-in for the same patient. Test: Node test where possible; headless Chromium with the sandbox blocked, and on the live sandbox for both paths.
+- [ ] **3. Privacy page.** In `privacy.html`'s "When you share" section, a few plain sentences: the staff page's address, and any link copied from it, never carry the list; the staff phone's tab keeps only the locked list until the tab is closed, and staff need the 6 digits to see it; the staff browser's own history still remembers the link it opened, the same as a photo of the QR code would. Keep the page's CSP and style.
+- [ ] **4. LIMITS, README, NEEDS-TESTING.** `docs/LIMITS.md` #15: add that the staff browser's history keeps the link it opened. README: the staff page keeps the locked list in its tab (Front end: a reload asks for the code again; Back end: what's kept, where, until when). `docs/NEEDS-TESTING.md`: update the Task 10c item 1 check under "Waiting for the next pass" (reload shows the code box, not "no list"; a copied address shows "no list"), add one line to check Safari bringing a put-aside staff tab back (switch to other apps for a while, come back: the code box, or the list if Safari didn't reload), and the failed-start Back.
+- [ ] **5. Cache:** bump `sw.js` (now brownbag-v95) if a precached file changed; keep `tests/offline.test.mjs` right.
+- [ ] **6. Commit:** "Keep the locked list in the staff tab, and bring Back to the picker after a failed start".
+
+Also confirmed by Tyler for Task 10c (no change needed): clear the address right away, before the code; the note keeps the yellow note style; "over a year" by the calendar, partial dates only when the whole month or year is that old; the picker's birth dates copied from the sandbox.
+
 ### Task 11: Docs, privacy and the app cache
 
 **Files:**
