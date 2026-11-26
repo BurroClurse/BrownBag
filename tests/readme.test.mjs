@@ -61,7 +61,7 @@ test("every relative link in the README and the docs leads somewhere", () => {
 
 test("the README keeps both halves, the plans and the standards, at a readable length", () => {
   const lines = readme.split("\n").length;
-  assert.ok(lines <= 320, lines + " lines");
+  assert.ok(lines <= 240, lines + " lines");
   for (const heading of ["## Standards", "## Front end: what people see", "## Back end: what happens behind the screen", "## What's planned", "## Copyright"]) {
     assert.ok(readme.includes(heading), heading);
   }

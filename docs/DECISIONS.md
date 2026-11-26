@@ -124,6 +124,8 @@ New decisions go at the end of each list, with the date.
   and `docs/superpowers/`. They stay in the repo; How it works links Files.
   "What's planned" still links each design it needs.
 - Claude merges the pull request itself once the tests pass.
+- Condense the whole README: nothing a reader of the course (HL7 Break the
+  Code) doesn't need. What stays is Claude's call (2026-11-26).
 
 ## Calls Claude made
 
@@ -166,5 +168,8 @@ New decisions go at the end of each list, with the date.
 | R45 | Snippets use made-up values and placeholders (`{iss}`, `{patient}`) with the app's real scopes, client id, addresses, tags and codes; JavaScript is shortened and says so | A reader may take a placeholder for a literal |
 | R46 | Tests keep the snippets honest: the sign-in scopes and client id match `launch.html`, and the tags address, link prefix, IPS profile, LOINC codes and PBKDF2 rounds match the code | A snippet change needs its test changed too |
 | R47 | US Core and CARIN Blue Button show "As the server sends it" for a version, since Brown Bag reads whatever version the server sends and doesn't pin one; SMART is "`.read` (v1) scopes" | A reviewer may want exact versions |
+| R48 | The README is cut to what course staff check (SMART sign-in, FHIR reads, and being able to explain how), plus what the app does, what's planned, how to run it, and the legal lines. 232 lines; the limit is now 240 (R43's 320 is replaced) | Detail a reader wanted is one click away in How it works |
+| R49 | Cut from the README: the token snippet's separate lines, the QR packing JavaScript (the link's shape stays), the snippet's dosage and dates, the Reconciliation and Staff tab headings (one line each now under Reads and Front end), the standards rows merged (codes in one row; OAuth, PKCE, OpenID Connect and revocation in one) | Less to read on the wire for the QR code |
+| R50 | The Copyright section is shortened without changing what it allows: reading is fine, anything else needs written permission, see LICENSE and NOTICE.md, and it's not a medical device | The developer may want the old wording back |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.

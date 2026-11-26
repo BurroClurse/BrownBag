@@ -42,3 +42,8 @@ planned" keep their wording.
 R43 to R47 in [`DECISIONS.md`](../../DECISIONS.md): the 320-line limit, the
 back-end headings, placeholders with real scopes and codes, tests that tie
 the snippets to the code, and how versions are written.
+
+## Condensed (2026-11-26)
+
+The developer asked for the whole README to be condensed, keeping only what
+a reader of the course needs, and left what stays to Claude (R48 to R50).
