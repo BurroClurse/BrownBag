@@ -9,7 +9,7 @@
 // and shows it. Nothing unlocked is saved unless staff save the file
 // themselves, and no request leaves after the page loads.
 
-import { unpackShare, groupShareBundle, ShareError, takeListFromLink } from "./share.js";
+import { unpackShare, groupShareBundle, ShareError, takeListFromLink, listKeptOnStep } from "./share.js";
 import { localDate } from "./card.js";
 import { drawShareList } from "./share-list.js";
 import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
@@ -20,12 +20,23 @@ try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not ne
 
 var root = document.getElementById("share");
 var fragment = takeListFromLink(location, history);
+// The list this step keeps, as the page left it.
+var onStep = listKeptOnStep(history);
 
 // Opening a second shared link in the same tab only changes the part after
 // "#", which doesn't reload the page. Reload so the old list is never shown
 // for the new link.
 window.addEventListener("hashchange", function () {
   location.reload();
+});
+
+// Every step of this tab has the same plain address, so Back and Forward
+// between two links' steps don't load the page again either. Reload when the
+// step keeps a different list, so it shows its own code box and its own code
+// works. The same list (or the popstate some browsers send as the page
+// loads) changes nothing, so this never reloads over and over.
+window.addEventListener("popstate", function () {
+  if (listKeptOnStep(history) !== onStep) location.reload();
 });
 
 if (fragment) {

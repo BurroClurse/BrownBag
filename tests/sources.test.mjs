@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SOURCES, TRADEMARKS, chosen, recordsStatus, leavingText, notConnected, signInLink, startFor } from "../js/sources.js";
+import { SOURCES, TRADEMARKS, SIGN_IN_STARTED, chosen, clearStarted, launchScreen, markStarted, recordsStatus, leavingText, notConnected, signInLink, startFor } from "../js/sources.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -165,12 +165,15 @@ test("Back from the sandbox comes to the list once, then the connections screen"
 test("Back from a sign-in that is starting or couldn't start is the list", () => {
   const launch = read("js/launch.js");
   const failed = launch.slice(launch.indexOf("function showFailed")).split("\n}\n")[0];
-  // Try again is the same patient: a fresh page at the same address.
-  assert.match(failed, /if \(startFor\(location\.search\) === "sign-in"\) location\.reload\(\);/);
-  // Nothing on the way to the failure takes the list's step.
+  // Try again is the same patient: a fresh page at the same address, which
+  // starts by itself again.
+  assert.match(failed, /if \(startFor\(location\.search\) === "sign-in"\) \{\s*clearStarted\(history\);\s*location\.reload\(\);/);
+  // Nothing on the way to the failure takes the list's step: the step only
+  // notes, at its own address, that it has started.
   const signIn = launch.slice(launch.indexOf("function signIn")).split("\n}\n")[0];
   const beforeAnswer = signIn.slice(0, signIn.indexOf(".then("));
   assert.doesNotMatch(beforeAnswer, /replaceState|location\.replace/);
+  assert.match(beforeAnswer, /markStarted\(history\);/);
   assert.doesNotMatch(failed, /replaceState|pushState/);
   const steps = [];
   const open = (url) => steps.push(url);
@@ -180,6 +183,95 @@ test("Back from a sign-in that is starting or couldn't start is the list", () =>
   // "Starting sign-in…", then "Couldn't start sign-in", then Try again, a reload.
   assert.deepEqual(steps.slice(0, -1).reverse(), [signInLink(), "./?open=connections"]);
   assert.equal(steps[steps.length - 1], signInLink(ONE));
+});
+
+// One tab's history, as launch.html uses it: the step's state, kept across a
+// reload and Back and Forward.
+function fakeSteps(refuse) {
+  const calls = [];
+  let state = null;
+  return {
+    calls,
+    get state() { if (refuse === "read") throw new Error("SecurityError"); return state; },
+    replaceState(next, unused, address) {
+      calls.push(["replaceState", next, address]);
+      if (refuse === "write") throw new Error("SecurityError");
+      state = next;
+    },
+    pushState() { calls.push(["pushState"]); }
+  };
+}
+
+// Back from "Starting sign-in…" or "Couldn't start sign-in" is the list, so
+// the chosen patient's step stays in history. Forward to it must not start
+// the sign-in by itself (Tyler, Task 10d): it shows "Couldn't start sign-in"
+// again, the screen that step was left on, and Try again is that same
+// patient. The step's own state notes that it started, so a fresh load and
+// one Safari or Chrome brings back as it was left (pageshow, persisted) both
+// know; a picker is never drawn on a chosen patient's step, so a choice made
+// there can't pile up steps that later start the wrong patient.
+test("Forward to a chosen patient's step after Back never starts the sign-in by itself", () => {
+  const ONE_LINK = "?source=smart-sandbox&as=" + ONE;
+  const ISS = "?iss=https%3A%2F%2Fexample.test%2Ffhir";
+  const steps = fakeSteps();
+  // The choice opens its step: sign-in starts.
+  assert.equal(launchScreen(ONE_LINK, steps, false), "sign-in");
+  markStarted(steps);
+  // Only state, at the same address.
+  assert.deepEqual(steps.calls, [["replaceState", { [SIGN_IN_STARTED]: true }, undefined]]);
+  // Back, then Forward: a fresh load of the step, or the page as it was left.
+  assert.equal(launchScreen(ONE_LINK, steps, false), "failed");
+  assert.equal(launchScreen(ONE_LINK, steps, true), "failed");
+  // Try again: the note goes, and the reload starts the same patient.
+  clearStarted(steps);
+  assert.equal(steps.state, null);
+  assert.deepEqual(steps.calls[1], ["replaceState", null, undefined]);
+  assert.equal(launchScreen(ONE_LINK, steps, false), "sign-in");
+  // The same for a link that names its own server.
+  const own = fakeSteps();
+  assert.equal(launchScreen(ISS, own, false), "sign-in");
+  markStarted(own);
+  assert.equal(launchScreen(ISS, own, false), "failed");
+  // A chosen patient's step brought back as it was left, even unmarked, is
+  // never the picker.
+  assert.equal(launchScreen(ONE_LINK, fakeSteps(), true), "failed");
+  // The picker and the list are as before, whatever the state.
+  const marked = fakeSteps();
+  markStarted(marked);
+  for (const restored of [false, true]) {
+    assert.equal(launchScreen("?source=smart-sandbox", marked, restored), "patients");
+    assert.equal(launchScreen("", marked, restored), "list");
+  }
+  // A browser that won't keep the note, or won't read it: sign-in starts, as
+  // before this fix, and nothing breaks.
+  const refused = fakeSteps("write");
+  markStarted(refused);
+  clearStarted(refused);
+  assert.equal(launchScreen(ONE_LINK, refused, false), "sign-in");
+  assert.equal(launchScreen(ONE_LINK, fakeSteps("read"), false), "sign-in");
+  // An odd state is no note.
+  for (const odd of [{ [SIGN_IN_STARTED]: "yes" }, "started", 1, { bb: true }]) {
+    const other = fakeSteps();
+    other.replaceState(odd);
+    assert.equal(launchScreen(ONE_LINK, other, false), "sign-in", JSON.stringify(odd));
+  }
+  // Not a key the patient app or the staff page reads.
+  assert.notEqual(SIGN_IN_STARTED, "bb");
+  assert.notEqual(SIGN_IN_STARTED, "open");
+  for (const file of ["js/app.js", "js/share-view.js", "js/share.js"]) assert.equal(read(file).includes(SIGN_IN_STARTED), false, file);
+});
+
+test("launch.html chooses its screen from the step, on load and when brought back", () => {
+  const launch = read("js/launch.js");
+  assert.match(launch, /showScreen\(launchScreen\(location\.search, history, false\)\);/);
+  assert.match(launch, /if \(event\.persisted\) showScreen\(launchScreen\(location\.search, history, true\)\);/);
+  const screen = launch.slice(launch.indexOf("function showScreen")).split("\n}\n")[0];
+  assert.match(screen, /"sign-in"[\s\S]*signIn\(\)/);
+  assert.match(screen, /"failed"[\s\S]*showFailed\(\)/);
+  assert.match(screen, /"patients"[\s\S]*showPatients\(\)/);
+  assert.match(screen, /showList\(\)/);
+  // The old way, which drew the picker on a chosen patient's step.
+  assert.doesNotMatch(launch, /function showChoices/);
 });
 
 test("sign-in has a time limit and never redirects on its own", () => {

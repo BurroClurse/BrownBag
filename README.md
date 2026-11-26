@@ -43,7 +43,8 @@ screen to make that work.
   sandbox opens a list of 20 test patients, each with their birth date ("Born
   May 8, 1974"). Back from the sandbox's page, or from "Starting sign-in…" or
   "Couldn't start sign-in", comes to that list, and Back again to the
-  connections screen. **Try again** signs in the same patient. After each sign-in the patient
+  connections screen. Forward from there never starts the sign-in by itself: it
+  shows "Couldn't start sign-in" again, and **Try again** signs in the same patient. After each sign-in the patient
   unlocks and comes back to that screen to connect the next; **Done** goes home.
   The same screen is **Health records** under More options.
 - After that, the lock opens Brown Bag and the list updates by itself. It locks after 5 minutes without a tap or
@@ -142,8 +143,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   opened in a new tab, says "This link has no list in it. Ask the patient to
   show their QR code again." The tab keeps the locked list, so a reload, or
   coming back to the tab after the phone put it aside, asks for the 6 digits
-  again. A second patient's link in the same tab takes the first one's place.
-  The list on screen and Save as FHIR file keep working.
+  again. A second patient's link in the same tab takes the first one's place;
+  Back and Forward between the two show each one's own code box, and each
+  patient's own code opens it. The list on screen and Save as FHIR file keep working.
 - The patient's name, then their birth date as words ("Born May 8, 1974").
 - Allergies come first, then the medicines in parts: from records, filled but not
   in the health record, as needed, added by the patient, and what the patient
@@ -184,7 +186,12 @@ the staff page, the staff member's), and talks only to the servers named here.
 **Launch.** The app's connections screen lists the sources. Connect on the sandbox opens `launch.html`'s test patients; choosing one opens its sign-in
 as the next history step, so Back while it starts or after it fails is the
 list. Once the sign-in page's address is known, it takes that step's place
-(`location.replace`), so the list is in history once. Choosing one (or a link
+(`location.replace`), so the list is in history once. The step notes in its
+own `history.state` (`brownBagSignInStarted`) that the sign-in started, so
+Forward to it after Back, a reload, or the page brought back as it was left
+(`pageshow` with `persisted`) shows "Couldn't start sign-in" instead of
+starting again, and never draws the list on that step; Try again takes the
+note off and reloads. Choosing one (or a link
 that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
@@ -319,10 +326,14 @@ step, so the address bar and a link shared from the page have no list;
 what's on screen and Save as FHIR file use the copy it read. The same call
 keeps that locked text, exactly as the QR code holds it and never the
 unlocked list, in the step's `history.state` (`brownBagSharedList`). It stays
-until the tab is closed, with no time limit: a reload, or Safari reloading a
+until the tab is closed, with no time limit, and a tab reopened from the
+browser's recently closed tabs may have it again, still locked: a reload, or Safari reloading a
 tab it put aside, reads it there and asks for the code again, while a copied
 address or a new tab has none. A new link in the same tab is its own step,
-and keeps its own. The staff browser's history still remembers the link it
+and keeps its own. Every step has the same plain address, so Back and Forward
+between them don't load the page; on `popstate` the page reloads when the
+step keeps a different list from the one it read (never for the same one,
+so it can't reload over and over). The staff browser's history still remembers the link it
 opened ([LIMITS #15](docs/LIMITS.md)).
 Birth dates are read as written, never through a JavaScript `Date`, so a
 phone west of UTC shows the same day. The note about a fill over a year old

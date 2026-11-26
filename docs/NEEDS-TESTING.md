@@ -122,6 +122,13 @@ both virtual phones:
   simulator if it does it). With the staff page open, switch to other apps
   for a while (open several heavy ones), then come back to Safari: the code
   box, or the list if Safari didn't reload the tab. Never "no list".
+- **Back and Forward with two patients on the staff page** (Task 10d fix
+  round 1). Open Chantell's link and type her code, then open a second
+  patient's link in the same tab and type theirs. Back: Chantell's code box
+  (not the second patient's list), and her code opens her list. Forward: the
+  second patient's code box, and their code opens their list. The page
+  reloads once each time, never over and over. Chromium did this, with and
+  without pages brought back as they were left.
 - **Birth dates as words.** "Born May 8, 1974" under Chantell's name on the
   staff page and in See what's inside; on Choose a test patient, "Born May 8,
   1974. Fills, an allergy, …" and each other patient's whole birth date. On
@@ -150,6 +157,16 @@ both virtual phones:
   patient", and it stays there. The same after Sign out, Sign in, unlock,
   Connect. Chromium did both paths with the sandbox blocked and held, and
   the live walk above still came to the list once.
+- **Forward after a failed start** (Task 10d fix round 1). From "Couldn't
+  start sign-in", Back to "Choose a test patient", then Forward (Safari's
+  arrow, or Android's swipe forward in Chrome): "Couldn't start sign-in"
+  again, with nothing starting by itself. **Try again** there tries Chantell
+  again. Also Back while "Starting sign-in…" is up, wait a moment, then
+  Forward: "Couldn't start sign-in", never "Starting sign-in…". Then Back,
+  choose someone else, let it fail, Back, Forward: that person's "Couldn't
+  start sign-in", not Chantell's. The same after Sign out, Sign in, unlock,
+  Connect. Chromium did both paths, with and without pages brought back as
+  they were left.
 
 **Fixes from the 2026-11-25 pass** (Task 10b; test right away: the staff
 page and sign-in). Checked only in headless Chromium (iPhone 15 profile,
@@ -267,6 +284,12 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
   screen" above).
 - Scan Riley's QR code (records that disagree) with a camera, now that a
   camera has opened Chantell's (see Tested, 2026-11-25).
+- Quit Safari with a staff tab open (Task 10d): open Chantell's QR link, type
+  the code, then swipe Safari away in the app switcher and open it again.
+  The tab shows the 6-digit code box, never "This link has no list in it."
+- Reopen a closed staff tab (Task 10d): close the staff tab, then reopen it
+  from Safari's recently closed tabs (hold the + button). It shows the code
+  box (or "no list" if Safari didn't keep it), never the list unlocked.
 
 ## Tested
 

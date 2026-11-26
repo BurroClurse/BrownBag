@@ -99,8 +99,10 @@ an idea becomes a plan only after its own design.
   - Now: the privacy page says so; a new code is made each time.
   - The staff browser's history keeps the link it opened, list and all
     (2026-11-26). The page clears its address and its tab keeps only the
-    locked list, but anyone with that device can reopen the link from its
-    history or address-bar suggestions, the same as a picture of the code.
+    locked list until the tab is closed, but anyone with that device can
+    reopen the link from its history or address-bar suggestions, the same as
+    a picture of the code. A tab reopened from recently closed tabs may have
+    the locked list again too (2026-11-26).
   - Ideas: SMART Health Links, which can expire but need a server.
 - [ ] **16. A record that names a drug only by its package number (NDC) can show
   beside the same drug from another record.** They join only when the names match.

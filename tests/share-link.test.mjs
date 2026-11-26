@@ -8,7 +8,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { takeListFromLink, KEPT_LIST } from "../js/share.js";
+import { takeListFromLink, listKeptOnStep, KEPT_LIST } from "../js/share.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -55,7 +55,12 @@ function fakeBrowser(url, refuse) {
     const was = new URL(steps[at].url);
     here.hash = was.hash;
   };
-  return { place, history, calls, steps, open, back, href: () => here.href };
+  const forward = () => {
+    at += 1;
+    const was = new URL(steps[at].url);
+    here.hash = was.hash;
+  };
+  return { place, history, calls, steps, open, back, forward, href: () => here.href };
 }
 
 test("the list is read from the link, then the link is plain share.html", () => {
@@ -152,4 +157,45 @@ test("the staff page reads the link once, and keeps the list it read", () => {
   // Only takeListFromLink keeps anything, and it keeps the locked text: the
   // staff page never writes history or storage itself.
   for (const writer of [/replaceState/, /pushState/, /localStorage/, /sessionStorage\.setItem/, /indexedDB/]) assert.doesNotMatch(view, writer);
+});
+
+// Every step of the staff tab has the same address, plain share.html, so Back
+// and Forward between two links' steps don't load the page again. The page
+// reloads when the step it lands on keeps a different list from the one it
+// read, so each step shows its own code box and its own code works (Task 10d
+// review). A step that keeps the same list, or the popstate some browsers
+// sent as a page loaded, changes nothing, so it can never reload over and
+// over.
+test("Back and Forward between two links' steps find each step's own list", () => {
+  const b = fakeBrowser("https://example.test/share.html#v3.AAA");
+  takeListFromLink(b.place, b.history);
+  const onA = listKeptOnStep(b.history);
+  assert.equal(onA, "v3.AAA");
+  // A popstate as the page loads: the same step, nothing to reload.
+  assert.equal(listKeptOnStep(b.history), onA);
+  b.open("https://example.test/share.html#v3.BBB");
+  takeListFromLink(b.place, b.history);
+  const onB = listKeptOnStep(b.history);
+  assert.equal(onB, "v3.BBB");
+  b.back();
+  assert.equal(listKeptOnStep(b.history), "v3.AAA");
+  assert.notEqual(listKeptOnStep(b.history), onB);
+  // After the reload, the page reads A's step, and finds A's list.
+  assert.equal(takeListFromLink(b.place, b.history), "v3.AAA");
+  b.forward();
+  assert.equal(listKeptOnStep(b.history), "v3.BBB");
+  assert.equal(takeListFromLink(b.place, b.history), "v3.BBB");
+  // A step that can't be read keeps no list.
+  const unreadable = fakeBrowser("https://example.test/share.html", "read");
+  assert.equal(listKeptOnStep(unreadable.history), "");
+});
+
+test("the staff page reloads on Back and Forward only when the step's list changed", () => {
+  const view = read("js/share-view.js");
+  assert.match(view, /var onStep = listKeptOnStep\(history\);/);
+  const listener = /window\.addEventListener\("popstate", function \(\) \{([\s\S]*?)\n\}\);/.exec(view);
+  assert.ok(listener, "a popstate listener");
+  assert.match(listener[1], /if \(listKeptOnStep\(history\) !== onStep\) location\.reload\(\);/);
+  // Read after the link is taken, so it's the step as the page left it.
+  assert.ok(view.indexOf("var onStep") > view.indexOf("var fragment = takeListFromLink"));
 });

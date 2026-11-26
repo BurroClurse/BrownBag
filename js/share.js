@@ -385,7 +385,8 @@ function linkedFrom(tags, entries, disagree) {
 // The tab keeps the same locked text, exactly what the QR code holds and
 // never the unlocked list, on that step's own history.state (Tyler, Task
 // 10d). A reload, or Safari bringing back a tab it put aside, finds it there
-// and asks for the 6 digits again; it goes when the tab is closed. The step's
+// and asks for the 6 digits again; it goes when the tab is closed (a tab
+// reopened from recently closed tabs may bring it back, still locked). The step's
 // state goes with the tab's history, not with its address, so a copied
 // address or a new tab has no list. A new link in the same tab is a new step
 // that keeps its own. A browser that won't keep it still gets a plain address.
@@ -393,7 +394,7 @@ export var KEPT_LIST = "brownBagSharedList";
 
 export function takeListFromLink(place, steps) {
   var fragment = String(place.hash || "").slice(1);
-  if (!fragment) return keptList(steps);
+  if (!fragment) return listKeptOnStep(steps);
   var address = place.pathname + place.search;
   var state = {};
   state[KEPT_LIST] = fragment;
@@ -405,7 +406,11 @@ export function takeListFromLink(place, steps) {
   return fragment;
 }
 
-function keptList(steps) {
+// The locked text the tab's current step keeps, or "". Every step has the
+// same plain address, so Back or Forward between two links' steps doesn't
+// load the page again; share-view.js compares this with what it read, and
+// reloads when they differ.
+export function listKeptOnStep(steps) {
   try {
     var state = steps.state;
     var kept = state && typeof state === "object" ? state[KEPT_LIST] : "";
