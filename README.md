@@ -23,25 +23,22 @@ pictures are Riley Reconcile, also made up.
 
 ## Standards
 
-**Health data**
+| <small>Health data</small> | <small>Used for</small> |
+| --- | --- |
+| <small>[HL7 FHIR](https://hl7.org/fhir/R4/) R4</small> | <small>[Reads](#reads), [the QR code](#the-qr-code), [the FHIR file](#the-fhir-file)</small> |
+| <small>[SMART App Launch](https://hl7.org/fhir/smart-app-launch/), v1 scopes</small> | <small>[Sign-in](#sign-in): a standalone patient launch</small> |
+| <small>[US Core](https://hl7.org/fhir/us/core/), [CARIN Blue Button](https://hl7.org/fhir/us/carin-bb/)</small> | <small>The records and claims it [reads](#reads)</small> |
+| <small>[IPS](https://hl7.org/fhir/uv/ips/) 2.0.1</small> | <small>[The FHIR file](#the-fhir-file)</small> |
+| <small>[SMART Health Cards](https://spec.smarthealth.cards/), ideas only</small> | <small>[The QR code](#the-qr-code)'s trimmed Bundle</small> |
+| <small>RxNorm, NDC, SNOMED CT, LOINC, UCUM</small> | <small>Medicine, package, allergy, document and unit codes</small> |
 
-| Standard | Version | Used for |
-| --- | --- | --- |
-| [HL7 FHIR](https://hl7.org/fhir/R4/) | R4 | Every read, the QR code and the FHIR file. [Reads](#reads) |
-| [SMART App Launch](https://hl7.org/fhir/smart-app-launch/) | Standalone patient launch, `.read` (v1) scopes | Sign-in. [Sign-in](#sign-in) |
-| [US Core](https://hl7.org/fhir/us/core/), [CARIN Blue Button](https://hl7.org/fhir/us/carin-bb/) | As the server sends them | The shape of the records and pharmacy claims it reads. |
-| [International Patient Summary](https://hl7.org/fhir/uv/ips/) | 2.0.1 | The FHIR file staff can save. [The FHIR file](#the-fhir-file) |
-| [SMART Health Cards](https://spec.smarthealth.cards/) | Ideas only | The QR code's trimmed Bundle, written as digits. [The QR code](#the-qr-code) |
-| RxNorm ([RxNav](https://lhncbc.nlm.nih.gov/RxNav/)), NDC, SNOMED CT, LOINC, UCUM | Current | Medicine, package, allergy, document and unit codes. |
-
-**Security and access**
-
-| Standard | Version | Used for |
-| --- | --- | --- |
-| [OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749), [PKCE](https://www.rfc-editor.org/rfc/rfc7636), [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html), [revocation](https://www.rfc-editor.org/rfc/rfc7009) | `S256`, public client | Signing in and out. [Sign-in](#sign-in) |
-| [Web Crypto](https://www.w3.org/TR/WebCryptoAPI/), [WebAuthn](https://www.w3.org/TR/webauthn-3/) | AES-GCM 256, PBKDF2, HKDF; PRF | The lock and the QR code. [Storage and the lock](#storage-and-the-lock) |
-| [Content Security Policy](https://www.w3.org/TR/CSP3/) | Level 3 | Each page may contact only what it names; the staff page, nothing. |
-| [WCAG](https://www.w3.org/TR/WCAG22/) | 2.2 AA | Every screen. |
+| <small>Security and access</small> | <small>Used for</small> |
+| --- | --- |
+| <small>[OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749) + [PKCE](https://www.rfc-editor.org/rfc/rfc7636) `S256`</small> | <small>[Sign-in](#sign-in), as a public client</small> |
+| <small>[OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html), [revocation](https://www.rfc-editor.org/rfc/rfc7009)</small> | <small>Who signed in; ending it on sign out</small> |
+| <small>[Web Crypto](https://www.w3.org/TR/WebCryptoAPI/), [WebAuthn](https://www.w3.org/TR/webauthn-3/) PRF</small> | <small>[The lock](#storage-and-the-lock) and the QR code</small> |
+| <small>[CSP](https://www.w3.org/TR/CSP3/) Level 3</small> | <small>What each page may contact</small> |
+| <small>[WCAG](https://www.w3.org/TR/WCAG22/) 2.2 AA</small> | <small>Every screen</small> |
 
 ## Front end: what people see
 

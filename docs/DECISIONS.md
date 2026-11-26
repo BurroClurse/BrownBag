@@ -126,6 +126,8 @@ New decisions go at the end of each list, with the date.
 - Claude merges the pull request itself once the tests pass.
 - Condense the whole README: nothing a reader of the course (HL7 Break the
   Code) doesn't need. What stays is Claude's call (2026-11-26).
+- The Standards tables more compact, with a slightly smaller font; how they
+  look is Claude's call (2026-11-26).
 
 ## Calls Claude made
 
@@ -171,5 +173,6 @@ New decisions go at the end of each list, with the date.
 | R48 | The README is cut to what course staff check (SMART sign-in, FHIR reads, and being able to explain how), plus what the app does, what's planned, how to run it, and the legal lines. 232 lines; the limit is now 240 (R43's 320 is replaced) | Detail a reader wanted is one click away in How it works |
 | R49 | Cut from the README: the token snippet's separate lines, the QR packing JavaScript (the link's shape stays), the snippet's dosage and dates, the Reconciliation and Staff tab headings (one line each now under Reads and Front end), the standards rows merged (codes in one row; OAuth, PKCE, OpenID Connect and revocation in one) | Less to read on the wire for the QR code |
 | R50 | The Copyright section is shortened without changing what it allows: reading is fine, anything else needs written permission, see LICENSE and NOTICE.md, and it's not a medical device | The developer may want the old wording back |
+| R51 | Standards tables: two columns (the version sits after the standard's name), the group name is each table's first header, "Used for" links straight to its back-end part, and every cell is wrapped in `<small>` (GitHub shows it at 90%). Checked at phone and desktop widths with GitHub's stylesheet | A cell or header wraps on a narrow phone; `<small>` is extra markup in the source |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.
