@@ -99,6 +99,8 @@ New decisions go at the end of each list, with the date.
 - The Face ID unlock screen is laid out like home: the bag fills the empty
   space and the buttons sit at the bottom. The PIN screen stays as it is,
   since its keyboard covers the bottom (2026-11-26).
+- The bag sits in the same place at the same size on the unlock screen and
+  home, so unlocking looks like home filling in (2026-11-26).
 
 ## Calls Claude made
 
@@ -134,5 +136,6 @@ New decisions go at the end of each list, with the date.
 | R32 | `DetectedIssue` left out of the FHIR file (the HL7 validator rejected it) | Other systems don't get it as data (LIMITS #26) |
 | R33 | A combination's plain name names every ingredient ("Hydrochlorothiazide / Lisinopril") | Longer names |
 | R40 | Partial list (Tyler: "whatever's best"): home hides its line; My medicines keeps the review box without a number | One wording change |
+| R41 | To line the bag up with home: home's bag is now sized by a shared rule and no longer stretches to fill all the space (any space left over sits under it), and room is kept for "Your records don't agree" even when it isn't there | Home's bag is a little smaller (about 60 px on an iPhone 15) |
 
 R21 was Tyler's decision (the sandbox test patients), so it's in his list.

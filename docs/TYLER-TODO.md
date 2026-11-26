@@ -48,7 +48,8 @@ All can be done on the live site now that PR #14 is merged:
 
 - **Face ID and the Home Screen app:** add Brown Bag to the Home Screen, set
   up Face ID, and unlock with it from the icon. The unlock screen should now
-  look like home: the bag filling the screen, the buttons at the bottom.
+  look like home: the bag filling the screen, the buttons at the bottom, and
+  the bag in exactly the same place as on home after you unlock.
 - **Quit Safari with a staff tab open:** open Chantell Bartell's QR link, type
   the code, swipe Safari away in the app switcher, open it again. The tab shows
   the 6-digit code box, never "This link has no list in it."
