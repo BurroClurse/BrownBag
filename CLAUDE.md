@@ -20,3 +20,9 @@ Standing rules from Tyler.
   change is ready for a phone check, say so plainly, with what to check and the
   commands to run (`prompts/phone-pass.md` runs the pass), and add it to
   "Waiting for the next pass" in `docs/NEEDS-TESTING.md`.
+- **Start each session with Tyler's to-do.** Read `docs/TYLER-TODO.md` ("Tyler
+  needs to do") and remind him of what's open. Add to it whenever a change needs
+  something only he can do; move items to "Done" with the date when he does them.
+- **Keep the decisions log.** `docs/DECISIONS.md` records Tyler's decisions and
+  every call Claude made on his behalf (with what it costs if wrong). Add new
+  ones as they're made.

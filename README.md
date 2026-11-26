@@ -135,6 +135,7 @@ it with `BROWN_BAG_DEMO=two-clinics`. Both are in
 - [Sandboxes and test patients](docs/SANDBOXES.md): who to sign in as, and the test clinic.
 - [Limits](docs/LIMITS.md): what can keep the list from matching what the patient takes.
 - [Needs testing](docs/NEEDS-TESTING.md): what's waiting for a phone check.
+- [Tyler needs to do](docs/TYLER-TODO.md) and [Decisions](docs/DECISIONS.md): what's open for Tyler, and who decided what.
 - [Learning log](docs/LEARNING.md): each step, in plain words.
 - [Privacy](https://burroclurse.github.io/BrownBag/privacy.html) ([`privacy.html`](privacy.html)): what's kept and who can see it.
 - Designs and build plans: [`docs/superpowers/`](docs/superpowers/).
