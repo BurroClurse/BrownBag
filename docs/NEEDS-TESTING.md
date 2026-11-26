@@ -43,11 +43,28 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Every source on a card whose sources agree** (2026-11-26, Task 11 fix;
+LIMITS #17). Checked only in headless Chromium (iPhone 15 size, PIN lock,
+Riley with the test clinic). Run `node tools/reconcile-patients.mjs` first,
+then `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. Sign in as
+Riley. On both virtual phones, on My medicines:
+
+- The sertraline card (Zoloft in the test clinic) says "Source: SMART
+  sandbox, Valley Clinic (test records)", and the line wraps well at the
+  largest text. Scan its QR code: the staff page names the same two.
+- A card from one source, such as metformin 500 MG, still says "Source:
+  SMART sandbox"; one from the test clinic alone, such as amlodipine, says
+  "Source: Valley Clinic (test records)".
+- The cards that disagree (atorvastatin, lisinopril, methotrexate) are as
+  before: each version under its own source, and "Source" names the shown
+  record's.
+
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v98`), then More options ▸ Privacy:
+files (cache `brownbag-v99`), then More options ▸ Privacy:
 
-- "What stays on your phone" ends its first lines with "When your records
+- "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your
   backups." "Backups" says "They hold what you added and your answers, never
   your sign-in." Both wrap well at the largest text, and Back returns to

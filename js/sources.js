@@ -88,10 +88,10 @@ function fillsRow(split, date, format) {
   return ["Insurance fills", split.claims === "refused" ? "Sign in again to add them" : "Not loaded"];
 }
 
-// What launch.html does. A link that names its own server (the README's test
-// patients, the SMART Launcher) or a chosen patient signs in. A connected source
-// shows its patients; anything else the sources, so an odd address never starts
-// a sign-in.
+// What launch.html does. A link that names its own server (the test
+// patients in docs/SANDBOXES.md, the SMART Launcher) or a chosen patient
+// signs in. A connected source shows its patients; anything else the
+// sources, so an odd address never starts a sign-in.
 export function startFor(search) {
   var params = new URLSearchParams(search);
   if (params.get("iss")) return "sign-in";

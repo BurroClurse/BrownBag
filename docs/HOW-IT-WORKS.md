@@ -81,6 +81,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   patient's medicines, or knows of none, gets a line of its own ("<Source> has no information about your
   medicines." or "<Source> says: no medicines known."), never a card, and the
   list never reads as none.
+- **When sources agree**, the joined card names every source that lists it
+  ("Source: SMART sandbox, Valley Clinic (test records)"), as the staff page
+  does. A card from one source names that one.
 - **When sources disagree** on how much, how often, or whether it's still
   taken, the medicine is one card with each source's version and date, and a
   box under Allergies says "Your records don't agree on 2 things" with **Check

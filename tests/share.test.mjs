@@ -1008,3 +1008,11 @@ test("a confirmed side comes first, and the patient's own mark is labelled as th
   assert.deepEqual(parts[0].sides[2].row.facts, [["Not taking since", "Mar 3, 2026"]]);
   assert.deepEqual(disagreeParts({}), []);
 });
+
+// The patient's card and the staff page name the same sources (LIMITS #17).
+test("the patient's card names the sources the staff page does", async () => {
+  const { patientCard } = await import("../js/card.js");
+  const card = grouped({ group: Object.assign({}, grouped().group, { verdicts: [] }) });
+  const staff = groupShareBundle(await shared([card])).fromRecords[0].facts.filter(([label]) => label === "Source");
+  assert.deepEqual(patientCard(card, false).facts.filter(([label]) => label === "Source"), staff);
+});

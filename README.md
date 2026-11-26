@@ -33,8 +33,9 @@ The pictures are Riley Reconcile, made up, with the home server's test clinic.
   PIN), then **Connect your health records**. After that, the lock opens Brown
   Bag and the list updates by itself. It locks after 5 minutes idle.
 - **My medicines:** allergies first, then the medicines from the records,
-  repeats merged, directions in full. Older prescriptions fold away, with a
-  hospital's order for a stay among them, labelled "Hospital order".
+  repeats merged, directions in full, each card naming every source that
+  lists it. Older prescriptions fold away, with a hospital's order for a stay
+  among them, labelled "Hospital order".
 - **Fills** from insurance claims: how many, and when last. When the newest is
   over a year old, the card says "Last filled over a year ago."
 - **When sources disagree** on how much, how often or whether it's still
@@ -75,8 +76,9 @@ RxNav; the staff page, nothing.
 - **Reads:** Patient, MedicationRequest, MedicationStatement, pharmacy claims
   (ExplanationOfBenefit) and AllergyIntolerance, every page, plus RxNav for
   ingredients, term types and package codes. Nothing is written back.
-- **Storage:** the list and the patient's additions, marks and answers, saved
-  encrypted on the phone and in backups. The service worker keeps app files only.
+- **Storage:** the list is saved encrypted on the phone. The patient's
+  additions, marks and answers are saved the same way and go in backups; the
+  list and the sign-in never do. The service worker keeps app files only.
 - **Reconciliation:** every source's records are kept and compared fresh on
   each update; nothing is overwritten. A second source joins only with the
   same name and birth date. Today it's the home server's test clinic.
@@ -103,10 +105,10 @@ design; the reasons behind each are in [LIMITS](docs/LIMITS.md).
 - **Reading directions** (idea): "1 tab PO BID" read as "twice a day". [LIMITS #24](docs/LIMITS.md)
 - **A reminder before appointments** (idea). [LIMITS #1](docs/LIMITS.md)
 - **When each source was last read** (idea), with several sources. [LIMITS #21](docs/LIMITS.md)
-- **Text past 200 percent** (idea): My medicines and the QR screen fit. [LIMITS #28](docs/LIMITS.md)
+- **Text past 200 percent** (idea): My medicines, the QR screen and the staff page's title fit. [LIMITS #28](docs/LIMITS.md)
 
 **Back end**
-- **Medicare Part D fills** (designed and planned; waiting on Medicare's approval). [Design](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md)
+- **Medicare Part D fills** (designed and planned; waiting on Medicare's approval). It adds one small server function, which only completes and renews Medicare's sign-in and never sees the list. [Design](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md)
 - **Epic, Oracle Health, MEDITECH, Medicaid, pharmacy fills** (idea; named on the connections screen). [SANDBOXES](docs/SANDBOXES.md#sandboxes-looked-at)
 - **SMART Health Links** (idea; needs a server to hold the file). [LIMITS #19](docs/LIMITS.md)
 - **Two sign-ins for one person** (idea; comes after Medicare). [LIMITS #22](docs/LIMITS.md)
@@ -121,8 +123,9 @@ design; the reasons behind each are in [LIMITS](docs/LIMITS.md).
 Node 22 or later, nothing to install: `node --test "tests/*.test.mjs"` runs
 the tests. On a phone, passkeys and encryption need https: `node
 tools/serve.mjs` serves this folder at `https://localhost:8443` with a
-certificate kept in `.certs/`. For two sources, start it with
-`BROWN_BAG_DEMO=two-clinics` ([the test clinic](docs/SANDBOXES.md#the-home-servers-test-clinic)).
+certificate made with mkcert and kept in `.certs/`. For two sources, start
+it with `BROWN_BAG_DEMO=two-clinics`. Both are in
+[the test clinic](docs/SANDBOXES.md#the-home-servers-test-clinic).
 
 ## More docs
 

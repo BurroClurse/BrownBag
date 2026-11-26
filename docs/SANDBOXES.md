@@ -65,7 +65,7 @@ clinic file; anyone else gets Loria's. Against Loria Jenkins it disagrees on
 one dose (metoprolol) and adds lisinopril, which she doesn't have. Her
 simvastatin and Lasix are coded only by strength, with no form, so the
 clinic's simvastatin and furosemide tablets show as cards of their own
-instead of joining hers (Task 6c); Riley has the stops to check.
+instead of joining hers; Riley has the stops to check.
 `?demo=someone-else` in the page
 address makes its birth date a day off, so it's kept out as not matching. Only the home server
 (port 8443) asks for it; the published app never does.

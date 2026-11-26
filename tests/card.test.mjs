@@ -401,3 +401,20 @@ test("a dose question keeps the whole ingredient name", () => {
   // No strength to stop at: the plain name as before.
   assert.equal(named("Tylenol"), "Tylenol");
 });
+
+// Tyler, 2026-11-26 (LIMITS #17): records that agree name every source on
+// the patient's card, the same words the staff page uses.
+test("a card whose sources agree names every source", () => {
+  const sourceOf = (entry) => patientCard(entry, true).facts.filter(([label]) => label === "Source");
+  const agree = (verdicts, sources) => Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { verdicts, sources: sources || GROUPED.group.sources }) });
+  assert.deepEqual(sourceOf(agree([])), [["Source", "SMART sandbox, Valley Clinic (test records)"]]);
+  assert.deepEqual(sourceOf(agree(["worded"])), [["Source", "SMART sandbox, Valley Clinic (test records)"]], "worded differently still agrees");
+  // Two records from one source name it once.
+  assert.deepEqual(sourceOf(agree([], ["Valley Clinic (test records)", "Valley Clinic (test records)"])), [["Source", "Valley Clinic (test records)"]]);
+  // One source: as before.
+  assert.deepEqual(sourceOf(item()), [["Source", "SMART sandbox"]]);
+  // Records that disagree show each source on its own side; the card's
+  // facts are the shown record's, so its source.
+  assert.deepEqual(sourceOf(asked("dose")), [["Source", "Valley Clinic (test records)"]]);
+  assert.deepEqual(sourceOf(GROUPED), [["Source", "Valley Clinic (test records)"]]);
+});

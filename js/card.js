@@ -131,7 +131,9 @@ export function patientCard(entry, claimsLoaded, today) {
   if (claimsLoaded) facts = facts.concat(fillRows(entry.fills));
   say("Added", entry.addedAt && dateText(entry.addedAt));
   say("From", entry.older && olderText(entry.older.date));
-  if (fromRecords) say("Source", otherRecord ? chosen.sourceName : entry.source);
+  // Records that agree name every source, like the staff page; a chosen
+  // side, or records that disagree, the record whose facts these are.
+  if (fromRecords) say("Source", otherRecord ? chosen.sourceName : (chosen || recordsDisagree(entry)) ? entry.source : sourcesText(entry));
   say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
@@ -148,6 +150,21 @@ export function patientCard(entry, claimsLoaded, today) {
   // A chosen side names the card too, so its name and dose are one record's.
   if (cardName(entry) !== entry.name) card.name = cardName(entry);
   return card;
+}
+
+// What the records disagree on that the patient is asked about. "worded"
+// alone is the same medicine, said differently.
+var ASKED_VERDICTS = ["status", "dose", "schedule"];
+
+export function recordsDisagree(entry) {
+  return Boolean(entry.group) && (entry.group.sides || []).length > 1 && (entry.group.verdicts || []).some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
+}
+
+// Who says so, for records that agree: every source, each once, as the
+// patient's card and the staff page both say it.
+export function sourcesText(entry) {
+  var names = ((entry.group && entry.group.sources) || []).filter(function (name, index, all) { return name && all.indexOf(name) === index; });
+  return names.length > 1 ? names.join(", ") : entry.source;
 }
 
 // The name a card shows: the side the patient chose, else the record's.

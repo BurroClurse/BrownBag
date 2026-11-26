@@ -7,7 +7,7 @@
 
 import { fillNote, completedNote, suggestNote } from "./claims.js";
 import { holdText } from "./meds.js";
-import { olderText, dateText, monthText, fillRowsFrom, isDirections, oldFillText, takeRows } from "./card.js";
+import { olderText, dateText, monthText, fillRowsFrom, isDirections, oldFillText, recordsDisagree, sourcesText, takeRows } from "./card.js";
 import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
@@ -153,7 +153,6 @@ export function buildShareBundle(list, now, warnings = {}, level = 0, undated = 
 // Staff notes (spec section 9).
 var DISAGREE_NOTE = "Records disagree";
 var UNSURE_NOTE = "Patient isn't sure";
-var ASKED_VERDICTS = ["status", "dose", "schedule"];
 
 // One current card's statements. Until the patient answers, or when they
 // aren't sure, each side is its own statement, so nothing one source says is
@@ -163,7 +162,7 @@ function currentStatements(item, level, dated) {
   var question = answer ? null : item.question;
   var sides = item.group && item.group.sides.length > 1 ? item.group.sides : null;
   // The records disagree with each other, whatever the patient marked.
-  var asked = Boolean(sides) && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
+  var asked = recordsDisagree(item);
   var out;
   if (question && isMarkFingerprint(question.fingerprint)) {
     var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE], dated) : [recordStatement(item, level)];
@@ -301,7 +300,7 @@ function recordStatement(item, level, from) {
     statement.informationSource = { display: item.source };
     statement.note = [{ text: CLAIMS_ONLY_NOTE }];
   } else {
-    statement.note = [{ text: "From records: " + (from || sourcesOf(item)) }];
+    statement.note = [{ text: "From records: " + (from || sourcesText(item)) }];
   }
   if (item.prescriber) {
     statement.note.push({ text: "Prescribed by " + item.prescriber });
@@ -324,11 +323,6 @@ function recordStatement(item, level, from) {
     asNeeded(statement, RECORDS_AS_NEEDED_NOTE);
   }
   return statement;
-}
-
-function sourcesOf(item) {
-  var names = ((item.group && item.group.sources) || []).filter(function (name, index, all) { return name && all.indexOf(name) === index; });
-  return names.length > 1 ? names.join(", ") : item.source;
 }
 
 // The patient's Not taking mark, as today.

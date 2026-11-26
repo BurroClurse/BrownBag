@@ -133,19 +133,18 @@ an idea becomes a plan only after its own design.
     Not taking to tidy the list, the one they take must not go with it.
   - When (Tyler, 2026-11-24): with Medicare, its fills first, then joining cards.
   - Ideas: look up the NDC in RxNav by the record's date (Medicare plan, Task 1),
-    join only cards with no marks, and make a mark on the joined card cover all.
-- [ ] **17. A medicine or allergy found in two places names only one of them.**
-  - Now (2026-11-26, reconciliation): a card joined from several sources
-    names every source where the sources disagree (each version under its
-    source and date, on My medicines and the staff page). When they agree,
-    the staff page, See what's inside and the FHIR file name every source
-    ("SMART sandbox, Valley Clinic (test records)"), but the patient's card
-    on My medicines still says only the shown record's source. The unnamed
-    allergy row doesn't name its source yet; only one source sends allergies
-    today.
-  - When (Tyler, 2026-11-24): with the second source. The card and the QR code
-    say "Source: SMART sandbox and Epic", and the unnamed allergy row names its
-    source too.
+    and join only cards with no marks. (A mark on the joined card covering all
+    is built: see above.)
+- [x] **17. A medicine or allergy found in two places names only one of them.**
+  - Now (2026-11-26, Tyler: yes): a card joined from several sources names
+    every source. When they agree, the patient's card on My medicines, the
+    staff page, See what's inside and the FHIR file all say "SMART sandbox,
+    Valley Clinic (test records)", in the same words (`sourcesText` in
+    `js/card.js`). When they disagree, each version is under its own source
+    and date. The unnamed allergy row names no source: only the SMART sandbox
+    sends allergies today, so it has one place to be from. When a second
+    source sends allergies, that row should name its source too.
+  - When (Tyler, 2026-11-24): with the second source.
 - [ ] **18. Names alone often don't join.** openFDA and DailyMed write one medicine
   many ways ("LISINOPRIL TABLET", "Lisinopril", strength "40 mg/1"), with package
   numbers with or without dashes, and brand or generic (looked at 2026-11-24).
