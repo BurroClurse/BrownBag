@@ -5,7 +5,8 @@ The whole tour, screen by screen, and what happens behind each screen. The
 the same as the README: the **front end**, what the patient and the person
 checking their medicines see, and the **back end**, what happens behind the
 screen to make that work. It describes Brown Bag as it is today; what's
-coming is in the README's "What's planned".
+coming is in the README's "What's planned". [`FILES.md`](FILES.md) says
+what each file in the code is for.
 
 ## Where the records come from
 

@@ -110,6 +110,21 @@ New decisions go at the end of each list, with the date.
   "Close older prescriptions", so they don't read as records placed after it
   (2026-11-26).
 
+**README standards and docs (2026-11-26)**
+- A **Standards** section near the top, before Front end, in two groups
+  (Health data; Security and access): each row has the standard, its version,
+  what Brown Bag uses it for and a link to the spec.
+- Code snippets live in the README, under the back-end part each one shows,
+  and the table links down to them. Mostly what crosses the wire (HTTP and
+  FHIR JSON), in the style of the SMART on FHIR Interactive Lab, with
+  JavaScript only for the lock and the QR code's packing.
+- The snippets: sign-in and reads, the QR code, the lock and the FHIR file.
+  Not the codes (RxNav calls, NDC, SNOMED); the table still names them.
+- The README stops linking the Learning log, Needs testing, Decisions, Files
+  and `docs/superpowers/`. They stay in the repo; How it works links Files.
+  "What's planned" still links each design it needs.
+- Claude merges the pull request itself once the tests pass.
+
 ## Calls Claude made
 
 | # | What Claude decided | What it costs if wrong |
@@ -146,5 +161,10 @@ New decisions go at the end of each list, with the date.
 | R40 | Partial list (the developer: "whatever's best"): home hides its line; My medicines keeps the review box without a number | One wording change |
 | R41 | To line the bag up with home: home's bag is now sized by a shared rule and no longer stretches to fill all the space (any space left over sits under it), and room is kept for "Your records don't agree" even when it isn't there | Home's bag is a little smaller (about 60 px on an iPhone 15) |
 | R42 | For "perfectly aligned": the tagline moves to the top line where home has the name; Unlock is made the same size as Show my QR code and Start over sits where My medicines is; an empty row stands in for More options. On a day home also shows "Your records don't agree", home's buttons sit one row higher, because the locked screen can't know about it without storing a hint outside the lock | The tagline is at the top instead of above the buttons; one-row offset on days with disagreements |
+| R43 | The README limit goes from 160 to 320 lines (312 now, not the 250 first guessed): about 90 lines of snippets, the two tables and the new headings | A longer README to scroll |
+| R44 | Back end is split into headings (Sign-in, Reads, Storage and the lock, Reconciliation, The QR code, The FHIR file, The staff tab) so the table can link to each | Layout only |
+| R45 | Snippets use made-up values and placeholders (`{iss}`, `{patient}`) with the app's real scopes, client id, addresses, tags and codes; JavaScript is shortened and says so | A reader may take a placeholder for a literal |
+| R46 | Tests keep the snippets honest: the sign-in scopes and client id match `launch.html`, and the tags address, link prefix, IPS profile, LOINC codes and PBKDF2 rounds match the code | A snippet change needs its test changed too |
+| R47 | US Core and CARIN Blue Button show "As the server sends it" for a version, since Brown Bag reads whatever version the server sends and doesn't pin one; SMART is "`.read` (v1) scopes" | A reviewer may want exact versions |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.

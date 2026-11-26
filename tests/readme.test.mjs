@@ -59,16 +59,41 @@ test("every relative link in the README and the docs leads somewhere", () => {
   }
 });
 
-test("the README stays short, and keeps both halves and the plans", () => {
+test("the README keeps both halves, the plans and the standards, at a readable length", () => {
   const lines = readme.split("\n").length;
-  assert.ok(lines <= 160, lines + " lines");
-  for (const heading of ["## Front end: what people see", "## Back end: what happens behind the screen", "## What's planned", "## Copyright"]) {
+  assert.ok(lines <= 320, lines + " lines");
+  for (const heading of ["## Standards", "## Front end: what people see", "## Back end: what happens behind the screen", "## What's planned", "## Copyright"]) {
     assert.ok(readme.includes(heading), heading);
   }
+  // The standards come near the top, before the front end.
+  assert.ok(readme.indexOf("## Standards") < readme.indexOf("## Front end: what people see"));
   assert.match(readme, /not a medical device/);
-  for (const link of ["LICENSE", "NOTICE.md", "docs/HOW-IT-WORKS.md", "docs/FILES.md", "docs/SANDBOXES.md", "docs/LIMITS.md", "docs/NEEDS-TESTING.md", "docs/LEARNING.md"]) {
+  for (const link of ["LICENSE", "NOTICE.md", "docs/HOW-IT-WORKS.md", "docs/SANDBOXES.md", "docs/LIMITS.md"]) {
     assert.ok(readme.includes("](" + link), link);
   }
+  // Working files for the developer and Claude stay in the repo, off the README
+  // (the developer, 2026-11-26). How it works links the file list.
+  for (const link of ["docs/FILES.md", "docs/NEEDS-TESTING.md", "docs/DECISIONS.md", "docs/LEARNING.md", "docs/superpowers/)"]) {
+    assert.ok(!readme.includes("](" + link), link);
+  }
+  assert.ok(read("docs/HOW-IT-WORKS.md").includes("](FILES.md)"));
+});
+
+test("the README's sign-in snippet asks for exactly the app's scopes", () => {
+  const asked = /scope: "([^"]+)"/.exec(read("launch.html"))[1].split(" ");
+  const snippet = /&scope=([\s\S]*?)\n\s*&aud=/.exec(readme)[1].split(/\s+/).filter(Boolean);
+  assert.deepEqual(snippet, asked);
+  assert.ok(readme.includes('client_id=' + /clientId: "([^"]+)"/.exec(read("launch.html"))[1]));
+});
+
+test("the README's QR and FHIR file snippets use the app's own systems and codes", () => {
+  const share = read("js/share.js");
+  const ips = read("js/ips.js");
+  assert.ok(share.includes('"https://burroclurse.github.io/BrownBag/tags"') && readme.includes("https://burroclurse.github.io/BrownBag/tags"));
+  assert.ok(share.includes('var PREFIX = "v3."') && readme.includes('share.html#v3.'));
+  assert.ok(readme.includes(/var PROFILE = "([^"]+)"/.exec(ips)[1]));
+  for (const [, code] of ips.matchAll(/loinc\("([\d-]+)"/g)) assert.ok(readme.includes('"code": "' + code + '"'), code);
+  assert.ok(readme.includes("iterations: " + /PBKDF2_ITERATIONS = (\d+)/.exec(read("js/vault.js"))[1]));
 });
 
 test("the README's pictures are small, described, and not app files", () => {
