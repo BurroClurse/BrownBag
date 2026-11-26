@@ -596,20 +596,27 @@ Task 10c (commit 4484292) clears the list from the staff page's address as soon 
 
 Also confirmed by Tyler for Task 10c (no change needed): clear the address right away, before the code; the note keeps the yellow note style; "over a year" by the calendar, partial dates only when the whole month or year is that old; the picker's birth dates copied from the sandbox.
 
-### Task 11: Docs, privacy and the app cache
+### Task 11: Docs, privacy, the app cache, and a shorter README (revised 2026-11-26 with Tyler's answers)
 
 **Files:**
-- Modify: `README.md`, `docs/LIMITS.md`, `docs/LEARNING.md`, `privacy.html`, `sw.js`, `docs/NEEDS-TESTING.md`
-- Test: `tests/readme.test.mjs`, `tests/privacy.test.mjs` (existing)
+- Modify: `README.md`, `docs/LIMITS.md`, `docs/LEARNING.md`, `docs/SANDBOXES.md`, `docs/NEEDS-TESTING.md`, `privacy.html`, `sw.js`, `tests/readme.test.mjs` (and any test that reads the README)
+- Create: `docs/HOW-IT-WORKS.md`, `docs/FILES.md`, `NOTICE.md`, 2–3 screenshots under `assets/` (e.g. `assets/readme-*.png`)
 
-- [ ] **Step 1: Update the README.**
-  - **"Front end":** for the patient, when sources disagree, the review, and hospital orders; for the person checking medicines, the "Records disagree: ask the patient" part and the fill hint.
-  - **"Back end":** reconciliation (every source kept and compared fresh), the QR code's `differs` and `source-not-loaded` tags, and the FHIR file's `DetectedIssue`.
-  - **"Files":** add `js/reconcile.js`, `js/review.js` and `js/demo-source.js`. The README test fails without them.
-  - **"Run it locally on a phone":** `BROWN_BAG_DEMO=two-clinics`.
-  - **"What's planned":** "When sources disagree" comes out of both halves, since it's done.
-- [ ] **Step 2: LIMITS.** #8 "Now:" says what's built. #16 "Now:" notes marks on joined cards. #17 is checked, since cards name every source.
-- [ ] **Step 3: Privacy page.** It says the patient's answers are kept with their other additions, encrypted, and in backups.
-- [ ] **Step 4: Bump the cache name in `sw.js`**, and add a LEARNING entry: what reconciliation is, in plain words.
-- [ ] **Step 5: Run the whole suite.** All pass.
-- [ ] **Step 6: Commit** `README.md docs/LIMITS.md docs/LEARNING.md privacy.html sw.js docs/NEEDS-TESTING.md`: "Say what's new when sources disagree".
+- [ ] **Step 1: Move the detail out of the README, losing nothing.** Before cutting, copy today's README detail into:
+  - `docs/HOW-IT-WORKS.md`: the full screen-by-screen tour (Front end: the patient, the person checking medicines) and the full Back end (signing in, reading the records, keeping it on the phone, the QR code and the FHIR file), kept in the same front end / back end split, brought up to date with Steps 3–4.
+  - `docs/FILES.md`: the Files table, with `js/reconcile.js`, `js/review.js`, `js/demo-source.js` and every other file in `js/` (move the README test's file check here: every `js/*.js` file is listed).
+  - `docs/SANDBOXES.md`: the Test patients section and how to run the home server's test clinic (`BROWN_BAG_DEMO=two-clinics`, `?demo=someone-else`).
+  - `NOTICE.md`: the course starter, the `vendor/` library licenses, the LOINC notice word for word, the UCUM credit, and the trademark lines.
+- [ ] **Step 2: Rewrite the README at about 120–150 lines, written for reviewers and instructors first** (Tyler's answers). Good-README shape: title, tagline and logo; what Brown Bag is and who it's for in a few sentences; the live link and "sandbox data only"; 2–3 small phone screenshots of a sandbox test patient (home, My medicines, the staff page) with alt text, made in headless Chromium at deviceScaleFactor 2, made-up data only; then
+  - **Front end: what people see** — short bullets for the patient and for the person checking medicines, including: when sources disagree, the review cards, hospital orders, "Last filled over a year ago.", plain birth dates; for staff, "Records disagree: ask the patient", the fill hint, the code box, the list kept locked in the tab (a reload asks for the code again; a copied address carries no list), Back/Forward between patients.
+  - **Back end: what happens behind the screen** — short bullets: sign-in, reads, storage, reconciliation (every source kept and compared fresh), the QR code's `differs` and `source-not-loaded` tags, the FHIR file (no-medicines said in the text; no DetectedIssue, per Task 9), the staff tab's `history.state`.
+  - **What's planned** — split front end / back end, one line each with its stage (idea, designed, planned, waiting on someone) and a link to its design or LIMITS entry. "When sources disagree" comes out of both halves, since it's done.
+  - **Run it** (tests: `node --test "tests/*.test.mjs"`; on a phone: `tools/serve.mjs`, link to SANDBOXES for the test clinic), **More docs** (links: HOW-IT-WORKS, FILES, SANDBOXES, LIMITS, NEEDS-TESTING, LEARNING, privacy page), and **Copyright** (the copyright line, the reading-welcome/permission sentence, links to LICENSE and NOTICE.md, and "not a medical device; doesn't give medical advice").
+  - Fix the Task 10d re-review's two wording notes while moving text: Forward shows "Couldn't start sign-in" only after Back from "Starting…" or "Couldn't start…" (not after Back from the sandbox's page); and say in the Front end (HOW-IT-WORKS) that reloading those screens shows the failure screen with Try again.
+  - Keep CLAUDE.md's rules: current and planned, front end / back end split.
+- [ ] **Step 3: LIMITS.** #8 "Now:" says what's built. #16 "Now:" notes marks on joined cards. #17 is checked, since cards name every source.
+- [ ] **Step 4: Privacy page.** It says the patient's answers are kept with their other additions, encrypted, and in backups.
+- [ ] **Step 5: NEEDS-TESTING.** A reload line in the Task 10d phone-pass entry (reloading "Starting sign-in…" or "Couldn't start sign-in" shows the failure screen with Try again). Check Safari quit/reopen and Reopen closed tab are under "On a real iPhone".
+- [ ] **Step 6: Bump the cache name in `sw.js`** (now brownbag-v97; precache any new file only if the app loads it — README screenshots aren't app files), and add a LEARNING entry: what reconciliation is, in plain words.
+- [ ] **Step 7: Run the whole suite.** All pass. Check every relative link in README.md and the new docs resolves to a file.
+- [ ] **Step 8: Commit:** "Say what's new when sources disagree, and keep the README short".
