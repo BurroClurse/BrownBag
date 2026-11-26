@@ -1,4 +1,76 @@
-# Sandboxes looked at
+# Sandboxes and test patients
+
+Brown Bag uses test systems only, with made-up patients. This page has the
+test patients to sign in as, the home server's test clinic for trying two
+sources, and the other test systems looked at so far. The
+[README](../README.md) has the short tour.
+
+## Test patients
+
+Sign in, then SMART Health IT sandbox, lists 20 made-up patients grouped by what
+they show, each with their birth date. A choice goes to the sandbox's approval page. **Someone else** opens the
+sandbox's own list, which changes because anyone can add patients.
+
+These links sign in as one patient directly, with no list, no approval and no
+password:
+
+| Patient | What it shows | Link |
+| --- | --- | --- |
+| Chantell Bartell `e89af71d-4aa4-2237-e71d-6fa8e4b5af09` | Insurance fills, one allergy, and an allergy entry that doesn't say what it's to. | [Open as Chantell](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU4OWFmNzFkLTRhYTQtMjIzNy1lNzFkLTZmYThlNGI1YWYwOSIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
+| Loria Jenkins `e7de504a-311d-49be-b2bc-566a328bcc72` | Four current medicines, no insurance claims and no allergies. | [Open as Loria](https://burroclurse.github.io/BrownBag/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImU3ZGU1MDRhLTMxMWQtNDliZS1iMmJjLTU2NmEzMjhiY2M3MiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir) |
+
+Chantell and Loria come with the sandbox, so its nightly reset keeps them. Added
+patients are deleted: **Avery Brownbag** (`brownbag-demo-patient`), who shows every
+fill case, is there only after `node tools/demo-patient.mjs`, until the next reset.
+Nothing done in Brown Bag is sent to the sandbox; what you add stays on your phone.
+
+Two more added patients have records that disagree, for trying two sources with
+the home server's [test clinic](#the-home-servers-test-clinic) (below). They're there only after
+`node tools/reconcile-patients.mjs`, until the next reset. The script also writes
+each one's test clinic file, with dates from the same day, so run it again before
+testing on another day.
+
+- **Riley Reconcile** (`brownbag-recon-riley`, born 1948-06-02): lisinopril 10 mg
+  in the sandbox and 20 mg at the clinic; methotrexate weekly against daily;
+  atorvastatin current in the sandbox, stopped later at the clinic; Zoloft and
+  generic sertraline, which agree; regular and extended-release metformin, a
+  possible duplicate, whose fill says 60 for 30 days; lisinopril with hydrochlorothiazide beside lisinopril; an
+  active hospital IV order; levothyroxine stopped in the record but filled since;
+  and amlodipine, which only the clinic lists.
+- **Jordan Partial** (`brownbag-recon-jordan`, born 1955-11-20): a stop dated by
+  year only, an undated stop, and a clinic file that says it held records back.
+
+On the home server, these sign in as Riley or Jordan (add them to its
+address, `https://localhost:8443`, after setting up the lock):
+
+- Riley: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLXJpbGV5IiwiIiwiQVVUTyIsMSwxLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwxLCIiXQ%2Ffhir`
+- Jordan: `/launch.html?iss=https%3A%2F%2Flaunch.smarthealthit.org%2Fv%2Fr4%2Fsim%2FWzMsImJyb3duYmFnLXJlY29uLWpvcmRhbiIsIiIsIkFVVE8iLDEsMSwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMSwiIl0%2Ffhir`
+
+The script rewrites the test clinic files in `tests/fixtures/reconcile/clinics`;
+`git checkout -- tests/fixtures/reconcile/clinics` puts the committed ones back
+when you're done.
+
+## The home server's test clinic
+
+Passkeys and encryption need https. `tools/serve.mjs` serves this folder at
+`https://localhost:8443` with a certificate from
+[mkcert](https://github.com/FiloSottile/mkcert) kept in `.certs/` (never
+committed). See the comments at the top of that file.
+
+To try two sources, start it with `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`.
+It then serves the demo clinic, Valley Clinic (test records), which the app
+adds as a second source with the signed-in patient's name and birth date.
+Riley and Jordan ([Test patients](#test-patients), above) each get their own
+clinic file; anyone else gets Loria's. Against Loria Jenkins it disagrees on
+one dose (metoprolol) and adds lisinopril, which she doesn't have. Her
+simvastatin and Lasix are coded only by strength, with no form, so the
+clinic's simvastatin and furosemide tablets show as cards of their own
+instead of joining hers; Riley has the stops to check.
+`?demo=someone-else` in the page
+address makes its birth date a day off, so it's kept out as not matching. Only the home server
+(port 8443) asks for it; the published app never does.
+
+## Sandboxes looked at
 
 Planning notes for which test systems Brown Bag could connect to next. Kept
 out of the app and the README, which name only what the sign-in list names,

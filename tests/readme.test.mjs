@@ -1,23 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const read = (file) => readFileSync(path.join(ROOT, file), "utf8");
 const readme = read("README.md");
+const DOCS = ["README.md", "NOTICE.md", "docs/HOW-IT-WORKS.md", "docs/FILES.md", "docs/SANDBOXES.md", "docs/LIMITS.md", "docs/NEEDS-TESTING.md", "docs/LEARNING.md"];
 
-test("the README names every script of the app", () => {
-  for (const file of readdirSync(new URL("../js/", import.meta.url))) {
-    assert.ok(readme.includes("`js/" + file + "`"), file);
+test("the files list names every script of the app", () => {
+  const files = read("docs/FILES.md");
+  for (const file of readdirSync(path.join(ROOT, "js"))) {
+    assert.ok(files.includes("`js/" + file + "`"), file);
   }
 });
 
-test("the README lists the permissions sign-in asks for", () => {
+test("How it works lists the permissions sign-in asks for", () => {
   const asked = /scope: "([^"]+)"/.exec(read("launch.html"))[1].split(" ");
-  for (const scope of asked) assert.ok(readme.includes(scope), scope);
+  const tour = read("docs/HOW-IT-WORKS.md");
+  for (const scope of asked) assert.ok(tour.includes(scope), scope);
 });
 
-test("the README's test patient links sign in as that patient", () => {
-  const links = [...readme.matchAll(/launch\.html\?iss=([^)\s]+)\)/g)].map((m) => decodeURIComponent(m[1]));
+test("the test patient links sign in as that patient", () => {
+  const sandboxes = read("docs/SANDBOXES.md");
+  const links = [...sandboxes.matchAll(/launch\.html\?iss=([^)\s]+)\)/g)].map((m) => decodeURIComponent(m[1]));
   assert.equal(links.length, 2);
   const patients = links.map((iss) => {
     const [, code] = /^https:\/\/launch\.smarthealthit\.org\/v\/r4\/sim\/([\w-]+)\/fhir$/.exec(iss);
@@ -26,9 +33,51 @@ test("the README's test patient links sign in as that patient", () => {
     return options[1];
   });
   assert.deepEqual(patients, ["e89af71d-4aa4-2237-e71d-6fa8e4b5af09", "e7de504a-311d-49be-b2bc-566a328bcc72"]);
-  for (const id of patients) assert.ok(readme.includes("`" + id + "`"));
+  for (const id of patients) assert.ok(sandboxes.includes("`" + id + "`"));
 });
 
-test("the README doesn't say the libraries load from somewhere else", () => {
-  assert.doesNotMatch(readme, /jsDelivr/i);
+test("the docs don't say the libraries load from somewhere else", () => {
+  for (const file of ["README.md", "NOTICE.md", "docs/FILES.md", "docs/HOW-IT-WORKS.md"]) assert.doesNotMatch(read(file), /jsDelivr/i, file);
+});
+
+// GitHub's heading anchors: lower case, punctuation dropped, spaces to dashes.
+function anchorsOf(text) {
+  return new Set([...text.matchAll(/^#{1,6} (.+)$/gm)].map((m) => m[1].trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, "").replace(/ /g, "-")));
+}
+
+test("every relative link in the README and the docs leads somewhere", () => {
+  for (const file of DOCS) {
+    const text = read(file).replace(/```[\s\S]*?```/g, "");
+    const targets = [...text.matchAll(/\]\(([^)\s]+)\)/g), ...text.matchAll(/<img [^>]*src="([^"]+)"/g)].map((m) => m[1]);
+    for (const target of targets) {
+      if (/^[a-z]+:/i.test(target)) continue;
+      const [where, anchor] = target.split("#");
+      const to = where ? path.join(path.dirname(path.join(ROOT, file)), where) : path.join(ROOT, file);
+      assert.ok(existsSync(to), file + ": " + target);
+      if (anchor && to.endsWith(".md")) assert.ok(anchorsOf(readFileSync(to, "utf8")).has(anchor), file + ": " + target);
+    }
+  }
+});
+
+test("the README stays short, and keeps both halves and the plans", () => {
+  const lines = readme.split("\n").length;
+  assert.ok(lines <= 160, lines + " lines");
+  for (const heading of ["## Front end: what people see", "## Back end: what happens behind the screen", "## What's planned", "## Copyright"]) {
+    assert.ok(readme.includes(heading), heading);
+  }
+  assert.match(readme, /not a medical device/);
+  for (const link of ["LICENSE", "NOTICE.md", "docs/HOW-IT-WORKS.md", "docs/FILES.md", "docs/SANDBOXES.md", "docs/LIMITS.md", "docs/NEEDS-TESTING.md", "docs/LEARNING.md"]) {
+    assert.ok(readme.includes("](" + link), link);
+  }
+});
+
+test("the README's pictures are small, described, and not app files", () => {
+  const pictures = [...readme.matchAll(/<img src="(assets\/readme-[\w-]+\.png)" width="240" alt="([^"]{40,})">/g)];
+  assert.equal(pictures.length, 3);
+  const worker = read("sw.js");
+  for (const [, file] of pictures) {
+    assert.ok(readFileSync(path.join(ROOT, file)).length < 300 * 1024, file);
+    assert.ok(!worker.includes(file), file + " is precached");
+  }
+  assert.doesNotMatch(worker, /assets\//);
 });

@@ -14,5 +14,6 @@ code, or a fork of it, anywhere else.
 To ask for permission, open an issue on this repository.
 
 Parts that came from the course starter, samoanGuy7/Smart-App, belong to
-their author. Libraries loaded from jsDelivr keep their own licenses:
-fhirclient (Apache License 2.0) and qrcode-generator (MIT License).
+their author. Libraries kept in vendor/ keep their own licenses
+(vendor/LICENSES.md): fhirclient (Apache License 2.0) and qrcode-generator
+(MIT License).

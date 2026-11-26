@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { cardName, dateText, dayText, monthText, drawCard, fillRows, patientCard, takeRows } from "../js/card.js";
+import { cardName, dateText, dayText, monthText, drawCard, fillRows, oldFillText, patientCard, recentFill, takeRows } from "../js/card.js";
 import { buildShareBundle, fitsInQr, groupShareBundle, packShare } from "../js/share.js";
 import { drawShareList } from "../js/share-list.js";
 import { makeAddition } from "../js/view.js";
@@ -297,9 +297,10 @@ test("an answer of one side names that side's medicine", () => {
   const card = patientCard(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer }), true);
   assert.equal(card.name, "lisinopril 10 MG Oral Tablet");
   assert.deepEqual(card.take[0], ["Dose", "1 tablet"]);
-  assert.equal(patientCard(asked("dose"), true).name, undefined, "no name of its own before an answer");
+  // Before an answer, a dose question's card goes by its plain name (Tyler, 2026-11-25).
+  assert.equal(patientCard(asked("dose"), true).name, "Lisinopril", "its plain name before an answer");
   assert.equal(cardName(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer })), "lisinopril 10 MG Oral Tablet");
-  assert.equal(cardName(asked("dose")), "lisinopril 20 MG Oral Tablet");
+  assert.equal(cardName(asked("dose")), "Lisinopril");
 });
 
 // What a screen reader hears on the buttons is the name the card shows.
@@ -346,4 +347,164 @@ test("an answer of the second source with the same code shows that source's dose
   // The card's own source chosen: its own details.
   const own = patientCard(Object.assign({}, shown, { answer: Object.assign({}, answer, { choice: "smart-sandbox" }) }), true);
   assert.deepEqual(own.facts.filter(([label]) => label === "Prescribed by" || label === "Source"), [["Prescribed by", "Dr. Patel"], ["Source", "SMART sandbox"]]);
+});
+
+// Tyler, 2026-11-25: while "How much do you take?" is open, the card's name
+// mustn't say one side's strength. Its plain name until it's answered.
+test("a dose question names the medicine plainly until it's answered", () => {
+  assert.equal(cardName(asked("dose")), "Lisinopril");
+  assert.equal(patientCard(asked("dose"), true).name, "Lisinopril");
+  assert.equal(cardName(asked("schedule")), "lisinopril 20 MG Oral Tablet");
+  assert.equal(cardName(asked("status")), "lisinopril 20 MG Oral Tablet");
+  const answered = Object.assign({}, GROUPED, { answer: { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "valley-clinic-demo", answeredAt: "2026-11-25" } });
+  assert.equal(cardName(answered), "lisinopril 20 MG Oral Tablet");
+  const unsure = Object.assign({}, GROUPED, { answer: { groupId: "29046", fingerprint: "fp", sides: SIDES, choice: "not-sure", answeredAt: "2026-11-25" } });
+  assert.equal(cardName(unsure), "lisinopril 20 MG Oral Tablet");
+});
+
+// Tyler, 2026-11-25: "You said" says the words the patient picked.
+test("a stop is said back in the words that were picked", () => {
+  const said = (entry) => patientCard(entry, true).facts.filter(([label]) => label === "You said")[0][1];
+  const status = [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
+  const verdict = (verdicts, sides) => Object.assign({}, GROUPED, {
+    group: Object.assign({}, GROUPED.group, { verdicts, sides }),
+    answer: { groupId: "29046", fingerprint: "fp", sides, choice: "not-taking", answeredAt: "2026-11-25" }
+  });
+  assert.equal(said(verdict(["status"], status)), "No, I stopped (Nov 25)");
+  assert.equal(said(verdict(["dose"], SIDES)), "I don't take this anymore (Nov 25)");
+  assert.equal(said(verdict(["schedule"], SIDES)), "I don't take this anymore (Nov 25)");
+  // A mark's question was "Do you still take it?".
+  assert.equal(said(item({ answer: { groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice: "not-taking", answeredAt: "2026-11-25" } })), "No, I stopped (Nov 25)");
+  // A card saved with no group goes by the sides the answer kept.
+  const old = Object.assign({}, GROUPED, { group: undefined, answer: { groupId: "29046", fingerprint: "fp", sides: status, choice: "not-taking", answeredAt: "2026-11-25" } });
+  assert.equal(said(old), "No, I stopped (Nov 25)");
+});
+
+// A combination's plain name names every ingredient, never only the first.
+test("a combination's dose question names every ingredient", () => {
+  const combo = Object.assign({}, asked("dose"), { name: "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet" });
+  assert.equal(cardName(combo), "Hydrochlorothiazide / Lisinopril");
+  const three = Object.assign({}, asked("dose"), { name: "acetaminophen 250 MG / aspirin 250 MG / caffeine 65 MG Oral Tablet" });
+  assert.equal(cardName(three), "Acetaminophen / Aspirin / Caffeine");
+  assert.equal(cardName(asked("dose")), "Lisinopril");
+});
+
+// Review fix: one ingredient keeps every word of its name, so two insulins
+// or two salts of metoprolol never read the same.
+test("a dose question keeps the whole ingredient name", () => {
+  const named = (name) => cardName(Object.assign({}, asked("dose"), { name }));
+  assert.equal(named("insulin glargine 100 UNT/ML Injectable Solution"), "Insulin glargine");
+  assert.equal(named("folic acid 1 MG Oral Tablet"), "Folic acid");
+  assert.equal(named("metoprolol tartrate 25 MG Oral Tablet"), "Metoprolol tartrate");
+  assert.equal(named("metoprolol succinate 25 MG Extended Release Oral Tablet"), "Metoprolol succinate");
+  assert.equal(named("lisinopril 20 MG Oral Tablet"), "Lisinopril");
+  // No strength to stop at: the plain name as before.
+  assert.equal(named("Tylenol"), "Tylenol");
+});
+
+// Tyler, 2026-11-26 (LIMITS #17): records that agree name every source on
+// the patient's card, the same words the staff page uses.
+test("a card whose sources agree names every source", () => {
+  const sourceOf = (entry) => patientCard(entry, true).facts.filter(([label]) => label === "Source");
+  const agree = (verdicts, sources) => Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { verdicts, sources: sources || GROUPED.group.sources }) });
+  assert.deepEqual(sourceOf(agree([])), [["Source", "SMART sandbox, Valley Clinic (test records)"]]);
+  assert.deepEqual(sourceOf(agree(["worded"])), [["Source", "SMART sandbox, Valley Clinic (test records)"]], "worded differently still agrees");
+  // Two records from one source name it once.
+  assert.deepEqual(sourceOf(agree([], ["Valley Clinic (test records)", "Valley Clinic (test records)"])), [["Source", "Valley Clinic (test records)"]]);
+  // One source: as before.
+  assert.deepEqual(sourceOf(item()), [["Source", "SMART sandbox"]]);
+  // Records that disagree show each source on its own side; the card's
+  // facts are the shown record's, so its source.
+  assert.deepEqual(sourceOf(asked("dose")), [["Source", "Valley Clinic (test records)"]]);
+  assert.deepEqual(sourceOf(GROUPED), [["Source", "Valley Clinic (test records)"]]);
+});
+
+// Final review, Important 1: a name that starts with an amount ("0.4 ML",
+// "72 HR", "120 ACTUAT") or is a pack ("{7 (…) } Pack") still names the
+// card without any one side's amount, and never comes out garbled.
+test("a dose question's name drops a leading amount and reads a pack plainly", () => {
+  const named = (name) => cardName(Object.assign({}, asked("dose"), { name }));
+  assert.equal(named("0.4 ML enoxaparin sodium 100 MG/ML Prefilled Syringe"), "Enoxaparin sodium");
+  assert.equal(named("3 ML insulin glargine 100 UNT/ML Pen Injector"), "Insulin glargine");
+  assert.equal(named("{7 (norethindrone 0.35 MG Oral Tablet) } Pack"), "Norethindrone");
+  assert.equal(named("72 HR fentanyl 0.025 MG/HR Transdermal System"), "Fentanyl");
+  assert.equal(named("120 ACTUAT fluticasone propionate 0.044 MG/ACTUAT Metered Dose Inhaler"), "Fluticasone propionate");
+  assert.equal(named("24 HR metoprolol succinate 100 MG Extended Release Oral Tablet"), "Metoprolol succinate");
+  assert.equal(named("0.4 ml enoxaparin sodium 100 MG/ML Prefilled Syringe"), "Enoxaparin sodium", "any letter case");
+  // A branded pack, and a pack of a combination.
+  assert.equal(named("{28 (norethindrone 0.35 MG Oral Tablet [Camila]) } Pack [Camila]"), "Norethindrone");
+  assert.equal(named("{21 (ethinyl estradiol 0.035 MG / norethindrone 1 MG Oral Tablet) / 7 (inert ingredients 1 MG Oral Tablet) } Pack"), "Ethinyl estradiol / Norethindrone");
+  // A pack in some other shape: the name as add-check.js says it, nothing broken.
+  assert.equal(named("{Pack of things}"), "Pack");
+  for (const name of ["0.4 ML enoxaparin sodium 100 MG/ML Prefilled Syringe", "{7 (norethindrone 0.35 MG Oral Tablet) } Pack"]) {
+    assert.doesNotMatch(named(name), /\d|[{}()]/, name);
+  }
+});
+
+// One name for each: card.js's plain name for an open dose question isn't
+// reconcile.js's plainName, which is for matching.
+test("card.js has no function that shares reconcile.js's plainName", () => {
+  const card = readFileSync(new URL("../js/card.js", import.meta.url), "utf8");
+  assert.doesNotMatch(card, /function plainName\b/);
+  assert.match(card, /function askedName\(/);
+});
+
+// Tyler, 2026-11-26: a card stopped by an answer says what the patient said,
+// never "You marked" for a tap they didn't make; and when the records
+// disagreed on how much, no one record's amount.
+const STOPPED_BY = (verdicts, sides, more) => Object.assign({}, GROUPED, {
+  stoppedAt: "2026-11-26",
+  group: Object.assign({}, GROUPED.group, { verdicts, sides: sides || SIDES }),
+  answer: { groupId: "29046", fingerprint: "fp", sides: sides || SIDES, choice: "not-taking", answeredAt: "2026-11-26" }
+}, more);
+test("a card stopped by an answer says only what the patient said", () => {
+  const status = [Object.assign({}, SIDES[0], { dose: "20 mg" }), Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
+  for (const entry of [STOPPED_BY(["dose"]), STOPPED_BY(["status"], status)]) {
+    const facts = patientCard(entry, true).facts;
+    assert.ok(!facts.some(([label]) => label === "You marked"), JSON.stringify(facts));
+    assert.equal(facts.filter(([label]) => label === "You said").length, 1);
+  }
+  assert.deepEqual(patientCard(STOPPED_BY(["status"], status), true).facts.at(-1), ["You said", "No, I stopped (Nov 26)"]);
+  // A real Not taking tap keeps its words.
+  assert.ok(patientCard(item({ stoppedAt: "2026-11-20" }), true).facts.some(([label, text]) => label === "You marked" && text === "Not taking, Nov 20, 2026"));
+  // A mark the patient made, then confirmed when asked about it: only their
+  // latest word (Tyler, 2026-11-26).
+  const mark = item({ stoppedAt: "2026-03-03", answer: { groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice: "not-taking", answeredAt: "2026-11-25" } });
+  const facts = patientCard(mark, true).facts;
+  assert.ok(!facts.some(([label]) => label === "You marked"), JSON.stringify(facts));
+  assert.ok(facts.some(([label, text]) => label === "You said" && text === "No, I stopped (Nov 25)"));
+});
+
+test("a card stopped by an answer to how much shows no one record's amount", () => {
+  const card = patientCard(STOPPED_BY(["dose"]), true);
+  assert.equal(card.name, "Lisinopril");
+  assert.equal(cardName(STOPPED_BY(["dose"])), "Lisinopril");
+  // Each record's version, as Not sure shows them.
+  assert.deepEqual(card.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "20 mg, once a day"]]);
+  assert.ok(!card.flags.some((text) => /don't agree/.test(text)), "asked no more");
+  // How often: each record's too, and the name keeps its strength.
+  const often = [SIDES[0], Object.assign({}, SIDES[1], { name: "lisinopril 10 MG Oral Tablet", key: "rx:314076", dose: "10 mg", frequency: "twice a day" })];
+  const schedule = patientCard(STOPPED_BY(["schedule"], often, { dose: "10 mg", name: "lisinopril 10 MG Oral Tablet" }), true);
+  assert.equal(schedule.name, undefined);
+  assert.deepEqual(schedule.take, [["SMART sandbox, Mar 2026", "10 mg, once a day"], ["Valley Clinic (test records), Oct 2026", "10 mg, twice a day"]]);
+  // Records that only disagreed on stopping agree on the amount: the record's own.
+  const status = [Object.assign({}, SIDES[0], { dose: "20 mg" }), Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
+  const stopped = patientCard(STOPPED_BY(["status"], status), true);
+  assert.equal(stopped.name, undefined);
+  assert.deepEqual(stopped.take, [["Dose", "20 mg"], ["How often", "once a day"]]);
+});
+
+// Final review, minor 7: one calendar rule for "over a year", so a fill is
+// either said in the review or noted as over a year old, never neither.
+test("a fill is recent by the same calendar rule the old-fill note uses", () => {
+  assert.equal(recentFill("2027-03-01", "2028-03-01"), true);
+  assert.equal(oldFillText("2027-03-01", "2028-03-01"), null);
+  assert.equal(recentFill("2027-02-28", "2028-03-01"), false);
+  assert.equal(oldFillText("2027-02-28", "2028-03-01"), "Last filled over a year ago.");
+  for (const last of ["2027-02-27", "2027-02-28", "2027-03-01", "2027-03-02", "2027-02", "2027-03", "2027", "2026-12-31", "2028-02-29"]) {
+    assert.notEqual(recentFill(last, "2028-03-01"), Boolean(oldFillText(last, "2028-03-01")), last);
+  }
+  assert.equal(recentFill(null, "2028-03-01"), false);
+  assert.equal(recentFill("soon", "2028-03-01"), false);
+  assert.equal(recentFill("2027-03-01", null), false);
 });

@@ -7,8 +7,8 @@
 
 import { fillNote, completedNote, suggestNote } from "./claims.js";
 import { holdText } from "./meds.js";
-import { olderText, dateText, monthText, fillRowsFrom, isDirections, takeRows } from "./card.js";
-import { isOwnSide, sideWords } from "./reconcile.js";
+import { olderText, dateText, monthText, fillRowsFrom, isDirections, oldFillText, recordsDisagree, sourcesText, takeRows } from "./card.js";
+import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
 
@@ -92,7 +92,7 @@ export function buildShareBundle(list, now, warnings = {}, level = 0, undated = 
     var statement = stoppedStatement(item, item.stoppedAt, level);
     // "I don't take this anymore": what each source said stays with it.
     var sides = item.answer && item.group ? item.group.sides : [];
-    sides.forEach(function (side) { addNote(statement, otherRecordNote(side, level)); });
+    sides.forEach(function (side) { addNote(statement, otherRecordNote(item, side, level)); });
     addGroupNotes(statement, item);
     entries.push({ resource: statement });
   });
@@ -153,7 +153,6 @@ export function buildShareBundle(list, now, warnings = {}, level = 0, undated = 
 // Staff notes (spec section 9).
 var DISAGREE_NOTE = "Records disagree";
 var UNSURE_NOTE = "Patient isn't sure";
-var ASKED_VERDICTS = ["status", "dose", "schedule"];
 
 // One current card's statements. Until the patient answers, or when they
 // aren't sure, each side is its own statement, so nothing one source says is
@@ -163,9 +162,9 @@ function currentStatements(item, level, dated) {
   var question = answer ? null : item.question;
   var sides = item.group && item.group.sides.length > 1 ? item.group.sides : null;
   // The records disagree with each other, whatever the patient marked.
-  var asked = Boolean(sides) && item.group.verdicts.some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
+  var asked = recordsDisagree(item);
   var out;
-  if (question && isMark(question.fingerprint)) {
+  if (question && isMarkFingerprint(question.fingerprint)) {
     var records = asked ? sideStatements(item, sides, level, [DISAGREE_NOTE], dated) : [recordStatement(item, level)];
     // Linked to the mark, so even records that agree aren't an ordinary row.
     if (!asked) records[0].note.splice(1, 0, { text: DISAGREE_NOTE });
@@ -185,7 +184,7 @@ function currentStatements(item, level, dated) {
     // The day as the answer wrote it, the same day the patient's card shows.
     addNote(statement, "Patient confirmed this, " + String(answer.answeredAt).slice(0, 10));
     (item.group ? item.group.sides : []).forEach(function (side) {
-      if (side.sourceId !== chosen.sourceId) addNote(statement, otherRecordNote(side, level));
+      if (side.sourceId !== chosen.sourceId) addNote(statement, otherRecordNote(item, side, level));
     });
     out = [statement];
   } else {
@@ -193,11 +192,6 @@ function currentStatements(item, level, dated) {
   }
   out.forEach(function (one) { addGroupNotes(one, item); });
   return out;
-}
-
-// A mark question's fingerprint is "mark:<marked on>><newest record>" (ruling R2).
-function isMark(fingerprint) {
-  return String(fingerprint || "").indexOf("mark:") === 0;
 }
 
 function markedAt(fingerprint) {
@@ -276,10 +270,13 @@ function sideStatus(side) {
 }
 
 // "Other record: <Source>, <words>, <YYYY-MM>". At level 0, where the list
-// is longest, only the source and month.
-function otherRecordNote(side, level) {
+// is longest, only the source and month. Once the patient has answered "Do
+// you still take it?", a record that stopped it says so: "Other record
+// (stopped): …" (Tyler, 2026-11-26).
+function otherRecordNote(item, side, level) {
   var month = recordDate(side);
-  return "Other record: " + [side.sourceName].concat(level ? sideWords(side) : [], month || []).join(", ");
+  var stopped = item.group && item.group.verdicts.indexOf("status") !== -1 && side.status === "not-current";
+  return "Other record" + (stopped ? " (stopped)" : "") + ": " + [side.sourceName].concat(level ? sideWords(side) : [], month || []).join(", ");
 }
 
 function addGroupNotes(statement, item) {
@@ -306,7 +303,7 @@ function recordStatement(item, level, from) {
     statement.informationSource = { display: item.source };
     statement.note = [{ text: CLAIMS_ONLY_NOTE }];
   } else {
-    statement.note = [{ text: "From records: " + (from || sourcesOf(item)) }];
+    statement.note = [{ text: "From records: " + (from || sourcesText(item)) }];
   }
   if (item.prescriber) {
     statement.note.push({ text: "Prescribed by " + item.prescriber });
@@ -329,11 +326,6 @@ function recordStatement(item, level, from) {
     asNeeded(statement, RECORDS_AS_NEEDED_NOTE);
   }
   return statement;
-}
-
-function sourcesOf(item) {
-  var names = ((item.group && item.group.sources) || []).filter(function (name, index, all) { return name && all.indexOf(name) === index; });
-  return names.length > 1 ? names.join(", ") : item.source;
 }
 
 // The patient's Not taking mark, as today.
@@ -382,7 +374,52 @@ function linkedFrom(tags, entries, disagree) {
   return linked;
 }
 
-export function groupShareBundle(bundle) {
+// The staff page's link: the list is the part after "#". Once it's read, the
+// address is put back to plain share.html on the same history step (Tyler,
+// 2026-11-26), so a link copied or shared from the page doesn't carry the
+// list. place and steps are location and history.
+//
+// The tab keeps the same locked text, exactly what the QR code holds and
+// never the unlocked list, on that step's own history.state (Tyler, Task
+// 10d). A reload, or Safari bringing back a tab it put aside, finds it there
+// and asks for the 6 digits again; it goes when the tab is closed (a tab
+// reopened from recently closed tabs may bring it back, still locked). The step's
+// state goes with the tab's history, not with its address, so a copied
+// address or a new tab has no list. A new link in the same tab is a new step
+// that keeps its own. A browser that won't keep it still gets a plain address.
+export var KEPT_LIST = "brownBagSharedList";
+
+export function takeListFromLink(place, steps) {
+  var fragment = String(place.hash || "").slice(1);
+  if (!fragment) return listKeptOnStep(steps);
+  var address = place.pathname + place.search;
+  var state = {};
+  state[KEPT_LIST] = fragment;
+  try {
+    steps.replaceState(state, "", address);
+  } catch (error) {
+    try { steps.replaceState(null, "", address); } catch (again) { /* the address keeps it */ }
+  }
+  return fragment;
+}
+
+// The locked text the tab's current step keeps, or "". Every step has the
+// same plain address, so Back or Forward between two links' steps doesn't
+// load the page again; share-view.js compares this with what it read, and
+// reloads when they differ.
+export function listKeptOnStep(steps) {
+  try {
+    var state = steps.state;
+    var kept = state && typeof state === "object" ? state[KEPT_LIST] : "";
+    return typeof kept === "string" ? kept : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+// today ("YYYY-MM-DD"), on screens: the day the list is opened, so a fill
+// over a year old says so. The FHIR file's maker leaves it out.
+export function groupShareBundle(bundle, today) {
   var tags = (bundle.meta && bundle.meta.tag) || [];
   var of = function (code) { return tags.filter(function (tag) { return tag.system === TAGS && tag.code === code; })[0]; };
   var saved = of("records-saved-on");
@@ -431,7 +468,7 @@ export function groupShareBundle(bundle) {
     else if (noted(AS_NEEDED_NOTE)) who = "Patient says as needed";
     else if (noted(RECORDS_AS_NEEDED_NOTE)) who = "Records say as needed";
     var stopped = resource.status === "stopped";
-    var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped));
+    var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped, today));
     var coded = ((resource.medicationCodeableConcept && resource.medicationCodeableConcept.coding) || []).filter(function (c) { return c.system === RXNORM && c.code; })[0];
     if (coded) row.rxnorm = String(coded.code);
     if (stopped) {
@@ -856,8 +893,10 @@ function takeFrom(dosage, added) {
   return text.slice(-rest.length - 3) === " · " + rest ? takeRows(text.slice(0, -rest.length - 3), route, often) : [["Directions", text]];
 }
 
-// The notes on a shared medicine, each under its own label.
-function cardFrom(resource, added) {
+// The notes on a shared medicine, each under its own label. The note about a
+// fill over a year old is worked out here from the fill's date, as on the
+// patient's card; it's never in the code.
+function cardFrom(resource, added, today) {
   var card = { take: takeFrom(resource.dosage && resource.dosage[0], added), flags: [], facts: [] };
   var source = [];
   (resource.note || []).forEach(function (note) {
@@ -875,7 +914,10 @@ function cardFrom(resource, added) {
     else if ((found = /^Record date: (\d{4}(?:-\d{2})?)$/.exec(text))) card.facts.push(["Record date", monthText(found[1])]);
     else if ((found = /^Records say: (current|stopped)$/.exec(text))) card.facts.push(["Records say", found[1]]);
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
-    else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
+    else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) {
+      card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
+      if (found[1] && oldFillText(found[1], today)) card.flags.push(oldFillText(found[1], today));
+    }
     else if (text === "No fill found in claims") card.facts.push(["Filled", text]);
     else if ((found = /^Fill suggests (about \d+(?:\.5)? a day \(\d+(?:\.\d+)? for \d+(?:\.\d+)? days\))$/.exec(text))) card.facts.push(["From the fill", found[1]]);
     else if (text) source.push(["Note", text]);

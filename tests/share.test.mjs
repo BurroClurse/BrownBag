@@ -1008,3 +1008,34 @@ test("a confirmed side comes first, and the patient's own mark is labelled as th
   assert.deepEqual(parts[0].sides[2].row.facts, [["Not taking since", "Mar 3, 2026"]]);
   assert.deepEqual(disagreeParts({}), []);
 });
+
+// The patient's card and the staff page name the same sources (LIMITS #17).
+test("the patient's card names the sources the staff page does", async () => {
+  const { patientCard } = await import("../js/card.js");
+  const card = grouped({ group: Object.assign({}, grouped().group, { verdicts: [] }) });
+  const staff = groupShareBundle(await shared([card])).fromRecords[0].facts.filter(([label]) => label === "Source");
+  assert.deepEqual(patientCard(card, false).facts.filter(([label]) => label === "Source"), staff);
+});
+
+// Tyler, 2026-11-26: once the patient settles "Do you still take it?", the
+// note about the record that stopped it says so.
+test("a settled status question says which other record stopped it", async () => {
+  const sides = [SIDES[0], Object.assign({}, SIDES[1], { name: "lisinopril 10 MG Oral Tablet", key: "rx:314076", dose: "10 mg", status: "not-current", recordStatus: "stopped" })];
+  const status = (more) => grouped(Object.assign({ group: { id: "29046", sources: ["SMART sandbox", "Valley Clinic (test records)"], verdicts: ["status"], sides, fingerprint: "fp", notes: [] } }, more));
+  const yes = statementsOf(await shared([status()], { answers: [ANSWER("smart-sandbox", { sides })] }));
+  assert.equal(yes.length, 1);
+  assert.deepEqual(notesOf(yes[0]).slice(-2), ["Patient confirmed this, 2026-11-25", "Other record (stopped): Valley Clinic (test records), 10 mg, once a day, 2026-10"]);
+  // No, I stopped: each side stays, and the one that stopped it says so.
+  const no = statementsOf(await shared([status()], { answers: [ANSWER("not-taking", { sides })] }));
+  assert.equal(no[0].status, "stopped");
+  assert.deepEqual(notesOf(no[0]), ["Other record: SMART sandbox, 10 mg, once a day, 2026-03", "Other record (stopped): Valley Clinic (test records), 10 mg, once a day, 2026-10"]);
+  // Shortened at level 0, it still says stopped.
+  const { arrangeList, shareListFrom } = await import("../js/view.js");
+  const list = shareListFrom(PATIENT, arrangeList({ current: [status()], older: [] }, { answers: [ANSWER("smart-sandbox", { sides })] }), []);
+  assert.deepEqual(notesOf(statementsOf(buildShareBundle(list, NOW, {}, 0))[0]).slice(-1), ["Other record (stopped): Valley Clinic (test records), 2026-10"]);
+  // The staff page shows it as a note on the card.
+  const row = groupShareBundle(JSON.parse(JSON.stringify(buildShareBundle(list, NOW, {}, 2)))).fromRecords[0];
+  assert.ok(row.facts.some(([label, text]) => label === "Note" && text === "Other record (stopped): Valley Clinic (test records), 10 mg, once a day, 2026-10"), JSON.stringify(row.facts));
+  // A dose answer's note is as before.
+  assert.deepEqual(notesOf(statementsOf(await shared([grouped()], { answers: [ANSWER("valley-clinic-demo")] }))[0]).slice(-1), ["Other record: SMART sandbox, 10 mg, once a day, 2026-03"]);
+});

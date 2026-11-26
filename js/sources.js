@@ -88,10 +88,10 @@ function fillsRow(split, date, format) {
   return ["Insurance fills", split.claims === "refused" ? "Sign in again to add them" : "Not loaded"];
 }
 
-// What launch.html does. A link that names its own server (the README's test
-// patients, the SMART Launcher) or a chosen patient signs in. A connected source
-// shows its patients; anything else the sources, so an odd address never starts
-// a sign-in.
+// What launch.html does. A link that names its own server (the test
+// patients in docs/SANDBOXES.md, the SMART Launcher) or a chosen patient
+// signs in. A connected source shows its patients; anything else the
+// sources, so an odd address never starts a sign-in.
 export function startFor(search) {
   var params = new URLSearchParams(search);
   if (params.get("iss")) return "sign-in";
@@ -107,4 +107,40 @@ export function leavingText(search) {
   return new URLSearchParams(search).get("iss")
     ? "You are leaving this page for your health system's sign-in page. After you sign in, it sends you back here."
     : "You are leaving this page for the SMART sandbox. Sign in there as the patient, then the sandbox sends you back here.";
+}
+
+// Back from "Starting sign-in…" or "Couldn't start sign-in" is the list, so a
+// chosen patient's step stays in history (Tyler, Task 10d). Forward to it must
+// not start the sign-in by itself, so the step notes on its own history.state
+// that it has started (markStarted). A fresh load of a noted step, and any
+// sign-in step brought back as it was left (restored: pageshow with
+// persisted), shows "Couldn't start sign-in" again, the screen it was left
+// on; Try again takes the note off (clearStarted) and reloads, so it's the
+// same patient. A picker is never drawn on a chosen patient's step, so a
+// choice can't pile up steps there. steps is history.
+export var SIGN_IN_STARTED = "brownBagSignInStarted";
+
+export function launchScreen(search, steps, restored) {
+  var start = startFor(search);
+  if (start !== "sign-in") return start;
+  return restored || startedHere(steps) ? "failed" : "sign-in";
+}
+
+export function markStarted(steps) {
+  var state = {};
+  state[SIGN_IN_STARTED] = true;
+  try { steps.replaceState(state, ""); } catch (error) { /* Forward starts it again, as before */ }
+}
+
+export function clearStarted(steps) {
+  try { steps.replaceState(null, ""); } catch (error) { /* nothing was kept */ }
+}
+
+function startedHere(steps) {
+  try {
+    var state = steps.state;
+    return Boolean(state && typeof state === "object" && state[SIGN_IN_STARTED] === true);
+  } catch (error) {
+    return false;
+  }
 }

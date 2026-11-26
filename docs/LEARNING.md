@@ -1886,6 +1886,35 @@ anyone holding the phone skip the lock too. Where the patient was headed rides i
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 68: When two records disagree (reconciliation)
+
+**What it is:** medication reconciliation is checking one person's medicine
+lists against each other and settling what they really take. Nurses and
+pharmacists do it at every admission and discharge, because a clinic, a
+hospital and a pharmacy can each have a different list.
+
+**What changed:** with a second source, Brown Bag puts the same medicine from
+both on one card. When they agree, nothing changes. When they disagree on how
+much, how often, or whether it's still taken, the card shows each version with
+its source and date, and the review asks the patient one card at a time: "How
+much do you take?", "How often do you take it?" or "Do you still take it?".
+Until they answer, staff see "Records disagree: ask the patient", and the QR
+code carries every version.
+
+**Why it asks instead of choosing:** the newest record isn't always right, and
+a missed stop is worse than one extra question. Brown Bag never picks a side
+and never overwrites a record: it compares the sources fresh on every update,
+keeps the patient's answer only while the records still say what they said,
+and asks again when one changes. The care team confirms the list.
+
+**How it decides two records are the same medicine:** the same RxNorm code,
+the same product name, or the same ingredients in the same form. A different
+form (metformin and extended-release metformin) or a matching first word alone
+isn't enough, so those stay two cards, with a note for staff. And before any of that, the second source's patient must
+have the same name and birth date, so two people are never mixed.
+
+**Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.
@@ -1921,6 +1950,7 @@ anyone holding the phone skip the lock too. Where the patient was headed rides i
 - **PRF**: a passkey add-on that returns the same secret each time, after Face ID.
 - **PBKDF2**: slows down guessing by repeating a calculation many times.
 - **Push**: copy commits from your Mac to GitHub.
+- **Reconciliation**: checking a person's medicine lists against each other and settling what they really take.
 - **Repository (repo)**: a project folder with full history.
 - **RxNav / RxNorm**: the US government's drug list and its lookup service.
 - **Scope**: a permission the app asks for at sign-in.

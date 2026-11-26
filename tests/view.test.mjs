@@ -328,9 +328,9 @@ test("a sign-in that can't read allergies gets one sign-in note, never two", () 
   assert.deepEqual(noticesFor({ allergiesRefused: true, installTip: "x", now }).map((n) => n.kind), ["sign-in", "install"]);
 });
 
-test("sign-in asks to read allergies, and the README says so", async () => {
+test("sign-in asks to read allergies, and How it works says so", async () => {
   const { readFileSync } = await import("node:fs");
-  for (const file of ["launch.html", "README.md"]) {
+  for (const file of ["launch.html", "docs/HOW-IT-WORKS.md"]) {
     assert.ok(readFileSync(new URL("../" + file, import.meta.url), "utf8").includes("patient/AllergyIntolerance.read"), file);
   }
 });
@@ -567,4 +567,32 @@ test("a mark counts each side with the same key separately", () => {
   const older = Object.assign({}, shown, { otherKeys: [], lastDate: "2026-11-20" });
   const renewed = arrangeList({ current: [older], older: [] }, { stopped: { "rx:1": "2026-11-01" } });
   assert.equal(renewed.toCheck[0].question.why, "You marked Not taking on Nov 1. Your records have a newer prescription, Nov 20.");
+});
+
+// Tyler, 2026-11-26: an answer made on a saved copy is in the QR code's list,
+// in the words picked, name first (Tyler, 2026-11-26). A Change says the newest; Undo on a card an answer
+// stopped takes the answer's line away, as it does a Not taking mark's.
+test("answers made on a saved copy are listed", () => {
+  const now = new Date(2026, 10, 21, 12, 0);
+  const at = new Date(2026, 10, 21, 8, 0).toISOString();
+  let c = logChange([], "answered", "Lisinopril", { said: "I don't take this anymore", stopped: true });
+  c = logChange(c, "answered", "atorvastatin 20 MG Oral Tablet", { said: "Yes, I take it", stopped: false });
+  assert.deepEqual(changeAlert(c, { medicines: at, allergies: null }, now).lines, [
+    "Lisinopril: I don't take this anymore",
+    "Atorvastatin 20 MG Oral Tablet: Yes, I take it"
+  ]);
+  // A Change: one line, the newest answer.
+  c = logChange(c, "answered", "Lisinopril", { said: "10 mg, once a day", stopped: false });
+  assert.deepEqual(changeAlert(c, { medicines: at, allergies: null }, now).lines, [
+    "Atorvastatin 20 MG Oral Tablet: Yes, I take it",
+    "Lisinopril: 10 mg, once a day"
+  ]);
+  // Undo on a card an answer stopped: back as it was, nothing to list.
+  let s = logChange([], "answered", "Lisinopril", { said: "I don't take this anymore", stopped: true });
+  assert.deepEqual(logChange(s, "unstopped", "Lisinopril"), []);
+  // Undo on one stopped by an answer made before the saved copy: listed.
+  assert.deepEqual(changeAlert(logChange([], "unstopped", "Lisinopril"), { medicines: at, allergies: null }, now).lines, ["Put Lisinopril back on your list"]);
+  // An answer that didn't stop it isn't undone by Undo.
+  s = logChange([], "answered", "Lisinopril", { said: "10 mg, once a day", stopped: false });
+  assert.equal(logChange(s, "unstopped", "Lisinopril").length, 2);
 });

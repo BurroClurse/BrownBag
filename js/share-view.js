@@ -1,10 +1,16 @@
 // The page staff see after scanning a Brown Bag QR code. The list is inside
 // the part of the link after "#", which browsers never send to the server.
+// It's read once, then taken off the address (takeListFromLink), so the
+// page's own link never carries the list on; what's on screen and Save as
+// FHIR file use the copy read here. The tab keeps that locked text, never
+// the unlocked list, so a reload, or Safari bringing the tab back, asks for
+// the code again.
 // It asks for the patient's 6-digit code, unlocks the list on this device,
-// and shows it. Nothing is saved unless staff save the file themselves, and no
-// request leaves after the page loads.
+// and shows it. Nothing unlocked is saved unless staff save the file
+// themselves, and no request leaves after the page loads.
 
-import { unpackShare, groupShareBundle, ShareError } from "./share.js";
+import { unpackShare, groupShareBundle, ShareError, takeListFromLink, listKeptOnStep } from "./share.js";
+import { localDate } from "./card.js";
 import { drawShareList } from "./share-list.js";
 import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
 
@@ -13,7 +19,9 @@ window.brownBagStarted = true;
 try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
 
 var root = document.getElementById("share");
-var fragment = location.hash.slice(1);
+var fragment = takeListFromLink(location, history);
+// The list this step keeps, as the page left it.
+var onStep = listKeptOnStep(history);
 
 // Opening a second shared link in the same tab only changes the part after
 // "#", which doesn't reload the page. Reload so the old list is never shown
@@ -22,13 +30,24 @@ window.addEventListener("hashchange", function () {
   location.reload();
 });
 
+// Every step of this tab has the same plain address, so Back and Forward
+// between two links' steps don't load the page again either. Reload when the
+// step keeps a different list, so it shows its own code box and its own code
+// works. The same list (or the popstate some browsers send as the page
+// loads) changes nothing, so this never reloads over and over.
+window.addEventListener("popstate", function () {
+  if (listKeptOnStep(history) !== onStep) location.reload();
+});
+
 if (fragment) {
   drawCodeForm("");
 } else {
   drawNoList();
 }
 
-// Opened without the list part of the link (for example, typed by hand).
+// Opened without the list part of the link (for example, typed by hand,
+// shared from this page, or opened in a new tab), with no list kept in this
+// tab.
 function drawNoList() {
   clear(root);
   addLogo();
@@ -69,7 +88,7 @@ function drawCodeForm(message) {
     status.textContent = "Opening…";
     try {
       var bundle = await unpackShare(fragment, code);
-      drawList(groupShareBundle(bundle), bundle);
+      drawList(groupShareBundle(bundle, localDate(new Date())), bundle);
     } catch (error) {
       if (error instanceof ShareError && error.code === "bad-link") {
         drawCodeForm("This link is damaged. Ask the patient to show a new code.");

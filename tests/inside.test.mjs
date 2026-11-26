@@ -56,7 +56,7 @@ test("everything the staff page says about each medicine and allergy is there", 
   assert.deepEqual(heads(draw(drawShareList, groups, 1)), ["From records (SMART sandbox)"]);
   assert.ok(text.includes("Reaction: Hives, severe (records)"));
   assert.ok(!text.includes("From records: "));
-  for (const piece of ["Avery Brownbag", "1950-03-14", "Meds last updated: ", "QR code made: ", "Medicines (5)", "RxNorm: 314076"]) assert.ok(text.includes(piece), piece);
+  for (const piece of ["Avery Brownbag", "Born Mar 14, 1950", "Meds last updated: ", "QR code made: ", "Medicines (5)", "RxNorm: 314076"]) assert.ok(text.includes(piece), piece);
 });
 
 test("every warning the staff page gives is there", () => {

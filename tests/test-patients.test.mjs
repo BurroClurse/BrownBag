@@ -15,7 +15,7 @@ test("more than the sandbox's ten, each once, each saying what it shows", () => 
   assert.equal(new Set(all.map((p) => p.name)).size, all.length);
   for (const p of all) {
     assert.match(p.id, /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
-    assert.ok(p.about && /^\d{4}$/.test(p.born), p.name);
+    assert.ok(p.about && /^\d{4}-\d{2}-\d{2}$/.test(p.born), p.name);
   }
   for (const group of GROUPS) assert.ok(group.title && group.patients.length);
 });
@@ -36,7 +36,7 @@ test("only a patient on the list can be asked for", () => {
   assert.throws(() => sandboxServer("x"));
 });
 
-test("the README's test patients are on it, and it works with no signal", () => {
+test("the test patients in SANDBOXES are on it, and it works with no signal", () => {
   for (const id of ["e89af71d-4aa4-2237-e71d-6fa8e4b5af09", "e7de504a-311d-49be-b2bc-566a328bcc72"]) assert.ok(knownPatient(id));
   assert.ok(read("sw.js").includes('"./js/test-patients.js"'));
 });

@@ -3,8 +3,8 @@
 // under each medicine.
 
 import { listDate } from "./offline.js";
-import { dayText, monthText } from "./card.js";
-import { isOwnSide, sideWords } from "./reconcile.js";
+import { dayText, localDate, monthText } from "./card.js";
+import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
 // given and family are optional, so don't read them without checking.
@@ -78,6 +78,8 @@ export function arrangeList(split, data) {
         var asked = { kind: question.kind, why: question.why, groupId: groupId, fingerprint: question.fingerprint };
         // What was marked, and on which source's record, for the QR code.
         if (question.mark) asked.mark = { key: question.mark.key, at: question.mark.at, side: question.mark.side || null };
+        // The record its sentence names, so the review's "Yes" says the same.
+        if (question.listed) asked.listed = question.listed;
         keep({ question: asked });
       }
     }
@@ -109,7 +111,9 @@ function after(a, b) {
   return a > b;
 }
 
-function dayOf(date) {
+// "2026-10-05" from a date or datetime, or its month or year when that's all
+// it has; null for none.
+export function dayOf(date) {
   var found = typeof date === "string" && /^\d{4}(?:-\d{2}(?:-\d{2})?)?/.exec(date);
   return found ? found[0] : null;
 }
@@ -150,7 +154,8 @@ function markState(entry, marks) {
       kind: "status",
       why: "You marked this Not taking" + (dayOf(mark.at) ? " on " + dayText(dayOf(mark.at)) : "") + ". " + other.side.sourceName + " lists it current" + (since ? ", " + monthText(since) : "") + ".",
       fingerprint: markFingerprint(mark, counted),
-      mark: mark
+      mark: mark,
+      listed: { sourceName: other.side.sourceName, date: since || null }
     } };
   }
   // An undated mark or record can't be put in order: it stays as marked.
@@ -162,7 +167,8 @@ function markState(entry, marks) {
       kind: "status",
       why: "You marked Not taking on " + dayText(renewed.mark.at) + ". Your records have a newer prescription, " + dayText(dayOf(renewed.date)) + ".",
       fingerprint: markFingerprint(renewed.mark, counted),
-      mark: renewed.mark
+      mark: renewed.mark,
+      listed: { sourceName: renewed.side ? renewed.side.sourceName : entry.source, date: dayOf(renewed.date) }
     } };
   }
   return { stop: mark };
@@ -190,7 +196,8 @@ function later(mark, latest) {
   return a && (!b || a > b) ? mark : latest;
 }
 
-function newer(a, b) {
+// The newer of two dates; an undated one loses.
+export function newer(a, b) {
   var dayA = dayOf(a);
   var dayB = dayOf(b);
   if (!dayA) return dayB ? b : null;
@@ -208,7 +215,7 @@ function verdictQuestion(entry, answers) {
   var kind = ASKED.filter(function (verdict) { return entry.group.verdicts.indexOf(verdict) !== -1; })[0];
   if (!kind) return null;
   // A mark's answer was about the mark, not what the sources say.
-  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id && String(answer.fingerprint).indexOf("mark:") !== 0; }).pop();
+  var before = answers.filter(function (answer) { return answer.groupId === entry.group.id && !isMarkFingerprint(answer.fingerprint); }).pop();
   return { kind: kind, why: before ? changedText(before.sides || [], entry.group.sides) : null, fingerprint: entry.group.fingerprint };
 }
 
@@ -365,10 +372,9 @@ export function latestOnly(run) {
 }
 
 // The date on the phone's own calendar. toISOString would give the UTC
-// date, which is already tomorrow on a US evening.
-export function localDate(date) {
-  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
-}
+// date, which is already tomorrow on a US evening. It's in card.js, so the
+// staff page has it too.
+export { localDate };
 
 function blankToNull(value) {
   var text = String(value || "").trim();
@@ -455,6 +461,14 @@ var OPPOSITE = {
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
   if (kind.indexOf("reaction-") === 0) return logReaction(list, kind, name, extra);
+  // An answer: a Change keeps only the newest. Undo on a card an answer
+  // stopped takes that answer back, so nothing is left to say.
+  var answered = list.findIndex(function (c) { return c.name === name && c.kind === "answered"; });
+  if (kind === "answered" && answered !== -1) list.splice(answered, 1);
+  if (kind === "unstopped" && answered !== -1 && list[answered].stopped) {
+    list.splice(answered, 1);
+    return list;
+  }
   var edited = list.findIndex(function (c) { return c.name === name && c.kind === "edited"; });
   // A new one stays "Added", and one edited twice is one line.
   if (kind === "edited" && list.some(function (c) { return c.name === name && (c.kind === "added" || c.kind === "edited"); })) return list;
@@ -530,6 +544,11 @@ export function keepChanges(changes, updatedPart) {
   return (changes || []).filter(function (change) { return partOf(change) !== updatedPart; });
 }
 
+// "atorvastatin 20 MG…" starts a line as "Atorvastatin 20 MG…".
+function capitalized(text) {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
 function changeLine(change) {
   switch (change.kind) {
     case "stopped": return "Marked " + change.name + " Not taking";
@@ -537,6 +556,7 @@ function changeLine(change) {
     case "as-needed": return "Marked " + change.name + " As needed";
     case "regular": return "Took " + change.name + " off As needed";
     case "edited": return "Changed " + change.name;
+    case "answered": return capitalized(change.name) + (change.said ? ": " + change.said : "");
     case "removed": return "Removed " + change.name;
     case "allergy-added": return "Added the allergy " + change.name;
     case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;

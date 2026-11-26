@@ -4,7 +4,8 @@
 
 import { claimsLabel, completedLine } from "./claims.js";
 import { doseChange, holdText } from "./meds.js";
-import { isOwnSide, sideWords } from "./reconcile.js";
+import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
+import { displayName } from "./add-check.js";
 
 var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -34,6 +35,51 @@ export function dayText(date) {
 
 function datePartsOf(date) {
   return /^(\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01])(?:T.*)?)?)?$/.exec(String(date));
+}
+
+// "Born May 8, 1974", read as written: never through a Date, so a phone west
+// of UTC doesn't make it the 7th. "Born May 1974" or "Born 1974" when that's
+// all the record has; a date that isn't one shows as it came; none, nothing.
+export function bornText(date) {
+  if (date === undefined || date === null || date === "") return "";
+  var parts = datePartsOf(date);
+  if (!parts || (parts[3] && Number(parts[3]) > daysIn(Number(parts[1]), Number(parts[2])))) return "Born " + date;
+  return "Born " + dateText(date);
+}
+
+function daysIn(year, month) {
+  if (month === 2) return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
+  return [4, 6, 9, 11].indexOf(month) !== -1 ? 30 : 31;
+}
+
+// The phone's own day, "2026-11-26".
+export function localDate(date) {
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+}
+
+export var OLD_FILL = "Last filled over a year ago.";
+
+// The note for a medicine whose newest fill is over a year before today
+// (both "YYYY-MM-DD"), else null (Tyler, 2026-11-26). Over a year by the
+// calendar: before the same day a year back, Feb 28 when today is Feb 29. A
+// fill with only a month or year counts only when all of it is that old.
+export function oldFillText(last, today) {
+  var fill = datePartsOf(last);
+  var now = datePartsOf(today);
+  if (!fill || !now || !now[3]) return null;
+  var year = Number(now[1]) - 1;
+  var day = Math.min(Number(now[3]), daysIn(year, Number(now[2])));
+  var cutoff = year + "-" + now[2] + "-" + String(day).padStart(2, "0");
+  var written = String(last).slice(0, fill[3] ? 10 : fill[2] ? 7 : 4);
+  return written < cutoff.slice(0, written.length) ? OLD_FILL : null;
+}
+
+// Whether a fill is recent enough for the review to say it: within a year
+// by the same calendar rule, so a fill is said there or noted as over a
+// year old, never neither (final review). Not for a date that isn't one.
+export function recentFill(last, today) {
+  var now = datePartsOf(today);
+  return Boolean(datePartsOf(last) && now && now[3]) && !oldFillText(last, today);
 }
 
 // A whole instruction ("Take 1 by mouth…") isn't a "how often".
@@ -70,8 +116,9 @@ export function olderText(date) {
 }
 
 // claimsLoaded: "No fill found" never shows just because the claims couldn't
-// be read.
-export function patientCard(entry, claimsLoaded) {
+// be read. today ("YYYY-MM-DD"): the day the list is opened, for a fill
+// that's over a year old.
+export function patientCard(entry, claimsLoaded, today) {
   var facts = [];
   var say = function (label, text) { if (text) facts.push([label, text]); };
   var fromRecords = entry.origin !== "claims" && !entry.addedAt;
@@ -92,15 +139,20 @@ export function patientCard(entry, claimsLoaded) {
   if (claimsLoaded) facts = facts.concat(fillRows(entry.fills));
   say("Added", entry.addedAt && dateText(entry.addedAt));
   say("From", entry.older && olderText(entry.older.date));
-  if (fromRecords) say("Source", otherRecord ? chosen.sourceName : entry.source);
-  say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
+  // Records that agree name every source, like the staff page; a chosen
+  // side, or records that disagree, the record whose facts these are.
+  if (fromRecords) say("Source", otherRecord ? chosen.sourceName : (chosen || recordsDisagree(entry)) ? entry.source : sourcesText(entry));
+  // Stopped by an answer, or a tap they then confirmed when asked: only what
+  // they said, their latest word on it (Tyler, 2026-11-26).
+  var marked = entry.stoppedAt && !(entry.answer && entry.answer.choice === "not-taking");
+  say("You marked", marked ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt && !entry.stoppedAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
   if (entry.answer) say("You said", answerWords(entry) + " (" + dayText(entry.answer.answeredAt) + ")");
   var lead = question ? questionLines(question).filter(Boolean) : [];
   var card = {
     take: takeOf(entry, question),
-    flags: lead.concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean)),
+    flags: lead.concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null, claimsLoaded && entry.fills && entry.fills.count ? oldFillText(entry.fills.last, today) : null].filter(Boolean)),
     facts: facts
   };
   // How many flags go above the take rows: what the records disagree on
@@ -111,9 +163,36 @@ export function patientCard(entry, claimsLoaded) {
   return card;
 }
 
+// What the records disagree on that the patient is asked about. "worded"
+// alone is the same medicine, said differently.
+var ASKED_VERDICTS = ["status", "dose", "schedule"];
+
+export function recordsDisagree(entry) {
+  return Boolean(entry.group) && (entry.group.sides || []).length > 1 && (entry.group.verdicts || []).some(function (verdict) { return ASKED_VERDICTS.indexOf(verdict) !== -1; });
+}
+
+// Who says so, for records that agree: every source, each once, as the
+// patient's card and the staff page both say it.
+export function sourcesText(entry) {
+  var names = ((entry.group && entry.group.sources) || []).filter(function (name, index, all) { return name && all.indexOf(name) === index; });
+  return names.length > 1 ? names.join(", ") : entry.source;
+}
+
+// The name a card will show once an answer stops it: Undo logs under that
+// name, so the answer's line in the QR code's list is logged the same way.
+export function nameOnceStopped(entry) {
+  return disagreedOn(entry, ["dose"]) ? askedName(entry.name) : cardName(entry);
+}
+
 // The name a card shows: the side the patient chose, else the record's.
-// Its buttons and what's said about it use the same.
+// Its buttons and what's said about it use the same. While "How much do you
+// take?" is open, its plain name, so no one side's strength is the name
+// (Tyler, 2026-11-25).
 export function cardName(entry) {
+  if (!entry.answer && entry.question && entry.question.kind === "dose") return askedName(entry.name);
+  // Stopped while the records disagreed on how much: still no one side's
+  // strength (Tyler, 2026-11-26).
+  if (stoppedByAnswer(entry) && disagreedOn(entry, ["dose"])) return askedName(entry.name);
   var chosen = entry.answer ? chosenSide(entry) : null;
   return (chosen && chosen.name) || entry.name;
 }
@@ -124,7 +203,9 @@ function takeOf(entry, question) {
   var answer = entry.answer;
   var sides = entry.group && entry.group.sides.length > 1 ? entry.group.sides : null;
   if (sides && question) return sides.map(function (side) { return sideRow(side, question.kind === "status"); });
-  if (sides && answer && answer.choice === "not-sure") {
+  // Not sure, or stopped by an answer while the records disagreed on how
+  // much or how often: each record's own, never one of them alone.
+  if (sides && answer && (answer.choice === "not-sure" || (stoppedByAnswer(entry) && disagreedOn(entry, ["dose", "schedule"])))) {
     return sides.map(function (side) { return sideRow(side, aboutStopping(answer.sides && answer.sides.length ? answer.sides : sides)); });
   }
   var chosen = answer ? chosenSide(entry) : null;
@@ -141,7 +222,7 @@ var CARD_LINES = {
 // A mark's question is the patient's mark against a record, not two
 // records, so it has only its own words.
 function questionLines(question) {
-  var mark = String(question.fingerprint || "").indexOf("mark:") === 0;
+  var mark = isMarkFingerprint(question.fingerprint);
   return [mark ? null : CARD_LINES[question.kind], question.why];
 }
 
@@ -157,6 +238,40 @@ function aboutStopping(sides) {
   return sides.some(function (one) { return one.status === "not-current"; });
 }
 
+// A card the patient stopped by answering its question ("No, I stopped",
+// "I don't take this anymore"), not with the Not taking button. A mark's
+// question was about a tap they made, so that one keeps "You marked".
+function stoppedByAnswer(entry) {
+  return Boolean(entry.stoppedAt && entry.answer && entry.answer.choice === "not-taking" && !isMarkFingerprint(entry.answer.fingerprint));
+}
+
+// Whether the records disagreed on any of these (verdicts).
+function disagreedOn(entry, verdicts) {
+  return recordsDisagree(entry) && entry.group.verdicts.some(function (verdict) { return verdicts.indexOf(verdict) !== -1; });
+}
+
+// The name while how much is in question (not reconcile.js's plainName,
+// which is for matching): every ingredient's whole name, the words before
+// its strength, so "insulin glargine 100 UNT/ML …" is "Insulin glargine"
+// and two insulins never read the same; a combination's joined with " / ".
+// An amount in front ("0.4 ML", "72 HR", "120 ACTUAT") goes first, as it's
+// one side's too. A pack ("{7 (norethindrone …) } Pack") goes by what's in
+// it. A name with no strength is said as add-check.js says it.
+var LEADING_AMOUNT = /^\d+(?:\.\d+)?\s+(?:ML|HR|ACTUAT|UNT|MG|MCG|GM|G|DAY)\s+/i;
+function askedName(name) {
+  var whole = String(name || "").trim();
+  if (whole.charAt(0) === "{") {
+    var inside = /^\{\s*\d+\s*\(([^()]+)\)/.exec(whole);
+    return inside ? askedName(inside[1]) : displayName(whole);
+  }
+  return whole.split(" / ").map(function (part) {
+    var rest = part.trim().replace(LEADING_AMOUNT, "");
+    var before = /^(.*?)\s+\d/.exec(rest);
+    var words = before && before[1] ? before[1] : displayName(rest);
+    return words.charAt(0).toUpperCase() + words.slice(1);
+  }).join(" / ");
+}
+
 // The side an answer chose, as the records say it now, else as it was
 // then; null for an answer that isn't a side.
 function chosenSide(entry) {
@@ -169,15 +284,26 @@ var CHOICE_WORDS = { "not-taking": "I don't take this anymore", "not-sure": "Not
 
 // The answer as the patient chose it. A side is said as it was then: in a
 // question about stopping, which side they agreed with; else its dose and
-// how often.
+// how often. A stop is said as it was picked: "No, I stopped" to "Do you
+// still take it?" (a mark's question, or the group's status one, asked
+// first), else "I don't take this anymore".
 function answerWords(entry) {
   var answer = entry.answer;
+  if (answer.choice === "not-taking" && askedAboutStopping(entry)) return "No, I stopped";
   if (CHOICE_WORDS[answer.choice]) return CHOICE_WORDS[answer.choice];
   var sides = answer.sides && answer.sides.length ? answer.sides : (entry.group ? entry.group.sides : []);
   var side = sides.filter(function (one) { return one.sourceId === answer.choice; })[0];
   if (!side) return "See the record";
   if (aboutStopping(sides)) return side.status === "not-current" ? "No, I stopped" : "Yes, I take it";
   return sideWords(side);
+}
+
+// Worked out from what's saved, so answers saved before this need nothing new.
+function askedAboutStopping(entry) {
+  var answer = entry.answer;
+  if (isMarkFingerprint(answer.fingerprint)) return true;
+  if (entry.group && Array.isArray(entry.group.verdicts)) return entry.group.verdicts.indexOf("status") !== -1;
+  return aboutStopping(answer.sides || []);
 }
 
 // The name goes in as text, like everything from the records.

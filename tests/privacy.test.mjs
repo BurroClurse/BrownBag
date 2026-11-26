@@ -36,6 +36,8 @@ test("it says the parts a patient would want said", () => {
   for (const line of [
     "Don't enter real health information.",
     "Your list, what you add, and your sign-in are saved locked.",
+    "When your records disagree, your answers are kept with what you add: locked, and in your backups.",
+    "They hold what you added and your answers, never your sign-in.",
     "Gets medicine names you type and drug codes, but not your name.",
     "it doesn't expire",
     "could work out the digits by trying them all",
@@ -43,6 +45,10 @@ test("it says the parts a patient would want said", () => {
     "Start over erases Brown Bag on this phone.",
     "It doesn't cover the copy in Brown Bag.",
     "Brown Bag has no way to contact you.",
+    "The staff page's address, and any link copied from it, never carry your list.",
+    "The staff phone's tab keeps only the locked list until the tab is closed, and staff need your 6 digits to see it.",
+    "A tab reopened from the browser's recently closed tabs may have it again, still locked.",
+    "The staff phone's browser history still remembers the link it opened, the same as a picture of your QR code would.",
     "Don't include health information."
   ]) assert.ok(words().includes(line), line);
   assert.match(words(), /Last changed: [A-Z][a-z]+ \d{1,2}, \d{4}/);
@@ -61,5 +67,6 @@ test("the connections screen links to it, and it works with no signal", () => {
   const screen = app.slice(app.indexOf("function drawConnections(")).split("\n}\n")[0];
   assert.match(screen, /privacy\.html/);
   assert.ok(read("sw.js").includes('"./privacy.html"'));
-  assert.ok(read("README.md").includes("`privacy.html`"));
+  assert.ok(read("docs/FILES.md").includes("`privacy.html`"));
+  assert.ok(read("README.md").includes("(privacy.html)"));
 });
