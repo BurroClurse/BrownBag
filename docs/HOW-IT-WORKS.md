@@ -109,7 +109,8 @@ records don't agree."), as the Medicines heading does.
   that's answered says what was picked, "You said: 20 mg, once a day (Nov 25)"
   or "You said: No, I stopped (Nov 25)", with **Change**. One the answer
   stopped ("No, I stopped", "I don't take this anymore") says only that, not
-  "You marked: Not taking"; when the records disagreed on how much or how
+  "You marked: Not taking", even when the patient had tapped Not taking
+  before and the review asked them to confirm it; when the records disagreed on how much or how
   often, it keeps each source's version and its plain name, never one
   source's dose.
   It's asked again only when a source says something new. The whole review

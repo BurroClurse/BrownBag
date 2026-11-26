@@ -142,8 +142,9 @@ export function patientCard(entry, claimsLoaded, today) {
   // Records that agree name every source, like the staff page; a chosen
   // side, or records that disagree, the record whose facts these are.
   if (fromRecords) say("Source", otherRecord ? chosen.sourceName : (chosen || recordsDisagree(entry)) ? entry.source : sourcesText(entry));
-  // Stopped by an answer, not a tap: only what they said (Tyler, 2026-11-26).
-  var marked = entry.stoppedAt && !stoppedByAnswer(entry);
+  // Stopped by an answer, or a tap they then confirmed when asked: only what
+  // they said, their latest word on it (Tyler, 2026-11-26).
+  var marked = entry.stoppedAt && !(entry.answer && entry.answer.choice === "not-taking");
   say("You marked", marked ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt && !entry.stoppedAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
@@ -175,6 +176,12 @@ export function recordsDisagree(entry) {
 export function sourcesText(entry) {
   var names = ((entry.group && entry.group.sources) || []).filter(function (name, index, all) { return name && all.indexOf(name) === index; });
   return names.length > 1 ? names.join(", ") : entry.source;
+}
+
+// The name a card will show once an answer stops it: Undo logs under that
+// name, so the answer's line in the QR code's list is logged the same way.
+export function nameOnceStopped(entry) {
+  return disagreedOn(entry, ["dose"]) ? askedName(entry.name) : cardName(entry);
 }
 
 // The name a card shows: the side the patient chose, else the record's.

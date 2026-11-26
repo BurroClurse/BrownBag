@@ -544,6 +544,11 @@ export function keepChanges(changes, updatedPart) {
   return (changes || []).filter(function (change) { return partOf(change) !== updatedPart; });
 }
 
+// "atorvastatin 20 MG…" starts a line as "Atorvastatin 20 MG…".
+function capitalized(text) {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
 function changeLine(change) {
   switch (change.kind) {
     case "stopped": return "Marked " + change.name + " Not taking";
@@ -551,7 +556,7 @@ function changeLine(change) {
     case "as-needed": return "Marked " + change.name + " As needed";
     case "regular": return "Took " + change.name + " off As needed";
     case "edited": return "Changed " + change.name;
-    case "answered": return "Answered " + change.name + (change.said ? ": " + change.said : "");
+    case "answered": return capitalized(change.name) + (change.said ? ": " + change.said : "");
     case "removed": return "Removed " + change.name;
     case "allergy-added": return "Added the allergy " + change.name;
     case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;

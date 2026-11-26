@@ -2,6 +2,7 @@
 // What it says and what an answer keeps; the screen itself is in app.js.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { logChange } from "../js/view.js";
 import { answerChanges, checkText, choicesFor, answerFor, applyAnswer, questionText, reviewButton, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
 import { isMarkFingerprint } from "../js/reconcile.js";
 import { readFileSync } from "node:fs";
@@ -360,6 +361,14 @@ test("an answer is a change for the QR code's list", () => {
   const status = asked(atorvastatin());
   assert.deepEqual(answerChanges(status, "not-taking", {}, TODAY), [{ kind: "answered", name: "atorvastatin 20 MG Oral Tablet", extra: { said: "No, I stopped", stopped: true } }]);
   assert.deepEqual(answerChanges(status, "smart-sandbox", {}, TODAY), [{ kind: "answered", name: "atorvastatin 20 MG Oral Tablet", extra: { said: "Yes, I take it", stopped: false } }]);
+  // Stopping one the records disagreed on both whether and how much: named
+  // as Undo names it after, so Undo takes the line back (final re-review N1).
+  const both = atorvastatin();
+  both.group = Object.assign({}, both.group, { verdicts: ["status", "dose"] });
+  const askedBoth = asked(both);
+  const [line] = answerChanges(askedBoth, "not-taking", {}, TODAY);
+  assert.equal(line.name, "Atorvastatin");
+  assert.deepEqual(logChange(logChange([], line.kind, line.name, line.extra), "unstopped", "Atorvastatin"), []);
   // A mark's question: as the buttons log it.
   const card = { key: "rx:1", name: "Lisinopril", status: "current", source: "SMART sandbox", lastDate: "2026-10-02" };
   const mark = asked(card, { stopped: { "rx:1": "2026-03-03" } });

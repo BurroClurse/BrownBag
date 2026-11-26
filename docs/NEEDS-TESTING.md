@@ -52,7 +52,7 @@ test clinic); script `final-fix-flow.cjs`, its output and screenshots
 `node tools/reconcile-patients.mjs` first, then
 `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
 `git checkout -- tests/fixtures/reconcile/clinics` when done. Open Brown Bag
-once with a signal so it takes the new app files (cache `brownbag-v100`).
+once with a signal so it takes the new app files (cache `brownbag-v101`).
 Sign in as Riley. On both virtual phones, on My medicines:
 
 - **Check this** on Lisinopril, "I don't take this anymore", **Save**: focus
@@ -71,8 +71,11 @@ Sign in as Riley. On both virtual phones, on My medicines:
   clinic.
 - Airplane mode, reopen, Open my saved list: answer methotrexate "Not sure"
   and **Change** lisinopril to 10 MG. Show my QR code: "This code isn't fully
-  up to date" lists "Answered methotrexate 2.5 MG Oral Tablet: Not sure, ask
-  my doctor" and "Answered Lisinopril: 10 MG, 1 tablet, once a day".
+  up to date" lists "Methotrexate 2.5 MG Oral Tablet: Not sure, ask my
+  doctor" and "Lisinopril: 10 MG, 1 tablet, once a day".
+- Tap **Not taking** on a medicine, then answer its "Do you still take it?"
+  with "No, I stopped": the card says only "You said: No, I stopped", with no
+  "You marked" line.
 - A partial list (a source that didn't load; in Chromium the sandbox's
   MedicationStatement search was blocked): home has no review line; My
   medicines has the box with "Some of your records don't agree." and **Check
@@ -101,7 +104,7 @@ Riley. On both virtual phones, on My medicines:
 
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v100` since the final review fix), then More options ▸ Privacy:
+files (cache `brownbag-v101` since the final review fix), then More options ▸ Privacy:
 
 - "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your

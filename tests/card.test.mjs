@@ -467,10 +467,11 @@ test("a card stopped by an answer says only what the patient said", () => {
   assert.deepEqual(patientCard(STOPPED_BY(["status"], status), true).facts.at(-1), ["You said", "No, I stopped (Nov 26)"]);
   // A real Not taking tap keeps its words.
   assert.ok(patientCard(item({ stoppedAt: "2026-11-20" }), true).facts.some(([label, text]) => label === "You marked" && text === "Not taking, Nov 20, 2026"));
-  // So does a mark the patient made, then confirmed when asked about it.
+  // A mark the patient made, then confirmed when asked about it: only their
+  // latest word (Tyler, 2026-11-26).
   const mark = item({ stoppedAt: "2026-03-03", answer: { groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice: "not-taking", answeredAt: "2026-11-25" } });
   const facts = patientCard(mark, true).facts;
-  assert.ok(facts.some(([label, text]) => label === "You marked" && text === "Not taking, Mar 3, 2026"));
+  assert.ok(!facts.some(([label]) => label === "You marked"), JSON.stringify(facts));
   assert.ok(facts.some(([label, text]) => label === "You said" && text === "No, I stopped (Nov 25)"));
 });
 

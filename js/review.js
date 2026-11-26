@@ -3,7 +3,7 @@
 // its choices and the answer it saves. No page here, so Node's tests can
 // check it; the screen is in app.js.
 
-import { cardName, monthText, recentFill } from "./card.js";
+import { cardName, monthText, nameOnceStopped, recentFill } from "./card.js";
 import { isMarkFingerprint, sideWords } from "./reconcile.js";
 import { dayOf, keysOf, newer } from "./view.js";
 
@@ -122,6 +122,8 @@ export function answerChanges(card, value, data, today) {
     return (needed ? [{ kind: "regular", name: name }] : []).concat({ kind: "stopped", name: name });
   }
   var picked = choicesFor(card, today).filter(function (choice) { return choice.value === value; })[0];
+  // Stopped, it's named as Undo will name it, so Undo takes this line back.
+  if (value === "not-taking") name = nameOnceStopped(card);
   return [{ kind: "answered", name: name, extra: { said: picked ? picked.label : "See the record", stopped: value === "not-taking" } }];
 }
 

@@ -570,7 +570,7 @@ test("a mark counts each side with the same key separately", () => {
 });
 
 // Tyler, 2026-11-26: an answer made on a saved copy is in the QR code's list,
-// in the words picked. A Change says the newest; Undo on a card an answer
+// in the words picked, name first (Tyler, 2026-11-26). A Change says the newest; Undo on a card an answer
 // stopped takes the answer's line away, as it does a Not taking mark's.
 test("answers made on a saved copy are listed", () => {
   const now = new Date(2026, 10, 21, 12, 0);
@@ -578,14 +578,14 @@ test("answers made on a saved copy are listed", () => {
   let c = logChange([], "answered", "Lisinopril", { said: "I don't take this anymore", stopped: true });
   c = logChange(c, "answered", "atorvastatin 20 MG Oral Tablet", { said: "Yes, I take it", stopped: false });
   assert.deepEqual(changeAlert(c, { medicines: at, allergies: null }, now).lines, [
-    "Answered Lisinopril: I don't take this anymore",
-    "Answered atorvastatin 20 MG Oral Tablet: Yes, I take it"
+    "Lisinopril: I don't take this anymore",
+    "Atorvastatin 20 MG Oral Tablet: Yes, I take it"
   ]);
   // A Change: one line, the newest answer.
   c = logChange(c, "answered", "Lisinopril", { said: "10 mg, once a day", stopped: false });
   assert.deepEqual(changeAlert(c, { medicines: at, allergies: null }, now).lines, [
-    "Answered atorvastatin 20 MG Oral Tablet: Yes, I take it",
-    "Answered Lisinopril: 10 mg, once a day"
+    "Atorvastatin 20 MG Oral Tablet: Yes, I take it",
+    "Lisinopril: 10 mg, once a day"
   ]);
   // Undo on a card an answer stopped: back as it was, nothing to list.
   let s = logChange([], "answered", "Lisinopril", { said: "I don't take this anymore", stopped: true });
