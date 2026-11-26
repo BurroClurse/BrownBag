@@ -101,6 +101,8 @@ New decisions go at the end of each list, with the date.
   since its keyboard covers the bottom (2026-11-26).
 - The bag sits in the same place at the same size on the unlock screen and
   home, so unlocking looks like home filling in (2026-11-26).
+- "Tyler needs to do" is private: it lives in `CLAUDE.local.md` on Tyler's Mac,
+  never in the repo (2026-11-26).
 
 ## Calls Claude made
 
