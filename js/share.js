@@ -380,11 +380,39 @@ function linkedFrom(tags, entries, disagree) {
 // The staff page's link: the list is the part after "#". Once it's read, the
 // address is put back to plain share.html on the same history step (Tyler,
 // 2026-11-26), so a link copied or shared from the page doesn't carry the
-// list, and a reload finds none. place and steps are location and history.
+// list. place and steps are location and history.
+//
+// The tab keeps the same locked text, exactly what the QR code holds and
+// never the unlocked list, on that step's own history.state (Tyler, Task
+// 10d). A reload, or Safari bringing back a tab it put aside, finds it there
+// and asks for the 6 digits again; it goes when the tab is closed. The step's
+// state goes with the tab's history, not with its address, so a copied
+// address or a new tab has no list. A new link in the same tab is a new step
+// that keeps its own. A browser that won't keep it still gets a plain address.
+export var KEPT_LIST = "brownBagSharedList";
+
 export function takeListFromLink(place, steps) {
   var fragment = String(place.hash || "").slice(1);
-  if (fragment) steps.replaceState(steps.state, "", place.pathname + place.search);
+  if (!fragment) return keptList(steps);
+  var address = place.pathname + place.search;
+  var state = {};
+  state[KEPT_LIST] = fragment;
+  try {
+    steps.replaceState(state, "", address);
+  } catch (error) {
+    try { steps.replaceState(null, "", address); } catch (again) { /* the address keeps it */ }
+  }
   return fragment;
+}
+
+function keptList(steps) {
+  try {
+    var state = steps.state;
+    var kept = state && typeof state === "object" ? state[KEPT_LIST] : "";
+    return typeof kept === "string" ? kept : "";
+  } catch (error) {
+    return "";
+  }
 }
 
 // today ("YYYY-MM-DD"), on screens: the day the list is opened, so a fill

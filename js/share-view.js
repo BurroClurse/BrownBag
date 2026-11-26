@@ -2,10 +2,12 @@
 // the part of the link after "#", which browsers never send to the server.
 // It's read once, then taken off the address (takeListFromLink), so the
 // page's own link never carries the list on; what's on screen and Save as
-// FHIR file use the copy read here.
+// FHIR file use the copy read here. The tab keeps that locked text, never
+// the unlocked list, so a reload, or Safari bringing the tab back, asks for
+// the code again.
 // It asks for the patient's 6-digit code, unlocks the list on this device,
-// and shows it. Nothing is saved unless staff save the file themselves, and no
-// request leaves after the page loads.
+// and shows it. Nothing unlocked is saved unless staff save the file
+// themselves, and no request leaves after the page loads.
 
 import { unpackShare, groupShareBundle, ShareError, takeListFromLink } from "./share.js";
 import { localDate } from "./card.js";
@@ -32,8 +34,9 @@ if (fragment) {
   drawNoList();
 }
 
-// Opened without the list part of the link (for example, typed by hand, or
-// shared from this page), or reloaded once it was read.
+// Opened without the list part of the link (for example, typed by hand,
+// shared from this page, or opened in a new tab), with no list kept in this
+// tab.
 function drawNoList() {
   clear(root);
   addLogo();

@@ -94,13 +94,13 @@ Riley. On both virtual phones:
   "Records disagree: ask the patient".
 - The cards wrap well on the iPhone SE size and at the largest text.
 
-**The shared link, birth dates, old fills and one Back** (2026-11-26, Task
-10c, from Tyler's iPhone check of 2026-11-25; test right away: the staff
-page, the QR code and the patient's list). Checked only in headless Chromium
-(iPhone 15 profile, self-signed certificate, PIN lock, the live sandbox as
-Chantell Bartell); scripts and screenshots `task-10c-*` in
-`.superpowers/sdd/2026-11-25-medication-reconciliation/`. On both virtual
-phones:
+**The shared link, birth dates, old fills and one Back** (2026-11-26, Tasks
+10c and 10d, from Tyler's iPhone check of 2026-11-25; test right away: the
+staff page, the QR code and the patient's list). Checked only in headless
+Chromium (iPhone 15 profile, self-signed certificate, PIN lock, the live
+sandbox as Chantell Bartell); scripts and screenshots `task-10c-*` and
+`task-10d-*` in `.superpowers/sdd/2026-11-25-medication-reconciliation/`. On
+both virtual phones:
 
 - **The staff page drops the list from its address.** Sign in as Chantell,
   Show my QR code, and open its link (the Mac reads it from a screenshot).
@@ -108,12 +108,20 @@ phones:
   the 6 digits. Type them: the list shows (Allergies (1) with the unnamed
   allergy note, Medicines (2), Added by patient (0), Patient says not taking
   (0)), and Save as FHIR file still saves it. Back still leaves the page in
-  one step (no extra step was added). Reload: "This link has no list in it.
-  Ask the patient to show their QR code again." Share or copy the page's
-  address and open it in a new tab: the same message. In Chromium the
-  address was `https://localhost:8443/share.html` with `location.hash`
-  empty, history length 2 before and after (the blank tab and the page),
-  and the saved file had Chantell's 2 medicines and her birth date.
+  one step (no extra step was added). Reload (Task 10d): the 6-digit code
+  box again, not "no list"; type the code and the list shows, and Save as
+  FHIR file still works. Share or copy the page's address and open it in a
+  new tab: "This link has no list in it. Ask the patient to show their QR
+  code again." Open a second patient's link in the same tab, then reload:
+  the second patient's code box, and the first code no longer opens it. In
+  Chromium the address was `https://localhost:8443/share.html` with
+  `location.hash` empty, history length unchanged, the saved file had
+  Chantell's 2 medicines and her birth date, and the tab kept only the
+  locked text after `#` (no name, nothing in session or local storage).
+- **Safari bringing a put-aside staff tab back** (Task 10d; iPhone, and the
+  simulator if it does it). With the staff page open, switch to other apps
+  for a while (open several heavy ones), then come back to Safari: the code
+  box, or the list if Safari didn't reload the tab. Never "no list".
 - **Birth dates as words.** "Born May 8, 1974" under Chantell's name on the
   staff page and in See what's inside; on Choose a test patient, "Born May 8,
   1974. Fills, an allergy, …" and each other patient's whole birth date. On
@@ -133,6 +141,15 @@ phones:
   Chromium did this on both paths, from the sandbox's own list and its
   approval page (4 history steps on a first run: the blank tab, home, the
   list once, the sandbox).
+- **Back from a sign-in that can't start** (Task 10d). Turn off Wi-Fi (or
+  the Mac's network for the simulators) after the lock, Connect, then
+  Chantell: "Starting sign-in…", then "Couldn't start sign-in". **Try
+  again** tries Chantell again. The phone's Back (and Safari's): "Choose a
+  test patient", then one more Back: the lock, then Connect your health
+  records. Also press Back while "Starting sign-in…" is up: "Choose a test
+  patient", and it stays there. The same after Sign out, Sign in, unlock,
+  Connect. Chromium did both paths with the sandbox blocked and held, and
+  the live walk above still came to the list once.
 
 **Fixes from the 2026-11-25 pass** (Task 10b; test right away: the staff
 page and sign-in). Checked only in headless Chromium (iPhone 15 profile,

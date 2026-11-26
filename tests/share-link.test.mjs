@@ -1,18 +1,24 @@
 // The staff page's link carries the patient's list after "#". Once the page has
 // read it, the address bar is plain share.html (Tyler, 2026-11-26), so a link
-// copied or shared from the page never carries the list on. If these fail, a
-// staff member who shares the page's address could hand the locked list on.
+// copied or shared from the page never carries the list on. The tab keeps the
+// same locked text on its own history step (Tyler, Task 10d), so a reload, or
+// Safari bringing a put-aside tab back, asks for the 6 digits again. If these
+// fail, a staff member who shares the page's address could hand the locked
+// list on, or something unlocked could be kept.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { takeListFromLink } from "../js/share.js";
+import { takeListFromLink, KEPT_LIST } from "../js/share.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
-// The browser's address and history, as far as the staff page uses them.
-function fakeBrowser(url) {
+// The browser's address and one tab's history, as far as the staff page uses
+// them. A reload is a fresh read of the same step; a new tab is a fresh
+// browser.
+function fakeBrowser(url, refuse) {
   const here = new URL(url);
   const steps = [{ url: here.href, state: null }];
+  let at = 0;
   const calls = [];
   const place = {
     get hash() { return here.hash; },
@@ -21,18 +27,35 @@ function fakeBrowser(url) {
   };
   const history = {
     get length() { return steps.length; },
-    get state() { return steps[steps.length - 1].state; },
+    get state() {
+      if (refuse === "read") throw new Error("SecurityError");
+      return steps[at].state;
+    },
     replaceState(state, unused, address) {
-      calls.push(["replaceState", address]);
+      calls.push(["replaceState", address, state]);
+      if (refuse === "write" && state && state[KEPT_LIST]) throw new Error("DataCloneError");
       const next = new URL(address, here.href);
       here.hash = next.hash;
       here.search = next.search;
       here.pathname = next.pathname;
-      steps[steps.length - 1] = { url: here.href, state };
+      steps[at] = { url: here.href, state };
     },
-    pushState() { calls.push(["pushState"]); steps.push({}); }
+    pushState() { calls.push(["pushState"]); }
   };
-  return { place, history, calls, steps, href: () => here.href };
+  // Pasting another link into the same tab: a new step, with no state.
+  const open = (address) => {
+    const next = new URL(address, here.href);
+    here.hash = next.hash;
+    steps.splice(at + 1);
+    steps.push({ url: next.href, state: null });
+    at = steps.length - 1;
+  };
+  const back = () => {
+    at -= 1;
+    const was = new URL(steps[at].url);
+    here.hash = was.hash;
+  };
+  return { place, history, calls, steps, open, back, href: () => here.href };
 }
 
 test("the list is read from the link, then the link is plain share.html", () => {
@@ -42,7 +65,18 @@ test("the list is read from the link, then the link is plain share.html", () => 
   assert.equal(b.href(), "https://example.test/BrownBag/share.html");
   // The same step, never a new one.
   assert.equal(b.history.length, 1);
-  assert.deepEqual(b.calls, [["replaceState", "/BrownBag/share.html"]]);
+  assert.equal(b.calls.length, 1);
+  assert.deepEqual(b.calls[0].slice(0, 2), ["replaceState", "/BrownBag/share.html"]);
+});
+
+test("the tab keeps exactly the locked text the QR code holds, and nothing else", () => {
+  const b = fakeBrowser("https://example.test/BrownBag/share.html#v3.ABC-def_123");
+  takeListFromLink(b.place, b.history);
+  assert.deepEqual(b.history.state, { [KEPT_LIST]: "v3.ABC-def_123" });
+  // Not a key the patient app reads on its own steps.
+  assert.notEqual(KEPT_LIST, "bb");
+  assert.notEqual(KEPT_LIST, "open");
+  for (const file of ["js/app.js", "js/launch.js", "js/connections.js"]) assert.equal(read(file).includes(KEPT_LIST), false, file);
 });
 
 test("a link with nothing after # is left alone", () => {
@@ -56,10 +90,53 @@ test("a link with nothing after # is left alone", () => {
   assert.deepEqual(plain.calls, []);
 });
 
-test("a second read, as a reload would do, finds no list", () => {
+test("a reload, or Safari bringing the tab back, finds the kept list", () => {
   const b = fakeBrowser("https://example.test/share.html#v3.ABC");
   assert.equal(takeListFromLink(b.place, b.history), "v3.ABC");
-  assert.equal(takeListFromLink(b.place, b.history), "");
+  assert.equal(takeListFromLink(b.place, b.history), "v3.ABC");
+  assert.equal(takeListFromLink(b.place, b.history), "v3.ABC");
+  // The address stays plain, and nothing more is written.
+  assert.equal(b.href(), "https://example.test/share.html");
+  assert.equal(b.calls.length, 1);
+});
+
+test("a copied address, or the address in a new tab, has no list", () => {
+  const b = fakeBrowser("https://example.test/share.html#v3.ABC");
+  takeListFromLink(b.place, b.history);
+  const copied = fakeBrowser(b.href());
+  assert.equal(takeListFromLink(copied.place, copied.history), "");
+});
+
+test("a second link in the same tab replaces the first", () => {
+  const b = fakeBrowser("https://example.test/share.html#v3.AAA");
+  assert.equal(takeListFromLink(b.place, b.history), "v3.AAA");
+  b.open("https://example.test/share.html#v3.BBB");
+  // The page reloads on hashchange and reads it.
+  assert.equal(takeListFromLink(b.place, b.history), "v3.BBB");
+  assert.equal(b.href(), "https://example.test/share.html");
+  // Then a reload is the second list.
+  assert.equal(takeListFromLink(b.place, b.history), "v3.BBB");
+  assert.deepEqual(b.history.state, { [KEPT_LIST]: "v3.BBB" });
+});
+
+test("a tab that can't keep it still clears the address and opens the list", () => {
+  const refused = fakeBrowser("https://example.test/share.html#v3.ABC", "write");
+  assert.equal(takeListFromLink(refused.place, refused.history), "v3.ABC");
+  assert.equal(refused.href(), "https://example.test/share.html");
+  assert.equal(refused.history.state, null);
+  // So a reload has no list, as before Task 10d.
+  assert.equal(takeListFromLink(refused.place, refused.history), "");
+  // A step whose state can't be read is no list, not an error.
+  const unreadable = fakeBrowser("https://example.test/share.html", "read");
+  assert.equal(takeListFromLink(unreadable.place, unreadable.history), "");
+});
+
+test("an odd kept value is no list", () => {
+  for (const state of [{ [KEPT_LIST]: 42 }, { [KEPT_LIST]: { a: 1 } }, { [KEPT_LIST]: "" }, "v3.ABC", 7]) {
+    const b = fakeBrowser("https://example.test/share.html");
+    b.steps[0].state = state;
+    assert.equal(takeListFromLink(b.place, b.history), "", JSON.stringify(state));
+  }
 });
 
 test("the staff page reads the link once, and keeps the list it read", () => {
@@ -72,4 +149,7 @@ test("the staff page reads the link once, and keeps the list it read", () => {
   assert.match(view, /drawSaveFile\(root, bundle, UNLOCKED\.staff\)/);
   // A second shared link opened in the same tab still reloads.
   assert.match(view, /addEventListener\("hashchange"/);
+  // Only takeListFromLink keeps anything, and it keeps the locked text: the
+  // staff page never writes history or storage itself.
+  for (const writer of [/replaceState/, /pushState/, /localStorage/, /sessionStorage\.setItem/, /indexedDB/]) assert.doesNotMatch(view, writer);
 });

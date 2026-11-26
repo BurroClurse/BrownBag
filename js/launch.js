@@ -44,9 +44,11 @@ var tries = 0;
 var SIGN_IN_WAIT_MS = 12000;
 
 // The sandbox's test patients. Each choice is a fresh page: the sign-in library
-// reads the address, and keeps an earlier try's answers. It takes this list's
-// own history step (the sign-in puts the list's address back on it), so Back
-// from the sandbox comes to the list once, then the connections screen.
+// reads the address, and keeps an earlier try's answers. It's its own history
+// step after the list's, so Back while sign-in is starting, or from "Couldn't
+// start sign-in", is the list (Tyler, Task 10d). Once the sandbox's address is
+// known, the sandbox takes the choice's step, so Back from the sandbox comes
+// to the list once, then the connections screen.
 function showPatients() {
   root.textContent = "";
   var top = add(root, "div", null, "screen-top");
@@ -58,11 +60,11 @@ function showPatients() {
     add(section, "h2", group.title, "option-title");
     var card = add(section, "div", null, "option-card");
     group.patients.forEach(function (patient) {
-      patientButton(card, patient.name, bornText(patient.born) + ". " + patient.about + ".", function () { location.replace(signInLink(patient.id)); });
+      patientButton(card, patient.name, bornText(patient.born) + ". " + patient.about + ".", function () { location.href = signInLink(patient.id); });
     });
   });
   var other = add(add(root, "section", null, "option-group"), "div", null, "option-card");
-  patientButton(other, "Someone else", "The sandbox's own list. It shows ten.", function () { location.replace(signInLink(OWN_LIST)); });
+  patientButton(other, "Someone else", "The sandbox's own list. It shows ten.", function () { location.href = signInLink(OWN_LIST); });
   h.focus();
 }
 
@@ -87,8 +89,13 @@ function signIn() {
   withTimeout(window.startSignIn(sandboxServer(chosen(location.search) || OWN_LIST)), SIGN_IN_WAIT_MS).then(function (url) {
     if (mine !== tries) return;
     // Back then comes to the list, and never starts the sign-in again.
-    history.replaceState(null, "", chosen(location.search) ? signInLink() : "./launch.html");
-    location.href = url;
+    if (chosen(location.search)) {
+      location.replace(url);
+    } else {
+      // A link that named its own server: Back is the connections screen.
+      history.replaceState(null, "", "./launch.html");
+      location.href = url;
+    }
   }).catch(function (error) {
     if (mine !== tries) return;
     // The library's own wording is for developers; it goes to the console.

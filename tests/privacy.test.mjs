@@ -43,6 +43,9 @@ test("it says the parts a patient would want said", () => {
     "Start over erases Brown Bag on this phone.",
     "It doesn't cover the copy in Brown Bag.",
     "Brown Bag has no way to contact you.",
+    "The staff page's address, and any link copied from it, never carry your list.",
+    "The staff phone's tab keeps only the locked list until the tab is closed, and staff need your 6 digits to see it.",
+    "The staff phone's browser history still remembers the link it opened, the same as a picture of your QR code would.",
     "Don't include health information."
   ]) assert.ok(words().includes(line), line);
   assert.match(words(), /Last changed: [A-Z][a-z]+ \d{1,2}, \d{4}/);

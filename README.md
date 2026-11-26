@@ -41,8 +41,9 @@ screen to make that work.
 - **First run:** set up the lock (Face ID, a fingerprint or a 6-digit PIN), then
   **Connect your health records** lists the sources. **Connect** on the SMART
   sandbox opens a list of 20 test patients, each with their birth date ("Born
-  May 8, 1974"). Back from the sandbox's page comes to that list, and Back
-  again to the connections screen. After each sign-in the patient
+  May 8, 1974"). Back from the sandbox's page, or from "Starting sign-in…" or
+  "Couldn't start sign-in", comes to that list, and Back again to the
+  connections screen. **Try again** signs in the same patient. After each sign-in the patient
   unlocks and comes back to that screen to connect the next; **Done** goes home.
   The same screen is **Health records** under More options.
 - After that, the lock opens Brown Bag and the list updates by itself. It locks after 5 minutes without a tap or
@@ -137,10 +138,12 @@ on 2 things") opens the review below, unless some of the list didn't load.
 ### The person checking medicines
 
 - They scan the QR code and type the patient's 6 digits on `share.html`. The
-  page's address then loses the list, so a reload, or the page's link shared
-  or copied, says "This link has no list in it. Ask the patient to show their
-  QR code again." They scan again. The list on screen and Save as FHIR file
-  keep working.
+  page's address then loses the list, so the page's link shared or copied, or
+  opened in a new tab, says "This link has no list in it. Ask the patient to
+  show their QR code again." The tab keeps the locked list, so a reload, or
+  coming back to the tab after the phone put it aside, asks for the 6 digits
+  again. A second patient's link in the same tab takes the first one's place.
+  The list on screen and Save as FHIR file keep working.
 - The patient's name, then their birth date as words ("Born May 8, 1974").
 - Allergies come first, then the medicines in parts: from records, filled but not
   in the health record, as needed, added by the patient, and what the patient
@@ -179,8 +182,9 @@ the staff page, the staff member's), and talks only to the servers named here.
 ### Signing in
 
 **Launch.** The app's connections screen lists the sources. Connect on the sandbox opens `launch.html`'s test patients; choosing one opens its sign-in
-on the list's own history step (`location.replace`), so the list is in
-history once. Choosing one (or a link
+as the next history step, so Back while it starts or after it fails is the
+list. Once the sign-in page's address is known, it takes that step's place
+(`location.replace`), so the list is in history once. Choosing one (or a link
 that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
@@ -311,8 +315,15 @@ contact: the app, only the sandbox and the drug name service; the staff page, no
 the 6-digit code, and written after the `#` of a `share.html` link (browsers
 never send that part to a server). The staff page reads that part once, then
 takes it off the address with `history.replaceState` on the same history
-step, so the address bar, a reload and a link shared from the page have no
-list; what's on screen and Save as FHIR file use the copy it read.
+step, so the address bar and a link shared from the page have no list;
+what's on screen and Save as FHIR file use the copy it read. The same call
+keeps that locked text, exactly as the QR code holds it and never the
+unlocked list, in the step's `history.state` (`brownBagSharedList`). It stays
+until the tab is closed, with no time limit: a reload, or Safari reloading a
+tab it put aside, reads it there and asks for the code again, while a copied
+address or a new tab has none. A new link in the same tab is its own step,
+and keeps its own. The staff browser's history still remembers the link it
+opened ([LIMITS #15](docs/LIMITS.md)).
 Birth dates are read as written, never through a JavaScript `Date`, so a
 phone west of UTC shows the same day. The note about a fill over a year old
 isn't in the code or the FHIR file: each screen works it out from the fill
