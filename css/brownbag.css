@@ -598,6 +598,38 @@ button.help-button {
   #app.screen-signed-out .screen-logo { width: min(50vw, 200px); }
 }
 
+/* The Face ID unlock screen, laid out like home (it opens to home): the bag
+   takes the room left and shrinks first; the tagline and buttons sit at the
+   bottom, where the thumb is. At very large text sizes it scrolls instead
+   of cutting anything off. */
+#app.screen-unlock {
+  height: 100dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-bottom: max(1.75rem, calc(env(safe-area-inset-bottom) + 0.5rem));
+}
+@media (max-height: 600px) { #app.screen-unlock { padding-bottom: 0.75rem; } }
+#app.screen-unlock .lock { flex: 1 0 auto; display: flex; flex-direction: column; margin-top: 0; }
+#app.screen-unlock .screen-title {
+  flex: 1 1 0;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0 0.1rem;
+}
+#app.screen-unlock .screen-logo {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  max-height: min(100%, 30rem);
+  object-fit: contain;
+  margin: 0 auto;
+}
+#app.screen-unlock .tagline { margin: 0.5rem 0 0.25rem; }
+
 /* The tagline, under the bag on the sign-in and unlock screens. */
 .tagline { text-align: center; color: var(--teal); font-weight: 700; font-size: 1.2rem; margin: 0 0 1rem; }
 

@@ -96,6 +96,9 @@ New decisions go at the end of each list, with the date.
 - Merge PR #14 before the Mac phone pass; the pass is on Tyler's to-do.
 - The README's pictures are home, the QR code screen and the staff page, in
   that order (2026-11-26; the QR code screen replaced My medicines).
+- The Face ID unlock screen is laid out like home: the bag fills the empty
+  space and the buttons sit at the bottom. The PIN screen stays as it is,
+  since its keyboard covers the bottom (2026-11-26).
 
 ## Calls Claude made
 
