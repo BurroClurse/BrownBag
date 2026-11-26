@@ -97,7 +97,7 @@ test("the README's QR and FHIR file snippets use the app's own systems and codes
 });
 
 test("the README's pictures are small, described, and not app files", () => {
-  const pictures = [...readme.matchAll(/<img src="(assets\/readme-[\w-]+\.png)" width="240" alt="([^"]{40,})">/g)];
+  const pictures = [...readme.matchAll(/<img src="(assets\/readme-[\w-]+\.png)" width="160" alt="([^"]{40,})">/g)];
   assert.equal(pictures.length, 3);
   const worker = read("sw.js");
   for (const [, file] of pictures) {

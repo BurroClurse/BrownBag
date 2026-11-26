@@ -128,6 +128,7 @@ New decisions go at the end of each list, with the date.
   Code) doesn't need. What stays is Claude's call (2026-11-26).
 - The Standards tables more compact, with a slightly smaller font; how they
   look is Claude's call (2026-11-26).
+- The README's three screenshots shown smaller (2026-11-26).
 
 ## Calls Claude made
 
@@ -174,5 +175,6 @@ New decisions go at the end of each list, with the date.
 | R49 | Cut from the README: the token snippet's separate lines, the QR packing JavaScript (the link's shape stays), the snippet's dosage and dates, the Reconciliation and Staff tab headings (one line each now under Reads and Front end), the standards rows merged (codes in one row; OAuth, PKCE, OpenID Connect and revocation in one) | Less to read on the wire for the QR code |
 | R50 | The Copyright section is shortened without changing what it allows: reading is fine, anything else needs written permission, see LICENSE and NOTICE.md, and it's not a medical device | The developer may want the old wording back |
 | R51 | Standards tables: two columns (the version sits after the standard's name), the group name is each table's first header, "Used for" links straight to its back-end part, and every cell is wrapped in `<small>` (GitHub shows it at 90%). Checked at phone and desktop widths with GitHub's stylesheet | A cell or header wraps on a narrow phone; `<small>` is extra markup in the source |
+| R52 | The screenshots go from 240 to 160 px wide: a third of the 480 px files, so they stay sharp; three in a row on desktop, two then one on a phone. The logo stays at 320 | Smaller text in the pictures; a phone still wraps the third |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.
