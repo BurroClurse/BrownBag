@@ -4,6 +4,7 @@
 import { chosen, leavingText, signInLink, startFor } from "./sources.js";
 import { GROUPS, OWN_LIST, sandboxServer } from "./test-patients.js";
 import { withTimeout } from "./pass.js";
+import { bornText } from "./card.js";
 import { hasSavedList } from "./offline.js";
 import { SIGNED_OUT_KEY, offerSaved } from "./signed-out.js";
 
@@ -43,7 +44,9 @@ var tries = 0;
 var SIGN_IN_WAIT_MS = 12000;
 
 // The sandbox's test patients. Each choice is a fresh page: the sign-in library
-// reads the address, and keeps an earlier try's answers.
+// reads the address, and keeps an earlier try's answers. It takes this list's
+// own history step (the sign-in puts the list's address back on it), so Back
+// from the sandbox comes to the list once, then the connections screen.
 function showPatients() {
   root.textContent = "";
   var top = add(root, "div", null, "screen-top");
@@ -55,11 +58,11 @@ function showPatients() {
     add(section, "h2", group.title, "option-title");
     var card = add(section, "div", null, "option-card");
     group.patients.forEach(function (patient) {
-      patientButton(card, patient.name, "Born " + patient.born + ". " + patient.about + ".", function () { location.href = signInLink(patient.id); });
+      patientButton(card, patient.name, bornText(patient.born) + ". " + patient.about + ".", function () { location.replace(signInLink(patient.id)); });
     });
   });
   var other = add(add(root, "section", null, "option-group"), "div", null, "option-card");
-  patientButton(other, "Someone else", "The sandbox's own list. It shows ten.", function () { location.href = signInLink(OWN_LIST); });
+  patientButton(other, "Someone else", "The sandbox's own list. It shows ten.", function () { location.replace(signInLink(OWN_LIST)); });
   h.focus();
 }
 

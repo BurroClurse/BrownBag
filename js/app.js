@@ -1952,7 +1952,7 @@ function drawReview() {
   var name = add(title, "span", cardName(card), "review-name");
   add(name, "span", ",", "visually-hidden");
   add(title, "span", number + " of " + total, "review-count");
-  var shown = patientCard(card, state.split.claims === "loaded");
+  var shown = patientCard(card, state.split.claims === "loaded", today());
   shown.flags.slice(0, shown.lead || 0).forEach(function (text) { add(root, "p", text, "flag review-why"); });
   var form = add(root, "form", null, "review-form");
   form.noValidate = true;
@@ -2207,7 +2207,7 @@ async function openInside(packed, opener, fits) {
   var opened = null;
   try {
     opened = await unpackShare(packed.prefix.split("#")[1] + packed.digits, packed.code);
-    groups = groupShareBundle(opened);
+    groups = groupShareBundle(opened, today());
   } catch (error) {
     console.error("Couldn't open the code", error);
   } finally {
@@ -2571,7 +2571,7 @@ function afterBackup(said) {
 
 function medRow(list, entry) {
   var row = add(list, "li");
-  drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded"));
+  drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded", today()));
   // An open question can be checked on its own (Tyler, 2026-11-25); an
   // answer can be changed, and the old one stays until a new one is saved.
   var review = reviewButton(entry);

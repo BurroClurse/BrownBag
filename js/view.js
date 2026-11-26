@@ -3,7 +3,7 @@
 // under each medicine.
 
 import { listDate } from "./offline.js";
-import { dayText, monthText } from "./card.js";
+import { dayText, localDate, monthText } from "./card.js";
 import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 
 // FHIR Patient.name is a list. Prefer the official name, then the first one.
@@ -372,10 +372,9 @@ export function latestOnly(run) {
 }
 
 // The date on the phone's own calendar. toISOString would give the UTC
-// date, which is already tomorrow on a US evening.
-export function localDate(date) {
-  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
-}
+// date, which is already tomorrow on a US evening. It's in card.js, so the
+// staff page has it too.
+export { localDate };
 
 function blankToNull(value) {
   var text = String(value || "").trim();

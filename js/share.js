@@ -7,7 +7,7 @@
 
 import { fillNote, completedNote, suggestNote } from "./claims.js";
 import { holdText } from "./meds.js";
-import { olderText, dateText, monthText, fillRowsFrom, isDirections, takeRows } from "./card.js";
+import { olderText, dateText, monthText, fillRowsFrom, isDirections, oldFillText, takeRows } from "./card.js";
 import { isMarkFingerprint, isOwnSide, sideWords } from "./reconcile.js";
 import { NOT_SURE, UNNAMED, UNSPECIFIED, allergenNamed, isUnspecified, unspecifiedSentence, noneCode, statementOf, longDate } from "./allergies.js";
 import { deriveKeyFromPin, toBase64Url, fromBase64Url, concatBytes } from "./vault.js";
@@ -377,7 +377,19 @@ function linkedFrom(tags, entries, disagree) {
   return linked;
 }
 
-export function groupShareBundle(bundle) {
+// The staff page's link: the list is the part after "#". Once it's read, the
+// address is put back to plain share.html on the same history step (Tyler,
+// 2026-11-26), so a link copied or shared from the page doesn't carry the
+// list, and a reload finds none. place and steps are location and history.
+export function takeListFromLink(place, steps) {
+  var fragment = String(place.hash || "").slice(1);
+  if (fragment) steps.replaceState(steps.state, "", place.pathname + place.search);
+  return fragment;
+}
+
+// today ("YYYY-MM-DD"), on screens: the day the list is opened, so a fill
+// over a year old says so. The FHIR file's maker leaves it out.
+export function groupShareBundle(bundle, today) {
   var tags = (bundle.meta && bundle.meta.tag) || [];
   var of = function (code) { return tags.filter(function (tag) { return tag.system === TAGS && tag.code === code; })[0]; };
   var saved = of("records-saved-on");
@@ -426,7 +438,7 @@ export function groupShareBundle(bundle) {
     else if (noted(AS_NEEDED_NOTE)) who = "Patient says as needed";
     else if (noted(RECORDS_AS_NEEDED_NOTE)) who = "Records say as needed";
     var stopped = resource.status === "stopped";
-    var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped));
+    var row = Object.assign({ name: name }, cardFrom(resource, fromPatient && !stopped, today));
     var coded = ((resource.medicationCodeableConcept && resource.medicationCodeableConcept.coding) || []).filter(function (c) { return c.system === RXNORM && c.code; })[0];
     if (coded) row.rxnorm = String(coded.code);
     if (stopped) {
@@ -851,8 +863,10 @@ function takeFrom(dosage, added) {
   return text.slice(-rest.length - 3) === " · " + rest ? takeRows(text.slice(0, -rest.length - 3), route, often) : [["Directions", text]];
 }
 
-// The notes on a shared medicine, each under its own label.
-function cardFrom(resource, added) {
+// The notes on a shared medicine, each under its own label. The note about a
+// fill over a year old is worked out here from the fill's date, as on the
+// patient's card; it's never in the code.
+function cardFrom(resource, added, today) {
   var card = { take: takeFrom(resource.dosage && resource.dosage[0], added), flags: [], facts: [] };
   var source = [];
   (resource.note || []).forEach(function (note) {
@@ -870,7 +884,10 @@ function cardFrom(resource, added) {
     else if ((found = /^Record date: (\d{4}(?:-\d{2})?)$/.exec(text))) card.facts.push(["Record date", monthText(found[1])]);
     else if ((found = /^Records say: (current|stopped)$/.exec(text))) card.facts.push(["Records say", found[1]]);
     else if ((found = /^(.+, but filled )(\d{4}\S*)$/.exec(text))) card.flags.push(found[1] + dateText(found[2]));
-    else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
+    else if ((found = /^(?:Last filled (\S+)|Filled, dates? not given) \((.+)\), (\d+) fills?$/.exec(text))) {
+      card.facts = card.facts.concat(fillRowsFrom(Number(found[3]), found[1], found[2]));
+      if (found[1] && oldFillText(found[1], today)) card.flags.push(oldFillText(found[1], today));
+    }
     else if (text === "No fill found in claims") card.facts.push(["Filled", text]);
     else if ((found = /^Fill suggests (about \d+(?:\.5)? a day \(\d+(?:\.\d+)? for \d+(?:\.\d+)? days\))$/.exec(text))) card.facts.push(["From the fill", found[1]]);
     else if (text) source.push(["Note", text]);

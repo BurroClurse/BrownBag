@@ -15,7 +15,7 @@ test("more than the sandbox's ten, each once, each saying what it shows", () => 
   assert.equal(new Set(all.map((p) => p.name)).size, all.length);
   for (const p of all) {
     assert.match(p.id, /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
-    assert.ok(p.about && /^\d{4}$/.test(p.born), p.name);
+    assert.ok(p.about && /^\d{4}-\d{2}-\d{2}$/.test(p.born), p.name);
   }
   for (const group of GROUPS) assert.ok(group.title && group.patients.length);
 });

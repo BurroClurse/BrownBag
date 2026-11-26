@@ -3,7 +3,7 @@
 // (js/inside.js); a test checks nothing staff see is left out of it.
 
 import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, staffSaysNone, dateLines, disagreeParts, emptyPartText, fillsNote, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
-import { drawCard } from "./card.js";
+import { bornText, drawCard } from "./card.js";
 import { showsSymbol } from "./allergies.js";
 
 // Draws into parent, starting with the patient's name as heading `level`.
@@ -12,8 +12,8 @@ import { showsSymbol } from "./allergies.js";
 export function drawShareList(parent, groups, level) {
   var title = add(parent, "h" + level, groups.patient ? groups.patient.name : "Shared medicine list", "share-name");
   title.tabIndex = -1;
-  if (groups.patient && groups.patient.birthDate) {
-    add(parent, "p", "Born " + groups.patient.birthDate, "who");
+  if (groups.patient && bornText(groups.patient.birthDate)) {
+    add(parent, "p", bornText(groups.patient.birthDate), "who");
   }
   dateLines(groups, timeText).forEach(function (text) { add(parent, "p", text, "who"); });
   if (groups.recordsSavedAt) {

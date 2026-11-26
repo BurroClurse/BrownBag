@@ -1,10 +1,14 @@
 // The page staff see after scanning a Brown Bag QR code. The list is inside
 // the part of the link after "#", which browsers never send to the server.
+// It's read once, then taken off the address (takeListFromLink), so the
+// page's own link never carries the list on; what's on screen and Save as
+// FHIR file use the copy read here.
 // It asks for the patient's 6-digit code, unlocks the list on this device,
 // and shows it. Nothing is saved unless staff save the file themselves, and no
 // request leaves after the page loads.
 
-import { unpackShare, groupShareBundle, ShareError } from "./share.js";
+import { unpackShare, groupShareBundle, ShareError, takeListFromLink } from "./share.js";
+import { localDate } from "./card.js";
 import { drawShareList } from "./share-list.js";
 import { UNLOCKED, drawSaveFile } from "./fhir-file.js";
 
@@ -13,7 +17,7 @@ window.brownBagStarted = true;
 try { sessionStorage.removeItem("brownbag:retried"); } catch (error) { /* not needed */ }
 
 var root = document.getElementById("share");
-var fragment = location.hash.slice(1);
+var fragment = takeListFromLink(location, history);
 
 // Opening a second shared link in the same tab only changes the part after
 // "#", which doesn't reload the page. Reload so the old list is never shown
@@ -28,7 +32,8 @@ if (fragment) {
   drawNoList();
 }
 
-// Opened without the list part of the link (for example, typed by hand).
+// Opened without the list part of the link (for example, typed by hand, or
+// shared from this page), or reloaded once it was read.
 function drawNoList() {
   clear(root);
   addLogo();
@@ -69,7 +74,7 @@ function drawCodeForm(message) {
     status.textContent = "Opening…";
     try {
       var bundle = await unpackShare(fragment, code);
-      drawList(groupShareBundle(bundle), bundle);
+      drawList(groupShareBundle(bundle, localDate(new Date())), bundle);
     } catch (error) {
       if (error instanceof ShareError && error.code === "bad-link") {
         drawCodeForm("This link is damaged. Ask the patient to show a new code.");

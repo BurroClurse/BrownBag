@@ -265,10 +265,16 @@ an idea becomes a plan only after its own design.
   a 393px screen, 449px at the largest size, where "+ Add a medicine" runs to
   the edge), and on the QR screen the title fills the screen from
   Accessibility XL, so the patient scrolls to show the code (phone pass,
-  2026-11-25). WCAG 2.2 AA asks for 200 percent, and at Accessibility Large
-  (about 200 percent) both fit.
+  2026-11-25). Past about 250 percent the staff page scrolls sideways too at
+  320px wide, from the long words in its title, "Shared medicine list" (149px
+  at a 53px root in Chromium, Task 10b review). WCAG 2.2 AA asks for 200
+  percent, and at Accessibility Large (about 200 percent) all of them fit.
   - Now: everything is sized in rem from the iPhone's text size, and the
     staff page's code box sizes its digits from its own width (2026-11-25).
+    That needs iOS 16 or Chrome 105 and later (the `cqi` unit); an older
+    browser keeps the box's old size, which fits at normal text and cuts
+    off the 6th digit at large text.
   - Idea: find what holds My medicines wider than the screen and let it wrap;
     on the QR screen, keep the title to one line or shrink it so the code
-    starts on screen at every text size.
+    starts on screen at every text size; let the staff page's title wrap
+    inside a word when it has to.

@@ -37,6 +37,43 @@ function datePartsOf(date) {
   return /^(\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01])(?:T.*)?)?)?$/.exec(String(date));
 }
 
+// "Born May 8, 1974", read as written: never through a Date, so a phone west
+// of UTC doesn't make it the 7th. "Born May 1974" or "Born 1974" when that's
+// all the record has; a date that isn't one shows as it came; none, nothing.
+export function bornText(date) {
+  if (date === undefined || date === null || date === "") return "";
+  var parts = datePartsOf(date);
+  if (!parts || (parts[3] && Number(parts[3]) > daysIn(Number(parts[1]), Number(parts[2])))) return "Born " + date;
+  return "Born " + dateText(date);
+}
+
+function daysIn(year, month) {
+  if (month === 2) return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
+  return [4, 6, 9, 11].indexOf(month) !== -1 ? 30 : 31;
+}
+
+// The phone's own day, "2026-11-26".
+export function localDate(date) {
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+}
+
+export var OLD_FILL = "Last filled over a year ago.";
+
+// The note for a medicine whose newest fill is over a year before today
+// (both "YYYY-MM-DD"), else null (Tyler, 2026-11-26). Over a year by the
+// calendar: before the same day a year back, Feb 28 when today is Feb 29. A
+// fill with only a month or year counts only when all of it is that old.
+export function oldFillText(last, today) {
+  var fill = datePartsOf(last);
+  var now = datePartsOf(today);
+  if (!fill || !now || !now[3]) return null;
+  var year = Number(now[1]) - 1;
+  var day = Math.min(Number(now[3]), daysIn(year, Number(now[2])));
+  var cutoff = year + "-" + now[2] + "-" + String(day).padStart(2, "0");
+  var written = String(last).slice(0, fill[3] ? 10 : fill[2] ? 7 : 4);
+  return written < cutoff.slice(0, written.length) ? OLD_FILL : null;
+}
+
 // A whole instruction ("Take 1 by mouth…") isn't a "how often".
 export function isDirections(text) {
   return text.length > 40 || /^Direction 1: /.test(text) || /^(take|use|apply|inject|inhale|place|put|instill|chew|give|insert|dissolve|swallow|spray)\b/i.test(text);
@@ -71,8 +108,9 @@ export function olderText(date) {
 }
 
 // claimsLoaded: "No fill found" never shows just because the claims couldn't
-// be read.
-export function patientCard(entry, claimsLoaded) {
+// be read. today ("YYYY-MM-DD"): the day the list is opened, for a fill
+// that's over a year old.
+export function patientCard(entry, claimsLoaded, today) {
   var facts = [];
   var say = function (label, text) { if (text) facts.push([label, text]); };
   var fromRecords = entry.origin !== "claims" && !entry.addedAt;
@@ -101,7 +139,7 @@ export function patientCard(entry, claimsLoaded) {
   var lead = question ? questionLines(question).filter(Boolean) : [];
   var card = {
     take: takeOf(entry, question),
-    flags: lead.concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null].filter(Boolean)),
+    flags: lead.concat([entry.hospital ? "Hospital order" : null, HOLDS[holdText(entry)], entry.completedButFilled ? completedLine(entry.completedButFilled, entry.recordStatus) : null, claimsLoaded && entry.fills && entry.fills.count ? oldFillText(entry.fills.last, today) : null].filter(Boolean)),
     facts: facts
   };
   // How many flags go above the take rows: what the records disagree on

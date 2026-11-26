@@ -2,6 +2,7 @@
 // boxes or extra words (Tyler, 2026-11-23). It reads what comes out of the
 // code, the same as the staff page does.
 
+import { bornText } from "./card.js";
 import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, allergyParts, dateLines, disagreeParts, emptyPartText, medicineNotices, medicinesTitle, recordsPartial, savedCopyText, timeText } from "./share.js";
 
 // Draws into parent, starting with the patient's name. Returns that heading.
@@ -9,7 +10,7 @@ import { DISAGREE_TITLE, allergyDateLine, allergyEmptyText, allergyNotices, alle
 export function drawInside(parent, groups, made) {
   var patient = groups.patient || {};
   var title = add(parent, "h1", patient.name || "Shared medicine list");
-  var top = patient.birthDate ? ["Born " + patient.birthDate] : [];
+  var top = bornText(patient.birthDate) ? [bornText(patient.birthDate)] : [];
   lines(parent, top.concat(dateLines(groups, timeText, made)));
   if (groups.recordsSavedAt) warn(parent, savedCopyText(groups));
   drawAllergies(parent, groups);

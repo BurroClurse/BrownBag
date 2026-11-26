@@ -112,6 +112,17 @@ test("start marks the connections step, and Done going home unmarks it", () => {
   assert.ok(done.indexOf("history.replaceState(null, \"\")") !== -1 && done.indexOf("history.replaceState(null, \"\")") < done.indexOf('go("home"'));
 });
 
+// A reload clears only Brown Bag's own in-page steps, and before the first
+// screen is chosen, so the connections step's mark is still there to read
+// (Task 10b review).
+test("start clears only bb steps, before it reads the connections mark", () => {
+  const start = body("js/app.js", "start");
+  const clearing = 'if (history.state && history.state.bb) history.replaceState(null, "");';
+  assert.ok(start.includes(clearing), "the clear is limited to bb steps");
+  assert.ok(start.indexOf(clearing) < start.indexOf("firstScreen("));
+  assert.equal(start.split('history.replaceState(null, "")').length, 2, "and it's the only clear");
+});
+
 const INTRO = "Connect each place that has your medicines. You can add more later under More options.";
 test("setting up, Done waits for a connection", () => {
   assert.deepEqual(connectionsView({ from: "setup", connected: false, online: true }), { heading: "Connect your health records", intro: INTRO, done: null, offline: null });

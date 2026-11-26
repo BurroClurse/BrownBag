@@ -40,7 +40,9 @@ screen to make that work.
 **Signing in**
 - **First run:** set up the lock (Face ID, a fingerprint or a 6-digit PIN), then
   **Connect your health records** lists the sources. **Connect** on the SMART
-  sandbox opens a list of 20 test patients. After each sign-in the patient
+  sandbox opens a list of 20 test patients, each with their birth date ("Born
+  May 8, 1974"). Back from the sandbox's page comes to that list, and Back
+  again to the connections screen. After each sign-in the patient
   unlocks and comes back to that screen to connect the next; **Done** goes home.
   The same screen is **Health records** under More options.
 - After that, the lock opens Brown Bag and the list updates by itself. It locks after 5 minutes without a tap or
@@ -100,7 +102,10 @@ on 2 things") opens the review below, unless some of the list didn't load.
   take it?". "Yes, I take it" takes the mark away; "No, I stopped" keeps it,
   and isn't asked again for that prescription.
   **I'm taking this**, on an older prescription, asks first.
-- **Filled**: how many times, and when last, from insurance claims. A prescription
+- **Filled**: how many times, and when last, from insurance claims. When the
+  newest fill is over a year before the day the list is opened, the card also
+  says "Last filled over a year ago." The medicine stays where the records put
+  it. A prescription
   the record calls finished but filled since is current again, and says so. Fills the
   record doesn't list get their own part. How much a fill was for is only for
   the person checking medicines: My medicines never says what a fill suggests.
@@ -113,7 +118,8 @@ on 2 things") opens the review below, unless some of the list didn't load.
 - It fills the screen; Close or a swipe crumples it into the bag. The patient tells
   staff the 6-digit code, hidden until tapped.
 - **See what's inside** shows everything in the code on the patient's own phone,
-  and can save the FHIR file too.
+  and can save the FHIR file too. It gives the birth date as words ("Born May
+  8, 1974", or "Born 1974" when that's all the record has).
 - It says when the medicines and allergies were last updated. Changes made with no
   signal are in it, and listed on the screen.
 
@@ -130,7 +136,12 @@ on 2 things") opens the review below, unless some of the list didn't load.
 
 ### The person checking medicines
 
-- They scan the QR code and type the patient's 6 digits on `share.html`.
+- They scan the QR code and type the patient's 6 digits on `share.html`. The
+  page's address then loses the list, so a reload, or the page's link shared
+  or copied, says "This link has no list in it. Ask the patient to show their
+  QR code again." They scan again. The list on screen and Save as FHIR file
+  keep working.
+- The patient's name, then their birth date as words ("Born May 8, 1974").
 - Allergies come first, then the medicines in parts: from records, filled but not
   in the health record, as needed, added by the patient, and what the patient
   says they're not taking. Each says who says so, and when it was last updated.
@@ -147,6 +158,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   that says "Patient confirmed this", with each other source's as "Other
   record". See what's inside says the same, word for word.
 - A source that didn't load is named under Medicines: "<Source> didn't load."
+- A medicine whose newest fill is over a year before the day the page is
+  opened says "Last filled over a year ago.", in the part the records put it
+  in.
 - **From the fill**: when the newest fill says how many and for how many days,
   the card has a "From the fill" row, "about 2 a day (60 for 30 days)", to the
   nearest half, and only between half and 12 a day. It's something to ask
@@ -164,7 +178,9 @@ the staff page, the staff member's), and talks only to the servers named here.
 
 ### Signing in
 
-**Launch.** The app's connections screen lists the sources. Connect on the sandbox opens `launch.html`'s test patients; choosing one (or a link
+**Launch.** The app's connections screen lists the sources. Connect on the sandbox opens `launch.html`'s test patients; choosing one opens its sign-in
+on the list's own history step (`location.replace`), so the list is in
+history once. Choosing one (or a link
 that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
@@ -293,7 +309,14 @@ contact: the app, only the sandbox and the drug name service; the staff page, no
 **The QR code** holds a FHIR `Bundle` (type `collection`) of `Patient`,
 `MedicationStatement` and `AllergyIntolerance` resources, compressed, encrypted with a key made from
 the 6-digit code, and written after the `#` of a `share.html` link (browsers
-never send that part to a server). The allergies keep the FHIR R4 rules and follow
+never send that part to a server). The staff page reads that part once, then
+takes it off the address with `history.replaceState` on the same history
+step, so the address bar, a reload and a link shared from the page have no
+list; what's on screen and Save as FHIR file use the copy it read.
+Birth dates are read as written, never through a JavaScript `Date`, so a
+phone west of UTC shows the same day. The note about a fill over a year old
+isn't in the code or the FHIR file: each screen works it out from the fill
+date it already has and the phone's own date. The allergies keep the FHIR R4 rules and follow
 [US Core AllergyIntolerance](https://hl7.org/fhir/us/core/StructureDefinition-us-core-allergyintolerance.html)
 where the data allows: the records' codes and coded reactions, who said it,
 RxNorm codes for drug ingredients, and "no known allergies" as a confirmed
@@ -360,8 +383,8 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
   It only suggests, and never settles a disagreement.
 - **Other ideas:** reminders to open Brown Bag before an appointment;
   with several sources, a line for each saying when Brown Bag last read it;
-  and My medicines and the QR screen fitting the iPhone's text sizes past 200
-  percent ([LIMITS #28](docs/LIMITS.md)).
+  and My medicines, the QR screen and the staff page's title fitting the
+  iPhone's text sizes past 200 percent ([LIMITS #28](docs/LIMITS.md)).
 
 ### Back end
 
@@ -465,7 +488,7 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 ## Test patients
 
 Sign in, then SMART Health IT sandbox, lists 20 made-up patients grouped by what
-they show. A choice goes to the sandbox's approval page. **Someone else** opens the
+they show, each with their birth date. A choice goes to the sandbox's approval page. **Someone else** opens the
 sandbox's own list, which changes because anyone can add patients.
 
 These links sign in as one patient directly, with no list, no approval and no

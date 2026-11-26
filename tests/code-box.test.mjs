@@ -40,3 +40,12 @@ test("the digits are sized from the box's width, and no bigger than before", () 
   const share = parseFloat(found[1]) / 100;
   assert.ok(share * ems * 256 + 4 <= 256, "needs " + (share * ems * 256 + 4).toFixed(1) + "px of 256");
 });
+
+// Browsers before iOS 16 or Chrome 105 drop the min() line; the line before
+// it keeps the digits at their old size there (Task 10b review).
+test("older browsers keep the old size", () => {
+  const box = rule(".code-form .code-input");
+  const fallback = box.indexOf("font-size: 2rem;");
+  assert.ok(fallback !== -1, "the 2rem line is there");
+  assert.ok(fallback < box.indexOf("font-size: min("), "and comes before min()");
+});

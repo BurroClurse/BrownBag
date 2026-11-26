@@ -129,9 +129,32 @@ test("the list works with no signal, and a file that doesn't arrive is said", ()
 test("a choice on the list never carries another sign-in's address or failure", () => {
   const launch = read("js/launch.js");
   assert.match(read("js/app.js"), /signInButton\(card, "Connect", "primary", signInLink\(\)\)/);
-  assert.match(launch, /location\.href = signInLink\(patient\.id\)/);
+  assert.match(launch, /location\.replace\(signInLink\(patient\.id\)\)/);
   assert.equal(launch.match(/signIn\(\)/g).length, 2);
   for (const name of ["iss", "launch", "patientId", "clientId", "fhirServiceUrl"]) assert.equal(new URL(signInLink(ONE), "https://example.test/").searchParams.get(name), null, name);
+});
+
+// "Choose a test patient" is in history once (Tyler, 2026-11-26): a choice
+// takes the list's own step, and signIn() puts the list's address back on
+// it. So Back from the sandbox is the list, and one more Back the
+// connections screen.
+test("Back from the sandbox comes to the list once, then the connections screen", () => {
+  const launch = read("js/launch.js");
+  const patients = launch.slice(launch.indexOf("function showPatients")).split("\n}\n")[0];
+  assert.doesNotMatch(patients, /location\.href = signInLink/);
+  assert.match(patients, /location\.replace\(signInLink\(patient\.id\)\)/);
+  assert.match(patients, /location\.replace\(signInLink\(OWN_LIST\)\)/);
+  assert.match(launch, /history\.replaceState\(null, "", chosen\(location\.search\) \? signInLink\(\) : "\.\/launch\.html"\)/);
+  // The steps, as the pages make them.
+  const steps = [];
+  const open = (url) => steps.push(url);
+  const replace = (url) => { steps[steps.length - 1] = url; };
+  open("./?open=connections");
+  open(signInLink());
+  replace(signInLink(ONE));
+  replace(signInLink());
+  open("https://launch.smarthealthit.org/v/r4/sim/x/fhir/auth");
+  assert.deepEqual(steps.slice(0, -1).reverse(), [signInLink(), "./?open=connections"]);
 });
 
 test("sign-in has a time limit and never redirects on its own", () => {

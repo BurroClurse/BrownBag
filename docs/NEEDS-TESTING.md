@@ -94,6 +94,46 @@ Riley. On both virtual phones:
   "Records disagree: ask the patient".
 - The cards wrap well on the iPhone SE size and at the largest text.
 
+**The shared link, birth dates, old fills and one Back** (2026-11-26, Task
+10c, from Tyler's iPhone check of 2026-11-25; test right away: the staff
+page, the QR code and the patient's list). Checked only in headless Chromium
+(iPhone 15 profile, self-signed certificate, PIN lock, the live sandbox as
+Chantell Bartell); scripts and screenshots `task-10c-*` in
+`.superpowers/sdd/2026-11-25-medication-reconciliation/`. On both virtual
+phones:
+
+- **The staff page drops the list from its address.** Sign in as Chantell,
+  Show my QR code, and open its link (the Mac reads it from a screenshot).
+  The address bar shows plain `share.html` as soon as the page opens, before
+  the 6 digits. Type them: the list shows (Allergies (1) with the unnamed
+  allergy note, Medicines (2), Added by patient (0), Patient says not taking
+  (0)), and Save as FHIR file still saves it. Back still leaves the page in
+  one step (no extra step was added). Reload: "This link has no list in it.
+  Ask the patient to show their QR code again." Share or copy the page's
+  address and open it in a new tab: the same message. In Chromium the
+  address was `https://localhost:8443/share.html` with `location.hash`
+  empty, history length 2 before and after (the blank tab and the page),
+  and the saved file had Chantell's 2 medicines and her birth date.
+- **Birth dates as words.** "Born May 8, 1974" under Chantell's name on the
+  staff page and in See what's inside; on Choose a test patient, "Born May 8,
+  1974. Fills, an allergy, …" and each other patient's whole birth date. On
+  Android, set the emulator's time zone west of UTC (Hawaii) if it's easy:
+  the same day shows. Chromium set to Honolulu showed May 8.
+- **"Last filled over a year ago."** Chantell's Chlorpheniramine (filled
+  only Feb 15, 1979) has the note under its directions on My medicines and on
+  the staff page, and still sits under As needed; Naproxen (last filled Sep
+  10, 2026) has none, and nor do medicines with no fills. See what's inside
+  says it too. It's a yellow line like "Hospital order". In Chromium set to
+  Honolulu at 11:30 PM on Nov 26 (already Nov 27 in UTC), fills 364 and 365
+  days back had no note and 366 days back had it.
+- **One Back from the sandbox.** Connect, a test patient (or Someone else),
+  then the phone's Back (and Safari's) from the sandbox's page: "Choose a
+  test patient", then one more Back: the lock, then Connect your health
+  records. The same after More options ▸ Sign out, Sign in, unlock, Connect.
+  Chromium did this on both paths, from the sandbox's own list and its
+  approval page (4 history steps on a first run: the blank tab, home, the
+  list once, the sandbox).
+
 **Fixes from the 2026-11-25 pass** (Task 10b; test right away: the staff
 page and sign-in). Checked only in headless Chromium (iPhone 15 profile,
 self-signed certificate, PIN lock, the live sandbox); scripts and screenshots
@@ -114,10 +154,10 @@ On both virtual phones:
   in, unlock, Connect: the phone's Back button (and Safari's) from "Choose a
   test patient" comes back to the lock and then Connect your health records,
   not "You're signed out". Then Connect, a patient, and Back from the
-  sandbox's own page: "Choose a test patient", then Back again (Chromium
-  needed it twice; it has that screen in its history twice, on a first run
-  too) to the lock and the connections screen. One more Back is "You're
-  signed out". A first run (lock, connections, Connect, Back) is as before.
+  sandbox's own page: "Choose a test patient", then one more Back to the
+  lock and the connections screen (once since Task 10c, below). One more
+  Back is "You're signed out". A first run (lock, connections, Connect,
+  Back) is as before.
   While on the connections screen, wait 5 minutes for the auto-lock: unlock
   comes back to the connections screen.
 
@@ -206,10 +246,23 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - Face ID unlock after the content security policy (the simulators have no Face ID).
 - Airplane mode off with a saved list open: signed in, it updates by itself; signed
   out, "Sign in again to update it." The virtual phones used a stand-in signal.
-- Scan Riley's QR code (records that disagree) with the iPhone's camera: it opens
-  `share.html`. The virtual phones read the code from a screenshot instead.
+- Face ID and the Home Screen app (see "Lock first, then the connections
+  screen" above).
+- Scan Riley's QR code (records that disagree) with a camera, now that a
+  camera has opened Chantell's (see Tested, 2026-11-25).
 
 ## Tested
+
+**2026-11-25, Tyler's iPhone check: the QR code read by a real camera.**
+Chantell's QR code from the live site was scanned with a second iPhone's
+camera (not Tyler's, and not on his account). It opened `share.html` in
+Chrome and showed the list right: allergies with the unnamed-allergy note,
+Medicines (2), Added by patient (0), Patient says not taking (0), and Save as
+FHIR file. The page's link he then texted to his own iPhone arrived as plain
+`share.html` and showed "This link has no list in it": Chrome's share left
+the list part off. Brown Bag didn't clear it then; since Task 10c the staff
+page clears it itself (see "Waiting for the next pass"). Face ID and the Home
+Screen app are still to do on his iPhone.
 
 **2026-11-25 pass, Android emulator (Chrome) and iPhone 15 simulator (Safari),
 on the home server with the test clinic, Riley and Jordan put back on the
