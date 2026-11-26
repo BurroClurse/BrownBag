@@ -26,6 +26,39 @@ The pictures are Riley Reconcile, made up, with the home server's test clinic.
 <img src="assets/readme-staff.png" width="240" alt="The staff page for Riley Reconcile: under Medicines (9), the part Records disagree: ask the patient (3), with atorvastatin from the SMART sandbox (Records say: current) and from Valley Clinic (Records say: stopped).">
 </p>
 
+## Standards
+
+The standards Brown Bag uses, and where each one shows up. The links in the
+last column go to a snippet below of what it sends, reads or builds.
+
+**Health data**
+
+| Standard | Version | What Brown Bag uses it for |
+| --- | --- | --- |
+| [HL7 FHIR](https://hl7.org/fhir/R4/) | R4 (4.0.1) | Every record it reads, the QR code's list and the FHIR file. [Reads](#reads) |
+| [SMART App Launch](https://hl7.org/fhir/smart-app-launch/) | Patient standalone launch, `.read` (v1) scopes | Signing in with the patient's portal account. [Sign-in](#sign-in) |
+| [US Core](https://hl7.org/fhir/us/core/) | As the server sends it | How US health records shape medicines, allergies and "no known allergies". |
+| [CARIN Blue Button](https://hl7.org/fhir/us/carin-bb/) | As the server sends it | Pharmacy claims (`ExplanationOfBenefit`): what was filled, how many, for how many days. [Reads](#reads) |
+| [International Patient Summary](https://hl7.org/fhir/uv/ips/) | 2.0.1 | The FHIR file staff can save. [The FHIR file](#the-fhir-file) |
+| [SMART Health Cards](https://spec.smarthealth.cards/) | Ideas only | The QR code borrows its trimmed Bundle (`resource:N` references) and digits, which a QR code holds more of. It isn't a Health Card: it's locked, not signed. [The QR code](#the-qr-code) |
+| [RxNorm](https://www.nlm.nih.gov/research/umls/rxnorm/), through [RxNav](https://lhncbc.nlm.nih.gov/RxNav/) | Live | Medicine codes: ingredients, strengths, retired codes, and checking what the patient adds. |
+| [NDC](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory) | Live, through RxNav | Package codes on pharmacy fills, turned into RxNorm by the fill's date. |
+| [SNOMED CT](https://www.snomed.org/) | — | Allergies, and the codes for "no known allergies". |
+| [LOINC](https://loinc.org/) | — | The FHIR file's document and section codes. |
+| [UCUM](https://ucum.org/) | — | Units such as `mL` on what the patient adds. |
+
+**Security and access**
+
+| Standard | Version | What Brown Bag uses it for |
+| --- | --- | --- |
+| [OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749) with [PKCE](https://www.rfc-editor.org/rfc/rfc7636) | `S256`, public client | Sign-in with no app secret. [Sign-in](#sign-in) |
+| [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) | `openid fhirUser` | Asked for at sign-in: who signed in. |
+| [OAuth 2.0 Token Revocation](https://www.rfc-editor.org/rfc/rfc7009) | — | Sign out ends the refresh token where the server offers it. |
+| [Web Crypto](https://www.w3.org/TR/WebCryptoAPI/) | AES-GCM 256, PBKDF2-SHA-256, HKDF | Locking the saved list, the sign-in and the QR code. [Storage and the lock](#storage-and-the-lock) |
+| [WebAuthn](https://www.w3.org/TR/webauthn-3/) | Level 3, PRF extension | Face ID or a fingerprint makes the lock's key. [Storage and the lock](#storage-and-the-lock) |
+| [Content Security Policy](https://www.w3.org/TR/CSP3/) | Level 3 | Each page names what it may contact; the staff page, nothing. |
+| [WCAG](https://www.w3.org/TR/WCAG22/) | 2.2 AA | Every screen: contrast, text size, screen readers. |
+
 ## Front end: what people see
 
 **The patient** ([the full tour](docs/HOW-IT-WORKS.md#the-patient))
@@ -65,34 +98,163 @@ The pictures are Riley Reconcile, made up, with the home server's test clinic.
 
 ## Back end: what happens behind the screen
 
-Both halves are in full in [How it works](docs/HOW-IT-WORKS.md). Each page's
-content security policy names what it may contact: the app, the sandbox and
-RxNav; the staff page, nothing.
+Both halves are in full in [How it works](docs/HOW-IT-WORKS.md). There's no
+Brown Bag server: it all runs in the browser. Each page's content security
+policy names what it may contact: the app, the sandbox and RxNav; the staff
+page, nothing. The snippets use made-up values; the scopes, addresses and
+codes are the app's own.
 
-- **Sign-in:** a SMART patient standalone launch (fhirclient 3.0.1, PKCE,
-  public client), read-only scopes and `offline_access`. The refresh token is
-  encrypted (AES-GCM) with a key from the passkey (WebAuthn PRF) or the PIN
-  (PBKDF2). Sign out deletes it, and revokes it where the server allows.
-- **Reads:** Patient, MedicationRequest, MedicationStatement, pharmacy claims
-  (ExplanationOfBenefit) and AllergyIntolerance, every page, plus RxNav for
-  ingredients, term types and package codes. Nothing is written back.
-- **Storage:** the list is saved encrypted on the phone. The patient's
-  additions, marks and answers are saved the same way and go in backups; the
-  list and the sign-in never do. The service worker keeps app files only.
-- **Reconciliation:** every source's records are kept and compared fresh on
-  each update; nothing is overwritten. A second source joins only with the
-  same name and birth date. Today it's the home server's test clinic.
-- **The QR code:** a FHIR `Bundle` (`collection`) of Patient,
-  MedicationStatement and AllergyIntolerance, compressed and encrypted with a
-  key made from the 6 digits, after the `#` of a `share.html` link. Each side
-  of an unsettled disagreement goes in, tied by a `differs` tag, and a
-  `source-not-loaded` tag names a source that didn't load.
-- **The FHIR file:** IPS 2.0.1, made in the browser; HL7's validator passes
-  its test files. A source with no medicines is said in the text. There's no
-  `DetectedIssue`: IPS 2.0.1 allows only medicine records in that section.
-- **The staff tab:** the locked list moves from the address into the history
-  step's `history.state`, so a reload asks for the code, and Back or Forward
-  reloads only when the step holds a different list.
+### Sign-in
+
+A SMART patient standalone launch (fhirclient 3.0.1, PKCE, public client),
+read-only scopes and `offline_access`. fhirclient finds the sign-in page in
+the server's `.well-known/smart-configuration`, then sends the patient there:
+
+```http
+GET {authorization_endpoint}?response_type=code
+    &client_id=my_web_app
+    &redirect_uri=https://burroclurse.github.io/BrownBag/index.html
+    &scope=launch/patient openid fhirUser offline_access patient/Patient.read
+           patient/MedicationRequest.read patient/MedicationStatement.read
+           patient/Medication.read patient/Practitioner.read
+           patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read
+    &aud={iss}&state={random}
+    &code_challenge={SHA-256 of a random verifier}&code_challenge_method=S256
+```
+
+The token answer names the patient and carries the refresh token:
+
+```jsonc
+{
+  "token_type": "Bearer",
+  "access_token": "eyJ…",      // about an hour
+  "patient": "e7de504a-311d-49be-b2bc-566a328bcc72",
+  "id_token": "eyJ…",          // openid fhirUser
+  "refresh_token": "…"         // locked, then saved on the phone
+}
+```
+
+The refresh token is encrypted (AES-GCM) with a key from the passkey
+(WebAuthn PRF) or the PIN (PBKDF2). Sign out deletes it, and revokes it where
+the server allows.
+
+### Reads
+
+Patient, MedicationRequest, MedicationStatement, pharmacy claims
+(ExplanationOfBenefit) and AllergyIntolerance, every page, plus RxNav for
+ingredients, term types and package codes. Nothing is written back.
+
+```http
+GET {iss}/Patient/{patient}
+GET {iss}/MedicationRequest?patient={patient}&_include=MedicationRequest:medication
+GET {iss}/MedicationStatement?patient={patient}&_include=MedicationStatement:medication
+GET {iss}/ExplanationOfBenefit?patient={patient}
+GET {iss}/AllergyIntolerance?patient={patient}
+Authorization: Bearer {access_token}
+```
+
+Each answer is a `searchset` Bundle; Brown Bag follows every `next` link.
+
+### Storage and the lock
+
+The list is saved encrypted on the phone. The patient's additions, marks and
+answers are saved the same way and go in backups; the list and the sign-in
+never do. The service worker keeps app files only. The key comes from the
+PIN or from Face ID or a fingerprint (shortened from `js/vault.js` and
+`js/lock.js`):
+
+```js
+// The PIN: 600,000 rounds of PBKDF2 make a 256-bit AES-GCM key.
+subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 600000 },
+  pinMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+
+// Face ID or a fingerprint: the passkey's PRF answer, the same every time...
+credentials.get({ publicKey: { rpId, userVerification: "required",
+  extensions: { prf: { eval: { first: salt } } } } });
+// ...shaped by HKDF (SHA-256) into the same kind of key.
+```
+
+### Reconciliation
+
+Every source's records are kept and compared fresh on each update; nothing
+is overwritten. A second source joins only with the same name and birth
+date. Today it's the home server's test clinic.
+
+### The QR code
+
+A FHIR `Bundle` (`collection`) of Patient, MedicationStatement and
+AllergyIntolerance. Each side of an unsettled disagreement goes in, tied by a
+`differs` tag, and a `source-not-loaded` tag names a source that didn't load.
+Two clinics that disagree on a dose:
+
+```jsonc
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "timestamp": "2026-11-17T15:00:00.000Z",
+  "meta": { "tag": [{ "system": "https://burroclurse.github.io/BrownBag/tags",
+                      "code": "differs", "display": "1 2" }] },
+  "entry": [
+    { "fullUrl": "resource:0", "resource": { "resourceType": "Patient",
+        "name": [{ "text": "Jane Example" }], "birthDate": "1961-04-02" } },
+    { "fullUrl": "resource:1", "resource": { "resourceType": "MedicationStatement",
+        "status": "active", "subject": { "reference": "resource:0" },
+        "medicationCodeableConcept": { "text": "lisinopril 10 MG Oral Tablet",
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314076" }] },
+        "dosage": [{ "text": "10 mg · once a day" }],
+        "note": [{ "text": "From records: SMART sandbox" }, { "text": "Records disagree" },
+                 { "text": "Record date: 2026-03" }] } }
+    // resource:2 is the 20 mg side (RxNorm 314077), "From records: Valley Clinic"
+  ]
+}
+```
+
+It's compressed and encrypted with a key made from the 6 digits, after the
+`#` of a `share.html` link, which the browser never sends to a server
+(shortened from `js/share.js`):
+
+```js
+var code = sixDigitCode();                        // read out loud, never in the link
+var secret = crypto.getRandomValues(new Uint8Array(16));
+var iv = crypto.getRandomValues(new Uint8Array(12));
+var key = await deriveKeyFromPin(code, secret);   // PBKDF2, as for the PIN
+var packed = await deflateRaw(JSON.stringify(bundle));
+var sealed = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, packed);
+var url = baseUrl + "share.html#v3." + toDigits(toBase64Url(secret + iv + sealed));
+// https://burroclurse.github.io/BrownBag/share.html#v3.29303036707643127053…
+```
+
+### The FHIR file
+
+IPS 2.0.1, made in the browser; HL7's validator passes its test files. A
+source with no medicines is said in the text. There's no `DetectedIssue`:
+IPS 2.0.1 allows only medicine records in that section.
+
+```jsonc
+{
+  "resourceType": "Bundle",
+  "meta": { "profile": ["http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"] },
+  "type": "document",
+  "entry": [
+    { "resource": { "resourceType": "Composition", "status": "preliminary",
+        "type": { "coding": [{ "system": "http://loinc.org", "code": "60591-5" }] },
+        "title": "Patient summary from Brown Bag",
+        "section": [
+          { "title": "Medicines", "code": { "coding": [{ "system": "http://loinc.org", "code": "10160-0" }] } },
+          { "title": "Allergies", "code": { "coding": [{ "system": "http://loinc.org", "code": "48765-2" }] } },
+          { "title": "Problems",  "code": { "coding": [{ "system": "http://loinc.org", "code": "11450-4" }] } }
+        ] } }
+    // then the Patient, a Device named "Brown Bag", and each
+    // MedicationStatement and AllergyIntolerance the sections point to
+  ]
+}
+```
+
+### The staff tab
+
+The locked list moves from the address into the history step's
+`history.state`, so a reload asks for the code, and Back or Forward reloads
+only when the step holds a different list.
 
 ## What's planned
 
@@ -131,14 +293,9 @@ it with `BROWN_BAG_DEMO=two-clinics`. Both are in
 ## More docs
 
 - [How it works](docs/HOW-IT-WORKS.md): the full tour, front end and back end.
-- [Files](docs/FILES.md): what each file is for.
 - [Sandboxes and test patients](docs/SANDBOXES.md): who to sign in as, and the test clinic.
 - [Limits](docs/LIMITS.md): what can keep the list from matching what the patient takes.
-- [Needs testing](docs/NEEDS-TESTING.md): what's waiting for a phone check.
-- [Decisions](docs/DECISIONS.md): who decided what.
-- [Learning log](docs/LEARNING.md): each step, in plain words.
 - [Privacy](https://burroclurse.github.io/BrownBag/privacy.html) ([`privacy.html`](privacy.html)): what's kept and who can see it.
-- Designs and build plans: [`docs/superpowers/`](docs/superpowers/).
 
 ## Copyright
 
