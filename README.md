@@ -106,6 +106,7 @@ design; the reasons behind each are in [LIMITS](docs/LIMITS.md).
 - **A reminder before appointments** (idea). [LIMITS #1](docs/LIMITS.md)
 - **When each source was last read** (idea), with several sources. [LIMITS #21](docs/LIMITS.md)
 - **Text past 200 percent** (idea): My medicines, the QR screen and the staff page's title fit. [LIMITS #28](docs/LIMITS.md)
+- **The unnamed allergy's source** (idea): it names its source once a second source sends allergies. [LIMITS #17](docs/LIMITS.md)
 
 **Back end**
 - **Medicare Part D fills** (designed and planned; waiting on Medicare's approval). It adds one small server function, which only handles Medicare's sign-in and never sees the list. [Design](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md)
