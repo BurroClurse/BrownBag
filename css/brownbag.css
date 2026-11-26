@@ -4,7 +4,7 @@
 :root {
   --ink: #1b1b1b;
   --muted: #4a4a4a;
-  /* The wheat behind the bag, as the whole page (Tyler, 2026-11-21). */
+  /* The wheat behind the bag, as the whole page (the developer, 2026-11-21). */
   --paper: #F3DDBE;
   --card: #FFFBF4;
   --line: #c9c9c9;
@@ -18,7 +18,7 @@
   color-scheme: light;
 }
 
-/* One look in light and dark mode: the wheat page (Tyler, 2026-11-21). */
+/* One look in light and dark mode: the wheat page (the developer, 2026-11-21). */
 
 * { box-sizing: border-box; }
 
@@ -266,7 +266,7 @@ button.secondary.big, .button.secondary.big { border-color: var(--teal); }
 }
 @media (max-height: 600px) { #app.screen-home { padding-bottom: 0.75rem; } }
 /* Home and the Face ID unlock screen put the bag in the same place at the
-   same size, so unlocking looks like home filling in around it (Tyler,
+   same size, so unlocking looks like home filling in around it (the developer,
    2026-11-26): under one line of text (the name, or a blank line the same
    height), as tall as the screen less that line and room for the buttons
    (home's, with "Your records don't agree" under them), with any space left
@@ -726,7 +726,7 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
    allergies in a box nobody can miss, then medicines. */
 /* My medicines: Allergies and Medicines get matching section headers, bigger
    than the rest, each in its own color: the allergy box's red, the buttons'
-   teal (Tyler, 2026-11-25). */
+   teal (the developer, 2026-11-25). */
 .screen-medicines .section-heading { margin: 2.25rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 4px solid; font-size: min(1.9rem, 11vw); line-height: 1.2; overflow-wrap: anywhere; }
 .screen-medicines .allergies-section { color: var(--error-ink); border-bottom-color: var(--error-ink); margin-top: 1.5rem; }
 .screen-medicines .medicines-section { color: var(--teal); border-bottom-color: var(--teal); }

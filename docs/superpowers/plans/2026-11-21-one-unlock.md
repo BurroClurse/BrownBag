@@ -25,7 +25,7 @@
 - Sign out copy, exact: "Signing out disconnects Brown Bag from your records. Your saved list stays on this phone. You'll sign in again next time."
 - Home at 375 by 667 with two notes: no scrolling at default text size; the bag at least a third of the screen height.
 - WCAG 2.2 AA; notes sit in a live status area.
-- Commit messages: one short line in Tyler's voice, no dashes, plus the attribution lines. Tests: `node --test "tests/*.test.mjs"` from `BrownBag/`.
+- Commit messages: one short line in the developer's voice, no dashes, plus the attribution lines. Tests: `node --test "tests/*.test.mjs"` from `BrownBag/`.
 
 ## Review Focus
 

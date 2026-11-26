@@ -1,11 +1,11 @@
 # Codes in the QR code, and a FHIR file for staff: design
 
-Approved by Tyler
+Approved by the developer
 2026-11-24, with HL7's validator.
 
 ## Why
 
-Tyler: "The most important thing is interoperability, we just need to make sure
+The developer: "The most important thing is interoperability, we just need to make sure
 that the info in the QR code is the most interoperable in its format, structure,
 and terminology." Today the list is FHIR R4 with RxNorm, but the record's other
 codes and coded directions are dropped, and only Brown Bag's own page can open
@@ -160,7 +160,7 @@ resource is rebuilt from known fields and checked, never copied.
 
 - Tests first: every rule above, each "must never happen", and the IPS rules
   read (cardinalities, section rules, unique fullUrls, every reference found).
-- HL7's official FHIR validator on made-up patients, if Tyler allows it.
+- HL7's official FHIR validator on made-up patients, if the developer allows it.
 - Test browser, 320 to 1440 wide, 200 percent text; both virtual phones at once
   (staff page change); scanning a denser code on a real phone.
 
@@ -169,7 +169,7 @@ resource is rebuilt from known fields and checked, never copied.
 1. IPS inside the QR code: about 7 medicines fit with codes. Dropped.
 2. IPS built on the staff page from the QR code (picked): no size limit, no
    server, and the patient's QR code stays scannable.
-3. IPS behind a SMART Health Link: needs a server Tyler doesn't have approval
+3. IPS behind a SMART Health Link: needs a server the developer doesn't have approval
    for. The same `js/ips.js` would feed it later.
 
 ## First: directions fixes (their own change, before this)
@@ -195,7 +195,7 @@ Found while designing. The file would carry these into a hospital system:
   "Patient says: takes only when needed".
 - A "no known allergy" code beside words that name an allergy is an allergy.
 
-## Changed 2026-11-24 (Tyler): on the patient's phone too
+## Changed 2026-11-24 (the developer): on the patient's phone too
 
 At the end of See what's inside (and See my list, when the list is too long for a
 QR code): the same button, file and checks, so a file can be handed over when

@@ -1,5 +1,5 @@
 // See what's inside: everything in the QR code as one short text, with no
-// boxes or extra words (Tyler, 2026-11-23). It reads what comes out of the
+// boxes or extra words (the developer, 2026-11-23). It reads what comes out of the
 // code, the same as the staff page does.
 
 import { bornText } from "./card.js";

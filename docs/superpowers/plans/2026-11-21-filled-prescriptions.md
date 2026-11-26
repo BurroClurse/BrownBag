@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Work on `brown-bag-v1`; every finished, tested task is also fast-forwarded to `main` (Tyler's standing rule).
+- Work on `brown-bag-v1`; every finished, tested task is also fast-forwarded to `main` (the developer's standing rule).
 - Scope adds `patient/ExplanationOfBenefit.read` in `launch.html`; nothing else in the scope changes.
 - A pharmacy claim: `type.coding` has `system` `http://terminology.hl7.org/CodeSystem/claim-type`, `code` `pharmacy`. The app filters; it never relies on a `type=` search.
 - Fill date: `item[].servicedDate` or `item[].servicedPeriod.start`, else `billablePeriod.start`. Insurer: `insurer.display`; `NO_INSURANCE` means paid without insurance.
@@ -27,7 +27,7 @@
   - "What's in this code?" gains the bullet `Insurance fills: when each medicine was last filled, and fills your record doesn't list`.
 - "Recent" means a fill within 365 days of now.
 - A patient whose claims loaded but hold no pharmacy claims sees nothing about fills.
-- Commit messages: one short line in Tyler's voice, no dashes, plus the attribution lines. Tests: `node --test "tests/*.test.mjs"`.
+- Commit messages: one short line in the developer's voice, no dashes, plus the attribution lines. Tests: `node --test "tests/*.test.mjs"`.
 
 ## Review Focus
 

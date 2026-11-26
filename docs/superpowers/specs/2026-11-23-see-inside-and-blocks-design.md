@@ -1,6 +1,6 @@
 # See what's inside, and two blocks: short design
 
-Status: approved by Tyler, 2026-11-23.
+Status: approved by the developer, 2026-11-23.
 
 ## Why
 
@@ -64,7 +64,7 @@ Medicines (1)                      big heading, line under it
   under Medicines (found in review).
 - Headings: h2 Allergies and Medicines, h3 for the parts.
 
-## Dates (Tyler, 2026-11-23, after it was live)
+## Dates (the developer, 2026-11-23, after it was live)
 
 - Under the name, here and on the staff page: "Records last updated: …" (last
   loaded into Brown Bag), then "QR code made: …" ("List made" for a list too
@@ -72,13 +72,13 @@ Medicines (1)                      big heading, line under it
 - Allergies that loaded at another time: their own line in the box. The "may be
   out of date" warnings stay. Codes without the date show no line for it.
 
-## Fills that didn't load (Tyler, 2026-11-23)
+## Fills that didn't load (the developer, 2026-11-23)
 
 A note, not a warning, under Medicines: they couldn't be loaded, that doesn't
 make the list wrong, and a medicine only insurance knows about may not be
 listed. The number stays. Not shown when the records themselves didn't load.
 
-## See what's inside as short text (Tyler, 2026-11-23)
+## See what's inside as short text (the developer, 2026-11-23)
 
 Replaces "drawn like the staff page": bare bones and condensed, with everything
 in the code, no title and no explanation. Empty parts aren't listed; what didn't

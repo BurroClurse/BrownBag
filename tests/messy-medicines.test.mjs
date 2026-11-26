@@ -1,5 +1,5 @@
 // How real sources write medicines (docs/superpowers/research/2026-11-25-
-// messy-data-findings.md, "Fixtures to build" 1-32), with Tyler's answers:
+// messy-data-findings.md, "Fixtures to build" 1-32), with the developer's answers:
 // the most specific product code, release type and salt are part of the form,
 // and IPS "no medication" entries are left out and said. A wrong join (two
 // medicines shown as one) is the dangerous failure; a wrong split is safe. If

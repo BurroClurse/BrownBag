@@ -1,4 +1,4 @@
-// Tyler: the logo sometimes took a while after Done. Each redraw made a new picture,
+// The developer: the logo sometimes took a while after Done. Each redraw made a new picture,
 // and the service worker asked the network first, up to 3 seconds on weak signal.
 import test from "node:test";
 import assert from "node:assert/strict";

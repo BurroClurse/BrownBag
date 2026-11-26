@@ -1,17 +1,17 @@
 # Brown Bag: one-screen redesign
 
-Status: draft for Tyler's approval, 2026-11-21.
+Status: draft for the developer's approval, 2026-11-21.
 
 ## Why
 
 The first build works, but its main screen is a long scrolling list that
-looks basic and doesn't feel like Brown Bag. Tyler wants it simple enough
+looks basic and doesn't feel like Brown Bag. The developer wants it simple enough
 for a 90-year-old: one screen, no scrolling, big buttons, decent-size
 text, built around the logo, with the QR code a tap away.
 
 ## Who and what for
 
-Patients open Brown Bag for two jobs (Tyler, 2026-11-21):
+Patients open Brown Bag for two jobs (the developer, 2026-11-21):
 
 1. **Show the QR code** at a check-in desk or to a nurse. This must be the
    easiest thing in the app and shows only the code.
@@ -53,7 +53,7 @@ Patients open Brown Bag for two jobs (Tyler, 2026-11-21):
 
 ## Approaches considered
 
-1. **The bag plus two big labeled buttons (chosen by Tyler, 2026-11-21).**
+1. **The bag plus two big labeled buttons (chosen by the developer, 2026-11-21).**
    The bag sits in the middle; under it "Show my QR code" and "My
    medicines (N)". Tapping the bag also opens the code. Words on the
    buttons say exactly what happens.

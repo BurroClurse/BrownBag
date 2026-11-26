@@ -98,7 +98,7 @@ copies the commits from your Mac to GitHub, which is our backup.
 Try it. This shows every commit on the branch, newest first:
 
 ```bash
-cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && git log --oneline
+cd "/path/to/BrownBag" && git log --oneline
 ```
 
 ### 2.3 The design and the plan
@@ -132,7 +132,7 @@ Tests live in `tests/`. Node.js (a program that runs JavaScript outside the
 browser) runs them. Try it:
 
 ```bash
-cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && node --test "tests/*.test.mjs"
+cd "/path/to/BrownBag" && node --test "tests/*.test.mjs"
 ```
 
 At the bottom you'll see `pass` and `fail` counts. Right now it's 42 passing.
@@ -317,7 +317,7 @@ devices would trust.
 app's files over https on port 8443. Start it with:
 
 ```bash
-cd "/Users/tylerbeattie/Developer 2/HL7-Build-the-Code/BrownBag" && node tools/serve.mjs
+cd "/path/to/BrownBag" && node tools/serve.mjs
 ```
 
 It prints the addresses to open. Press Control-C to stop it. It refuses
@@ -424,7 +424,7 @@ Closing or reloading the page locks Brown Bag again.
 **A surprise about addresses.** Passkeys refuse plain number addresses like
 `192.168.0.224`. On that address Brown Bag falls back to the PIN. To test Face
 ID on your phone, the test certificate now also covers your Mac's network
-name, `Tylers-Mac-mini-351.local`, and the server prints that address too.
+name, `your-mac-name.local`, and the server prints that address too.
 
 **Tests first.** 11 tests use a pretend passkey that behaves like a real one
 (same input, same secret). They failed first because `js/lock.js` didn't

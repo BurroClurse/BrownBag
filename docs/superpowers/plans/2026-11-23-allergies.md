@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Static site, no server, no new libraries. WCAG 2.2 AA. Home keeps its layout.
-- Work on `brown-bag-v1`. **Nothing from Tasks 1 to 6 goes to `main` until Tyler has seen screenshots from both virtual phones and chosen A or B.** Pushing `brown-bag-v1` is fine.
+- Work on `brown-bag-v1`. **Nothing from Tasks 1 to 6 goes to `main` until the developer has seen screenshots from both virtual phones and chosen A or B.** Pushing `brown-bag-v1` is fine.
 - A failed or refused load never looks like "no allergies". A missing reaction says "Reaction not in your records".
 - Allergies never slow down or fail the medicine list: own 6-second limit (`CLAIMS_WAIT_MS` pattern).
 - Words always; a code only from the record, the four SNOMED statements in the spec, or RxNorm codes checked against RxNav.
@@ -137,15 +137,15 @@ assert.equal(reactionLine({ origin: "added", reactions: [], mine: { reaction: "N
 - [ ] **Step 4: Browser check** of every state, with axe in light and dark, at 390 and 320 wide, and 200% text.
 - [ ] **Step 5: Commit** "Show and add allergies".
 
-### Task 6: Screenshots for Tyler (stop point)
+### Task 6: Screenshots for the developer (stop point)
 
 - [ ] **Step 1:** Run the app on both virtual phones from the Mac, not the live site: plain `http://localhost` (a secure context), through `adb reverse` on Android; the iPhone simulator shares the Mac's network. If Safari refuses encryption there, take iPhone-size test browser screenshots instead and say so.
 - [ ] **Step 2:** Sign in as Chantell Bartell (Mold). Check add, reaction, no known allergies (with Loria Jenkins if none), QR code and staff page. Save screenshots of the top of My medicines, the add form and the staff page.
 - [ ] **Step 3:** One fresh reviewer on the whole branch (Review Focus above), and one fix pass.
-- [ ] **Step 4: Stop. Send Tyler the screenshots and ask: A or B.** If B, move `drawAllergies` to its own screen with a third home button, check home fits one screen on both phones, and show him again.
+- [ ] **Step 4: Stop. Send the developer the screenshots and ask: A or B.** If B, move `drawAllergies` to its own screen with a third home button, check home fits one screen on both phones, and show them again.
 
 ### Task 7: Publish
 
-- [ ] **Step 1:** After Tyler's OK: README (what the patient sees, scopes, reads, files), LIMITS (a limit on allergies: the sandbox has no reactions or medicine allergies), LEARNING steps with lab links, `sw.js` cache number, spec's Later list.
+- [ ] **Step 1:** After the developer's OK: README (what the patient sees, scopes, reads, files), LIMITS (a limit on allergies: the sandbox has no reactions or medicine allergies), LEARNING steps with lab links, `sw.js` cache number, spec's Later list.
 - [ ] **Step 2:** Suite passes, push `brown-bag-v1` to `main`, wait for the live site, then run both virtual phones on it and record it in `docs/NEEDS-TESTING.md`.
-- [ ] **Step 3:** VoiceOver on the allergies section goes under "On a real iPhone (Tyler)".
+- [ ] **Step 3:** VoiceOver on the allergies section goes under "On a real iPhone (the developer)".

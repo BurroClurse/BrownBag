@@ -1,4 +1,4 @@
-// Birth dates read like the app's other dates: "Born May 8, 1974" (Tyler,
+// Birth dates read like the app's other dates: "Born May 8, 1974" (the developer,
 // 2026-11-26), on the staff page, See what's inside and the test-patient
 // picker. If these fail, a birth date can read as "1974-05-08", or a day off
 // on a phone west of UTC.

@@ -199,7 +199,7 @@ function drawPasskeyUnlock(root, done, options) {
   clear(root);
   var restoring = Boolean(options.record);
   // Laid out like home, which it opens to: the bag fills the screen and the
-  // buttons sit at the bottom (Tyler, 2026-11-26). Not the PIN screen, whose
+  // buttons sit at the bottom (the developer, 2026-11-26). Not the PIN screen, whose
   // keyboard covers the bottom.
   if (!restoring) root.classList.add("screen-unlock");
   var box = panel(root, restoring ? "Unlock your backup" : null);

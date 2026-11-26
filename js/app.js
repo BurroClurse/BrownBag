@@ -832,7 +832,7 @@ function drawHome(arranged) {
   button(actions, medicinesButtonText(medicineCount(arranged, state.data.additions), medicinesPartial(state)), "secondary big", function () {
     go("medicines", "medicines-heading");
   }).id = "open-medicines";
-  // Under the buttons, so home keeps its three (Tyler, 2026-11-25). Not on a
+  // Under the buttons, so home keeps its three (the developer, 2026-11-25). Not on a
   // partial list, where a count would read as the whole.
   if (arranged.toCheck.length && !medicinesPartial(state)) {
     button(actions, checkText(arranged.toCheck.length).line, "link-button check-line", function () {
@@ -848,7 +848,7 @@ function drawMedicines(arranged) {
   // The one being edited was removed.
   if (state.editing && !editedNow()) closeAddForm();
   medicinesDone("screen-top", "medicines-done");
-  // The note about the list sits behind a "?" beside the title (Tyler,
+  // The note about the list sits behind a "?" beside the title (the developer,
   // 2026-11-25), so the page opens on Allergies.
   helpHeading(root, "My medicines", "medicines-heading", "About this list", function (panel) {
     add(panel, "p", DISCLAIMER);
@@ -941,7 +941,7 @@ function drawAllergies(parent) {
   var box = allergyBox(parent, allergiesTitle(arranged.cards), showsSymbol(arranged.count, arranged.unspecified, state.dataFailed ? "failed" : state.allergies.status), 2);
   box.heading.id = "allergies-heading";
   box.heading.tabIndex = -1;
-  // A section header above the box, matching Medicines' (Tyler, 2026-11-25).
+  // A section header above the box, matching Medicines' (the developer, 2026-11-25).
   box.heading.className = "section-heading allergies-section";
   parent.insertBefore(box.heading, box.section);
   var section = box.section;
@@ -1722,7 +1722,7 @@ function drawAddCheck(form, result, addition, how) {
       save();
     });
     // A new strength of a stopped medicine: add it, the old one stays stopped
-    // (Tyler, 2026-11-23).
+    // (the developer, 2026-11-23).
     button(panel, anyway, how.editing ? "primary big" : "secondary big", keepAdded);
     button(panel, "Go back", "secondary big", close);
   } else if (result.kind === "lookalike") {
@@ -2582,7 +2582,7 @@ function afterBackup(said) {
 function medRow(list, entry) {
   var row = add(list, "li");
   drawCard(row, cardName(entry), patientCard(entry, state.split.claims === "loaded", today()));
-  // An open question can be checked on its own (Tyler, 2026-11-25); an
+  // An open question can be checked on its own (the developer, 2026-11-25); an
   // answer can be changed, and the old one stays until a new one is saved.
   var review = reviewButton(entry);
   if (review) {

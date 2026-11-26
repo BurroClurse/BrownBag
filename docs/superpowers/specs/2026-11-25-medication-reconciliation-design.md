@@ -1,15 +1,15 @@
 # Brown Bag: when sources disagree about a medicine
 
-Status: approved by Tyler, 2026-11-25. Not built yet. A builder check
-ran on 2026-11-25; its questions are settled below. Tyler answered each of
-Claude's calls one at a time on 2026-11-25: he confirmed every one marked
+Status: approved by the developer, 2026-11-25. Not built yet. A builder check
+ran on 2026-11-25; its questions are settled below. The developer answered each of
+Claude's calls one at a time on 2026-11-25: they confirmed every one marked
 "Claude's call" that's still in this document, and changed three (the fill
 hint is in v1 for staff, home gets a line, and the FHIR file gets a
 `DetectedIssue`).
 
 ## Why
 
-Tyler, 2026-11-25: pulling medicines from one FHIR source is "the clean
+The developer, 2026-11-25: pulling medicines from one FHIR source is "the clean
 part". The harder problem is "what happens when the app pulls from multiple
 sources (such as different EHRs, pharmacy fill history, patient-entered
 OTCs, or an incoming SMART Health Link) and they conflict on dose, schedule,
@@ -25,7 +25,7 @@ design") both wait on this design.
 ## Who and what for
 
 - **The patient**, who may be 90. They should never have to act like a
-  pharmacist (Tyler). They know what they take and how much: they have the
+  pharmacist (the developer). They know what they take and how much: they have the
   bottle.
 - **The person at the desk** who scans the QR code. They decide what is
   right: which dose was meant, and whether two products are double therapy.
@@ -138,7 +138,7 @@ design") both wait on this design.
 ## Approaches
 
 - **A. Reconciliation core first, then Medicare on top of it (Claude's
-  recommendation; Tyler agreed, 2026-11-25).** A pure module, tested with
+  recommendation; the developer agreed, 2026-11-25).** A pure module, tested with
   fixtures for all three kinds of source. Medicare's `combineSources`
   becomes "feed Medicare's fills into the core". The riskiest, newest part
   gets designed once, against every kind of source, before any is wired.
@@ -302,7 +302,7 @@ is: a not-current prescription filled within a year and after it was
 written shows as current with its "Marked completed in your records, but
 filled ..." line. A fill's quantity divided by its days supply (60 tablets
 for 30 days: about 2 a day) can go to staff as "Fill suggests about 2 a
-day", never to the patient, never as a verdict. In v1 (Tyler, 2026-11-25),
+day", never to the patient, never as a verdict. In v1 (the developer, 2026-11-25),
 staff only, from the claim's quantity and days supply when both are there
 (CARIN Blue Button `supportingInfo` categories `dayssupply`, and the item's
 `quantity`); tested with made-up claims, since the sandbox's may not carry
@@ -389,7 +389,7 @@ Do you still take it?
   day (Nov 25)", with "Change" reopening the card.
 - Where the patient is in the review survives the 5-minute lock.
 - Home also gets a line under its buttons, "Your records don't agree on 2
-  things", that opens the review (Tyler, 2026-11-25). Home keeps its three
+  things", that opens the review (the developer, 2026-11-25). Home keeps its three
   buttons.
 
 ### 7. Answers, and when they're asked again
@@ -429,7 +429,7 @@ again, and the staff page says "Patient isn't sure".
 Two, both with only one source connected:
 
 1. **A Not taking mark no longer hides a newer prescription** (a safety
-   fix; Tyler, 2026-11-25: "yes, make the change"). When the medicine has a current record dated after
+   fix; the developer, 2026-11-25: "yes, make the change"). When the medicine has a current record dated after
    the mark, the card goes back on the main list with "You marked Not
    taking on Mar 3. Your records have a newer prescription, Oct 2." and
    the review asks "Do you still take it?". As needed marks are left as
@@ -495,7 +495,7 @@ on the joined card cover all").
   Bundle keeps a shape `js/ips.js` already accepts: no new resource types,
   statuses or fields there.
   **In v1, the file also gets a `DetectedIssue`** for each unresolved
-  group (Tyler, 2026-11-25), never the QR code, which stays as above:
+  group (the developer, 2026-11-25), never the QR code, which stays as above:
   `status` `preliminary`, `code` text "Records disagree" with the verdicts
   in `detail`, `implicated` pointing at each side's MedicationStatement,
   `patient` the file's Patient, and `mitigation` saying "Patient isn't
@@ -554,7 +554,7 @@ the sandbox live:
   Bag's own QR Bundles with patient additions.
 - **Answers:** an answer that still matches, and one whose group changed.
 
-**Trying it on a phone** (Tyler, 2026-11-25, option a): the two-clinics
+**Trying it on a phone** (the developer, 2026-11-25, option a): the two-clinics
 fixture can be loaded as a second source only when the app is served from
 the home test server (`https://localhost:8443`, `tools/serve.mjs`), so the
 review cards, the "Records disagree" staff part and the QR code can be

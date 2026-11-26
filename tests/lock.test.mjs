@@ -166,7 +166,7 @@ test("start over erases Brown Bag's saved data and nothing else", () => {
   assert.equal(storage.getItem("other-app"), "keep");
 });
 
-// Tyler, 2026-11-26: the Face ID unlock screen is laid out like home, which
+// The developer, 2026-11-26: the Face ID unlock screen is laid out like home, which
 // it opens to (the bag fills the room, the buttons at the bottom); the PIN
 // screen, whose keyboard covers the bottom, and the backup unlock stay as
 // they were.
@@ -186,7 +186,7 @@ test("the Face ID unlock screen is laid out like home", async () => {
   assert.match(block("#app.screen-unlock .screen-logo"), /height: 100%;[\s\S]*object-fit: contain;/);
 });
 
-// Tyler, 2026-11-26: the bag sits in the same place, at the same size, on the
+// The developer, 2026-11-26: the bag sits in the same place, at the same size, on the
 // unlock screen and on home: one band for both, under one line (the name, or a
 // blank line the same height), with the same padding and margins.
 test("the unlock screen's bag lines up with home's", async () => {

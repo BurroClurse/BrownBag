@@ -194,7 +194,7 @@ test("the review spot never throws when storage is blocked", () => {
   assert.equal(spotFrom(undefined), null);
 });
 
-// Tyler, 2026-11-25: each card with an open question can be checked on its
+// The developer, 2026-11-25: each card with an open question can be checked on its
 // own; an answered one can be changed.
 test("a card's own review button", () => {
   const open = asked(lisinopril());
@@ -351,7 +351,7 @@ test("on a partial list the box doesn't count", () => {
   assert.match(app, /if \(arranged\.toCheck\.length && !medicinesPartial\(state\)\) \{\n    button\(actions, checkText\(arranged\.toCheck\.length\)\.line/);
 });
 
-// Tyler, 2026-11-26: answers made on a saved copy are listed with the
+// The developer, 2026-11-26: answers made on a saved copy are listed with the
 // QR code's other changes. A mark's Yes and No are the Not taking button's.
 test("an answer is a change for the QR code's list", () => {
   const dose = asked(lisinopril());

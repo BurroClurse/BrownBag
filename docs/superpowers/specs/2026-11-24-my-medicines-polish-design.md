@@ -1,6 +1,6 @@
 # My medicines polish
 
-Asked for by Tyler 2026-11-24, with the obvious choices left to Claude.
+Asked for by the developer 2026-11-24, with the obvious choices left to Claude.
 
 - **Done at the bottom** of My medicines too, for a long list.
 - **Swipe the QR code away**: down, up, left or right (up added the same day).
@@ -24,30 +24,30 @@ Asked for by Tyler 2026-11-24, with the obvious choices left to Claude.
 - **Saving by download** says "Check your downloads" instead of "Saved", because
   Android may still ask.
 
-**Reformatted the same day (Tyler chose one list of three layouts):** one white list,
+**Reformatted the same day (the developer chose one list of three layouts):** one white list,
 a row for each allergy: the name with Edit (or Add reaction) beside it, then the
 reaction and "Source: …" or "Added by me". Record marks get their own line. The date
 added is under Edit. The unnamed allergy is the last row, not a note, so the popup says
 "its line". A saved date is a plain line; warnings keep their yellow box. The staff page
 and the QR code don't change.
 
-**Say what it is (same day, Tyler: the row had no way to change it and said too
+**Say what it is (same day, the developer: the row had no way to change it and said too
 little):** the unnamed row has that button. It opens the add form in the row, and
 saving links the two with no second question. The row says the records don't name it
 and to ask the care team, or say what it is if known.
 
-**From Tyler's video (same day):** the code screen is taken off the page while the ball
+**From the developer's video (same day):** the code screen is taken off the page while the ball
 falls, so the status bar strip isn't left white. "Removed Latex." and the like show
 above the last Done. Added by me shows only with something in it, an Undo or a failed
 load.
 
-**Remove the unnamed allergy (same day, Tyler: it could repeat one already there, like
+**Remove the unnamed allergy (same day, the developer: it could repeat one already there, like
 mold):** the row gets Remove beside Say what it is, when there's another allergy. A popup
 starting on No says when not to. Only the phone's line goes: staff, the QR code and the
 file keep the record with "patient thinks it's already listed". A line with Show it again
 stays, and the row returns by itself if no other allergy is left.
 
-**Shorter Allergies box (same day, Tyler chose folding the box and the unnamed row, and
+**Shorter Allergies box (same day, the developer chose folding the box and the unnamed row, and
 the word over "!"):** it starts closed each time, names showing, title "Allergies (2) · 1
 severe". Severe: anaphylaxis, trouble breathing, swelling of the face, lips or throat,
 fainting, blistering or peeling skin, or the records' "severe", "high risk" or like words.
@@ -55,7 +55,7 @@ Nothing is ever called mild; no mark isn't a rating. A failed load, a Sign in no
 "your records say" never fold. Staff pages don't change. A nurse or pharmacist has yet to
 check the rule.
 
-**"?" pills (same day, Tyler):** each "?" is an upright pill, white over teal like the
+**"?" pills (same day, the developer):** each "?" is an upright pill, white over teal like the
 logo's, shorter, with the mark in the opposite color. Side by side halves were tried: they
 split the mark down its middle and it was hard to read. Still 44 by 44 to tap.
 

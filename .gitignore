@@ -3,5 +3,5 @@
 prompts/*
 !prompts/sandbox-data.md
 !prompts/phone-pass.md
-# Tyler's private notes for Claude, never committed.
+# The developer's private notes for Claude, never committed.
 CLAUDE.local.md

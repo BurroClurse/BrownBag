@@ -134,8 +134,8 @@ test("a choice on the list never carries another sign-in's address or failure", 
   for (const name of ["iss", "launch", "patientId", "clientId", "fhirServiceUrl"]) assert.equal(new URL(signInLink(ONE), "https://example.test/").searchParams.get(name), null, name);
 });
 
-// "Choose a test patient" is in history once (Tyler, 2026-11-26), and Back
-// from a sign-in that is starting or couldn't start is the list (Tyler, Task
+// "Choose a test patient" is in history once (the developer, 2026-11-26), and Back
+// from a sign-in that is starting or couldn't start is the list (the developer, Task
 // 10d). A choice is its own step after the list's; once the sandbox's address
 // is known, it takes that step's place. So Back from the sandbox, or from
 // "Couldn't start sign-in", is the list, and one more Back the connections
@@ -204,7 +204,7 @@ function fakeSteps(refuse) {
 
 // Back from "Starting sign-in…" or "Couldn't start sign-in" is the list, so
 // the chosen patient's step stays in history. Forward to it must not start
-// the sign-in by itself (Tyler, Task 10d): it shows "Couldn't start sign-in"
+// the sign-in by itself (the developer, Task 10d): it shows "Couldn't start sign-in"
 // again, the screen that step was left on, and Try again is that same
 // patient. The step's own state notes that it started, so a fresh load and
 // one Safari or Chrome brings back as it was left (pageshow, persisted) both

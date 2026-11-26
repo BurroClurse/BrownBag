@@ -1,7 +1,7 @@
 # Privacy page: plan
 
 Spec: `docs/superpowers/specs/2026-11-24-privacy-page-design.md`. Built in one
-session (Tyler, 2026-11-24).
+session (the developer, 2026-11-24).
 
 - [x] 1. Tests first (`tests/privacy.test.mjs`, `tests/options.test.mjs`): each
   outside address is named on the page; wording that code decides (no cookies,

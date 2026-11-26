@@ -1,6 +1,6 @@
 # Phone test pass
 
-Tyler asks a Claude session on his Mac to run this. The cloud sessions that
+The developer asks a Claude session on their Mac to run this. The cloud sessions that
 build Brown Bag can't reach the Mac's virtual phones, so every change they make
 that needs a phone check is listed in `docs/NEEDS-TESTING.md` for this pass.
 
@@ -8,13 +8,13 @@ that needs a phone check is listed in `docs/NEEDS-TESTING.md` for this pass.
 
 1. Read `docs/NEEDS-TESTING.md` in full. "How a test pass works" says which
    phones to use and how. "Waiting for the next pass" lists what to check. Also
-   read `CLAUDE.md` for Tyler's standing rules.
-2. Make sure you're on the branch Tyler checked out (`git status`) and that it
+   read `CLAUDE.md` for the developer's standing rules.
+2. Make sure you're on the branch the developer checked out (`git status`) and that it
    is up to date with GitHub (`git pull`). Run the tests first:
-   `node --test "tests/*.test.mjs"`. If any fail, stop and tell Tyler.
+   `node --test "tests/*.test.mjs"`. If any fail, stop and tell the developer.
 3. Put the test patients whose records disagree back on the sandbox, which
    deletes them every night, and write their test clinic files for today:
-   `node tools/reconcile-patients.mjs`. If it fails, tell Tyler and skip the
+   `node tools/reconcile-patients.mjs`. If it fails, tell the developer and skip the
    items that use Riley Reconcile or Jordan Partial. Then start the home test
    server with the test clinic switched on, in the
    background: `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`. It needs the
@@ -34,11 +34,11 @@ that needs a phone check is listed in `docs/NEEDS-TESTING.md` for this pass.
 6. When done, update `docs/NEEDS-TESTING.md` the way it says: move each item
    that passed to "Tested" with today's date and the phones it passed on, and
    leave failed or blocked ones under "Waiting", with a short note on what
-   happened. Items under "On a real iPhone (Tyler)" stay for Tyler.
+   happened. Items under "On a real iPhone (the developer)" stay for the developer.
 7. Stop the server. Step 3 rewrote the clinic files with today's dates, so put
    them back first: `git checkout -- tests/fixtures/reconcile/clinics`. Commit
    only `docs/NEEDS-TESTING.md` with a one-line message in plain words
    ("Phone pass: <what passed>"), then `git pull` and `git push` on the same
    branch. Never push to `main`.
-8. Tell Tyler, in plain words: what passed, what failed (with screenshots), and
-   what's left for his own iPhone.
+8. Tell the developer, in plain words: what passed, what failed (with screenshots), and
+   what's left for their own iPhone.

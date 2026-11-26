@@ -1,4 +1,4 @@
-// When Brown Bag locks itself (Tyler, 2026-11-21): after 5 minutes with no
+// When Brown Bag locks itself (the developer, 2026-11-21): after 5 minutes with no
 // tap, or after 5 minutes away from it (another app, or the screen off).
 // Locking forgets the key, so Face ID or the PIN is needed again. The
 // connection to the health records stays (see js/pass.js).

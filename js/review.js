@@ -109,7 +109,7 @@ export function applyAnswer(data, card, value, today) {
 }
 
 // What an answer adds to the changes made on a saved copy, which the QR
-// code's "isn't fully up to date" list says (Tyler, 2026-11-26): [{ kind,
+// code's "isn't fully up to date" list says (the developer, 2026-11-26): [{ kind,
 // name, extra }]. A mark's Yes and No are what the Not taking button logs
 // (No also takes it off As needed); any other answer, in the words picked,
 // and whether it stopped the medicine, so Undo can take it back.

@@ -73,7 +73,7 @@ function prescriberOf(entry) {
 }
 
 // "Avery B.": enough to tell whose list it is, without showing the full name
-// to whoever is nearby (Tyler, 2026-11-23). Staff still get the full name.
+// to whoever is nearby (the developer, 2026-11-23). Staff still get the full name.
 export function shortName(full) {
   var text = String(full || "").trim();
   if (!text || text === "Name not recorded") return "Name not recorded";

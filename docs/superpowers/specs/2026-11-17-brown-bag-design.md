@@ -1,6 +1,6 @@
 # Brown Bag: design
 
-Status: approved by Tyler 2026-11-17, with accessibility, the Safari storage
+Status: approved by the developer 2026-11-17, with accessibility, the Safari storage
 guard, dose-change grouping, disclaimer, Android and the sign-in check added
 the same day.
 
@@ -26,8 +26,8 @@ list shared by doctor, home care and pharmacy cut mismatches from 389 to 122
 Patients. Fall 2026 is patient-facing only. A staff screen is a later idea.
 
 This is the HL7 Break the Code course app (one app per semester). Staff said
-the app passes when it completes SMART sign-in, reads FHIR data, and Tyler can
-explain how. Tyler also wants it to be able to grow into a real product.
+the app passes when it completes SMART sign-in, reads FHIR data, and the developer can
+explain how. The developer also wants it to be able to grow into a real product.
 
 ## Goals
 
@@ -42,7 +42,7 @@ explain how. Tyler also wants it to be able to grow into a real product.
 - Staff or nurse screen.
 - Insurance, billing, denials.
 - Caregivers managing several people.
-- Last dose taken (Tyler: not realistic).
+- Last dose taken (the developer: not realistic).
 - Writing anything back into a doctor's records.
 
 ## Anti-goals
@@ -61,15 +61,15 @@ explain how. Tyler also wants it to be able to grow into a real product.
   says they take") records, and no MedicationDispense (pharmacy fill) records.
 - Retail pharmacies don't offer patient SMART access. Pharmacy fill data
   reaches apps through the patient's health plan (Patient Access API). That is
-  a later source, read-only, with no insurance features (Tyler: yes, later,
+  a later source, read-only, with no insurance features (the developer: yes, later,
   2026-11-17). Fills paid in cash or with a coupon won't appear there.
 - Patient access APIs are read-only. The app cannot fix a doctor's chart.
 - About three weeks of build time left in the fall sequence.
 - Work is backed up to the public `BurroClurse/BrownBag` repo on branch
-  `brown-bag-v1` (Tyler, 2026-11-17). `main` is the live GitHub Pages site and
-  only changes when Tyler says so. The repo is public, so anyone can read the
+  `brown-bag-v1` (the developer, 2026-11-17). `main` is the live GitHub Pages site and
+  only changes when the developer says so. The repo is public, so anyone can read the
   code and these documents. Testing during the build runs
-  on Tyler's Mac, with his phone opening it over home Wi-Fi (Tyler,
+  on the developer's Mac, with their phone opening it over home Wi-Fi (the developer,
   2026-11-17). Camera access, encryption and passkeys all need https, so the
   local test server runs https (see Security).
 
@@ -78,7 +78,7 @@ explain how. Tyler also wants it to be able to grow into a real product.
 1. **Patient screen only (chosen).** Smallest build, matches the course
    video, and the list is what both sides need anyway.
 2. Patient screen plus a nurse screen in one app. Two sign-ins and two
-   screens. Tyler: too much work for now.
+   screens. The developer: too much work for now.
 3. Nurse screen only (ER med history helper). Easier to sell to hospitals,
    but moves away from the patient carrying the list. Parked.
 
@@ -103,7 +103,7 @@ QR approaches:
    additions and "stopped" marks look confirmed by a provider. A card holds
    about 1,200 characters, less than the fall QR's 2,331 bytes.
 
-Borrowed from SMART Health Cards for the fall QR (Tyler, 2026-11-20):
+Borrowed from SMART Health Cards for the fall QR (the developer, 2026-11-20):
 
 - **Trimming rules.** The shared Bundle follows the guide's FHIR Bundle
   minimization rules: no resource ids, no meta, no narrative text, and
@@ -138,7 +138,7 @@ Borrowed from SMART Health Cards for the fall QR (Tyler, 2026-11-20):
   collapsed "Older prescriptions" heading.
 - "I stopped this" button on each one. The medicine moves to a "Stopped by
   me" group. It stays on the QR list in a "Patient says stopped" group, so
-  staff see that their chart is out of date (Tyler, 2026-11-17).
+  staff see that their chart is out of date (the developer, 2026-11-17).
 - Built so more sources can be added later (a second health system, health
   plan pharmacy claims). Fall connects to one: the SMART sandbox.
 
@@ -160,7 +160,7 @@ Borrowed from SMART Health Cards for the fall QR (Tyler, 2026-11-20):
 
 - "Show my QR code" makes a code from: current chart medicines, the ones the
   patient marked stopped, the patient's additions, and name and birth date.
-  Older prescriptions are left off (Tyler, 2026-11-17).
+  Older prescriptions are left off (the developer, 2026-11-17).
 - Scanning it opens `share.html`, a read-only page showing the list in large
   print in three groups, "From records", "Added by patient" and "Patient says
   stopped", with the date the code was made.
@@ -169,7 +169,7 @@ Borrowed from SMART Health Cards for the fall QR (Tyler, 2026-11-20):
 - If the list is too long for one QR code, say so and offer the on-screen
   list instead.
 
-### Works with no signal (Tyler, 2026-11-20)
+### Works with no signal (the developer, 2026-11-20)
 
 An ER or a basement clinic may have weak Wi-Fi and no cell signal. Sign-in
 ends when the app closes, so without this the patient couldn't load their
@@ -237,7 +237,7 @@ your records say. Your care team confirms it."
 
 ## Accessibility
 
-The app meets WCAG 2.2 level AA (Tyler, 2026-11-17). In practice:
+The app meets WCAG 2.2 level AA (the developer, 2026-11-17). In practice:
 
 - Text contrast at least 4.5 to 1, and meaning never shown by color alone.
 - Works at the phone's largest text size without cutting off or scrolling
@@ -253,7 +253,7 @@ The app meets WCAG 2.2 level AA (Tyler, 2026-11-17). In practice:
 ## Platforms
 
 Tested on iPhone (Safari and Home Screen) and Android (Chrome), plus desktop
-browsers. If Tyler has no Android phone, the Android emulator is used.
+browsers. If the developer has no Android phone, the Android emulator is used.
 
 ## Staying signed in
 
@@ -269,7 +269,7 @@ lists `offline_access` in `scopes_supported` and `permission-offline` in
 
 ## Security
 
-Tyler asked for encryption, fingerprint unlock and two-factor sign-in
+The developer asked for encryption, fingerprint unlock and two-factor sign-in
 (2026-11-17). What each one means here:
 
 **Encryption in transit (TLS).** Already covered. GitHub Pages serves the app
@@ -308,7 +308,7 @@ expiring links.
 **Testing.** Web Crypto and passkeys only run on secure pages: https or
 `localhost`. A phone opening the Mac over home Wi-Fi by plain address is not
 secure. The local test server must use https with a local certificate
-(mkcert), and Tyler's phone must trust that certificate once. No outside
+(mkcert), and the developer's phone must trust that certificate once. No outside
 tunnelling services, since that would send data off the Mac.
 
 Fall builds: encryption on the device, the device lock, and QR protection.
@@ -320,8 +320,8 @@ TLS is already there. Two-factor sign-in belongs to each health system.
   list, and flag differences (upgrade to feature 2).
 - Pharmacy fills through the health plan's Patient Access API, read-only.
 - A second real source, such as Epic's or Oracle Health's public test system.
-  Epic first, when Tyler picks it up again (parked 2026-11-23 to focus on the
-  SMART sandbox). His choices: one system at a time, so sign-in offers either
+  Epic first, when the developer picks it up again (parked 2026-11-23 to focus on the
+  SMART sandbox). Their choices: one system at a time, so sign-in offers either
   sandbox and home shows the one signed in to last, ending at a demo with
   Epic's test patient; combining two systems' lists is its own later design.
   Ask open@epic.com about the Client ID in a browser app before adding it to
@@ -332,7 +332,7 @@ TLS is already there. Two-factor sign-in belongs to each health system.
 - SMART Health Link QR codes that records systems can import. The link can
   also carry signed SMART Health Cards the patient already has from their
   providers (vaccine records, CARIN digital insurance card), so staff see
-  those as verified next to Brown Bag's patient-reported list (Tyler,
+  those as verified next to Brown Bag's patient-reported list (the developer,
   2026-11-20).
 - Provider Health Cards inside Brown Bag. The patient adds signed SMART
   Health Cards they already have (vaccine record, lab result, insurance
@@ -342,20 +342,20 @@ TLS is already there. Two-factor sign-in belongs to each health system.
   Course staff suggested Epic's sandbox; Oracle Health documents the issue
   operation; the Inferno test kit only checks cards. Provider cards hold
   vaccines, labs and insurance, not medication lists. Moved to Later by
-  Tyler, 2026-11-20.
+  The developer, 2026-11-20.
 - Health history, implanted devices, emergency contact. (Allergies with the
   reaction: built 2026-11-23, see `2026-11-23-allergies-design.md`.)
 - Staff screen (Med History Helper).
 - Native iPhone and Android apps, Apple Wallet and Google Wallet.
 - Staying signed in with refresh tokens.
 
-## Future updates and watch items (Tyler, 2026-11-17)
+## Future updates and watch items (the developer, 2026-11-17)
 
 Course:
 - The course may need a live link. If showing the app requires its GitHub
   Pages address, merge `brown-bag-v1` into `main` before that date. Ask staff
   (questions are in the calendar note for the Nov 18 session).
-- Backups: the code lives on Tyler's Mac and on the `brown-bag-v1` branch on
+- Backups: the code lives on the developer's Mac and on the `brown-bag-v1` branch on
   GitHub, so a dead drive doesn't lose it.
 - A classmate's app, MyMedBridge, covers similar ground (prescribed
   medicines, allergies, prescription vs. reported use). Brown Bag's
@@ -380,7 +380,7 @@ If it becomes a business:
   CDN).
 - Whether RxNav allows calls straight from the browser; if not, a fallback.
 
-## Calls made by Claude, for Tyler to check
+## Calls made by Claude, for the developer to check
 
 - QR opens a read-only page with the list after `#` in the link, instead of
   a SMART Health Link, for the fall.

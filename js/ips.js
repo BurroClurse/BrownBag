@@ -104,7 +104,7 @@ function noneIsInDoubt(allergies) {
   return Boolean(allergies.fromRecords.length || allergies.fromPatient.length || allergies.unspecified || allergies.savedAt || allergies.status !== "loaded");
 }
 
-// "1 medicine", else "N medicines" (Tyler, 2026-11-25).
+// "1 medicine", else "N medicines" (the developer, 2026-11-25).
 function disagreeCount(groups) {
   var count = groups.disagree.length;
   return count + (count === 1 ? " medicine" : " medicines");

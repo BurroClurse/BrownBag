@@ -8,7 +8,7 @@ import { encryptJSON, decryptJSON, idTag } from "./vault.js";
 
 var PASS_PREFIX = "brownbag:pass:";
 // Brown Bag ends the connection itself after this many days without being
-// opened (Tyler, 2026-11-21), so a lost or unused phone stops being connected.
+// opened (the developer, 2026-11-21), so a lost or unused phone stops being connected.
 export var PASS_UNUSED_DAYS = 30;
 
 // Only what's needed to trade the pass for fresh access later. Null when the

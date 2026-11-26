@@ -1,7 +1,7 @@
 # Needs testing
 
 Changes waiting for a phone check, tested together in one pass instead of
-after every change (Tyler, 2026-11-23). Claude adds a line here with each
+after every change (the developer, 2026-11-23). Claude adds a line here with each
 change, and moves it to "Tested" with the date when the pass is done.
 
 ## How a test pass works
@@ -10,9 +10,9 @@ change, and moves it to "Tested" with the date when the pass is done.
    on the Mac. TalkBack can be switched on.
 2. **iPhone 15 simulator** (Safari): Claude drives it with Apple's built-in
    Safari driver. No VoiceOver or Face ID in the simulator.
-3. **Claude in Chrome** when a virtual phone won't run (Tyler, 2026-11-23). It
+3. **Claude in Chrome** when a virtual phone won't run (the developer, 2026-11-23). It
    covers Chrome's behavior, not the Android Back button, touch or TalkBack.
-4. **Tyler's iPhone**: VoiceOver, Face ID, the Home Screen app, and anything
+4. **The developer's iPhone**: VoiceOver, Face ID, the Home Screen app, and anything
    the simulators can't do. Listed under "On a real iPhone".
 
 Test patient: Loria Jenkins (`e7de504a-311d-49be-b2bc-566a328bcc72`), a
@@ -48,7 +48,7 @@ iPhone 15 simulator and the Android emulator, with a Face ID or fingerprint
 lock: screenshot the unlock screen, unlock, screenshot home. The bag is the
 same size and in the same place on both (headless Chromium measured them equal
 to the pixel at three phone sizes); home's buttons and "Your records don't
-agree" still fit without scrolling. On Tyler's iPhone, from the Home Screen icon.
+agree" still fit without scrolling. On the developer's iPhone, from the Home Screen icon.
 
 **The Face ID unlock screen laid out like home** (2026-11-26). On the iPhone
 15 simulator and the Android emulator, with a Face ID or fingerprint lock (not
@@ -56,7 +56,7 @@ a PIN): the bag fills the screen and the tagline and both buttons sit at the
 bottom, like home, with no empty space under them; nothing scrolls sideways.
 At the largest text size the bag shrinks first and the screen scrolls to reach
 "Can't unlock? Start over". The PIN unlock screen and "Unlock your backup" look
-as before. On Tyler's iPhone, from the Home Screen icon.
+as before. On the developer's iPhone, from the Home Screen icon.
 
 **The final review's fixes to the review cards** (2026-11-26; test right
 away: they change the patient's list, the QR code and the staff page).
@@ -67,7 +67,7 @@ test clinic); script `final-fix-flow.cjs`, its output and screenshots
 `node tools/reconcile-patients.mjs` first, then
 `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
 `git checkout -- tests/fixtures/reconcile/clinics` when done. Open Brown Bag
-once with a signal so it takes the new app files (cache `brownbag-v103`).
+once with a signal so it takes the new app files (cache `brownbag-v104`).
 Sign in as Riley. On both virtual phones, on My medicines:
 
 - **Check this** on Lisinopril, "I don't take this anymore", **Save**: focus
@@ -119,7 +119,7 @@ Riley. On both virtual phones, on My medicines:
 
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v103` since the final review fix), then More options ▸ Privacy:
+files (cache `brownbag-v104` since the final review fix), then More options ▸ Privacy:
 
 - "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your
@@ -174,14 +174,14 @@ Riley. On both virtual phones:
   10 MG shows the 10 MG card.
 - With TalkBack, each choice is read with its detail ("Yes, I take it, SMART
   sandbox says current, Jan 2026…"), and the question is read as the group's
-  name. The heading is read with "1 of 3". VoiceOver on Tyler's iPhone the same.
+  name. The heading is read with "1 of 3". VoiceOver on the developer's iPhone the same.
 - Show my QR code afterwards: on the staff page, a chosen version says
   "Patient confirmed this", and a "Not sure" one "Patient isn't sure" under
   "Records disagree: ask the patient".
 - The cards wrap well on the iPhone SE size and at the largest text.
 
 **The shared link, birth dates, old fills and one Back** (2026-11-26, Tasks
-10c and 10d, from Tyler's iPhone check of 2026-11-25; test right away: the
+10c and 10d, from the developer's iPhone check of 2026-11-25; test right away: the
 staff page, the QR code and the patient's list). Checked only in headless
 Chromium (iPhone 15 profile, self-signed certificate, PIN lock, the live
 sandbox as Chantell Bartell); scripts and screenshots `task-10c-*` and
@@ -321,9 +321,9 @@ Approve (back to Health records, and Done goes home); Sign out, then Sign in
 (unlock, then the screen, no saved list shown). Still to check:
 
 - Face ID set-up first, then the screen; Face ID again after the sandbox
-  (Tyler's iPhone).
+  (the developer's iPhone).
 - The Home Screen app: the sandbox sign-in comes back into the app, not
-  Safari, and lands on the connections screen (Tyler's iPhone).
+  Safari, and lands on the connections screen (the developer's iPhone).
 - Home's "Sign in" note (expired pass) comes back home, not to the screen.
   Not reproduced: no way to expire the pass on a virtual phone.
 - Cancel at the sandbox's approval page: see "Deny at the sandbox's approval
@@ -355,16 +355,16 @@ Passed on 2026-11-25 (see Tested). Still to check:
 
 Decided for later, so nothing to test until they're picked up:
 
-- A logo on the QR code: left as it is (Tyler, 2026-11-24). A logo inside
+- A logo on the QR code: left as it is (the developer, 2026-11-24). A logo inside
   the code made these dense codes fail far more often in a simulated
   camera test, even at error-correction level H. If it comes back, try the
   bag beside the code instead, and check it fits short iPhone screens.
 - Epic and Aetna: later; Medicare: being designed. See
   [`SANDBOXES.md`](SANDBOXES.md).
 
-## On a real iPhone (Tyler)
+## On a real iPhone (the developer)
 
-VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
+VoiceOver was checked 2026-11-24 and works. The developer isn't doing more of it.
 
 - Save as FHIR file on the second phone: the real share sheet, only the .json file,
   and the popup starting on Cancel.
@@ -384,16 +384,16 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 
 ## Tested
 
-**2026-11-25, Tyler's iPhone check: the QR code read by a real camera.**
+**2026-11-25, the developer's iPhone check: the QR code read by a real camera.**
 Chantell's QR code from the live site was scanned with a second iPhone's
-camera (not Tyler's, and not on his account). It opened `share.html` in
+camera (not the developer's, and not on their account). It opened `share.html` in
 Chrome and showed the list right: allergies with the unnamed-allergy note,
 Medicines (2), Added by patient (0), Patient says not taking (0), and Save as
-FHIR file. The page's link he then texted to his own iPhone arrived as plain
+FHIR file. The page's link they then texted to their own iPhone arrived as plain
 `share.html` and showed "This link has no list in it": Chrome's share left
 the list part off. Brown Bag didn't clear it then; since Task 10c the staff
 page clears it itself (see "Waiting for the next pass"). Face ID and the Home
-Screen app are still to do on his iPhone.
+Screen app are still to do on their iPhone.
 
 **2026-11-25 pass, Android emulator (Chrome) and iPhone 15 simulator (Safari),
 on the home server with the test clinic, Riley and Jordan put back on the
@@ -461,7 +461,7 @@ time Wait was pressed and the step run again. Passed:
   then closes it) and on the sign-in list on a first run (one of three Back
   presses was lost while Chrome wasn't responding).
 
-**The status bar strip** is wheat while the paper ball falls: passed on Tyler's iPhone
+**The status bar strip** is wheat while the paper ball falls: passed on the developer's iPhone
 2026-11-24.
 
 - 2026-11-23, Android emulator and iPhone simulator, live site, Loria
@@ -475,7 +475,7 @@ time Wait was pressed and the step run again. Passed:
   QR, offline open with no signal), then both virtual phones on the live
   site (Android Chrome and iPhone Safari: sign-in, home, add form, check
   panel, QR; no CDN requests). Passed.
-- 2026-11-23, Tyler's iPhone: "Tap to show the code" sits clear of Close;
+- 2026-11-23, the developer's iPhone: "Tap to show the code" sits clear of Close;
   Face ID unlock from the Home Screen icon works.
 - 2026-11-23, claims fixes: the test browser with made-up claims (canceled,
   preauthorized, undated, stopped but filled, brand and generic, stays
@@ -501,7 +501,7 @@ time Wait was pressed and the step run again. Passed:
 - 2026-11-23, the ten allergy leftovers: the test browser, then both virtual
   phones on the live site (allergies as before, the message tied to its
   field, a half-typed allergy surviving another form). Passed.
-- 2026-11-23, Tyler's iPhone: allergies, opened as Chantell from the README
+- 2026-11-23, the developer's iPhone: allergies, opened as Chantell from the README
   link; VoiceOver on the Allergies section and on the "… is already on your
   list" panel. Works.
 - 2026-11-23, sign out for everyone and the allergy standards: the test
@@ -509,7 +509,7 @@ time Wait was pressed and the step run again. Passed:
   "You're signed out", the saved list behind the lock, allergies, the QR
   code, the staff page). Passed. The duplicate panel was checked on Loria's
   metoprolol, since Avery is gone.
-- 2026-11-23, Tyler's iPhone: Sign out shows "You're signed out" with Sign in
+- 2026-11-23, the developer's iPhone: Sign out shows "You're signed out" with Sign in
   and Open my saved list. Works.
 - 2026-11-23, the sign-in list, before publishing: the test browser (with and
   without its Back memory), the iPhone simulator, and Claude in Chrome with
@@ -542,7 +542,7 @@ time Wait was pressed and the step run again. Passed:
 - 2026-11-23, "+ Add a medicine" at the top of the list, before publishing: the
   test browser (320 to 1440 wide, sideways, 200 percent text, focus, Cancel, a
   medicine added) and both virtual phones. Passed.
-- 2026-11-23, Tyler's iPhone: "+ Add a medicine" stays at the top while
+- 2026-11-23, the developer's iPhone: "+ Add a medicine" stays at the top while
   scrolling, and See what's inside as short text. Works.
 - 2026-11-23, the short name on home and Sort, before publishing: the test
   browser and both virtual phones. Passed.
@@ -600,12 +600,12 @@ time Wait was pressed and the step run again. Passed:
   page). Passed. The share sheet was a stand-in.
 - 2026-11-24, the space around buttons, measured on nearly every screen in the test
   browser (320 and 393 wide, 150 percent text). Two notes sat too close, under Save
-  as FHIR file and under the medicine name box. Both fixed. Tyler's iPhone: the
+  as FHIR file and under the medicine name box. Both fixed. The developer's iPhone: the
   shorter reactions, the saved file, signed out with no signal, and VoiceOver work.
 - 2026-11-24, the signal coming back with a saved list open, before publishing: the
   test browser and both virtual phones (signed in, signed out, a half-typed
   medicine, the password popup, the QR screen, More options, a server that fails).
-  Passed. Tyler's iPhone: Start over from the Face ID lock screen reads right.
+  Passed. The developer's iPhone: Start over from the Face ID lock screen reads right.
 - 2026-11-24, the content security policy and the saved list after a sign-in that
   couldn't start, before publishing: the test browser and both virtual phones, with
   the real sandbox (Chantell Bartell, Bret Hayes) and RxNav: sign-in, fills, name
