@@ -108,7 +108,7 @@ design; the reasons behind each are in [LIMITS](docs/LIMITS.md).
 - **Text past 200 percent** (idea): My medicines, the QR screen and the staff page's title fit. [LIMITS #28](docs/LIMITS.md)
 
 **Back end**
-- **Medicare Part D fills** (designed and planned; waiting on Medicare's approval). It adds one small server function, which only completes and renews Medicare's sign-in and never sees the list. [Design](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md)
+- **Medicare Part D fills** (designed and planned; waiting on Medicare's approval). It adds one small server function, which only handles Medicare's sign-in and never sees the list. [Design](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md)
 - **Epic, Oracle Health, MEDITECH, Medicaid, pharmacy fills** (idea; named on the connections screen). [SANDBOXES](docs/SANDBOXES.md#sandboxes-looked-at)
 - **SMART Health Links** (idea; needs a server to hold the file). [LIMITS #19](docs/LIMITS.md)
 - **Two sign-ins for one person** (idea; comes after Medicare). [LIMITS #22](docs/LIMITS.md)
