@@ -43,6 +43,14 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The Face ID unlock screen laid out like home** (2026-11-26). On the iPhone
+15 simulator and the Android emulator, with a Face ID or fingerprint lock (not
+a PIN): the bag fills the screen and the tagline and both buttons sit at the
+bottom, like home, with no empty space under them; nothing scrolls sideways.
+At the largest text size the bag shrinks first and the screen scrolls to reach
+"Can't unlock? Start over". The PIN unlock screen and "Unlock your backup" look
+as before. On Tyler's iPhone, from the Home Screen icon.
+
 **The final review's fixes to the review cards** (2026-11-26; test right
 away: they change the patient's list, the QR code and the staff page).
 Checked only in headless Chromium (iPhone 15 size, PIN lock, Riley with the
@@ -52,7 +60,7 @@ test clinic); script `final-fix-flow.cjs`, its output and screenshots
 `node tools/reconcile-patients.mjs` first, then
 `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
 `git checkout -- tests/fixtures/reconcile/clinics` when done. Open Brown Bag
-once with a signal so it takes the new app files (cache `brownbag-v101`).
+once with a signal so it takes the new app files (cache `brownbag-v102`).
 Sign in as Riley. On both virtual phones, on My medicines:
 
 - **Check this** on Lisinopril, "I don't take this anymore", **Save**: focus
@@ -104,7 +112,7 @@ Riley. On both virtual phones, on My medicines:
 
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v101` since the final review fix), then More options ▸ Privacy:
+files (cache `brownbag-v102` since the final review fix), then More options ▸ Privacy:
 
 - "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your

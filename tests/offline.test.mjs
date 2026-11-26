@@ -218,7 +218,7 @@ test("a saved copy from before groups opens", async () => {
 test("the test source opens with no signal, and its records are never kept", () => {
   const worker = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
   assert.ok(worker.includes('"./js/demo-source.js"'));
-  assert.match(worker, /var CACHE = "brownbag-v101";/);
+  assert.match(worker, /var CACHE = "brownbag-v102";/);
   assert.equal(loadWorker().routeFor("https://burroclurse.github.io/BrownBag/_home/demo-source.json"), "network");
   assert.equal(loadWorker().routeFor("https://burroclurse.github.io/BrownBag/js/demo-source.js"), "app");
 });

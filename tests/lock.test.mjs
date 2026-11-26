@@ -165,3 +165,23 @@ test("start over erases Brown Bag's saved data and nothing else", () => {
   assert.equal(storage.getItem("brownbag:records:last"), null);
   assert.equal(storage.getItem("other-app"), "keep");
 });
+
+// Tyler, 2026-11-26: the Face ID unlock screen is laid out like home, which
+// it opens to (the bag fills the room, the buttons at the bottom); the PIN
+// screen, whose keyboard covers the bottom, and the backup unlock stay as
+// they were.
+test("the Face ID unlock screen is laid out like home", async () => {
+  const { readFileSync } = await import("node:fs");
+  const screen = readFileSync(new URL("../js/lock-screen.js", import.meta.url), "utf8");
+  const passkey = screen.slice(screen.indexOf("function drawPasskeyUnlock"), screen.indexOf("function exitOption"));
+  assert.match(passkey, /if \(!restoring\) root\.classList\.add\("screen-unlock"\)/);
+  const pin = screen.slice(screen.indexOf("function drawPinUnlock"), screen.indexOf("function drawPasskeyUnlock"));
+  assert.doesNotMatch(pin, /screen-unlock/);
+  // Every other screen drawn into the same root drops it.
+  assert.match(screen, /function clear\(root\) \{\n  root\.classList\.remove\("screen-unlock"\);/);
+  const css = readFileSync(new URL("../css/brownbag.css", import.meta.url), "utf8");
+  const block = (selector) => css.slice(css.indexOf(selector + " {"), css.indexOf("}", css.indexOf(selector + " {")));
+  assert.match(block("#app.screen-unlock"), /height: 100dvh;[\s\S]*overflow-y: auto;[\s\S]*flex-direction: column;/);
+  assert.match(block("#app.screen-unlock .screen-title"), /flex: 1 1 0;[\s\S]*min-height: 140px;/);
+  assert.match(block("#app.screen-unlock .screen-logo"), /height: 100%;[\s\S]*object-fit: contain;/);
+});
