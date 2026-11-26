@@ -52,6 +52,8 @@ patient's phone, and the staff page in the staff member's browser.
 (N)** and **More options** (Health records, backups, the Home Screen, Privacy, Sign out).
 When the records disagree, a line under the buttons ("Your records don't agree
 on 2 things") opens the review below, unless some of the list didn't load.
+There, the box on My medicines stays but drops its number ("Some of your
+records don't agree."), as the Medicines heading does.
 
 **My medicines**
 - **Allergies** come first, in their own box: closed, it names them and counts the
@@ -90,15 +92,26 @@ on 2 things") opens the review below, unless some of the list didn't load.
   them**; each such card also has **Check this**, for that card alone. While
   "How much do you take?" is open, the card goes by its plain name, every
   ingredient's whole name ("Lisinopril", "Insulin glargine",
-  "Hydrochlorothiazide / Lisinopril"), never one source's strength. The review asks one card per
+  "Hydrochlorothiazide / Lisinopril"), never one source's strength. An amount
+  in front of the name goes too ("0.4 ML enoxaparin …" is "Enoxaparin
+  sodium", "72 HR fentanyl …" is "Fentanyl"), and a pack goes by what's in it
+  ("{7 (norethindrone …) } Pack" is "Norethindrone"). The review asks one card per
   screen ("1 of 2"): "How much do you
   take?", "How often do you take it?" or "Do you still take it?", with each
   source's version, its source and month, "I don't take this anymore" and "Not
   sure, ask my doctor". Nothing is chosen at the start, and **Save** waits for
-  a choice. A recent fill shows beside "Yes, I take it" ("Filled Oct 2026"),
-  but never answers it. **Do this later** closes it, and the box stays. A card
+  a choice. A fill within the last year shows beside "Yes, I take it" ("Filled
+  Oct 2026"), but never answers it; "within a year" is the same calendar rule
+  as "Last filled over a year ago.", so a fill gets one or the other. **Do
+  this later** closes it, and the box stays. Save or Do this later on a card
+  opened with **Check this** or **Change** goes back to that card's button
+  (or the My medicines heading when the card has none now). A card
   that's answered says what was picked, "You said: 20 mg, once a day (Nov 25)"
-  or "You said: No, I stopped (Nov 25)", with **Change**.
+  or "You said: No, I stopped (Nov 25)", with **Change**. One the answer
+  stopped ("No, I stopped", "I don't take this anymore") says only that, not
+  "You marked: Not taking"; when the records disagreed on how much or how
+  often, it keeps each source's version and its plain name, never one
+  source's dose.
   It's asked again only when a source says something new. The whole review
   comes back at the same card after the 5-minute lock; a single card opened
   with **Check this** or **Change** doesn't, and the box is there instead.
@@ -127,7 +140,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   and can save the FHIR file too. It gives the birth date as words ("Born May
   8, 1974", or "Born 1974" when that's all the record has).
 - It says when the medicines and allergies were last updated. Changes made with no
-  signal are in it, and listed on the screen.
+  signal are in it, and listed on the screen, review answers too ("Answered
+  Lisinopril: 10 mg, once a day"; a Change keeps only the newest, and Undo
+  on a card an answer stopped takes its line away).
 
 **When things go wrong**
 - **No signal:** the last list is kept encrypted on the phone, and the QR code
@@ -165,7 +180,9 @@ on 2 things") opens the review below, unless some of the list didn't load.
   taking mark against a newer prescription: the record, then the mark, under
   "Patient says not taking". A version the patient chose is an ordinary card
   that says "Patient confirmed this", with each other source's as "Other
-  record". See what's inside says the same, word for word.
+  record"; once "Do you still take it?" is answered, a record that stopped it
+  says so: "Other record (stopped): Valley Clinic (test records), 20 MG, …".
+  See what's inside says the same, word for word.
 - A source that didn't load is named under Medicines: "<Source> didn't load."
 - A medicine whose newest fill is over a year before the day the page is
   opened says "Last filled over a year ago.", in the part the records put it

@@ -92,7 +92,7 @@ export function buildShareBundle(list, now, warnings = {}, level = 0, undated = 
     var statement = stoppedStatement(item, item.stoppedAt, level);
     // "I don't take this anymore": what each source said stays with it.
     var sides = item.answer && item.group ? item.group.sides : [];
-    sides.forEach(function (side) { addNote(statement, otherRecordNote(side, level)); });
+    sides.forEach(function (side) { addNote(statement, otherRecordNote(item, side, level)); });
     addGroupNotes(statement, item);
     entries.push({ resource: statement });
   });
@@ -184,7 +184,7 @@ function currentStatements(item, level, dated) {
     // The day as the answer wrote it, the same day the patient's card shows.
     addNote(statement, "Patient confirmed this, " + String(answer.answeredAt).slice(0, 10));
     (item.group ? item.group.sides : []).forEach(function (side) {
-      if (side.sourceId !== chosen.sourceId) addNote(statement, otherRecordNote(side, level));
+      if (side.sourceId !== chosen.sourceId) addNote(statement, otherRecordNote(item, side, level));
     });
     out = [statement];
   } else {
@@ -270,10 +270,13 @@ function sideStatus(side) {
 }
 
 // "Other record: <Source>, <words>, <YYYY-MM>". At level 0, where the list
-// is longest, only the source and month.
-function otherRecordNote(side, level) {
+// is longest, only the source and month. Once the patient has answered "Do
+// you still take it?", a record that stopped it says so: "Other record
+// (stopped): …" (Tyler, 2026-11-26).
+function otherRecordNote(item, side, level) {
   var month = recordDate(side);
-  return "Other record: " + [side.sourceName].concat(level ? sideWords(side) : [], month || []).join(", ");
+  var stopped = item.group && item.group.verdicts.indexOf("status") !== -1 && side.status === "not-current";
+  return "Other record" + (stopped ? " (stopped)" : "") + ": " + [side.sourceName].concat(level ? sideWords(side) : [], month || []).join(", ");
 }
 
 function addGroupNotes(statement, item) {

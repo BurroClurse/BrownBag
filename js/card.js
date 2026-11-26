@@ -74,6 +74,14 @@ export function oldFillText(last, today) {
   return written < cutoff.slice(0, written.length) ? OLD_FILL : null;
 }
 
+// Whether a fill is recent enough for the review to say it: within a year
+// by the same calendar rule, so a fill is said there or noted as over a
+// year old, never neither (final review). Not for a date that isn't one.
+export function recentFill(last, today) {
+  var now = datePartsOf(today);
+  return Boolean(datePartsOf(last) && now && now[3]) && !oldFillText(last, today);
+}
+
 // A whole instruction ("Take 1 by mouth…") isn't a "how often".
 export function isDirections(text) {
   return text.length > 40 || /^Direction 1: /.test(text) || /^(take|use|apply|inject|inhale|place|put|instill|chew|give|insert|dissolve|swallow|spray)\b/i.test(text);
@@ -134,7 +142,9 @@ export function patientCard(entry, claimsLoaded, today) {
   // Records that agree name every source, like the staff page; a chosen
   // side, or records that disagree, the record whose facts these are.
   if (fromRecords) say("Source", otherRecord ? chosen.sourceName : (chosen || recordsDisagree(entry)) ? entry.source : sourcesText(entry));
-  say("You marked", entry.stoppedAt ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt ? "As needed, " + dateText(entry.asNeededAt) : null);
+  // Stopped by an answer, not a tap: only what they said (Tyler, 2026-11-26).
+  var marked = entry.stoppedAt && !stoppedByAnswer(entry);
+  say("You marked", marked ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt && !entry.stoppedAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
   else if (!entry.asNeededAt && entry.schedule && entry.schedule.asNeeded) say("Who says", "You added this");
   if (entry.answer) say("You said", answerWords(entry) + " (" + dayText(entry.answer.answeredAt) + ")");
@@ -172,7 +182,10 @@ export function sourcesText(entry) {
 // take?" is open, its plain name, so no one side's strength is the name
 // (Tyler, 2026-11-25).
 export function cardName(entry) {
-  if (!entry.answer && entry.question && entry.question.kind === "dose") return plainName(entry.name);
+  if (!entry.answer && entry.question && entry.question.kind === "dose") return askedName(entry.name);
+  // Stopped while the records disagreed on how much: still no one side's
+  // strength (Tyler, 2026-11-26).
+  if (stoppedByAnswer(entry) && disagreedOn(entry, ["dose"])) return askedName(entry.name);
   var chosen = entry.answer ? chosenSide(entry) : null;
   return (chosen && chosen.name) || entry.name;
 }
@@ -183,7 +196,9 @@ function takeOf(entry, question) {
   var answer = entry.answer;
   var sides = entry.group && entry.group.sides.length > 1 ? entry.group.sides : null;
   if (sides && question) return sides.map(function (side) { return sideRow(side, question.kind === "status"); });
-  if (sides && answer && answer.choice === "not-sure") {
+  // Not sure, or stopped by an answer while the records disagreed on how
+  // much or how often: each record's own, never one of them alone.
+  if (sides && answer && (answer.choice === "not-sure" || (stoppedByAnswer(entry) && disagreedOn(entry, ["dose", "schedule"])))) {
     return sides.map(function (side) { return sideRow(side, aboutStopping(answer.sides && answer.sides.length ? answer.sides : sides)); });
   }
   var chosen = answer ? chosenSide(entry) : null;
@@ -216,14 +231,36 @@ function aboutStopping(sides) {
   return sides.some(function (one) { return one.status === "not-current"; });
 }
 
-// The plain name: every ingredient's whole name, the words before its
-// strength, so "insulin glargine 100 UNT/ML …" is "Insulin glargine" and two
-// insulins never read the same; a combination's joined with " / ". A name
-// with no strength is said as add-check.js says it.
-function plainName(name) {
-  return String(name || "").split(" / ").map(function (part) {
-    var before = /^(.*?)\s+\d/.exec(part.trim());
-    var words = before && before[1] ? before[1] : displayName(part);
+// A card the patient stopped by answering its question ("No, I stopped",
+// "I don't take this anymore"), not with the Not taking button. A mark's
+// question was about a tap they made, so that one keeps "You marked".
+function stoppedByAnswer(entry) {
+  return Boolean(entry.stoppedAt && entry.answer && entry.answer.choice === "not-taking" && !isMarkFingerprint(entry.answer.fingerprint));
+}
+
+// Whether the records disagreed on any of these (verdicts).
+function disagreedOn(entry, verdicts) {
+  return recordsDisagree(entry) && entry.group.verdicts.some(function (verdict) { return verdicts.indexOf(verdict) !== -1; });
+}
+
+// The name while how much is in question (not reconcile.js's plainName,
+// which is for matching): every ingredient's whole name, the words before
+// its strength, so "insulin glargine 100 UNT/ML …" is "Insulin glargine"
+// and two insulins never read the same; a combination's joined with " / ".
+// An amount in front ("0.4 ML", "72 HR", "120 ACTUAT") goes first, as it's
+// one side's too. A pack ("{7 (norethindrone …) } Pack") goes by what's in
+// it. A name with no strength is said as add-check.js says it.
+var LEADING_AMOUNT = /^\d+(?:\.\d+)?\s+(?:ML|HR|ACTUAT|UNT|MG|MCG|GM|G|DAY)\s+/i;
+function askedName(name) {
+  var whole = String(name || "").trim();
+  if (whole.charAt(0) === "{") {
+    var inside = /^\{\s*\d+\s*\(([^()]+)\)/.exec(whole);
+    return inside ? askedName(inside[1]) : displayName(whole);
+  }
+  return whole.split(" / ").map(function (part) {
+    var rest = part.trim().replace(LEADING_AMOUNT, "");
+    var before = /^(.*?)\s+\d/.exec(rest);
+    var words = before && before[1] ? before[1] : displayName(rest);
     return words.charAt(0).toUpperCase() + words.slice(1);
   }).join(" / ");
 }

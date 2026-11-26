@@ -3,7 +3,7 @@
 // its choices and the answer it saves. No page here, so Node's tests can
 // check it; the screen is in app.js.
 
-import { cardName, monthText } from "./card.js";
+import { cardName, monthText, recentFill } from "./card.js";
 import { isMarkFingerprint, sideWords } from "./reconcile.js";
 import { dayOf, keysOf, newer } from "./view.js";
 
@@ -11,8 +11,11 @@ import { dayOf, keysOf, newer } from "./view.js";
 // lock (which reloads the page). Only the card's number, 1 for the first.
 export var REVIEW_SPOT = "brownbag-review-spot";
 
-// What the My medicines box and the line on home say, for N cards.
-export function checkText(count) {
+// What the My medicines box and the line on home say, for N cards. On a
+// partial list, no number (ruling R40): it would read as the whole, as the
+// Medicines heading drops its count there.
+export function checkText(count, partial) {
+  if (partial) return { line: "Some of your records don't agree.", button: "Check them" };
   var one = count === 1;
   return {
     line: "Your records don't agree on " + count + (one ? " thing" : " things"),
@@ -105,6 +108,23 @@ export function applyAnswer(data, card, value, today) {
   return Object.assign({}, data, { stopped: stopped, asNeeded: asNeeded, answers: answers });
 }
 
+// What an answer adds to the changes made on a saved copy, which the QR
+// code's "isn't fully up to date" list says (Tyler, 2026-11-26): [{ kind,
+// name, extra }]. A mark's Yes and No are what the Not taking button logs
+// (No also takes it off As needed); any other answer, in the words picked,
+// and whether it stopped the medicine, so Undo can take it back.
+export function answerChanges(card, value, data, today) {
+  var name = cardName(card);
+  var mark = card.question.mark;
+  if (mark && value === "taking") return [{ kind: "unstopped", name: name }];
+  if (mark && value === "not-taking") {
+    var needed = keysOf(card).some(function (key) { return ((data && data.asNeeded) || {})[key]; });
+    return (needed ? [{ kind: "regular", name: name }] : []).concat({ kind: "stopped", name: name });
+  }
+  var picked = choicesFor(card, today).filter(function (choice) { return choice.value === value; })[0];
+  return [{ kind: "answered", name: name, extra: { said: picked ? picked.label : "See the record", stopped: value === "not-taking" } }];
+}
+
 // What the patient chose, as it's saved (spec, section 7). A mark's question
 // has its own group id and fingerprint (R2); a group's is the group's.
 export function answerFor(card, value, today) {
@@ -182,11 +202,11 @@ function listedCurrent(card) {
   return side ? says(side.sourceName, "current", side.asOf) : "";
 }
 
-// "Filled Oct 2026" for a fill within a year, as claims.js counts recent,
-// else nothing. A fill is evidence they take it, never the answer.
+// "Filled Oct 2026" for a fill within a year, else nothing: the card's own
+// calendar rule, so a fill this leaves out gets "Last filled over a year
+// ago." there. A fill is evidence they take it, never the answer.
 function fillText(card, today) {
   var last = card.fills && card.fills.count ? card.fills.last : null;
   if (!last || !today) return "";
-  var days = (Date.parse(dayOf(today)) - Date.parse(last)) / (24 * 60 * 60 * 1000);
-  return days <= 365 ? "Filled " + monthText(last) : "";
+  return recentFill(last, dayOf(today)) ? "Filled " + monthText(last) : "";
 }

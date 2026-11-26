@@ -43,6 +43,45 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The final review's fixes to the review cards** (2026-11-26; test right
+away: they change the patient's list, the QR code and the staff page).
+Checked only in headless Chromium (iPhone 15 size, PIN lock, Riley with the
+test clinic); script `final-fix-flow.cjs`, its output and screenshots
+`final-fix-*.png` in
+`.superpowers/sdd/2026-11-25-medication-reconciliation/`. Run
+`node tools/reconcile-patients.mjs` first, then
+`BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
+`git checkout -- tests/fixtures/reconcile/clinics` when done. Open Brown Bag
+once with a signal so it takes the new app files (cache `brownbag-v100`).
+Sign in as Riley. On both virtual phones, on My medicines:
+
+- **Check this** on Lisinopril, "I don't take this anymore", **Save**: focus
+  and the screen land on the stopped Lisinopril card's **Change**, not the top
+  of the page. The card is still named "Lisinopril", shows each source's
+  version ("SMART sandbox, May 2026: 10 MG, 1 tablet, once a day" and the
+  clinic's 20 MG), says "You said: I don't take this anymore (Nov 26)", and
+  has no "You marked" row.
+- **Check this** on atorvastatin, "Yes, I take it", **Save**: focus on its
+  **Change**. Show my QR code and scan it: the staff card says "Patient
+  confirmed this" and "Other record (stopped): Valley Clinic (test records),
+  20 MG, 1 tablet, once a day, 2026-10".
+- With a fresh list, atorvastatin "No, I stopped": the card under Not taking
+  says "You said: No, I stopped", with no "You marked"; staff see it under
+  "Patient says not taking" with an "Other record (stopped)" note for the
+  clinic.
+- Airplane mode, reopen, Open my saved list: answer methotrexate "Not sure"
+  and **Change** lisinopril to 10 MG. Show my QR code: "This code isn't fully
+  up to date" lists "Answered methotrexate 2.5 MG Oral Tablet: Not sure, ask
+  my doctor" and "Answered Lisinopril: 10 MG, 1 tablet, once a day".
+- A partial list (a source that didn't load; in Chromium the sandbox's
+  MedicationStatement search was blocked): home has no review line; My
+  medicines has the box with "Some of your records don't agree." and **Check
+  them**, which opens the review. TalkBack reads the button with the line.
+- With TalkBack and VoiceOver, Save on a single card announces "Saved." and
+  then reads the card's **Change** button.
+- There's no test record whose name starts with an amount ("0.4 ML
+  enoxaparin …") or is a pack; Node's tests cover those names.
+
 **Every source on a card whose sources agree** (2026-11-26, Task 11 fix;
 LIMITS #17). Checked only in headless Chromium (iPhone 15 size, PIN lock,
 Riley with the test clinic). Run `node tools/reconcile-patients.mjs` first,
@@ -62,7 +101,7 @@ Riley. On both virtual phones, on My medicines:
 
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v99`), then More options ▸ Privacy:
+files (cache `brownbag-v100` since the final review fix), then More options ▸ Privacy:
 
 - "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your

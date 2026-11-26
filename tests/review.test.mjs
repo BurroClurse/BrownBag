@@ -2,7 +2,7 @@
 // What it says and what an answer keeps; the screen itself is in app.js.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { checkText, choicesFor, answerFor, applyAnswer, questionText, reviewButton, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
+import { answerChanges, checkText, choicesFor, answerFor, applyAnswer, questionText, reviewButton, REVIEW_SPOT, saveSpot, spotFrom, clearSpot } from "../js/review.js";
 import { isMarkFingerprint } from "../js/reconcile.js";
 import { readFileSync } from "node:fs";
 import { arrangeList } from "../js/view.js";
@@ -324,4 +324,63 @@ test("one helper says whether an answer is about a mark", () => {
 
 test("the review opens with no signal", () => {
   assert.ok(source("sw.js").includes('"./js/review.js"'));
+});
+
+// Final review, minor 7: the review's "Filled <Mon YYYY>" and the card's
+// "Last filled over a year ago." count a year the same way, so on
+// 2028-03-01 a fill on 2027-03-01 is said in the review (and isn't old).
+test("a fill a year ago to the day is still said", () => {
+  const detail = (last) => choicesFor(asked(atorvastatin({ count: 1, last, insurers: ["Test Health Plan"] })), "2028-03-01")[0].detail;
+  assert.equal(detail("2027-03-01"), "SMART sandbox says current, Jan 2026. Filled Mar 2027");
+  assert.equal(detail("2027-02-28"), "SMART sandbox says current, Jan 2026");
+  assert.equal(detail("2027-03"), "SMART sandbox says current, Jan 2026. Filled Mar 2027");
+});
+
+// Ruling R40: on a partial list the box stays, with no number, as the
+// Medicines heading drops its count there.
+test("on a partial list the box doesn't count", () => {
+  assert.deepEqual(checkText(1, true), { line: "Some of your records don't agree.", button: "Check them" });
+  assert.deepEqual(checkText(3, true), { line: "Some of your records don't agree.", button: "Check them" });
+  assert.deepEqual(checkText(2, false), checkText(2));
+  const app = source("js/app.js");
+  const box = app.slice(app.indexOf("function drawCheckBox"), app.indexOf("\n}\n", app.indexOf("function drawCheckBox")));
+  assert.match(box, /checkText\(count, medicinesPartial\(state\)\)/);
+  assert.match(box, /setAttribute\("aria-describedby", "check-line"\)/);
+  // Home still hides its line on a partial list.
+  assert.match(app, /if \(arranged\.toCheck\.length && !medicinesPartial\(state\)\) \{\n    button\(actions, checkText\(arranged\.toCheck\.length\)\.line/);
+});
+
+// Tyler, 2026-11-26: answers made on a saved copy are listed with the
+// QR code's other changes. A mark's Yes and No are the Not taking button's.
+test("an answer is a change for the QR code's list", () => {
+  const dose = asked(lisinopril());
+  assert.deepEqual(answerChanges(dose, "smart-sandbox", {}, TODAY), [{ kind: "answered", name: "Lisinopril", extra: { said: "10 mg, once a day", stopped: false } }]);
+  assert.deepEqual(answerChanges(dose, "not-taking", {}, TODAY), [{ kind: "answered", name: "Lisinopril", extra: { said: "I don't take this anymore", stopped: true } }]);
+  assert.deepEqual(answerChanges(dose, "not-sure", {}, TODAY), [{ kind: "answered", name: "Lisinopril", extra: { said: "Not sure, ask my doctor", stopped: false } }]);
+  const status = asked(atorvastatin());
+  assert.deepEqual(answerChanges(status, "not-taking", {}, TODAY), [{ kind: "answered", name: "atorvastatin 20 MG Oral Tablet", extra: { said: "No, I stopped", stopped: true } }]);
+  assert.deepEqual(answerChanges(status, "smart-sandbox", {}, TODAY), [{ kind: "answered", name: "atorvastatin 20 MG Oral Tablet", extra: { said: "Yes, I take it", stopped: false } }]);
+  // A mark's question: as the buttons log it.
+  const card = { key: "rx:1", name: "Lisinopril", status: "current", source: "SMART sandbox", lastDate: "2026-10-02" };
+  const mark = asked(card, { stopped: { "rx:1": "2026-03-03" } });
+  assert.deepEqual(answerChanges(mark, "taking", {}, TODAY), [{ kind: "unstopped", name: "Lisinopril" }]);
+  assert.deepEqual(answerChanges(mark, "not-taking", {}, TODAY), [{ kind: "stopped", name: "Lisinopril" }]);
+  assert.deepEqual(answerChanges(mark, "not-taking", { asNeeded: { "rx:1": "2026-01-01" } }, TODAY), [{ kind: "regular", name: "Lisinopril" }, { kind: "stopped", name: "Lisinopril" }]);
+  assert.deepEqual(answerChanges(mark, "not-sure", {}, TODAY), [{ kind: "answered", name: "Lisinopril", extra: { said: "Not sure, ask my doctor", stopped: false } }]);
+  // app.js logs them all, not only a mark's.
+  const app = source("js/app.js");
+  const keep = app.slice(app.indexOf("function keepAnswer"), app.indexOf("\n}\n", app.indexOf("function keepAnswer")));
+  assert.match(keep, /answerChanges\(card, value, before, today\(\)\)\.forEach\(function \(change\) \{ recordChange\(change\.kind, change\.name, change\.extra\); \}\);/);
+  assert.doesNotMatch(keep, /question\.mark && value/);
+});
+
+// Final review, minor 3: Save on one card (Check this or Change) goes back
+// to that card's own button when it's still there, as Do this later does;
+// else to the My medicines heading.
+test("saving one card goes back to its own button", () => {
+  const app = source("js/app.js");
+  const keep = app.slice(app.indexOf("function keepAnswer"), app.indexOf("\n}\n", app.indexOf("function keepAnswer")));
+  assert.match(keep, /focusId: returnTo \|\| "medicines-heading", focusElse: "medicines-heading"/);
+  const render = app.slice(app.indexOf("function render()"), app.indexOf("\n}\n", app.indexOf("function render()")));
+  assert.match(render, /document\.getElementById\(state\.focusId\) \|\| \(state\.focusElse && document\.getElementById\(state\.focusElse\)\)/);
 });

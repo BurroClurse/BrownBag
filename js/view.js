@@ -461,6 +461,14 @@ var OPPOSITE = {
 export function logChange(changes, kind, name, extra) {
   var list = (changes || []).slice();
   if (kind.indexOf("reaction-") === 0) return logReaction(list, kind, name, extra);
+  // An answer: a Change keeps only the newest. Undo on a card an answer
+  // stopped takes that answer back, so nothing is left to say.
+  var answered = list.findIndex(function (c) { return c.name === name && c.kind === "answered"; });
+  if (kind === "answered" && answered !== -1) list.splice(answered, 1);
+  if (kind === "unstopped" && answered !== -1 && list[answered].stopped) {
+    list.splice(answered, 1);
+    return list;
+  }
   var edited = list.findIndex(function (c) { return c.name === name && c.kind === "edited"; });
   // A new one stays "Added", and one edited twice is one line.
   if (kind === "edited" && list.some(function (c) { return c.name === name && (c.kind === "added" || c.kind === "edited"); })) return list;
@@ -543,6 +551,7 @@ function changeLine(change) {
     case "as-needed": return "Marked " + change.name + " As needed";
     case "regular": return "Took " + change.name + " off As needed";
     case "edited": return "Changed " + change.name;
+    case "answered": return "Answered " + change.name + (change.said ? ": " + change.said : "");
     case "removed": return "Removed " + change.name;
     case "allergy-added": return "Added the allergy " + change.name;
     case "allergy-removed": return (change.record ? "Removed your entry for " : "Removed the allergy ") + change.name;

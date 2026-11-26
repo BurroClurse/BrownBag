@@ -36,7 +36,7 @@ import { readClaims, mergeClaims } from "./claims.js";
 import { doseChoices, FREQUENCY_CHOICES } from "./add-choices.js";
 import { checkAddition, displayName, lookalikeText } from "./add-check.js";
 import { olderQuestion, takenOlder } from "./older.js";
-import { applyAnswer, checkText, choicesFor, clearSpot, questionText, reviewButton, saveSpot, spotFrom } from "./review.js";
+import { answerChanges, applyAnswer, checkText, choicesFor, clearSpot, questionText, reviewButton, saveSpot, spotFrom } from "./review.js";
 import { draftFromOlder, olderFrom, draftFrom, draftChanged, editedAddition, pickFor, sameName, unchanged, unsavedEditText } from "./edit.js";
 
 // The page's own watcher (in the HTML) stops once the app has started.
@@ -721,10 +721,12 @@ function render() {
     document.getElementById(had).focus();
   }
   if (state.focusId) {
-    var target = document.getElementById(state.focusId);
+    // focusElse: where focus goes when that one isn't on the page.
+    var target = document.getElementById(state.focusId) || (state.focusElse && document.getElementById(state.focusElse));
     if (target) target.focus();
     state.focusId = null;
   }
+  state.focusElse = null;
 }
 
 // The phone's Back button. Each screen past home, and the QR code, is one
@@ -1853,7 +1855,8 @@ function drawAsNeeded(parent, arranged, additions) {
 function drawCheckBox(parent, arranged) {
   var count = arranged.toCheck.length;
   if (!count) return;
-  var words = checkText(count);
+  // No number on a partial list (ruling R40).
+  var words = checkText(count, medicinesPartial(state));
   var box = add(parent, "div", null, "check-box");
   var line = add(box, "p", words.line, "check-box-line");
   line.id = "check-line";
@@ -1995,19 +1998,17 @@ function drawReview() {
 // Saves what the patient chose, then the next card, or My medicines after
 // the last. A mark's "Yes, I take it" takes its Not taking marks away and
 // saves no answer; its "No, I stopped" marks every source's copy (R2).
+// One card (Check this or Change) goes back to its own button when it's
+// still there, as Do this later does; else the My medicines heading.
 function keepAnswer(card, value) {
   if (!state.review || state.review.saving) return;
   state.review.saving = true;
-  var question = card.question;
-  var name = cardName(card);
   var before = state.data;
+  var returnTo = oneCard() ? state.review.returnTo : null;
   // What changes is worked out in js/review.js; only the change log is here.
+  // On a saved copy each answer is listed with the QR code's changes.
   state.data = applyAnswer(before, card, value, today());
-  if (question.mark && value === "taking") recordChange("unstopped", name);
-  if (question.mark && value === "not-taking") {
-    if (keysOf(card).some(function (key) { return (before.asNeeded || {})[key]; })) recordChange("regular", name);
-    recordChange("stopped", name);
-  }
+  answerChanges(card, value, before, today()).forEach(function (change) { recordChange(change.kind, change.name, change.extra); });
   if (!oneCard()) {
     state.review.done += 1;
     state.review.seen.push(seenKey(card));
@@ -2020,8 +2021,16 @@ function keepAnswer(card, value) {
     return;
   }
   var settled = !reviewList().length;
-  leaveReview({ screen: "medicines", focusId: "medicines-heading", announce: settled ? "Saved. Your list is up to date." : "Saved." });
-  save().then(function () { window.scrollTo(0, 0); });
+  leaveReview({ screen: "medicines", focusId: returnTo || "medicines-heading", focusElse: "medicines-heading", announce: settled ? "Saved. Your list is up to date." : "Saved." });
+  save().then(scrollAfterReview);
+}
+
+// To the top, unless focus went back to a card's own button: then that
+// card stays in view.
+function scrollAfterReview() {
+  var on = document.activeElement;
+  if (on && /^card-review-/.test(on.id)) on.scrollIntoView({ block: "center" });
+  else window.scrollTo(0, 0);
 }
 
 // Closes the review to where it goes next. Home is a step back in the
@@ -2035,7 +2044,7 @@ function reviewDone(screen, focusId, announce) {
   }
   leaveReview(after);
   render();
-  window.scrollTo(0, 0);
+  scrollAfterReview();
 }
 
 // The phone's Back button on the review, or the step back from Do this later.
@@ -2043,7 +2052,7 @@ function showAfterReview() {
   var from = state.review ? state.review.from : "medicines";
   leaveReview(state.reviewAfter || { screen: from, focusId: laterFocus(state.review || { from: from }), announce: "" });
   render();
-  window.scrollTo(0, 0);
+  scrollAfterReview();
 }
 
 // Back on what opened the review: the card's own Check this or Change, or
@@ -2067,6 +2076,7 @@ function leaveReview(after) {
   else if (after.screen === "medicines" && step !== "medicines") history.pushState({ bb: "medicines" }, "");
   state.screen = after.screen;
   state.focusId = after.focusId;
+  state.focusElse = after.focusElse || null;
   state.announce = after.announce || "";
 }
 
