@@ -44,7 +44,7 @@ patient's phone, and the staff page in the staff member's browser.
   After each sign-in the patient unlocks and comes back to that screen to
   connect the next; **Done** goes home. The same screen is **Health records**
   under More options.
-- After that, the lock opens Brown Bag (its Face ID screen is laid out like home: the bag fills the screen, the buttons at the bottom) and the list updates by itself. It locks after 5 minutes without a tap or
+- After that, the lock opens Brown Bag (its Face ID screen is laid out like home, row for row: the tagline on the name's line, the same bag, Unlock where Show my QR code is and Start over where My medicines is) and the list updates by itself. It locks after 5 minutes without a tap or
   away, and the connection ends after 30 days unused.
 - **Sign out** is for everyone on the phone. Saved lists stay, locked.
 

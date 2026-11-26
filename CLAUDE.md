@@ -20,12 +20,12 @@ Standing rules from the developer.
   change is ready for a phone check, say so plainly, with what to check and the
   commands to run (`prompts/phone-pass.md` runs the pass), and add it to
   "Waiting for the next pass" in `docs/NEEDS-TESTING.md`.
-- **Start each session with the developer's to-do.** "the developer needs to do" is private: it
-  lives in `CLAUDE.local.md` on the developer's Mac, which git ignores, never in the
+- **Start each session with the developer's to-do.** It's private: it lives in
+  `CLAUDE.local.md` on the developer's Mac, which git ignores, never in the
   repo. On the Mac, remind them of what's open in it, add to it whenever a change
   needs something only they can do, and move items to "Done" with the date. In a
   cloud session, which can't see it, list anything new for it in your reply so
-  The developer can add it.
+  the developer can add it.
 - **Keep the decisions log.** `docs/DECISIONS.md` records the developer's decisions and
   every call Claude made on their behalf (with what it costs if wrong). Add new
   ones as they're made.

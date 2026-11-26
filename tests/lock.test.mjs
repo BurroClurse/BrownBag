@@ -202,5 +202,30 @@ test("the unlock screen's bag lines up with home's", async () => {
   }
   // The blank line is the name's height: 1.5rem text, 1.5 line height, 0.4rem margins.
   assert.match(block(".home-name"), /font-size: 1\.5rem;[\s\S]*margin: 0\.15rem 0 0\.25rem;/);
-  assert.match(block("#app.screen-unlock .lock::before"), /height: var\(--name-line\);/);
+  // The tagline takes the name's line: the same line box and margins.
+  assert.match(block("#app.screen-unlock .tagline"), /order: -1;[\s\S]*min-height: calc\(1\.5rem \* 1\.5\);[\s\S]*margin: 0\.15rem 0 0\.25rem;/);
+});
+
+// The developer, 2026-11-26 ("perfectly aligned"): every row of the unlock
+// screen sits where home's does. Unlock is Show my QR code's size, the buttons
+// have home's spacing, and an empty row stands in for More options.
+test("the unlock screen's buttons line up with home's", async () => {
+  const { readFileSync } = await import("node:fs");
+  const css = readFileSync(new URL("../css/brownbag.css", import.meta.url), "utf8");
+  const has = (text) => assert.ok(css.includes(text), text);
+  has("#show-qr { min-height: 84px;");
+  has("#app.screen-unlock .lock > .big:first-of-type { min-height: 84px; }");
+  has("@media (max-height: 600px) { #show-qr { min-height: 68px; } }");
+  has("@media (max-height: 600px) { #app.screen-unlock .lock > .big:first-of-type { min-height: 68px; } }");
+  has(".home-actions .big { margin-top: 0.5rem; }");
+  has("#app.screen-unlock .big { margin-top: 0.5rem; }");
+  has("#open-more { margin-top: 0.15rem; }");
+  has("#app.screen-unlock .row-slot { visibility: hidden; margin-top: 0.15rem; }");
+  has("#app.screen-unlock .status:empty { margin: 0; }");
+  const screen = readFileSync(new URL("../js/lock-screen.js", import.meta.url), "utf8");
+  const passkey = screen.slice(screen.indexOf("function drawPasskeyUnlock"), screen.indexOf("function exitOption"));
+  // The empty row has More options' own classes and words, and is hidden from screen readers.
+  assert.match(passkey, /slot\.className = "button link-button row-slot";[\s\S]*slot\.setAttribute\("aria-hidden", "true"\);[\s\S]*slot\.textContent = "More options";/);
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /button\(root, "More options", "link-button"/);
 });

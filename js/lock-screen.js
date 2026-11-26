@@ -227,6 +227,15 @@ function drawPasskeyUnlock(root, done, options) {
   }
   button.addEventListener("click", attempt);
   exitOption(root, box, done, options, "Can't unlock? Start over");
+  // An empty row the size of home's More options, so the buttons above it sit
+  // exactly where home's do. Hidden from everyone, screen readers included.
+  if (!restoring) {
+    var slot = document.createElement("span");
+    slot.className = "button link-button row-slot";
+    slot.setAttribute("aria-hidden", "true");
+    slot.textContent = "More options";
+    box.appendChild(slot);
+  }
   button.focus();
 }
 
