@@ -165,3 +165,18 @@ test("the popup asks before anything opens, starting on Cancel", () => {
   assert.match(body, /cancel\.focus\(\)/);
   assert.ok(readFileSync(new URL("../sw.js", import.meta.url), "utf8").includes('"./js/older.js"'));
 });
+
+// The developer, 2026-11-26: open, Older prescriptions holds its cards in one
+// box that ends with a way to close it, so they don't read as records placed
+// after it. The box stays the last thing under "From your records".
+test("open, Older prescriptions holds its cards and can be closed at the end", async () => {
+  const { readFileSync } = await import("node:fs");
+  const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  const records = app.slice(app.indexOf("function drawRecords"), app.indexOf("function askOlder"));
+  assert.match(records, /add\(section, "details", null, "older-box"\)/);
+  assert.match(records, /button\(details, "Close older prescriptions", "secondary older-close", function \(\) \{\n\s+details\.open = false;\n\s+summary\.focus\(\);/);
+  // Nothing is added to the records section after the box.
+  assert.doesNotMatch(records.slice(records.indexOf('"older-box"')), /add\(section,/);
+  const css = readFileSync(new URL("../css/brownbag.css", import.meta.url), "utf8");
+  assert.match(css, /\.screen-medicines details\.older-box\[open\] \{ background: var\(--soft\); border: 2px solid var\(--line\);/);
+});

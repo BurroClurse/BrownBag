@@ -66,7 +66,7 @@ records don't agree."), as the Medicines heading does.
   that say none and also name something ("NKA to food, allergic to
   penicillin") stay an allergy row.
 - **Medicines** from the records: repeats merged, strengths of one drug grouped,
-  directions in full, on-hold ones marked, older prescriptions folded away. Another
+  directions in full, on-hold ones marked, older prescriptions folded away (open, they sit in one box under the records, ending with **Close older prescriptions**). Another
   release type (12 or 24 hour, XL), salt (tartrate, succinate) or form (eye drops,
   tablets) is its own line, and so is a combination such as Excedrin beside
   Tylenol.

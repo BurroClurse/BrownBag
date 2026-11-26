@@ -106,6 +106,9 @@ New decisions go at the end of each list, with the date.
 - The developer's name appears only in the copyright and legal text, the
   README and the privacy page; everywhere else it's "the developer", with
   they/them (2026-11-26).
+- Open, Older prescriptions holds its cards inside one tinted box ending with
+  "Close older prescriptions", so they don't read as records placed after it
+  (2026-11-26).
 
 ## Calls Claude made
 

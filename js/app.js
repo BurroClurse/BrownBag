@@ -1321,8 +1321,10 @@ function drawRecords(parent, arranged) {
     markButtons(medRow(list, entry), entry);
   });
   if (arranged.older.length) {
-    var details = add(section, "details");
-    add(details, "summary", "Older prescriptions (" + arranged.older.length + ")");
+    // Open, the box holds its cards, so they read as one group under the
+    // records, and it ends with a way to close it (the developer, 2026-11-26).
+    var details = add(section, "details", null, "older-box");
+    var summary = add(details, "summary", "Older prescriptions (" + arranged.older.length + ")");
     // Stays open when the screen is drawn again, as sorting does.
     details.open = state.olderOpen;
     details.addEventListener("toggle", function () { if (details.isConnected) state.olderOpen = details.open; });
@@ -1336,6 +1338,11 @@ function drawRecords(parent, arranged) {
         var actions = add(row, "div", null, "card-actions");
         var take = button(actions, "I'm taking this", "secondary", function () { askOlder(entry, take); }, "I'm taking this: " + cardName(entry));
       }
+    });
+    button(details, "Close older prescriptions", "secondary older-close", function () {
+      details.open = false;
+      summary.focus();
+      summary.scrollIntoView({ block: "nearest" });
     });
   }
 }

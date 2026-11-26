@@ -43,6 +43,13 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Older prescriptions, open, as one box** (2026-11-26). On both virtual phones,
+as Thanh Mosciski or Loria Jenkins: open Older prescriptions on My medicines.
+Its cards sit inside a tinted box under the heading, ending with **Close older
+prescriptions**; tapping it closes the box and puts focus (and VoiceOver or
+TalkBack) on the heading. Closed, the box is still the last thing under "From
+your records". Nothing scrolls sideways.
+
 **Every row lines up on the unlock screen and home** (2026-11-26, second
 pass). With a Face ID lock, screenshot the unlock screen, unlock, screenshot
 home, and flip between them: the tagline is on the name's line, the bag is the
@@ -76,7 +83,7 @@ test clinic); script `final-fix-flow.cjs`, its output and screenshots
 `node tools/reconcile-patients.mjs` first, then
 `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, then
 `git checkout -- tests/fixtures/reconcile/clinics` when done. Open Brown Bag
-once with a signal so it takes the new app files (cache `brownbag-v105`).
+once with a signal so it takes the new app files (cache `brownbag-v106`).
 Sign in as Riley. On both virtual phones, on My medicines:
 
 - **Check this** on Lisinopril, "I don't take this anymore", **Save**: focus
@@ -128,7 +135,7 @@ Riley. On both virtual phones, on My medicines:
 
 **The privacy page and the app cache** (2026-11-26, Task 11). On both
 virtual phones, open Brown Bag once with a signal so it takes the new app
-files (cache `brownbag-v105` since the final review fix), then More options ▸ Privacy:
+files (cache `brownbag-v106` since the final review fix), then More options ▸ Privacy:
 
 - "What stays on your phone" says "When your records
   disagree, your answers are kept with what you add: locked, and in your
