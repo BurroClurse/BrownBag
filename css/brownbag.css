@@ -149,6 +149,12 @@ details > summary { min-height: 44px; padding: 0.6rem 0; cursor: pointer; font-w
 .screen-medicines h2 { font-size: 1.4rem; border-bottom: none; margin: 1.5rem 0 0.6rem; padding: 0; }
 .screen-medicines details > summary { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.75rem 1rem; font-size: 1.1rem; }
 .screen-medicines details[open] > summary { margin-bottom: 0.75rem; }
+/* Older prescriptions, open: one box holding its cards, ending with a way to
+   close it, so the cards read as part of it (the developer, 2026-11-26). The
+   heading stays where it was when closed. */
+.screen-medicines details.older-box[open] { background: var(--soft); border: 2px solid var(--line); border-radius: 14px; padding: 0 0.6rem 0.75rem; }
+.screen-medicines details.older-box[open] > summary { background: transparent; border: none; padding-left: calc(1rem - 0.6rem - 2px); margin-bottom: 0.25rem; }
+.older-box .older-close { display: block; width: 100%; margin: 0.5rem 0 0; border-color: var(--teal); }
 .screen-medicines form { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 0.5rem 1rem 1rem; }
 
 #add-search-status:not(:empty) { margin: 0.5rem 0; }
