@@ -94,34 +94,37 @@ Riley. On both virtual phones:
   "Records disagree: ask the patient".
 - The cards wrap well on the iPhone SE size and at the largest text.
 
-**Found in the 2026-11-25 pass, not fixed yet.** No app code was changed in the
-pass. Each needs a fix, then a check on both virtual phones.
+**Fixes from the 2026-11-25 pass** (Task 10b; test right away: the staff
+page and sign-in). Checked only in headless Chromium (iPhone 15 profile,
+self-signed certificate, PIN lock, the live sandbox); scripts and screenshots
+`task-10b-*` in `.superpowers/sdd/2026-11-25-medication-reconciliation/`.
+On both virtual phones:
 
-- **The staff page's code box cuts off the 6th digit at 200 percent text**
-  (iPhone simulator, Settings ▸ Accessibility ▸ Larger Text at Accessibility
-  Large). The box fills the width but the digits are 66 px with wide spacing,
-  so the last digit sits past the edge; at the largest size only 2 and a half
-  show. Typing still works. Normal text size is fine (box 272 px, digits fit).
-  The Android emulator couldn't show it: the system font scale didn't reach
-  Chrome's page.
-- **Past 200 percent text on the iPhone** (beyond WCAG's 200 percent, so lower
-  priority): My medicines scrolls sideways from Accessibility XXL (page 400 px
-  wide on a 393 px screen; 449 px at the largest size, where "+ Add a
-  medicine" runs to the edge). On the QR screen the title fills the screen
-  from Accessibility XL, so the code starts below the fold and the patient
-  has to scroll to show it. At Accessibility Large (about 200 percent) both
-  are fine.
-- **Back after signing out skips the connections screen.** Sign out, Sign in,
-  unlock, Connect, then the phone's Back button (or Safari's) lands on
-  "You're signed out", not on Connect your health records. On a first run
-  (lock, connections, Connect, Back) it comes back to the lock and then the
-  connections screen, as it should. Same on both virtual phones.
-- **Deny at the sandbox's approval page never comes back to Brown Bag.** The
-  sandbox shows its own text, `{"error":"invalid_request","error_description":"Unauthorized"}`,
-  and doesn't return to the app, so "Sign-in didn't finish. Try again." can't
-  show. Back twice reaches "Choose a test patient". Same on both virtual
-  phones. This is how the sandbox answers Deny; decide whether Brown Bag can
-  do anything about it before calling the check failed or dropped.
+- **The staff page's code box at 200 percent text.** iPhone simulator,
+  Settings ▸ Accessibility ▸ Larger Text at Accessibility Large: make a QR
+  code, open its link, and type 6 digits. All 6 show inside the box, with
+  room either side, and the page doesn't scroll sideways. At normal text the
+  box looks as before (digits as big, same spacing). Also at the iPhone SE
+  size (320 px wide) with Accessibility Large. In Chromium the 6th digit
+  ends at 326 px in a box whose inside edge is 359 px (393 px wide, 200
+  percent), and at 261 px of 286 px at 320 px wide; before, it was at 417 px.
+  On Android, use Chrome's own text size (Chrome's Settings ▸
+  Accessibility, 200 percent) if the system font scale still doesn't reach it.
+- **Back after signing out.** Signed in, More options ▸ Sign out, then Sign
+  in, unlock, Connect: the phone's Back button (and Safari's) from "Choose a
+  test patient" comes back to the lock and then Connect your health records,
+  not "You're signed out". Then Connect, a patient, and Back from the
+  sandbox's own page: "Choose a test patient", then Back again (Chromium
+  needed it twice; it has that screen in its history twice, on a first run
+  too) to the lock and the connections screen. One more Back is "You're
+  signed out". A first run (lock, connections, Connect, Back) is as before.
+  While on the connections screen, wait 5 minutes for the auto-lock: unlock
+  comes back to the connections screen.
+
+**Found in the 2026-11-25 pass, not fixed.** The other two are kept in
+`docs/LIMITS.md`: text past 200 percent (number 28, an idea) and Deny on the
+sandbox's approval page (number 27, the sandbox's own behavior). No phone
+check waits on them.
 
 **Answering a disagreement: "Not sure, ask my doctor"** (Tasks 8 and 9). The
 rest of both entries passed on 2026-11-25 (see Tested). Blocked: the answer

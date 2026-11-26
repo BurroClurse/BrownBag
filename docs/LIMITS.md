@@ -248,3 +248,27 @@ an idea becomes a plan only after its own design.
     file valid IPS).
   - Idea: revisit if IPS or US Core define a place for it, or if a SMART Health
     Link design carries more than an IPS.
+- [ ] **27. Deny on the SMART sandbox's approval page never comes back to Brown
+  Bag.** The sandbox shows its own text,
+  `{"error":"invalid_request","error_description":"Unauthorized"}`, and stays
+  there, so "Sign-in didn't finish. Try again." can't show (phone pass,
+  2026-11-25, both virtual phones). Back twice reaches "Choose a test patient".
+  - Now: this is how the sandbox answers Deny, not something Brown Bag does.
+    A sign-in started from the connections screen that does come back with an
+    error (`?error=` in the address) says "Sign-in didn't finish. Try again."
+    there.
+  - Ideas: check Deny on Epic's sandbox and on Medicare when they're connected;
+    if one also stays on its own page, say on "Starting sign-in…" that Back
+    returns to Brown Bag.
+- [ ] **28. Past 200 percent text, two screens don't fit.** On the iPhone, My
+  medicines scrolls sideways from Accessibility XXL (the page is 400px wide on
+  a 393px screen, 449px at the largest size, where "+ Add a medicine" runs to
+  the edge), and on the QR screen the title fills the screen from
+  Accessibility XL, so the patient scrolls to show the code (phone pass,
+  2026-11-25). WCAG 2.2 AA asks for 200 percent, and at Accessibility Large
+  (about 200 percent) both fit.
+  - Now: everything is sized in rem from the iPhone's text size, and the
+    staff page's code box sizes its digits from its own width (2026-11-25).
+  - Idea: find what holds My medicines wider than the screen and let it wrap;
+    on the QR screen, keep the title to one line or shrink it so the code
+    starts on screen at every text size.

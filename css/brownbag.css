@@ -786,13 +786,16 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 }
 
 /* The staff page's code form: a short label, one big box for the digits,
-   and a full-width button. */
-.code-form { margin-top: 1rem; }
+   and a full-width button. The digits and their spacing are sized from the
+   form's width (cqi), so all 6 fit at 200 percent text and on a 320px
+   screen; they never grow past 2rem, the size at normal text. */
+.code-form { margin-top: 1rem; container-type: inline-size; }
 .code-form label { margin-top: 0; }
 .code-form .code-input {
   max-width: 16rem;
   margin-top: 0.4rem;
   font-size: 2rem;
+  font-size: min(2rem, 14cqi);
   font-weight: 700;
   letter-spacing: 0.35em;
   text-align: center;

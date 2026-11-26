@@ -37,6 +37,21 @@ export function wantsConnections(search) {
   return new URLSearchParams(search).get("open") === "connections";
 }
 
+// The connections screen's own step in the browser's history. start() takes
+// ?open=connections out of the address, so the step says it instead: Back
+// from a sign-in page (or the auto-lock's reload) loads that step again, and
+// signed out it would otherwise show "You're signed out" (phone pass,
+// 2026-11-25).
+export var CONNECTIONS_STEP = { open: "connections" };
+
+// What start() shows before the usual way in: "connections", "signed-out", or
+// null (a pass, setting up, or a sign-in that came back, which decides itself).
+export function firstScreen({ search, step, signedOut, cameBack }) {
+  if (cameBack) return null;
+  if (wantsConnections(search) || Boolean(step && step.open === CONNECTIONS_STEP.open)) return "connections";
+  return signedOut ? "signed-out" : null;
+}
+
 // done: "home" (setting up, once something is connected), "back" (to More
 // options), or null (setting up, nothing connected yet).
 export function connectionsView({ from, connected, online }) {

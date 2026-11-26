@@ -358,8 +358,10 @@ reasons behind them are in [`docs/LIMITS.md`](docs/LIMITS.md).
 - **Reading directions** (idea): a small model on the phone recognizes that
   "Take 1 tab PO BID" and "1 tablet by mouth twice a day" say the same thing.
   It only suggests, and never settles a disagreement.
-- **Other ideas:** reminders to open Brown Bag before an appointment, and,
-  with several sources, a line for each saying when Brown Bag last read it.
+- **Other ideas:** reminders to open Brown Bag before an appointment;
+  with several sources, a line for each saying when Brown Bag last read it;
+  and My medicines and the QR screen fitting the iPhone's text sizes past 200
+  percent ([LIMITS #28](docs/LIMITS.md)).
 
 ### Back end
 

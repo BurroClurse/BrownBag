@@ -24,7 +24,7 @@ import { cardName, dateText, drawCard, patientCard } from "./card.js";
 import { SORTS, savedSort, saveSort, shortName, sortArranged } from "./sort.js";
 import { connected, recordsStatus, signInLink } from "./sources.js";
 import { drawNotConnected } from "./source-list.js";
-import { connectionsView, keepReturn, takeReturn, wantsConnections } from "./connections.js";
+import { CONNECTIONS_STEP, connectionsView, firstScreen, keepReturn, takeReturn } from "./connections.js";
 import { drawOptions, optionGroups } from "./options.js";
 import { drawInside } from "./inside.js";
 import { swipeAway } from "./swipe.js";
@@ -205,14 +205,16 @@ async function start() {
   clear(root);
   // Where a sign-in that just came back was started (js/connections.js).
   var where = cameBackFromAuth ? takeReturn(sessionStorage) : null;
-  // Sign out and launch.html come here for the connections screen. The
-  // address is put back, so a reload doesn't ask again.
-  var toConnections = !cameBackFromAuth && wantsConnections(location.search);
-  if (toConnections) history.replaceState(null, "", "./");
   var signedOut = Boolean(localStorage.getItem(SIGNED_OUT_KEY));
+  // Sign out and launch.html come here for the connections screen. The
+  // address is put back, and the step itself remembers it, so Back from a
+  // sign-in page comes to this screen again, signed out too.
+  var first = firstScreen({ search: location.search, step: history.state, signedOut: signedOut, cameBack: cameBackFromAuth });
+  var toConnections = first === "connections";
+  if (toConnections) history.replaceState(CONNECTIONS_STEP, "", "./");
   // Signed out: say so. With no signal, or after a sign-in that couldn't start,
   // they can open the list they saved.
-  if (!cameBackFromAuth && signedOut && !toConnections) {
+  if (first === "signed-out") {
     if (!wantsSaved(location.search)) await savedListAsked();
     state.askedForSaved = true;
   }
@@ -2470,6 +2472,8 @@ function connectionsDone() {
     history.back();
   } else {
     state.signInFailed = false;
+    // Home now: a reload of this step isn't the connections screen any more.
+    if (history.state && history.state.open) history.replaceState(null, "");
     go("home", "show-qr");
   }
 }

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { RETURN_KEY, keepReturn, takeReturn, wantsConnections, connectionsView } from "../js/connections.js";
+import { CONNECTIONS_STEP, RETURN_KEY, firstScreen, keepReturn, takeReturn, wantsConnections, connectionsView } from "../js/connections.js";
 
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
@@ -40,6 +40,76 @@ test("anything else, or storage that won't answer, comes back to setting up", ()
 test("only ?open=connections asks for the connections screen", () => {
   assert.equal(wantsConnections("?open=connections"), true);
   for (const search of ["", "?open=saved", "?code=1", "?open=connection"]) assert.equal(wantsConnections(search), false, search);
+});
+
+// The browser's history, as far as start() sees it: each step's address and
+// its saved state, replaceState and a Back that loads the step again (the
+// phone pass of 2026-11-25 found Back from the sign-in pages loads it fresh).
+function fakeHistory() {
+  const steps = [];
+  let at = -1;
+  return {
+    open(url) { steps.splice(at + 1); steps.push({ url, state: null }); at += 1; return this.now(); },
+    replace(state, url) { steps[at] = { url, state }; },
+    back() { at -= 1; return this.now(); },
+    now() { return { search: new URL(steps[at].url, "https://x/").search, step: steps[at].state }; }
+  };
+}
+
+// start() in js/app.js: the first screen, and the address put back.
+function start(history, signedOut) {
+  const here = history.now();
+  const first = firstScreen({ search: here.search, step: here.step, signedOut, cameBack: false });
+  if (first === "connections") history.replace(CONNECTIONS_STEP, "./");
+  return first;
+}
+
+test("Back from the sign-in pages comes to the connections screen, signed out too", () => {
+  // Sign out, then the signed-out screen's Sign in, then Connect.
+  const h = fakeHistory();
+  h.open("./");
+  assert.equal(start(h, true), "signed-out");
+  h.open("./?open=connections");
+  assert.equal(start(h, true), "connections");
+  h.open("./launch.html?source=smart-sandbox");
+  h.back();
+  assert.equal(start(h, true), "connections");
+  // A reload there (the auto-lock reloads) stays too.
+  assert.equal(start(h, true), "connections");
+  // One more Back is the signed-out screen, where they were before.
+  h.back();
+  assert.equal(start(h, true), "signed-out");
+});
+
+test("a first run's Back from the sign-in pages is set up as before", () => {
+  const h = fakeHistory();
+  h.open("./");
+  assert.equal(start(h, false), null);
+  h.open("./launch.html?source=smart-sandbox");
+  h.back();
+  assert.equal(start(h, false), null);
+});
+
+test("only the connections step, ?open=connections, or a sign-in that came back decide it", () => {
+  assert.equal(firstScreen({ search: "?open=connections", step: null, signedOut: false, cameBack: false }), "connections");
+  assert.equal(firstScreen({ search: "", step: { open: "connections" }, signedOut: false, cameBack: false }), "connections");
+  for (const step of [null, {}, { bb: "more" }, { bb: "records" }, { open: "saved" }]) {
+    assert.equal(firstScreen({ search: "", step, signedOut: true, cameBack: false }), "signed-out", JSON.stringify(step));
+    assert.equal(firstScreen({ search: "", step, signedOut: false, cameBack: false }), null, JSON.stringify(step));
+  }
+  assert.equal(firstScreen({ search: "?open=saved", step: null, signedOut: true, cameBack: false }), "signed-out");
+  // Back from a sign-in, the sign-in's own answer decides.
+  assert.equal(firstScreen({ search: "?code=1&state=2", step: CONNECTIONS_STEP, signedOut: true, cameBack: true }), null);
+});
+
+test("start marks the connections step, and Done going home unmarks it", () => {
+  const start = body("js/app.js", "start");
+  assert.ok(start.includes("firstScreen({ search: location.search, step: history.state"));
+  assert.ok(start.includes('history.replaceState(CONNECTIONS_STEP, "", "./")'));
+  assert.ok(!start.includes('history.replaceState(null, "", "./")'));
+  // A reload of home after Done isn't the connections screen.
+  const done = body("js/app.js", "connectionsDone");
+  assert.ok(done.indexOf("history.replaceState(null, \"\")") !== -1 && done.indexOf("history.replaceState(null, \"\")") < done.indexOf('go("home"'));
 });
 
 const INTRO = "Connect each place that has your medicines. You can add more later under More options.";
@@ -90,7 +160,7 @@ test("the lock comes first, and sign-ins land where they started", () => {
   assert.ok(start.length > 100);
   assert.ok(!start.includes("drawSignedOut("));
   assert.ok(!start.includes("hasSavedList("));
-  assert.ok(start.includes("wantsConnections(location.search)"));
+  assert.ok(start.includes("firstScreen("));
   assert.ok(read("js/app.js").includes("takeReturn(sessionStorage)"));
   for (const gone of ["drawSignedOut", "drawRestoreFromSignIn", "drawNoConnection"]) assert.ok(!read("js/app.js").includes("function " + gone + "("), gone);
   assert.ok(!read("js/lock-screen.js").includes("export function restoreBackupText"));
