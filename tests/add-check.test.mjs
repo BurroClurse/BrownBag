@@ -34,7 +34,7 @@ test("look-alike names that are different medicines", () => {
   assert.equal(r.match.name, "hydralazine 25 MG Oral Tablet");
 });
 
-test("a hand-typed near miss is a look-alike (Tyler, 2026-11-22)", () => {
+test("a hand-typed near miss is a look-alike (the developer, 2026-11-22)", () => {
   assert.equal(checkAddition({ name: "Lisinoprill", rxcui: null, dose: null, frequency: null }, [rec()], new Map()).kind, "lookalike");
 });
 

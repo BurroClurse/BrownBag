@@ -1,7 +1,7 @@
 # Limits on keeping the list up to date
 
 What can keep Brown Bag's list from matching what the patient really takes,
-and what we do about each (Tyler, 2026-11-23). Check a box when a limit is
+and what we do about each (the developer, 2026-11-23). Check a box when a limit is
 solved or handled well enough; add new ones at the end. Ideas are not plans:
 an idea becomes a plan only after its own design.
 
@@ -28,12 +28,12 @@ an idea becomes a plan only after its own design.
 - [ ] **4. Some medicines are in no source:** cash, discount cards, free
   samples, over-the-counter.
   - Now: the patient adds them; the add check catches duplicates.
-  - Ideas: scan the bottles (Tyler, 2026-11-24, for later): read each label,
+  - Ideas: scan the bottles (the developer, 2026-11-24, for later): read each label,
     fill in the medicine, update the one already listed, skip duplicates. The
     patient checks each one before it's saved; the photo stays on the phone.
     Needs a library or a service to read the label, so ask first. Also
     "upload to Brown Bag" from a pharmacy.
-  - ML (Tyler, 2026-11-25): the first place Brown Bag would use a trained
+  - ML (the developer, 2026-11-25): the first place Brown Bag would use a trained
     model. Reading the label (text recognition, then the drug, strength and
     directions) runs on the phone, so the photo never leaves it; the model is
     small, loads from Brown Bag's own address, and works with no signal. It
@@ -80,7 +80,7 @@ an idea becomes a plan only after its own design.
     and Questions gets an email address instead of GitHub issues.
 - [ ] **10. The public SMART sandbox resets nightly,** so made-up demo
   patients (Avery Brownbag) disappear.
-  - Ideas: the SMART team adds Avery to the built-in data (Tyler holds the
+  - Ideas: the SMART team adds Avery to the built-in data (the developer holds the
     request).
 - [ ] **11. Allergies are only what the records and the patient say.** The
   SMART sandbox has no reactions and none marked as medicine allergies
@@ -131,12 +131,12 @@ an idea becomes a plan only after its own design.
     current, <Mon YYYY>."), so joining cards never hides the one they take.
   - Careful: joining two cards joins their marks. If the patient marked one copy
     Not taking to tidy the list, the one they take must not go with it.
-  - When (Tyler, 2026-11-24): with Medicare, its fills first, then joining cards.
+  - When (the developer, 2026-11-24): with Medicare, its fills first, then joining cards.
   - Ideas: look up the NDC in RxNav by the record's date (Medicare plan, Task 1),
     and join only cards with no marks. (A mark on the joined card covering all
     is built: see above.)
 - [x] **17. A medicine or allergy found in two places names only one of them.**
-  - Now (2026-11-26, Tyler: yes): a card joined from several sources names
+  - Now (2026-11-26, the developer: yes): a card joined from several sources names
     every source. When they agree, the patient's card on My medicines, the
     staff page, See what's inside and the FHIR file all say "SMART sandbox,
     Valley Clinic (test records)", in the same words (`sourcesText` in
@@ -144,7 +144,7 @@ an idea becomes a plan only after its own design.
     and date. The unnamed allergy row names no source: only the SMART sandbox
     sends allergies today, so it has one place to be from. When a second
     source sends allergies, that row should name its source too.
-  - When (Tyler, 2026-11-24): with the second source.
+  - When (the developer, 2026-11-24): with the second source.
 - [ ] **18. Names alone often don't join.** openFDA and DailyMed write one medicine
   many ways ("LISINOPRIL TABLET", "Lisinopril", strength "40 mg/1"), with package
   numbers with or without dashes, and brand or generic (looked at 2026-11-24).
@@ -154,13 +154,13 @@ an idea becomes a plan only after its own design.
   - Careful: one FDA product can list several RxNorm codes, for different strengths,
     so the first one can't be taken. Dropping "tablet" and strengths from names could
     join a regular and an extended-release tablet.
-  - When (Tyler, 2026-11-24): with Medicare, which brings package numbers.
+  - When (the developer, 2026-11-24): with Medicare, which brings package numbers.
 - [ ] **19. The QR code only works with Brown Bag's own staff page.** Staff read
   the list and type it in; a clinic's system can't take it in, and it holds about
   seven medicines with codes before codes are dropped.
   - Now: Brown Bag's own encrypted link (prefix `v3.`), built on the phone, works
     with no signal and no server, and "Save as FHIR file" gives an IPS file.
-  - Idea (Tyler, 2026-11-25): a second QR code for the same list, a SMART Health
+  - Idea (the developer, 2026-11-25): a second QR code for the same list, a SMART Health
     Link carrying the IPS file, so a clinic's system can read it. A flip on the QR
     screen: one side today's code, the other the SMART Health Link. The flip is a
     labelled button, not only a gesture. Today's code stays the default and the
@@ -183,7 +183,7 @@ an idea becomes a plan only after its own design.
     say they have no medicines, and today's file with no disagreement. All four
     pass with 0 errors; the warnings are best practice only (no narrative on
     each resource, UCUM `{tbl}` and `{capsule}`).
-  - Idea (Tyler, 2026-11-25, from looking at github.com/anpheros): a GitHub Action
+  - Idea (the developer, 2026-11-25, from looking at github.com/anpheros): a GitHub Action
     that runs HL7's validator (`validator_cli.jar`, FHIR 4.0.1, IPS 2.0.1) on every
     push, against the test fixtures and the IPS file Brown Bag makes from them.
     Run it on GitHub, not through someone else's validation service, so the files
@@ -191,7 +191,7 @@ an idea becomes a plan only after its own design.
 - [ ] **21. The patient can't see when each source was last read.**
   - Now: Health records under More options shows when the medicines, allergies and
     insurance fills last updated, for the one connected source.
-  - Idea (Tyler, 2026-11-25, from looking at github.com/anpheros, whose patients see
+  - Idea (the developer, 2026-11-25, from looking at github.com/anpheros, whose patients see
     an access log): with several sources, a short per-source line of when Brown Bag
     last read it and what it read (medicines, allergies, fills), kept on the phone
     with the list. Only Brown Bag's own reads: it can't see who else reads the
@@ -205,7 +205,7 @@ an idea becomes a plan only after its own design.
     Brown Bag's same-person check would keep them apart, and connecting Epic's
     sandbox beside the SMART sandbox would only ever show "don't match".
     Anpheros' sandbox (looked at 2026-11-25) is also European and ATC-coded,
-    and US sources only is the scope for now (Tyler, 2026-11-25).
+    and US sources only is the scope for now (the developer, 2026-11-25).
   - Idea: two records for the same made-up person on the SMART sandbox, which
     lets us add patients (same name and birth date, different ids, different
     medicines), connected as two separate sign-ins. That's how one person ends
@@ -217,7 +217,7 @@ an idea becomes a plan only after its own design.
   - Now: hand-made fixtures, the real sandbox records, Riley Reconcile and
     Jordan Partial, and the 54 real-world cases in
     `docs/superpowers/research/2026-11-25-messy-data-findings.md`.
-  - Idea (Tyler, 2026-11-25): test on tens of thousands of records and many
+  - Idea (the developer, 2026-11-25): test on tens of thousands of records and many
     data sets before real patients.
     - **Generated, with known answers:** Synthea (open source, runs on a
       laptop) makes thousands of synthetic patients in FHIR R4. A Brown Bag
@@ -236,7 +236,7 @@ an idea becomes a plan only after its own design.
     - **Careful:** credentialed real-patient sets (for example MIMIC) can't go
       in the repo or near the app. Before real patients, a pharmacist reviews
       the matching rules, and Brown Bag is still not a medical device.
-  - Testing aid (Tyler, 2026-11-25): a Google Colab notebook, "Brown Bag Matching
+  - Testing aid (the developer, 2026-11-25): a Google Colab notebook, "Brown Bag Matching
     Check", built and run once on 40 Synthea patients. It roughs records up four
     ways for medicines and five for people, asks Brown Bag's own `matchOf` and
     `samePerson` about 4,026 pairs, and counts wrong joins and wrong splits; a
@@ -249,7 +249,7 @@ an idea becomes a plan only after its own design.
   tab PO BID" and "1 tablet by mouth twice a day" are the same, but unless both
   are coded, Brown Bag calls them "worded differently", which goes to staff only.
   - Now: the words are compared after small clean-ups (add-check.js `words`).
-  - Idea (Tyler, 2026-11-25): a small trained model reads free-text directions
+  - Idea (the developer, 2026-11-25): a small trained model reads free-text directions
     (dose, route, how often, as needed) into the same parts FHIR codes. It only
     suggests: two directions it reads the same stop counting as worded
     differently, but it never settles a dose or schedule disagreement, never
@@ -274,7 +274,7 @@ an idea becomes a plan only after its own design.
   - Now: each source's version is its own `MedicationStatement` with its notes
     ("Records disagree", "Records say: …", "Record date: …", "Patient isn't
     sure"), and the section's title, a note and its readable text say "Records
-    disagree on N medicines. Ask the patient." (Tyler, 2026-11-25: keep the
+    disagree on N medicines. Ask the patient." (the developer, 2026-11-25: keep the
     file valid IPS).
   - Idea: revisit if IPS or US Core define a place for it, or if a SMART Health
     Link design carries more than an IPS.

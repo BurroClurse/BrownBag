@@ -1,5 +1,5 @@
 // The "?" buttons are pills, white over teal, with the mark in the opposite color
-// (Tyler, 2026-11-24). The mark is see-through text over a two-color fill, so where
+// (the developer, 2026-11-24). The mark is see-through text over a two-color fill, so where
 // colors are overridden it must get a plain color or the button would look blank.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -27,7 +27,7 @@ test("the paper ball has the pills on it too", () => {
   assert.match(read("js/crumple.js"), /querySelectorAll\("\.help-pill"\)/);
 });
 
-// At 27px Tyler found the mark hard to see.
+// At 27px the developer found the mark hard to see.
 test("the mark nearly fills the pill", () => {
   assert.match(rule(".help-pill > span"), /font-size: 38px/);
 });

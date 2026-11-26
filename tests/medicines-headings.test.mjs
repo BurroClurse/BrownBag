@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-// My medicines (Tyler, 2026-11-25): no "My medicines" over "Medicines (7)",
+// My medicines (the developer, 2026-11-25): no "My medicines" over "Medicines (7)",
 // and two matching section headers, Allergies in red and Medicines in teal.
 const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 const app = read("js/app.js");
 const css = read("css/brownbag.css");
 const body = (name) => app.slice(app.indexOf("function " + name + "(")).split("\n}\n")[0];
 
-test("the title shows, with the note behind a ? beside it (Tyler, 2026-11-25)", () => {
+test("the title shows, with the note behind a ? beside it (the developer, 2026-11-25)", () => {
   const draw = body("drawMedicines");
   assert.ok(draw.includes('helpHeading(root, "My medicines", "medicines-heading", "About this list"'));
   assert.ok(draw.includes("DISCLAIMER"));

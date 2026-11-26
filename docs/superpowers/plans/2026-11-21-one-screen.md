@@ -19,7 +19,7 @@
 - QR code always black on white with a 4-module margin.
 - Main screen: no scrolling at 390 by 844 and 375 by 667 at default text size.
 - Buttons: at least 56 px tall on the main screen, font at least 1.25rem.
-- Commit messages: one short line in Tyler's voice, no dashes, plus the attribution lines.
+- Commit messages: one short line in the developer's voice, no dashes, plus the attribution lines.
 - Tests: `node --test "tests/*.test.mjs"` from `BrownBag/`.
 
 ## Review Focus

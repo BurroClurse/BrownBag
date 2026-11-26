@@ -232,7 +232,7 @@ function sideStatements(item, sides, level, notes, dated) {
     var statement = sideStatement(item, side, level);
     var when = dated ? recordDate(side) : null;
     // On a status disagreement, which side lists it current and which
-    // stopped, in words an older staff page shows too (Tyler, 2026-11-25).
+    // stopped, in words an older staff page shows too (the developer, 2026-11-25).
     var says = aboutStopping ? RECORDS_SAY[side.status] : null;
     var texts = notes.concat(says ? "Records say: " + says : [], when ? RECORD_DATE + when : []);
     statement.note.splice.apply(statement.note, [1, 0].concat(texts.map(function (text) { return { text: text }; })));
@@ -272,7 +272,7 @@ function sideStatus(side) {
 // "Other record: <Source>, <words>, <YYYY-MM>". At level 0, where the list
 // is longest, only the source and month. Once the patient has answered "Do
 // you still take it?", a record that stopped it says so: "Other record
-// (stopped): …" (Tyler, 2026-11-26).
+// (stopped): …" (the developer, 2026-11-26).
 function otherRecordNote(item, side, level) {
   var month = recordDate(side);
   var stopped = item.group && item.group.verdicts.indexOf("status") !== -1 && side.status === "not-current";
@@ -375,12 +375,12 @@ function linkedFrom(tags, entries, disagree) {
 }
 
 // The staff page's link: the list is the part after "#". Once it's read, the
-// address is put back to plain share.html on the same history step (Tyler,
+// address is put back to plain share.html on the same history step (the developer,
 // 2026-11-26), so a link copied or shared from the page doesn't carry the
 // list. place and steps are location and history.
 //
 // The tab keeps the same locked text, exactly what the QR code holds and
-// never the unlocked list, on that step's own history.state (Tyler, Task
+// never the unlocked list, on that step's own history.state (the developer, Task
 // 10d). A reload, or Safari bringing back a tab it put aside, finds it there
 // and asks for the 6 digits again; it goes when the tab is closed (a tab
 // reopened from recently closed tabs may bring it back, still locked). The step's
@@ -1050,7 +1050,7 @@ export function emptyPartText(groups, part) {
     if (groups.incomplete) return "None loaded.";
     var elsewhere = [(groups.disagree || []).length ? DISAGREE_TITLE : null, othersAsNeeded(groups).length ? "As needed" : null].filter(Boolean);
     if ((groups.noMedicines || []).length && !groups.unnamed && !elsewhere.length) return null;
-    // The parts the records' medicines are under instead (Tyler, 2026-11-25).
+    // The parts the records' medicines are under instead (the developer, 2026-11-25).
     if (!groups.unnamed) return elsewhere.length ? "All under " + elsewhere.join(", and ") + "." : "No medicines from records.";
     return othersAsNeeded(groups).length || groups.patientSaysStopped.length ? "No others with a medicine name." : "None with a medicine name.";
   }
@@ -1086,7 +1086,7 @@ export function dateLines(groups, format, made) {
   return out.concat((made || "QR code made") + ": " + format(groups.madeAt));
 }
 
-// The allergies' own date (Tyler, 2026-11-23: always). None when they didn't
+// The allergies' own date (the developer, 2026-11-23: always). None when they didn't
 // load, or in a code made before it was included.
 export function allergyDateLine(groups, format) {
   var allergies = groups.allergies;
@@ -1095,7 +1095,7 @@ export function allergyDateLine(groups, format) {
 }
 
 // Insurance fills are extra: without them the list still stands, so this is a
-// note and not a warning (Tyler, 2026-11-23).
+// note and not a warning (the developer, 2026-11-23).
 export function fillsNote(groups) {
   if (!groups.claimsNotLoaded || groups.incomplete) return null;
   return "Insurance fills couldn't be loaded. That doesn't mean this list is wrong: what's here comes from the records and the patient. A medicine only insurance knows about may not be listed.";

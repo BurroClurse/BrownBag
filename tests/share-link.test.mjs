@@ -1,7 +1,7 @@
 // The staff page's link carries the patient's list after "#". Once the page has
-// read it, the address bar is plain share.html (Tyler, 2026-11-26), so a link
+// read it, the address bar is plain share.html (the developer, 2026-11-26), so a link
 // copied or shared from the page never carries the list on. The tab keeps the
-// same locked text on its own history step (Tyler, Task 10d), so a reload, or
+// same locked text on its own history step (the developer, Task 10d), so a reload, or
 // Safari bringing a put-aside tab back, asks for the 6 digits again. If these
 // fail, a staff member who shares the page's address could hand the locked
 // list on, or something unlocked could be kept.

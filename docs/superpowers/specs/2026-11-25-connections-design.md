@@ -1,13 +1,13 @@
 # Brown Bag: lock first, then a connections screen
 
-Status: Tyler handed the remaining choices to Claude, 2026-11-25 ("I'll let
+Status: the developer handed the remaining choices to Claude, 2026-11-25 ("I'll let
 you choose the best options until this is complete, just tell me at the end
 what you chose and why"). Built 2026-11-25, plan
 `docs/superpowers/plans/2026-11-25-connections.md`.
 
 ## Why
 
-Tyler, 2026-11-25: there will be many places a patient's records come from
+The developer, 2026-11-25: there will be many places a patient's records come from
 (health systems, pharmacies, insurers). "The person will need to sign in to
 the app account first, then be directed to the sign in for their
 provider/pharmacy/insurance company, which shouldn't go straight home after
@@ -16,7 +16,7 @@ should finish connecting to others." The same screen is reached later from
 More options → Health records.
 
 "App account" means the phone lock (Face ID, fingerprint or 6-digit PIN).
-No server (Tyler, 2026-11-25: "I don't want a server right now").
+No server (the developer, 2026-11-25: "I don't want a server right now").
 
 ## Who and what for
 
@@ -78,7 +78,7 @@ shows with two lists is undecided. The storage change comes with Medicare.
 
 ## Approaches
 
-- **A. Lock first, then unlock again after each sign-in (Tyler's choice,
+- **A. Lock first, then unlock again after each sign-in (the developer's choice,
   2026-11-25).** One quick Face ID per connection. The lock is as strong as
   today, and it's the least new code.
 - B. Sign-in in a pop-up window so Brown Bag stays open and unlocked. No

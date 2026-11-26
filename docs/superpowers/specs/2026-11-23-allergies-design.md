@@ -1,10 +1,10 @@
 # Brown Bag: allergies, with the reaction
 
-Status: approved by Tyler, 2026-11-23.
+Status: approved by the developer, 2026-11-23.
 
 ## Why
 
-Tyler (2026-11-23): add allergies with the reaction. The first design's
+The developer (2026-11-23): add allergies with the reaction. The first design's
 notes say "Nurses almost always ask for them next." Brown Bag answers what
 the patient takes; this answers what they must not be given.
 
@@ -13,7 +13,7 @@ the patient takes; this answers what they must not be given.
 The patient, and the nurse or pharmacist who scans the QR code. Staff want
 the allergy, the reaction, and who says so (the records or the patient).
 
-## What the sandbox has (Tyler ran the counts, 2026-11-23)
+## What the sandbox has (the developer ran the counts, 2026-11-23)
 
 372 AllergyIntolerance records, none with a reaction: 369 food, 3
 environment, none marked medication. Chantell Bartell
@@ -47,7 +47,7 @@ the reaction, and medicine allergies, come from the patient.
 - Slowing down or failing the medicine list because of allergies.
 - Inventing codes. Words are always sent; a code only when checked.
 
-## Approaches (Tyler chose A, 2026-11-23: "if it doesnt look right, option B")
+## Approaches (the developer chose A, 2026-11-23: "if it doesnt look right, option B")
 
 - **A. A section at the top of My medicines (chosen).** Home keeps its
   layout.
@@ -57,7 +57,7 @@ the reaction, and medicine allergies, come from the patient.
 - **C. Under More options.** Smallest, but easy to miss. Dropped.
 
 The section is drawn by its own function, so moving it to its own screen (B)
-is a small change. **Stop point:** when A is built, Tyler sees screenshots
+is a small change. **Stop point:** when A is built, the developer sees screenshots
 from both virtual phones before anything goes to `main`, and says A or B.
 
 ## What the patient sees
@@ -104,10 +104,10 @@ record's, with the patient's reaction marked "added by me" and "Remove mine".
   "+ Add an allergy" and "I have no known allergies".
 - After tapping it: "No known allergies", big and on its own line, then "You
   said this on Nov 23, 2026." with "Undo" at the right, and "+ Add an allergy".
-  The box is soft teal instead of red (Tyler, 2026-11-24), unless the
+  The box is soft teal instead of red (the developer, 2026-11-24), unless the
   allergies didn't load or an entry doesn't say what it's to: then it stays
   red. Adding an allergy clears it.
-- The staff page matches (Tyler, 2026-11-24): soft teal, "No known allergies"
+- The staff page matches (the developer, 2026-11-24): soft teal, "No known allergies"
   big, "The patient says this." It stays red when there's any allergy warning,
   a saved copy included. Only the page's look; the QR code is unchanged.
 - The button only shows when nothing is listed and the records' allergies
@@ -252,7 +252,7 @@ RxNav during the build; any that can't be checked sends words only.
 - Exact card layout within the existing card style.
 - How `saved-on` and status are stored.
 
-## Calls made by Claude, for Tyler to check
+## Calls made by Claude, for the developer to check
 
 - The two lists' wording and choices, and one reaction per own allergy
   (Other… for several).
@@ -267,10 +267,10 @@ RxNav during the build; any that can't be checked sends words only.
 
 ## Settled while building (2026-11-23)
 
-- Tyler chose A from the screenshots.
+- The developer chose A from the screenshots.
 - "Allergic disposition" (SNOMED 609328004), which names no allergen, isn't a
   card or counted. The section and the staff page say the records have an
-  entry that doesn't say what it's to (Tyler). One that has a reaction stays
+  entry that doesn't say what it's to (the developer). One that has a reaction stays
   a card.
 - Records that share a code but have different names stay apart: codes like
   "Allergy to drug" cover many. Placeholder codes never join records.
@@ -281,15 +281,15 @@ RxNav during the build; any that can't be checked sends words only.
 - Claims and allergies are read outside the SMART library (`js/read.js`), so
   a 401 on either can't drop the medicines or the pass.
 - If the patient's own saved part can't be opened, staff are told to ask.
-- The review's ten minor leftovers are fixed (Tyler, same day). Claims and
+- The review's ten minor leftovers are fixed (the developer, same day). Claims and
   allergies get only the time left before the medicines' own limit; each
   form keeps its half-typed answers; the QR warning says one true line per
   reaction; every code of a record travels; a record with no status is sent
   as active, as it's shown (FHIR requires a status).
-- Chrome's offer to save the PIN stays (Tyler): WCAG 2.2 (3.3.8) counts
+- Chrome's offer to save the PIN stays (the developer): WCAG 2.2 (3.3.8) counts
   password managers as help.
 
-## Standards (2026-11-23; Tyler: the most interoperable, FHIR R4 and what's recommended)
+## Standards (2026-11-23; the developer: the most interoperable, FHIR R4 and what's recommended)
 
 Read that day: FHIR R4 AllergyIntolerance, US Core 9.0.0 (and 6.1.0, the one
 ONC's (g)(10) names), IPS 2.0.1, SMART Health Cards and Links 1.0.0, CMS Kill
@@ -315,7 +315,7 @@ Done:
   carry one code. Older answers still show as they were.
 
 Waiting on a SNOMED CT license (free in the US through a UMLS account, which
-Tyler would sign up for): codes for the other allergens and for reactions.
+The developer would sign up for): codes for the other allergens and for reactions.
 Checked on tx.fhir.org against US Core's value set 1267.43 and clinical
 findings: Penicillin-containing product 890458001, Sulfonamide-containing
 product 763875007, Iodinated contrast media-containing product 1144611009,
@@ -331,7 +331,7 @@ Not done: SMART v2 scopes (`.rs`; the sandbox and older systems take v1
 birth date), and an IPS document or SMART Health Link (Later list; a link
 needs a server).
 
-## Changed 2026-11-24 (Tyler): shorter reactions
+## Changed 2026-11-24 (the developer): shorter reactions
 
 - For staff, See what's inside and the FHIR file's readable text: "Reaction:
   Hives, severe (records) · Vomiting (patient)". "Reaction: not listed" when
@@ -342,7 +342,7 @@ needs a server).
   has the same one. Otherwise each says "Source: ...".
 - The QR code's data didn't change.
 
-## Changed 2026-11-24 (Tyler): what an unnamed allergy does say
+## Changed 2026-11-24 (the developer): what an unnamed allergy does say
 
 One short note with all the record has: "Your records also have an unnamed allergy:
 environment, recorded Feb 28, 1979 (same day as Mold). Ask your care team." Two are

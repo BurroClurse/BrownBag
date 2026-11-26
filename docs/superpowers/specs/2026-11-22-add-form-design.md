@@ -1,10 +1,10 @@
 # Brown Bag: adding a medicine, with lists and a check
 
-Status: approved by Tyler, 2026-11-22.
+Status: approved by the developer, 2026-11-22.
 
 ## Why
 
-Tyler (2026-11-22): "How much" and "How often" as dropdowns after the
+The developer (2026-11-22): "How much" and "How often" as dropdowns after the
 medicine is chosen "would be much better and optimal as opposed to free
 text." And: "sometimes users could accidentally add something that is
 already there or add a dose/frequency/med that is slightly different, it
@@ -98,7 +98,7 @@ How much                         How often
   before.
 - Offline: the QR code is made on the phone, so a new addition is in the
   code at once, and the existing "This code isn't fully up to date"
-  alert lists it until the next update (Tyler asked; it already works).
+  alert lists it until the next update (the developer asked; it already works).
 
 ### The check on Save
 
@@ -123,7 +123,7 @@ RxNav (so Zestril matches lisinopril). The cases, first match wins:
 
 1. **Marked stopped.** "You marked Metformin stopped on Nov 20." Start
    it again (undoes the stop) · Add it anyway (the old one stays stopped;
-   Tyler, 2026-11-23) · Go back.
+   The developer, 2026-11-23) · Go back.
 2. **Same medicine, same dose and schedule.** "Lisinopril 10 mg once a
    day is already on your list." Don't add it · Add it anyway.
 3. **Same medicine, different strength, dose or schedule** (sketch
@@ -131,7 +131,7 @@ RxNav (so Zestril matches lisinopril). The cases, first match wins:
    choice: Replace the one I added.
 4. **Look-alike name.** A different medicine whose name is spelled
    closely (Hydroxyzine and Hydralazine), and also a hand-typed name one
-   or two letters off a listed one (Lisinoprill and Lisinopril; Tyler,
+   or two letters off a listed one (Lisinoprill and Lisinopril; the developer,
    2026-11-22: treat near-miss spellings as look-alikes). "Hydroxyzine
    looks like Hydralazine, which is already on your list. They're
    different medicines. Check the bottle." Go back · Add Hydroxyzine.
@@ -154,7 +154,7 @@ uses the codes and names only, and says nothing about it.
 - How "same dose and schedule" compares a picked answer with a record's
   words.
 
-## Calls made by Claude, for Tyler to check
+## Calls made by Claude, for the developer to check
 
 - Native phone lists, not chips.
 - The "How much" lists for each form, and the general list for typed

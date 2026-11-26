@@ -1,6 +1,6 @@
 # Privacy page: design
 
-Approved by Tyler 2026-11-24. A small change.
+Approved by the developer 2026-11-24. A small change.
 
 ## Why
 
@@ -12,10 +12,10 @@ and what doesn't.
 ## What
 
 - `privacy.html`: one public page, no sign-in, no script needed, works with no
-  signal. Its wording is the draft Tyler approved.
+  signal. Its wording is the draft the developer approved.
 - A **Privacy** row on More options, and a small **Privacy** link under the
   sign-in list. Back goes to where they were, and may ask them to unlock.
-- Questions go to GitHub issues for now. **Later (Tyler): an email address he
+- Questions go to GitHub issues for now. **Later (the developer): an email address they
   chooses**, before real patients. A lawyer reads the page before then too.
 - Not in it: no change to what Brown Bag stores or sends, no consent box.
 

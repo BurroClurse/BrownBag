@@ -60,7 +60,7 @@ export function localDate(date) {
 export var OLD_FILL = "Last filled over a year ago.";
 
 // The note for a medicine whose newest fill is over a year before today
-// (both "YYYY-MM-DD"), else null (Tyler, 2026-11-26). Over a year by the
+// (both "YYYY-MM-DD"), else null (the developer, 2026-11-26). Over a year by the
 // calendar: before the same day a year back, Feb 28 when today is Feb 29. A
 // fill with only a month or year counts only when all of it is that old.
 export function oldFillText(last, today) {
@@ -143,7 +143,7 @@ export function patientCard(entry, claimsLoaded, today) {
   // side, or records that disagree, the record whose facts these are.
   if (fromRecords) say("Source", otherRecord ? chosen.sourceName : (chosen || recordsDisagree(entry)) ? entry.source : sourcesText(entry));
   // Stopped by an answer, or a tap they then confirmed when asked: only what
-  // they said, their latest word on it (Tyler, 2026-11-26).
+  // they said, their latest word on it (the developer, 2026-11-26).
   var marked = entry.stoppedAt && !(entry.answer && entry.answer.choice === "not-taking");
   say("You marked", marked ? "Not taking, " + dateText(entry.stoppedAt) : entry.asNeededAt && !entry.stoppedAt ? "As needed, " + dateText(entry.asNeededAt) : null);
   if (entry.prn) say("Who says", "Your records say as needed");
@@ -187,11 +187,11 @@ export function nameOnceStopped(entry) {
 // The name a card shows: the side the patient chose, else the record's.
 // Its buttons and what's said about it use the same. While "How much do you
 // take?" is open, its plain name, so no one side's strength is the name
-// (Tyler, 2026-11-25).
+// (the developer, 2026-11-25).
 export function cardName(entry) {
   if (!entry.answer && entry.question && entry.question.kind === "dose") return askedName(entry.name);
   // Stopped while the records disagreed on how much: still no one side's
-  // strength (Tyler, 2026-11-26).
+  // strength (the developer, 2026-11-26).
   if (stoppedByAnswer(entry) && disagreedOn(entry, ["dose"])) return askedName(entry.name);
   var chosen = entry.answer ? chosenSide(entry) : null;
   return (chosen && chosen.name) || entry.name;

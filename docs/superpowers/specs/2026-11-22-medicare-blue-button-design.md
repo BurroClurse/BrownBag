@@ -1,16 +1,16 @@
 # Brown Bag: Medicare fills through Blue Button 2.0
 
-Status: approved by Tyler, 2026-11-23.
+Status: approved by the developer, 2026-11-23.
 
 ## Why
 
-Tyler (2026-11-21): showing what was actually filled is "an incredibly
+The developer (2026-11-21): showing what was actually filled is "an incredibly
 important aspect of what Brown Bag should show", and "the focus here is
 interoperability and combining resources/APIs in order to get the best
 picture." The first insurer source (pharmacy claims from the SMART
 sandbox, `js/claims.js`) is live. Medicare's Blue Button 2.0 is a truly
 separate API, run by CMS, with its own sign-in: the second source.
-Tyler chose "both" (sandbox claims, then Blue Button) and asked that it
+The developer chose "both" (sandbox claims, then Blue Button) and asked that it
 can be used with real patients, not only as a demo (2026-11-22).
 
 ## Who and what for
@@ -34,7 +34,7 @@ Part D paid for it, and fills from outside the health system show up.
 
 - CMS production approval itself (privacy policy, terms, demo video,
   request form). Built and tested on Medicare's test data only.
-- Other insurers. Tyler's growth path (2026-11-22): Medicare directly
+- Other insurers. The developer's growth path (2026-11-22): Medicare directly
   now, a connection service (Flexpa or similar) for other insurers later.
   This design must not get in its way: each insurer is its own source.
 - Medicare Advantage plans (their own APIs), Parts A and B claims,
@@ -53,7 +53,7 @@ Part D paid for it, and fills from outside the health system show up.
 
 ## Approaches
 
-Server host (Tyler, 2026-11-22: "option 1 for now"):
+Server host (the developer, 2026-11-22: "option 1 for now"):
 
 1. **A Netlify function (chosen).** Free plan, code and tests in the
    Brown Bag repo, the app keeps burroclurse.github.io/BrownBag.
@@ -61,7 +61,7 @@ Server host (Tyler, 2026-11-22: "option 1 for now"):
 3. The whole app on Netlify. Changes the live address and the course
    sign-in settings. Dropped.
 
-Growth (Tyler, 2026-11-22): 3, Medicare directly now, a connection
+Growth (the developer, 2026-11-22): 3, Medicare directly now, a connection
 service for other insurers later; both use this same small server.
 
 ## Facts this rests on (checked 2026-11-21)
@@ -117,13 +117,13 @@ service for other insurers later; both use this same small server.
 - "Remove my Medicare claims" on More deletes the pass and the Medicare
   fills. It says Medicare.gov can also stop the sharing.
 
-### Same person (Tyler, 2026-11-21: option 1)
+### Same person (the developer, 2026-11-21: option 1)
 
 - After sign-in and on each update, Brown Bag reads the Medicare
   `Patient` and compares family name, first given name and birth date
   with the health-record patient. Capitals, spaces, punctuation, accents
   and endings like Jr., Sr., II and III are ignored; the birth date must
-  match exactly (Tyler, 2026-11-22: option 1).
+  match exactly (the developer, 2026-11-22: option 1).
 - Different: the fills are not added, and My medicines says "This
   Medicare account is for someone else." The pass is kept so the
   patient can see why, and Remove clears it.
@@ -135,7 +135,7 @@ service for other insurers later; both use this same small server.
   that when they agree): treated as different, with "Medicare didn't
   share your name and birth date, so Brown Bag can't check this is you.
   Remove Medicare and add it again, and allow it." (Claude's call,
-  following Tyler's safety choice.)
+  following the developer's safety choice.)
 
 ### Reading the fills
 
@@ -196,15 +196,15 @@ list updates as usual:
 
 ## Test data and accounts
 
-- Tyler makes the CMS Blue Button developer account and registers the
+- The developer makes the CMS Blue Button developer account and registers the
   app (confidential, authorization code), with redirect addresses for
-  the live site and the home test server. He puts the client id and
+  the live site and the home test server. They put the client id and
   secret in Netlify's settings himself.
 - Medicare's sandbox has synthetic enrollees with test logins. The
   builder picks one whose Part D fills include drugs that RxNav knows.
 - A second demo patient on the SMART sandbox with the same name and
   birth date as that Medicare test person, so the demo shows Medicare
-  fills joined with the records: Tyler, 2026-11-22, "hold off but add it
+  fills joined with the records: the developer, 2026-11-22, "hold off but add it
   to the plan later". The plan includes it as a later, separate task.
 
 ## Constraints
@@ -222,7 +222,7 @@ list updates as usual:
 - When "near expiry" is.
 - How the server tells the live site from the home test server.
 
-## Calls made by Claude, for Tyler to check
+## Calls made by Claude, for the developer to check
 
 - A separate return page, `medicare.html`.
 - A declined name and birth date counts as a different person.

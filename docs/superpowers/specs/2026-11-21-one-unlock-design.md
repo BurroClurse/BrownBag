@@ -1,14 +1,14 @@
 # Brown Bag: one unlock, and a shorter note at the top
 
-Status: approved by Tyler, 2026-11-21.
+Status: approved by the developer, 2026-11-21.
 
 ## Why
 
 Opening Brown Bag takes two steps today: unlock Brown Bag (Face ID or PIN),
 then "Sign in to update" at the health system. The sign-in only lasts while
-the page is open, so every reopen shows the saved copy and asks again. Tyler
-asked whether the two could be one (2026-11-21). He also found the note at the
-top of home takes almost half the screen on his iPhone: the saved-copy line
+the page is open, so every reopen shows the saved copy and asks again. The developer
+asked whether the two could be one (2026-11-21). They also found the note at the
+top of home takes almost half the screen on their iPhone: the saved-copy line
 plus the three-sentence Home Screen instructions.
 
 ## Who and what for
@@ -49,7 +49,7 @@ and the QR code, with nothing else to read or tap first.
 
 ### One unlock
 
-1. **Stay signed in with a long-lasting pass (chosen by Tyler,
+1. **Stay signed in with a long-lasting pass (chosen by the developer,
    2026-11-21).** SMART's `offline_access` permission makes the health
    system hand Brown Bag a refresh token, a long-lasting pass it can trade for
    fresh access without the sign-in page. Brown Bag keeps the pass inside its
@@ -68,8 +68,8 @@ test; the build still saves a new one if the server sends it.
 ### The note at the top
 
 1. **One short line per note; the Home Screen steps behind a "How?" button
-   (chosen by Tyler, 2026-11-21), plus a way to hide the tip for good once
-   it's done (Tyler, same day).**
+   (chosen by the developer, 2026-11-21), plus a way to hide the tip for good once
+   it's done (the developer, same day).**
 2. Move the Home Screen tip to More options only. Dropped.
 3. Show one note at a time. Dropped.
 
@@ -156,7 +156,7 @@ Each note is one short line. Buttons sit on the same line when they fit.
 
 ## Depends on a phone check
 
-Tyler's pending check "does sign-in stay inside the Home Screen app?"
+The developer's pending check "does sign-in stay inside the Home Screen app?"
 decides one case. If sign-in started from the Home Screen app finishes in
 Safari instead, the pass is saved in Safari's storage, which the Home Screen
 app can't read. The Home Screen app then keeps working as today (saved list
@@ -171,9 +171,9 @@ needed, is a follow-up.
 - Whether "Updating your list…" also shows on the QR screen if it's opened
   mid-update (the QR uses whatever list is current when it opens).
 
-## Calls made by Claude, for Tyler to check
+## Calls made by Claude, for the developer to check
 
-- The pass is kept with either lock, Face ID or PIN. Tyler chose this
+- The pass is kept with either lock, Face ID or PIN. The developer chose this
   on 2026-11-21, knowing a 6-digit PIN can be guessed by someone who copies
   the phone's Brown Bag data to a computer.
 - On open with a saved pass and signal, home shows the saved list at once
@@ -181,7 +181,7 @@ needed, is a follow-up.
   more than one tap away.
 - Backup files leave the pass out.
 
-## Changed 2026-11-23 (Tyler: sign out of everyone, like a real app)
+## Changed 2026-11-23 (the developer: sign out of everyone, like a real app)
 
 - Sign out deletes every pass on the phone, then asks each health system that
   offers revocation (RFC 7009, same server only) to end its side, within 3 s.
@@ -190,7 +190,7 @@ needed, is a follow-up.
 - A rotated refresh token that arrives after the wait is kept. A sign-in with
   no token address gives no pass.
 
-## Changed 2026-11-24 (Tyler: Open my saved list only with no signal)
+## Changed 2026-11-24 (the developer: Open my saved list only with no signal)
 
 - "You're signed out" has only Sign in when there's a connection. With none it
   adds "No connection. You can still open the list saved on this phone." and

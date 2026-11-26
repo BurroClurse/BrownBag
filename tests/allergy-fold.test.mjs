@@ -1,4 +1,4 @@
-// The Allergies box took most of the screen for three allergies (Tyler, 2026-11-24).
+// The Allergies box took most of the screen for three allergies (the developer, 2026-11-24).
 // Closed, it must still name every allergy, warn of severe ones, and never say mild:
 // a missed mark would make a dangerous allergy look ordinary.
 import test from "node:test";

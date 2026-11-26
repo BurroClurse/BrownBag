@@ -46,7 +46,7 @@ var SIGN_IN_WAIT_MS = 12000;
 // The sandbox's test patients. Each choice is a fresh page: the sign-in library
 // reads the address, and keeps an earlier try's answers. It's its own history
 // step after the list's, so Back while sign-in is starting, or from "Couldn't
-// start sign-in", is the list (Tyler, Task 10d). Once the sandbox's address is
+// start sign-in", is the list (the developer, Task 10d). Once the sandbox's address is
 // known, the sandbox takes the choice's step, so Back from the sandbox comes
 // to the list once, then the connections screen. Forward to a choice's step
 // after Back shows "Couldn't start sign-in", never a new start

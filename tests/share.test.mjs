@@ -587,7 +587,7 @@ test("the dates travel in the QR code", async () => {
 
 // Staff must hear that fills are missing, or a medicine only insurance knows
 // about would be left out with no word. It must not say the list is wrong
-// (Tyler, 2026-11-23): what's on it still comes from the records and the patient.
+// (the developer, 2026-11-23): what's on it still comes from the records and the patient.
 test("insurance fills that didn't load are said, without calling the list wrong", async () => {
   const { fillsNote } = await import("../js/share.js");
   const text = "Insurance fills couldn't be loaded. That doesn't mean this list is wrong: what's here comes from the records and the patient. A medicine only insurance knows about may not be listed.";
@@ -916,7 +916,7 @@ test("a mark's record says records disagree, and a card to check is matched by i
   assert.equal(statementsOf(bundle).length, 3);
 });
 
-// Tyler, 2026-11-25: on a status disagreement each side says what its
+// The developer, 2026-11-25: on a status disagreement each side says what its
 // records say, so even an older staff page can tell which is stopped.
 test("a status disagreement says which side is current and which stopped", async () => {
   const sides = [Object.assign({}, SIDES[0], { status: "not-current", recordStatus: "stopped" }), SIDES[1], Object.assign({}, SIDES[1], { sourceId: "lakeside", sourceName: "Lakeside", key: "rx:9", status: "unknown" })];
@@ -953,7 +953,7 @@ test("staff see the hint, the patient doesn't", async () => {
   const notes = notesOf(statementsOf(bundle)[0]);
   assert.deepEqual(notes.slice(-2), ["Last filled 2026-10-21 (Aetna claims), 2 fills", "Fill suggests about 2 a day (60 for 30 days)"]);
   const row = groupShareBundle(bundle).fromRecords[0];
-  // Tyler, 2026-11-25: the row says where it comes from.
+  // The developer, 2026-11-25: the row says where it comes from.
   assert.deepEqual(row.facts.filter(([label]) => label === "From the fill"), [["From the fill", "about 2 a day (60 for 30 days)"]]);
   assert.ok(!row.facts.some(([label]) => label === "Note"), "read as a fact, not a loose note");
   const mine = patientCard(entry, true);
@@ -1017,7 +1017,7 @@ test("the patient's card names the sources the staff page does", async () => {
   assert.deepEqual(patientCard(card, false).facts.filter(([label]) => label === "Source"), staff);
 });
 
-// Tyler, 2026-11-26: once the patient settles "Do you still take it?", the
+// The developer, 2026-11-26: once the patient settles "Do you still take it?", the
 // note about the record that stopped it says so.
 test("a settled status question says which other record stopped it", async () => {
   const sides = [SIDES[0], Object.assign({}, SIDES[1], { name: "lisinopril 10 MG Oral Tablet", key: "rx:314076", dose: "10 mg", status: "not-current", recordStatus: "stopped" })];

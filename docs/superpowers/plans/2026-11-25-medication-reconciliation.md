@@ -15,7 +15,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-25-medication-reconciliation-design.md` (approved 2026-11-25).
 
-## Decisions Tyler made on this plan (2026-11-25)
+## Decisions the developer made on this plan (2026-11-25)
 
 Asked one at a time, each confirmed as proposed:
 1. The test source is served only by the home server at `/_home/demo-source.json`, when started with `BROWN_BAG_DEMO=two-clinics`, and the app asks only on port 8443.
@@ -57,7 +57,7 @@ Asked one at a time, each confirmed as proposed:
   - Staff part: "Records disagree: ask the patient"; a source that didn't load, as a staff notice: "<Source> didn't load."
   - Staff notes: "Records disagree", "Patient isn't sure", "Patient confirmed this, <YYYY-MM-DD>", "Other record: <Source>, <words>, <YYYY-MM>", "May be the same medicine as <name>", "Possible duplicate of <name>", "<Source> didn't load", "Worded differently in <Source>: <words>", "Fill suggests about <n> a day (<quantity> for <days> days)"
   - IPS caution: ["records disagree on N", "Records disagree on N medicines. Ask the patient."]
-- Commits: one short line in Tyler's voice, no dashes, explicit paths, ending with the attribution lines from the session.
+- Commits: one short line in the developer's voice, no dashes, explicit paths, ending with the attribution lines from the session.
 - Every task adds its phone checks to `docs/NEEDS-TESTING.md`. Tasks 7 to 10 touch the QR code, the staff page or the patient's list: test right away.
 
 ## Review Focus
@@ -299,9 +299,9 @@ Asked one at a time, each confirmed as proposed:
 - [ ] **Step 4: Run the whole suite.** All pass. Then start `BROWN_BAG_DEMO=two-clinics node tools/serve.mjs`, open `https://localhost:8443/` in the iPhone 15 simulator as Loria Jenkins, and check that the lisinopril card shows both sides. Without the variable, the list is today's.
 - [ ] **Step 5: Commit** `js/app.js js/card.js js/demo-source.js tools/serve.mjs tests/demo-source.test.mjs tests/card.test.mjs tests/offline.test.mjs docs/NEEDS-TESTING.md`: "Bring every source through one list, with test records on the home server".
 
-### Task 6b: Sandbox test patients with conflicting records (added 2026-11-25, Tyler)
+### Task 6b: Sandbox test patients with conflicting records (added 2026-11-25, the developer)
 
-Tyler, 2026-11-25: create test patients on the sandbox "with many conflicting meds, and if possible, from different sources". Brown Bag holds one sandbox connection, so the sources are: the patient's health record on the sandbox, their insurance claims (ExplanationOfBenefit) on the sandbox, and a matching test clinic file the home server serves for that patient. Two sign-ins for one person is later work with its own design.
+The developer, 2026-11-25: create test patients on the sandbox "with many conflicting meds, and if possible, from different sources". Brown Bag holds one sandbox connection, so the sources are: the patient's health record on the sandbox, their insurance claims (ExplanationOfBenefit) on the sandbox, and a matching test clinic file the home server serves for that patient. Two sign-ins for one person is later work with its own design.
 
 **Files:**
 - Create: `tools/reconcile-patients.mjs` (modelled on `tools/demo-patient.mjs`: fixed ids, PUT, dates relative to today, touches nothing else on the sandbox)
@@ -328,9 +328,9 @@ Tyler, 2026-11-25: create test patients on the sandbox "with many conflicting me
 - [ ] **Step 4: Check it.** Run the whole suite. Then in headless Chromium (iPhone 15 profile, the self-signed home server certificate, PIN lock), sign in to the sandbox as Riley with `BROWN_BAG_DEMO=two-clinics` and check the cases above on My medicines. Add Riley and Jordan to README "Test patients" in plain text, like Avery: there only after `node tools/reconcile-patients.mjs`, until the nightly reset, with no links (the README test pins two links). Make `prompts/phone-pass.md` run the script before starting the server, and add the cases to "Waiting for the next pass" in `docs/NEEDS-TESTING.md`.
 - [ ] **Step 5: Commit** `tools/reconcile-patients.mjs tests/fixtures/reconcile/clinics/brownbag-recon-riley.json tests/fixtures/reconcile/clinics/brownbag-recon-jordan.json js/demo-source.js tools/serve.mjs js/app.js README.md prompts/phone-pass.md docs/NEEDS-TESTING.md tests/demo-source.test.mjs tests/reconcile-patients.test.mjs`: "Put patients on the sandbox whose records disagree".
 
-### Task 6c: Real-world medicines (added 2026-11-25, Tyler)
+### Task 6c: Real-world medicines (added 2026-11-25, the developer)
 
-Tyler, 2026-11-25: "Testing will be paramount ... the more data, conflicting data, the better ... some [data] may not be [clean]". The research is in `docs/superpowers/research/2026-11-25-messy-data-findings.md` ("the findings"). Its "Fixtures to build" cases 1–32 are this task's tests. Tyler's answers, one question each:
+The developer, 2026-11-25: "Testing will be paramount ... the more data, conflicting data, the better ... some [data] may not be [clean]". The research is in `docs/superpowers/research/2026-11-25-messy-data-findings.md` ("the findings"). Its "Fixtures to build" cases 1–32 are this task's tests. The developer's answers, one question each:
 - Use the most specific product code.
 - Release type and salt are part of the form.
 - IPS "no medication" entries are left out and said.
@@ -359,7 +359,7 @@ Tyler, 2026-11-25: "Testing will be paramount ... the more data, conflicting dat
     - `loadMedicines` and `snapshotSource` resolve contained (`#id`, from the resource's own `contained`), `urn:uuid:…` (by Bundle `fullUrl`), relative (`Medication/<id>`) and absolute references, as long as the referenced Medication is in the response.
     - `snapshotSource` reads MedicationRequest as well as MedicationStatement.
   - **Placeholders** (case 25): "Unknown medication", "Med", "Rx", "None" and "No current medications" are placeholders.
-  - **IPS no-medication entries** (cases 31–32; Tyler):
+  - **IPS no-medication entries** (cases 31–32; the developer):
     - A statement coded `no-medication-info` or `no-known-medications` (system `http://hl7.org/fhir/uv/ips/CodeSystem/absent-unknown-uv-ips`) is never a card.
     - The split gets `noMedicines: [{ source, kind: "no-info" | "none-known" }]`.
     - My medicines and the staff page say "<Source> has no information about your medicines." or "<Source> says: no medicines known." for the patient, and "<Source>: no information about medicines" or "<Source>: no medicines known" for staff.
@@ -373,9 +373,9 @@ Tyler, 2026-11-25: "Testing will be paramount ... the more data, conflicting dat
 - [ ] **Step 4: Run the whole suite**, then the headless Chromium check with Riley (Task 6b) and Loria. Their lists may change only where these rules say so, and the report lists every changed card.
 - [ ] **Step 5: Commit** with explicit paths: "Read medicines the way real sources write them".
 
-### Task 6d: Real-world allergies, names and birth dates (added 2026-11-25, Tyler)
+### Task 6d: Real-world allergies, names and birth dates (added 2026-11-25, the developer)
 
-The findings' cases 33–54. Tyler's answers, one question each:
+The findings' cases 33–54. The developer's answers, one question each:
 - Read names as real ones.
 - A birth date is read as written, and placeholders count as no birth date.
 - Kept-out wording says "don't match".
@@ -410,7 +410,7 @@ The findings' cases 33–54. Tyler's answers, one question each:
     - The first 10 characters of a datetime are the date, never converted to local time.
     - 1900-01-01, 1901-01-01, 1800-01-01 and 0001-01-01 count as no birth date.
     - `_birthDate` with data-absent-reason counts as no birth date.
-  - **Kept-out wording** (Tyler):
+  - **Kept-out wording** (the developer):
     - "Records from <Source> don't match your name and birth date, so they aren't on your list." replaces "are for someone else".
     - `keptOutWhy` gives "no-match" in place of "someone-else". Old saved lists with "someone-else" read as "no-match".
 
@@ -482,7 +482,7 @@ The findings' cases 33–54. Tyler's answers, one question each:
 
 ### Task 9: The FHIR file says it too
 
-> **Changed in the build (2026-11-25):** HL7's validator (7.0.7, IPS 2.0.1) rejects a `DetectedIssue` in the Medications section, so the file carries none (Tyler asked for the best option; ruling R32). Each disagreement is in the file as its sides' statements with their notes, plus the caution, which reads "Records disagree on 1 medicine." in the singular (Tyler). IPS 2.0.1 removed the absent-unknown code list, so a no-medicines source is said in the section's text only, with no coded entry (Tyler). All four validated files have 0 errors. The interfaces below are kept as first planned, for the record.
+> **Changed in the build (2026-11-25):** HL7's validator (7.0.7, IPS 2.0.1) rejects a `DetectedIssue` in the Medications section, so the file carries none (the developer asked for the best option; ruling R32). Each disagreement is in the file as its sides' statements with their notes, plus the caution, which reads "Records disagree on 1 medicine." in the singular (the developer). IPS 2.0.1 removed the absent-unknown code list, so a no-medicines source is said in the section's text only, with no coded entry (the developer). All four validated files have 0 errors. The interfaces below are kept as first planned, for the record.
 
 **Files:**
 - Modify: `js/ips.js` (`patientSummary`, `medicineWords`, the caution list, a new `detectedIssueFor`)
@@ -509,7 +509,7 @@ The findings' cases 33–54. Tyler's answers, one question each:
   - "an answer settles it in the file": `choice` a side gives no DetectedIssue. "not-sure" gives one, with that mitigation.
 - [ ] **Step 2: Run them to see them fail.** `node --test tests/ips.test.mjs`.
 - [ ] **Step 3: Implement** in `js/ips.js`.
-- [ ] **Step 4: Check against IPS 2.0.1.** Run the whole suite, then validate a file made from the home server's test source with HL7's FHIR validator (`validator_cli.jar -version 4.0.1 -ig hl7.fhir.uv.ips#2.0.1`). Expected: no errors. If the validator rejects a DetectedIssue in the Medications section, stop, tell Tyler what it says, and don't choose another place without him.
+- [ ] **Step 4: Check against IPS 2.0.1.** Run the whole suite, then validate a file made from the home server's test source with HL7's FHIR validator (`validator_cli.jar -version 4.0.1 -ig hl7.fhir.uv.ips#2.0.1`). Expected: no errors. If the validator rejects a DetectedIssue in the Medications section, stop, tell the developer what it says, and don't choose another place without them.
 - [ ] **Step 5: Commit** `js/ips.js tests/ips.test.mjs docs/NEEDS-TESTING.md`: "Say in the FHIR file what the records disagree on".
 
 **Merge point:** Tasks 1 to 9 are a pull request of their own (spec: steps 1 to 3 ship first). Push, then open it as a draft.
@@ -555,9 +555,9 @@ The findings' cases 33–54. Tyler's answers, one question each:
   - TalkBack reading a choice and its detail together
 - [ ] **Step 5: Commit** `js/review.js js/app.js css/brownbag.css tests/review.test.mjs docs/NEEDS-TESTING.md`: "Ask the patient one thing at a time when records disagree".
 
-### Task 10b: Fixes from the first Mac phone pass (added 2026-11-25, Tyler chose option 2)
+### Task 10b: Fixes from the first Mac phone pass (added 2026-11-25, the developer chose option 2)
 
-The Mac phone pass (docs/NEEDS-TESTING.md, "Found in the 2026-11-25 pass") found four things, all already on `main` before PR #13. Tyler chose to fix the first two now.
+The Mac phone pass (docs/NEEDS-TESTING.md, "Found in the 2026-11-25 pass") found four things, all already on `main` before PR #13. The developer chose to fix the first two now.
 
 **Files:** `share.html`, `css/brownbag.css`, `js/share-view.js` (the code box); `js/app.js`, `js/connections.js` and/or `js/signed-out.js` (Back after signing out); `docs/LIMITS.md`, `docs/NEEDS-TESTING.md`.
 
@@ -566,9 +566,9 @@ The Mac phone pass (docs/NEEDS-TESTING.md, "Found in the 2026-11-25 pass") found
 - [ ] **3. Note the other two.** In `docs/LIMITS.md`, add one entry for the sandbox's Deny page, which never returns to Brown Bag (its own `{"error":"invalid_request",...}` text), so "Sign-in didn't finish. Try again." can't show: it's the sandbox's behavior. Add one entry for text past 200 percent, where My medicines scrolls sideways from Accessibility XXL and the QR code falls below the fold from Accessibility XL, as an idea. In `docs/NEEDS-TESTING.md`, move items 1 and 2 under "Waiting for the next pass" with what to check.
 - [ ] **4. Commit:** "Fit the staff code at large text, and bring Back to the connections screen".
 
-### Task 10c: The shared link, birth dates, old fills, and one Back (added 2026-11-26, Tyler's answers)
+### Task 10c: The shared link, birth dates, old fills, and one Back (added 2026-11-26, the developer's answers)
 
-From Tyler's real-iPhone QR check (2026-11-25) and the Task 10b report. Each call below is Tyler's answer.
+From the developer's real-iPhone QR check (2026-11-25) and the Task 10b report. Each call below is the developer's answer.
 
 **Files:** `js/share-view.js` (the link); `js/inside.js`, `js/share-list.js`, `js/launch.js` and the shared date helpers in `js/card.js` (birth dates); `js/card.js`, `js/share-list.js` and whatever builds the patient's card details (old fills); `js/launch.js` (Back); `sw.js`; `docs/LIMITS.md`, `docs/NEEDS-TESTING.md`, `README.md`, `privacy.html` if it describes the link.
 
@@ -576,14 +576,14 @@ From Tyler's real-iPhone QR check (2026-11-25) and the Task 10b report. Each cal
 - [ ] **2. Birth dates read like the other dates.** "Born May 8, 1974" (the app's month-name style) on the staff page, the patient's own screen and the sandbox's test-patient picker. Read the date exactly as written (first 10 characters; never through `new Date()` time zones); a year-only or year-month birth date reads "Born 1974" / "Born May 1974"; a placeholder or unreadable date shows as written or not at all, as today. Test: Node tests for full, year-month, year-only and odd dates, and a time-zone test (a run with TZ set west of UTC gives the same day).
 - [ ] **3. "Last filled over a year ago."** When a medicine has fills (from claims or dispenses) and the newest fill is more than a year before the day the list is opened, its card shows the plain note "Last filled over a year ago." for the patient and on the staff page. The medicine stays in the section the records put it in; nothing is hidden, moved or asked. Prescription-only medicines (no fills) get no note. "Over a year" counts from the day the list is opened, on both the patient's screens and the staff page. Not added to the QR code or the FHIR file (the staff page works it out from the fill dates it already has). Test: Node tests at 364, 365, 366 days and for no fills; headless Chromium on Chantell-like data (only fill Feb 15, 1979).
 - [ ] **4. One Back from the sandbox.** "Choose a test patient" is in history twice after Connect. In `js/launch.js` `showPatients`, use `location.replace` (or `replaceState`) so it's in history once: Back from the sandbox's page goes to the picker, the next Back to the connections screen, on both the first-run and after-sign-out paths. Test: Node test where the logic allows; headless Chromium on the live sandbox for both paths.
-- [ ] **5. Docs.** `docs/LIMITS.md`: note that the code box fitting at large text needs iOS 16 or Chrome 105 and later (older browsers keep the old size), in #28 or its own line. README: the staff page clears the link (Back end, and Front end where staff see the reload message), birth dates, the old-fill note. `docs/NEEDS-TESTING.md`: Tyler's 2026-11-25 iPhone QR scan under "On a real iPhone" → tested, and items 1–4 under "Waiting for the next pass" with what to check. Bump the `sw.js` cache.
+- [ ] **5. Docs.** `docs/LIMITS.md`: note that the code box fitting at large text needs iOS 16 or Chrome 105 and later (older browsers keep the old size), in #28 or its own line. README: the staff page clears the link (Back end, and Front end where staff see the reload message), birth dates, the old-fill note. `docs/NEEDS-TESTING.md`: the developer's 2026-11-25 iPhone QR scan under "On a real iPhone" → tested, and items 1–4 under "Waiting for the next pass" with what to check. Bump the `sw.js` cache.
 - [ ] **6. Tighten the Task 10b tests (from its review).** In `tests/connections.test.mjs`, add a source-text check that `start()`'s history clear stays limited to steps marked `bb` and comes before `firstScreen(`. In `tests/code-box.test.mjs`, assert the `font-size: 2rem;` fallback line is still there before the `min(` line. In `docs/LIMITS.md` #28, add that past about 250 percent text the staff page also scrolls sideways at 320 px, from the long words in its title.
-- [ ] **7. Partial birth dates and the old-fill note (Tyler confirmed 2026-11-26):** "Born 1974" / "Born May 1974"; the note is on screen only, never in the QR code or the FHIR file.
+- [ ] **7. Partial birth dates and the old-fill note (the developer confirmed 2026-11-26):** "Born 1974" / "Born May 1974"; the note is on screen only, never in the QR code or the FHIR file.
 - [ ] **8. Commit:** "Keep the list out of shared links, read birth dates plainly, and note old fills".
 
-### Task 10d: Keep the locked list in the staff tab, and the rest of Tyler's Task 10c answers (added 2026-11-26)
+### Task 10d: Keep the locked list in the staff tab, and the rest of the developer's Task 10c answers (added 2026-11-26)
 
-Task 10c (commit 4484292) clears the list from the staff page's address as soon as it opens. Its review found that iPhone Safari reloads tabs it put aside, so staff coming back from another app would see "This link has no list in it." Tyler chose to rethink it. Each call below is Tyler's answer.
+Task 10c (commit 4484292) clears the list from the staff page's address as soon as it opens. Its review found that iPhone Safari reloads tabs it put aside, so staff coming back from another app would see "This link has no list in it." The developer chose to rethink it. Each call below is the developer's answer.
 
 **Files:** `js/share.js`, `js/share-view.js` (the staff tab); `js/launch.js` (failed start); `privacy.html`; `docs/LIMITS.md`, `docs/NEEDS-TESTING.md`, `README.md`; `sw.js`.
 
@@ -594,9 +594,9 @@ Task 10c (commit 4484292) clears the list from the staff page's address as soon 
 - [ ] **5. Cache:** bump `sw.js` (now brownbag-v95) if a precached file changed; keep `tests/offline.test.mjs` right.
 - [ ] **6. Commit:** "Keep the locked list in the staff tab, and bring Back to the picker after a failed start".
 
-Also confirmed by Tyler for Task 10c (no change needed): clear the address right away, before the code; the note keeps the yellow note style; "over a year" by the calendar, partial dates only when the whole month or year is that old; the picker's birth dates copied from the sandbox.
+Also confirmed by the developer for Task 10c (no change needed): clear the address right away, before the code; the note keeps the yellow note style; "over a year" by the calendar, partial dates only when the whole month or year is that old; the picker's birth dates copied from the sandbox.
 
-### Task 11: Docs, privacy, the app cache, and a shorter README (revised 2026-11-26 with Tyler's answers)
+### Task 11: Docs, privacy, the app cache, and a shorter README (revised 2026-11-26 with the developer's answers)
 
 **Files:**
 - Modify: `README.md`, `docs/LIMITS.md`, `docs/LEARNING.md`, `docs/SANDBOXES.md`, `docs/NEEDS-TESTING.md`, `privacy.html`, `sw.js`, `tests/readme.test.mjs` (and any test that reads the README)
@@ -607,7 +607,7 @@ Also confirmed by Tyler for Task 10c (no change needed): clear the address right
   - `docs/FILES.md`: the Files table, with `js/reconcile.js`, `js/review.js`, `js/demo-source.js` and every other file in `js/` (move the README test's file check here: every `js/*.js` file is listed).
   - `docs/SANDBOXES.md`: the Test patients section and how to run the home server's test clinic (`BROWN_BAG_DEMO=two-clinics`, `?demo=someone-else`).
   - `NOTICE.md`: the course starter, the `vendor/` library licenses, the LOINC notice word for word, the UCUM credit, and the trademark lines.
-- [ ] **Step 2: Rewrite the README at about 120–150 lines, written for reviewers and instructors first** (Tyler's answers). Good-README shape: title, tagline and logo; what Brown Bag is and who it's for in a few sentences; the live link and "sandbox data only"; 2–3 small phone screenshots of a sandbox test patient (home, My medicines, the staff page) with alt text, made in headless Chromium at deviceScaleFactor 2, made-up data only; then
+- [ ] **Step 2: Rewrite the README at about 120–150 lines, written for reviewers and instructors first** (the developer's answers). Good-README shape: title, tagline and logo; what Brown Bag is and who it's for in a few sentences; the live link and "sandbox data only"; 2–3 small phone screenshots of a sandbox test patient (home, My medicines, the staff page) with alt text, made in headless Chromium at deviceScaleFactor 2, made-up data only; then
   - **Front end: what people see** — short bullets for the patient and for the person checking medicines, including: when sources disagree, the review cards, hospital orders, "Last filled over a year ago.", plain birth dates; for staff, "Records disagree: ask the patient", the fill hint, the code box, the list kept locked in the tab (a reload asks for the code again; a copied address carries no list), Back/Forward between patients.
   - **Back end: what happens behind the screen** — short bullets: sign-in, reads, storage, reconciliation (every source kept and compared fresh), the QR code's `differs` and `source-not-loaded` tags, the FHIR file (no-medicines said in the text; no DetectedIssue, per Task 9), the staff tab's `history.state`.
   - **What's planned** — split front end / back end, one line each with its stage (idea, designed, planned, waiting on someone) and a link to its design or LIMITS entry. "When sources disagree" comes out of both halves, since it's done.

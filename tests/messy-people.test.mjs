@@ -1,6 +1,6 @@
 // How real sources write a patient's name and birth date (docs/superpowers/
 // research/2026-11-25-messy-data-findings.md, "Fixtures to build" 40-54), with
-// Tyler's answers: names are read as real ones, a birth date as written, and
+// The developer's answers: names are read as real ones, a birth date as written, and
 // placeholder dates count as none. A wrong join (two people made one) is the
 // dangerous mistake; a wrong split keeps a whole source out, said to the
 // patient. If a test here starts failing because more join, check nothing

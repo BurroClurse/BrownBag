@@ -569,8 +569,8 @@ test("a mark counts each side with the same key separately", () => {
   assert.equal(renewed.toCheck[0].question.why, "You marked Not taking on Nov 1. Your records have a newer prescription, Nov 20.");
 });
 
-// Tyler, 2026-11-26: an answer made on a saved copy is in the QR code's list,
-// in the words picked, name first (Tyler, 2026-11-26). A Change says the newest; Undo on a card an answer
+// The developer, 2026-11-26: an answer made on a saved copy is in the QR code's list,
+// in the words picked, name first (the developer, 2026-11-26). A Change says the newest; Undo on a card an answer
 // stopped takes the answer's line away, as it does a Not taking mark's.
 test("answers made on a saved copy are listed", () => {
   const now = new Date(2026, 10, 21, 12, 0);

@@ -1,4 +1,4 @@
-// "Last filled over a year ago." (Tyler, 2026-11-26): a medicine whose newest
+// "Last filled over a year ago." (the developer, 2026-11-26): a medicine whose newest
 // fill is more than a year before the day the list is opened says so, for the
 // patient and on the staff page. It is worked out on screen from the fill
 // date, never put in the QR code or the FHIR file. Nothing moves or hides.

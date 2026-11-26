@@ -1,5 +1,5 @@
 // An unnamed allergy can be a second record of one already listed, and nothing let
-// the patient take it off (Tyler, 2026-11-24). It leaves the phone's list only:
+// the patient take it off (the developer, 2026-11-24). It leaves the phone's list only:
 // staff must still see the record, with what the patient said.
 import test from "node:test";
 import assert from "node:assert/strict";

@@ -1,17 +1,17 @@
 # Sign-in list: short design
 
-Status: approved by Tyler, 2026-11-23. Aetna is left out; he may add it later
+Status: approved by the developer, 2026-11-23. Aetna is left out; they may add it later
 ("It would be a good resource"), once its terms are settled.
 
 ## Why
 
-Tyler, 2026-11-23: an app like this normally lets you choose where your
-records are. The SMART sandbox keeps working; the sources he wants to add
+The developer, 2026-11-23: an app like this normally lets you choose where your
+records are. The SMART sandbox keeps working; the sources they want to add
 later show too, greyed out, and none of them works.
 
 ## Approaches
 
-- **A. Tapping Sign in opens the list (Tyler's choice).** Where people expect
+- **A. Tapping Sign in opens the list (the developer's choice).** Where people expect
   it. One more tap on the first sign-in.
 - B. A Connections screen under More options. Out of the way, but only seen
   after signing in.
@@ -93,13 +93,13 @@ No owner says anything about "planned" lists. Not legal advice.
 - Aetna (left out for now): CVS Health's terms ask for written permission to use its marks, and
   no allowance for plain naming was found. `cvshealth.com/terms-of-use.html`
 
-## Changed 2026-11-23 (Tyler)
+## Changed 2026-11-23 (the developer)
 
 - Signed in, the list is also under More options, "Where my records come from",
   with the dates and Update now.
 - The names sit in one card. The trademark words open under "About these names".
 
-## Changed 2026-11-24 (Tyler)
+## Changed 2026-11-24 (the developer)
 
 - The SMART Health IT sandbox opens "Choose a test patient": 20 made-up
   patients in groups, plus "Someone else" for the sandbox's own list. That list

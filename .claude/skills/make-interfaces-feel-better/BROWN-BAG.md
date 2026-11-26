@@ -4,7 +4,7 @@ Read this before applying anything in this skill to Brown Bag.
 
 This skill is copied from <https://github.com/jakubkrehel/make-interfaces-feel-better>
 (MIT, `LICENSE` here), commit `6d9f2f1`, 2026-11-17. The only change to it is
-the line at the top of `SKILL.md` pointing here. Tyler chose to add it on
+the line at the top of `SKILL.md` pointing here. The developer chose to add it on
 2026-11-25.
 
 Brown Bag is for patients who may be 90, often using it at a check-in desk.

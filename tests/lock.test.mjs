@@ -166,7 +166,7 @@ test("start over erases Brown Bag's saved data and nothing else", () => {
   assert.equal(storage.getItem("other-app"), "keep");
 });
 
-// Tyler, 2026-11-26: the Face ID unlock screen is laid out like home, which
+// The developer, 2026-11-26: the Face ID unlock screen is laid out like home, which
 // it opens to (the bag fills the room, the buttons at the bottom); the PIN
 // screen, whose keyboard covers the bottom, and the backup unlock stay as
 // they were.
@@ -181,7 +181,26 @@ test("the Face ID unlock screen is laid out like home", async () => {
   assert.match(screen, /function clear\(root\) \{\n  root\.classList\.remove\("screen-unlock"\);/);
   const css = readFileSync(new URL("../css/brownbag.css", import.meta.url), "utf8");
   const block = (selector) => css.slice(css.indexOf(selector + " {"), css.indexOf("}", css.indexOf(selector + " {")));
-  assert.match(block("#app.screen-unlock"), /height: 100dvh;[\s\S]*overflow-y: auto;[\s\S]*flex-direction: column;/);
-  assert.match(block("#app.screen-unlock .screen-title"), /flex: 1 1 0;[\s\S]*min-height: 140px;/);
+  assert.match(block("\n#app.screen-unlock"), /height: 100dvh;[\s\S]*overflow-y: auto;[\s\S]*flex-direction: column;/);
+  assert.match(block("#app.screen-unlock .screen-title"), /flex: 0 1 var\(--bag-band\);[\s\S]*min-height: 140px;/);
   assert.match(block("#app.screen-unlock .screen-logo"), /height: 100%;[\s\S]*object-fit: contain;/);
+});
+
+// The developer, 2026-11-26: the bag sits in the same place, at the same size, on the
+// unlock screen and on home: one band for both, under one line (the name, or a
+// blank line the same height), with the same padding and margins.
+test("the unlock screen's bag lines up with home's", async () => {
+  const { readFileSync } = await import("node:fs");
+  const css = readFileSync(new URL("../css/brownbag.css", import.meta.url), "utf8");
+  const block = (selector) => css.slice(css.indexOf(selector + " {"), css.indexOf("}", css.indexOf(selector + " {")));
+  assert.match(block("#app.screen-home, #app.screen-unlock"), /--name-line: calc\(1\.5rem \* 1\.5 \+ 0\.4rem\);[\s\S]*--bag-band: calc\(100dvh/);
+  const home = block(".home-bag");
+  const lock = block("#app.screen-unlock .screen-title");
+  for (const rule of ["flex: 0 1 var(--bag-band);", "min-height: 140px;", "padding: 0.75rem;", "margin: 0.5rem 0 auto;"]) {
+    assert.ok(home.includes(rule), "home: " + rule);
+    assert.ok(lock.includes(rule), "unlock: " + rule);
+  }
+  // The blank line is the name's height: 1.5rem text, 1.5 line height, 0.4rem margins.
+  assert.match(block(".home-name"), /font-size: 1\.5rem;[\s\S]*margin: 0\.15rem 0 0\.25rem;/);
+  assert.match(block("#app.screen-unlock .lock::before"), /height: var\(--name-line\);/);
 });

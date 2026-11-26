@@ -1,10 +1,10 @@
 # As needed from records, and taking an older prescription: short design
 
-Approved by Tyler 2026-11-24.
+Approved by the developer 2026-11-24.
 
 ## Why
 
-Tyler: records that say "as needed" belong under As needed, and someone may still
+The developer: records that say "as needed" belong under As needed, and someone may still
 take an older prescription, which staff never see.
 
 ## As needed
@@ -12,7 +12,7 @@ take an older prescription, which staff never see.
 - On My medicines: records' (every direction has the field, and every current record
   merged into the card), marked ones, and additions whose How often is the list's
   As needed. Additions keep Edit and Remove. Records' have only Not taking: they
-  aren't editable (Tyler), so there's no "I take it regularly".
+  aren't editable (the developer), so there's no "I take it regularly".
 - "Who says": "Your records say as needed", "You added this"; a marked one keeps
   "You marked: As needed, date".
 - Staff page, See what's inside and the file: one part, "As needed", with "Records

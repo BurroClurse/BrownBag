@@ -23,7 +23,7 @@
 - Copy, exactly: "Add my Medicare claims", "Remove my Medicare claims", "This Medicare account is for someone else.", "Medicare didn't share your name and birth date, so Brown Bag can't check this is you. Remove Medicare and add it again, and allow it.", "Sign in to Medicare again to update your Medicare fills.", "Your Medicare fills couldn't be updated. Showing fills from <date>.", "Your Medicare fills couldn't be loaded.", "Medicare test patient (not you)".
 - "No fill found in your claims" (and "No fill found in claims" in the QR) only when every connected source loaded or has saved fills.
 - Static site, no new libraries in the app. WCAG 2.2 AA. QR within version 40-M.
-- Commits: one short line in Tyler's voice, no dashes, attribution lines; explicit paths. Every task that passes its tests goes to `main` (fast-forward), and adds its phone checks to `docs/NEEDS-TESTING.md`. Sign-in, the lock and the saved list are "test right away" changes.
+- Commits: one short line in the developer's voice, no dashes, attribution lines; explicit paths. Every task that passes its tests goes to `main` (fast-forward), and adds its phone checks to `docs/NEEDS-TESTING.md`. Sign-in, the lock and the saved list are "test right away" changes.
 
 ## Review Focus
 
@@ -44,7 +44,7 @@
 **Interfaces:**
 - Produces: `rxcuisForNdcs(ndcs: { ndc: string, date: string|null }[], fetchFn?, { timeoutMs }?) -> Promise<Map<key, { rxcui: string, name: string|null }>>`, keyed by the NDC as given and the month, so two fills of one NDC can differ. Dashes are removed before the lookup.
 
-**Changed 2026-11-24 (Tyler): the date decides, and a guess is never made.** One NDC can stand for more than one RxNorm product over time (NLM's own example, 00071015723, has two that overlap). So:
+**Changed 2026-11-24 (the developer): the date decides, and a guess is never made.** One NDC can stand for more than one RxNorm product over time (NLM's own example, 00071015723, has two that overlap). So:
 - Ask with `start` and `end` set to the fill's month (YYYYMM), `history=0`, and no alternate packaging. Use the `activeRxcui` of the records for that month.
 - No date: use every history record, and the top `rxcui`.
 - Exactly one product left: use it. None, a blank one, or two different ones: leave the NDC out, and it's shown as it is today.
@@ -119,7 +119,7 @@
   - `needsRenewal(pass, now) -> boolean`: true within 5 minutes of `expiresAt` (Claude's call; the spec leaves "near expiry" to the builder).
   - `samePerson(records: { name, birthDate }, medicarePatient) -> "same" | "different" | "unknown"`; `records.name` is the display name Brown Bag already shows ("Given Family"); compare family and first given after normalising (lowercase, strip accents with NFD, drop punctuation, drop suffixes jr sr ii iii iv); "unknown" when Medicare's Patient is missing or has no name or birthDate.
   - `readMedicare(pass, { fetchFn, lookup, ndcLookup, ms }) -> Promise<{ status, fills, ingredientOf, person: "same"|"different"|"unknown"|null }>`: reads `Patient/{medicarePatientId}` (403 → person "unknown"), then `readClaims` with `query "&type=PDE"` and `toFills` that maps NDCs to RxNorm with `ndcLookup` and sets insurer "Medicare". 401 on the claims → status "refused".
-- `js/medicare-config.js`: `export var MEDICARE = { clientId: "<from Tyler>", tokenServer: "<Netlify function URL>", sandbox: true, authorize, fhirBase }`, with the v3 addresses.
+- `js/medicare-config.js`: `export var MEDICARE = { clientId: "<from the developer>", tokenServer: "<Netlify function URL>", sandbox: true, authorize, fhirBase }`, with the v3 addresses.
 
 - [ ] **Step 1: Write the failing tests**
   - "makePkce challenge is the S256 of the verifier".
@@ -132,7 +132,7 @@
 - [ ] **Step 4: Run the suite.**
 - [ ] **Step 5: Commit** `js/medicare.js js/medicare-config.js sw.js tests/medicare.test.mjs`: "Medicare pieces: PKCE, same person check and reading Part D". (`clientId` and `tokenServer` stay placeholders until Task 5's checkpoint.)
 
-### Task 5: The token server, and Tyler's Netlify checkpoint
+### Task 5: The token server, and the developer's Netlify checkpoint
 
 **Files:**
 - Create: `server/token.mjs` (pure handler), `netlify/functions/medicare-token.mjs` (wraps it), `netlify.toml`, `server/public/index.html` (one line: "Brown Bag token service")
@@ -153,7 +153,7 @@
 - [ ] **Step 4: Run the suite.**
 - [ ] **Step 5: Docs, in the same commit as the server.** README line "runs as static pages with no backend server" becomes: "It's a patient facing SMART on FHIR app that runs as static pages. Its one small server only holds Medicare's sign in secret and swaps and renews its passes; it never sees records, claims or medicines." LEARNING's two lines that say Brown Bag has no server (the QR code limit and signed cards, Steps 5 and 6 area) become "Brown Bag's server never sees the code" / "Brown Bag's server only swaps Medicare passes, so it can't sign cards". `js/app.js`'s "The list is inside the code itself, not on a server" stays (true). Old design documents are history and stay as they are.
 - [ ] **Step 5b: Commit** and publish: "Small server that swaps Medicare sign ins".
-- [ ] **Step 6: Checkpoint, Tyler (stop and ask).** He creates a Netlify site from the GitHub repo `BurroClurse/BrownBag` (branch `main`), and under Site configuration ▸ Environment variables adds `BB_CLIENT_ID` and `BB_CLIENT_SECRET` (secret). He sends the site address and the Client ID. Claude puts both into `js/medicare-config.js`, checks `OPTIONS` and an unknown-origin `POST` against the live function with curl, commits and publishes.
+- [ ] **Step 6: Checkpoint, the developer (stop and ask).** They create a Netlify site from the GitHub repo `BurroClurse/BrownBag` (branch `main`), and under Site configuration ▸ Environment variables adds `BB_CLIENT_ID` and `BB_CLIENT_SECRET` (secret). They sends the site address and the Client ID. Claude puts both into `js/medicare-config.js`, checks `OPTIONS` and an unknown-origin `POST` against the live function with curl, commits and publishes.
 
 ### Task 6: Connecting and removing Medicare
 
@@ -189,9 +189,9 @@
 - [ ] **Step 2: Run to see them fail.**
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run the suite, the headless checks, `drive/final.mjs full`, then both simulators** against the live site with a CMS test enrollee (test right away: wrong medicines or mixed people).
-- [ ] **Step 5: Docs.** LEARNING "Step 17. A second, separate insurer" (confidential clients and why the server only swaps tokens; PKCE; NDC vs RxNorm; v3; the same-person check) with "Practice in the lab" Go Deeper ▸ "Granular scopes". README: Medicare in the features and the "Records and claims" steps. NEEDS-TESTING: Tyler's real-iPhone checks (Medicare sign-in from the Home Screen app; VoiceOver on the new notes).
-- [ ] **Step 6: Commit and publish**: "Medicare fills join the list". Then close pull request #1 with a comment that its NDC lookup landed in Task 1 (`gh pr close 1 --comment …`) and delete its branch (Tyler chose this, 2026-11-23).
+- [ ] **Step 5: Docs.** LEARNING "Step 17. A second, separate insurer" (confidential clients and why the server only swaps tokens; PKCE; NDC vs RxNorm; v3; the same-person check) with "Practice in the lab" Go Deeper ▸ "Granular scopes". README: Medicare in the features and the "Records and claims" steps. NEEDS-TESTING: the developer's real-iPhone checks (Medicare sign-in from the Home Screen app; VoiceOver on the new notes).
+- [ ] **Step 6: Commit and publish**: "Medicare fills join the list". Then close pull request #1 with a comment that its NDC lookup landed in Task 1 (`gh pr close 1 --comment …`) and delete its branch (the developer chose this, 2026-11-23).
 
-### Later, separate (Tyler: "hold off but add it to the plan later")
+### Later, separate (the developer: "hold off but add it to the plan later")
 
-- A second demo patient on the SMART sandbox with the same name and birth date as the chosen Medicare test enrollee, so the demo shows Medicare fills joined with the records. Not built until Tyler says, and only once the SMART team keeps demo patients through the nightly reset.
+- A second demo patient on the SMART sandbox with the same name and birth date as the chosen Medicare test enrollee, so the demo shows Medicare fills joined with the records. Not built until the developer says, and only once the SMART team keeps demo patients through the nightly reset.

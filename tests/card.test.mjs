@@ -297,7 +297,7 @@ test("an answer of one side names that side's medicine", () => {
   const card = patientCard(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer }), true);
   assert.equal(card.name, "lisinopril 10 MG Oral Tablet");
   assert.deepEqual(card.take[0], ["Dose", "1 tablet"]);
-  // Before an answer, a dose question's card goes by its plain name (Tyler, 2026-11-25).
+  // Before an answer, a dose question's card goes by its plain name (the developer, 2026-11-25).
   assert.equal(patientCard(asked("dose"), true).name, "Lisinopril", "its plain name before an answer");
   assert.equal(cardName(Object.assign({}, GROUPED, { group: Object.assign({}, GROUPED.group, { sides }), answer })), "lisinopril 10 MG Oral Tablet");
   assert.equal(cardName(asked("dose")), "Lisinopril");
@@ -349,7 +349,7 @@ test("an answer of the second source with the same code shows that source's dose
   assert.deepEqual(own.facts.filter(([label]) => label === "Prescribed by" || label === "Source"), [["Prescribed by", "Dr. Patel"], ["Source", "SMART sandbox"]]);
 });
 
-// Tyler, 2026-11-25: while "How much do you take?" is open, the card's name
+// The developer, 2026-11-25: while "How much do you take?" is open, the card's name
 // mustn't say one side's strength. Its plain name until it's answered.
 test("a dose question names the medicine plainly until it's answered", () => {
   assert.equal(cardName(asked("dose")), "Lisinopril");
@@ -362,7 +362,7 @@ test("a dose question names the medicine plainly until it's answered", () => {
   assert.equal(cardName(unsure), "lisinopril 20 MG Oral Tablet");
 });
 
-// Tyler, 2026-11-25: "You said" says the words the patient picked.
+// The developer, 2026-11-25: "You said" says the words the patient picked.
 test("a stop is said back in the words that were picked", () => {
   const said = (entry) => patientCard(entry, true).facts.filter(([label]) => label === "You said")[0][1];
   const status = [SIDES[0], Object.assign({}, SIDES[1], { status: "not-current", recordStatus: "stopped" })];
@@ -402,7 +402,7 @@ test("a dose question keeps the whole ingredient name", () => {
   assert.equal(named("Tylenol"), "Tylenol");
 });
 
-// Tyler, 2026-11-26 (LIMITS #17): records that agree name every source on
+// The developer, 2026-11-26 (LIMITS #17): records that agree name every source on
 // the patient's card, the same words the staff page uses.
 test("a card whose sources agree names every source", () => {
   const sourceOf = (entry) => patientCard(entry, true).facts.filter(([label]) => label === "Source");
@@ -449,7 +449,7 @@ test("card.js has no function that shares reconcile.js's plainName", () => {
   assert.match(card, /function askedName\(/);
 });
 
-// Tyler, 2026-11-26: a card stopped by an answer says what the patient said,
+// The developer, 2026-11-26: a card stopped by an answer says what the patient said,
 // never "You marked" for a tap they didn't make; and when the records
 // disagreed on how much, no one record's amount.
 const STOPPED_BY = (verdicts, sides, more) => Object.assign({}, GROUPED, {
@@ -468,7 +468,7 @@ test("a card stopped by an answer says only what the patient said", () => {
   // A real Not taking tap keeps its words.
   assert.ok(patientCard(item({ stoppedAt: "2026-11-20" }), true).facts.some(([label, text]) => label === "You marked" && text === "Not taking, Nov 20, 2026"));
   // A mark the patient made, then confirmed when asked about it: only their
-  // latest word (Tyler, 2026-11-26).
+  // latest word (the developer, 2026-11-26).
   const mark = item({ stoppedAt: "2026-03-03", answer: { groupId: "rx:314076", fingerprint: "mark:2026-03-03>2026-10-02", sides: [], choice: "not-taking", answeredAt: "2026-11-25" } });
   const facts = patientCard(mark, true).facts;
   assert.ok(!facts.some(([label]) => label === "You marked"), JSON.stringify(facts));

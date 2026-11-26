@@ -283,7 +283,7 @@ test("the caution says 1 medicine, or N medicines", async () => {
 });
 
 // IPS 2.0.1 removed its code list for "no known medicines", so a source's
-// word is in the readable text only, as staff see it (Tyler, 2026-11-25).
+// word is in the readable text only, as staff see it (the developer, 2026-11-25).
 test("a source with no medicines says so in the text, with no coded entry", () => {
   const said = { noMedicines: [{ source: "Valley Clinic", kind: "no-info" }, { source: "Summary", kind: "none-known" }] };
   const empty = save(bundle({ current: [], additions: [], stopped: [] }, said));

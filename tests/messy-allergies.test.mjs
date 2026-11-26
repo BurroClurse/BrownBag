@@ -1,5 +1,5 @@
 // How real sources write allergies (docs/superpowers/research/2026-11-25-
-// messy-data-findings.md, "Fixtures to build" 33-39), with Tyler's answers:
+// messy-data-findings.md, "Fixtures to build" 33-39), with the developer's answers:
 // every way of saying "no known allergies" is a statement, and a place held
 // for an allergen that isn't named is the unnamed-allergy row, never an
 // allergy called "NoInformation" or "Unknown". A statement never hides a real

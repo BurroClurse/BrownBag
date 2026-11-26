@@ -1,11 +1,11 @@
 # Brown Bag: filled prescriptions from the insurer
 
-Status: approved by Tyler, 2026-11-21.
+Status: approved by the developer, 2026-11-21.
 
 ## Why
 
 Brown Bag's list shows what was prescribed and what the record says the
-patient takes. Tyler (2026-11-21): showing what was actually filled is "an
+patient takes. The developer (2026-11-21): showing what was actually filled is "an
 incredibly important aspect of what Brown Bag should show", and "the focus
 here is interoperability and combining resources/APIs in order to get the
 best picture." A prescription that was never filled, or a fill from a
@@ -31,7 +31,7 @@ picked up, and when last.
 
 ## Non-goals
 
-- Medicare Blue Button 2.0 itself. Tyler chose "both": this design first,
+- Medicare Blue Button 2.0 itself. The developer chose "both": this design first,
   Blue Button right after, in its own design (it needs a small server and a
   CMS developer account).
 - Costs, copays or anything else on a claim besides the drug, the fill date
@@ -52,7 +52,7 @@ picked up, and when last.
 ## Approaches considered
 
 1. **Pharmacy claims from the course sandbox, as a separate "From your
-   insurer" source (chosen, with 2 right after; Tyler, 2026-11-21).** The
+   insurer" source (chosen, with 2 right after; the developer, 2026-11-21).** The
    SMART sandbox holds 27,308 ExplanationOfBenefit records; the pharmacy
    ones carry the RxNorm code, the fill date and the insurer (for example,
    "Aetna"). One more read scope, same sign-in, no server.
@@ -60,7 +60,7 @@ picked up, and when last.
    but confidential clients only (needs a server for the secret), a CMS
    developer account, and test patients who aren't the SMART sandbox's.
    Next design.
-3. **Both** (Tyler's choice): 1 now, 2 right after.
+3. **Both** (the developer's choice): 1 now, 2 right after.
 
 ## How it works
 
@@ -96,7 +96,7 @@ picked up, and when last.
   medicines. Older: with the older prescriptions.
 - A prescription the record marks completed or stopped, with a fill in the
   last 12 months, moves to the current list with a line "Marked completed
-  in your records, but filled Dec 24, 2025" (Tyler, 2026-11-21: a recent
+  in your records, but filled Dec 24, 2025" (the developer, 2026-11-21: a recent
   fill means the pills are likely still at home).
 
 ### What the patient sees
@@ -157,10 +157,10 @@ Filled 3 times · last Jul 23, 2025 · Aetna claims      <- new
   found" never shows when there are no claims at all. (Claims loaded but
   empty: the cards show nothing about fills, and no note.)
 
-## Demo patient (Tyler, 2026-11-21)
+## Demo patient (the developer, 2026-11-21)
 
 In the sandbox every prescription has exactly one matching claim, so the
-interesting cases never appear. Tyler chose to add a made-up **Brown Bag
+interesting cases never appear. The developer chose to add a made-up **Brown Bag
 demo patient** to the public SMART sandbox (r4.smarthealthit.org), read
 through the real API like any other patient. A script in `tools/` creates
 it (a Patient, MedicationRequests, and pharmacy ExplanationOfBenefits)
@@ -178,7 +178,7 @@ January 1, 2016. Original Medicare offers Blue Button 2.0. Employer plans
 and state-marketplace plans aren't required to, though some offer one.
 Brown Bag shows claims only where a patient's insurer offers such an API.
 
-## Fixes added 2026-11-23 (Tyler: fix what could be wrong on the list)
+## Fixes added 2026-11-23 (the developer: fix what could be wrong on the list)
 
 - Claims marked cancelled, draft or entered-in-error, and preauthorizations
   and predeterminations, aren't fills.
@@ -197,7 +197,7 @@ Brown Bag shows claims only where a patient's insurer offers such an API.
 - Whether `type=pharmacy` works as a search parameter on the sandbox.
 - How fills are stored on the saved copy.
 
-## Calls made by Claude, for Tyler to check
+## Calls made by Claude, for the developer to check
 
 - Wording "No fill found in your claims", never "not filled".
 - A patient with no claims at all sees nothing about fills, rather than

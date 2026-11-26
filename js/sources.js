@@ -5,7 +5,7 @@
 
 import { OWN_LIST, knownPatient } from "./test-patients.js";
 
-// Aetna may join the list later (Tyler, 2026-11-23), once its terms about
+// Aetna may join the list later (the developer, 2026-11-23), once its terms about
 // using its name are settled.
 export const SOURCES = [
   { id: "smart-sandbox", name: "SMART Health IT sandbox", note: "Test patients only", connected: true },
@@ -110,7 +110,7 @@ export function leavingText(search) {
 }
 
 // Back from "Starting sign-in…" or "Couldn't start sign-in" is the list, so a
-// chosen patient's step stays in history (Tyler, Task 10d). Forward to it must
+// chosen patient's step stays in history (the developer, Task 10d). Forward to it must
 // not start the sign-in by itself, so the step notes on its own history.state
 // that it has started (markStarted). A fresh load of a noted step, and any
 // sign-in step brought back as it was left (restored: pageshow with

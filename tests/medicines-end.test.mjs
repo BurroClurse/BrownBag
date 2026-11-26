@@ -1,4 +1,4 @@
-// From Tyler's video: "Removed Latex." sat below the last Done button, like text
+// From the developer's video: "Removed Latex." sat below the last Done button, like text
 // left over, and "Added by me" was a tab with nothing under it.
 import { test } from "node:test";
 import assert from "node:assert/strict";
