@@ -59,9 +59,21 @@ an idea becomes a plan only after its own design.
   - Ideas: say plainly on the Medicare screen what is being left out.
 - [ ] **8. Sources disagree** (two strengths, stopped in one and current in
   another).
-  - Now: one card per drug, the source named, "Marked completed (or stopped), but filled"
-    and "dose changed" lines; the patient and care team decide.
-  - Ideas: a "differences to check" screen for the person at the desk.
+  - Now (2026-11-26, reconciliation): every source's records are compared on
+    each update, and nothing is overwritten. When they disagree on how much,
+    how often or whether it's still taken, the medicine is one card with each
+    source's version and date; home and My medicines say "Your records don't
+    agree on N things", and the review asks the patient one card at a time.
+    A Not taking mark against a newer prescription is asked the same way.
+    Until the patient answers (or if they're not sure), staff see "Records
+    disagree: ask the patient", and the QR code and the FHIR file carry every
+    version. One source alone is as before, with its "Marked completed (or
+    stopped), but filled" and "dose changed" lines. Design:
+    [`superpowers/specs/2026-11-25-medication-reconciliation-design.md`](superpowers/specs/2026-11-25-medication-reconciliation-design.md).
+  - The "differences to check" screen for the person at the desk is the staff
+    page's "Records disagree: ask the patient" part.
+  - Still the patient's and care team's to decide: Brown Bag never picks a
+    side by itself.
 - [ ] **9. Sandbox only.** Real patients need each company's production
   review, and a public privacy policy.
   - Now: `privacy.html` (2026-11-24). Before real patients: a lawyer reads it,
@@ -111,13 +123,26 @@ an idea becomes a plan only after its own design.
   - Now: both show, so nothing is hidden. The NDC goes in the QR code when it fits.
     A fill coded only by NDC gets its RxNorm code from RxNav by the fill's date
     (2026-11-25); a record coded only by NDC doesn't yet.
+  - Marks on joined cards (2026-11-26, reconciliation): a Not taking or As
+    needed mark made on a card joined from several sources is saved under
+    every source's key, so it covers the whole card. A mark on one source's
+    copy, while another source lists it current, is a question for the
+    patient ("You marked this Not taking on <Mon D>. <Source> lists it
+    current, <Mon YYYY>."), so joining cards never hides the one they take.
   - Careful: joining two cards joins their marks. If the patient marked one copy
     Not taking to tidy the list, the one they take must not go with it.
   - When (Tyler, 2026-11-24): with Medicare, its fills first, then joining cards.
   - Ideas: look up the NDC in RxNav by the record's date (Medicare plan, Task 1),
     join only cards with no marks, and make a mark on the joined card cover all.
 - [ ] **17. A medicine or allergy found in two places names only one of them.**
-  - Now: one source is connected, so nothing is missing yet.
+  - Now (2026-11-26, reconciliation): a card joined from several sources
+    names every source where the sources disagree (each version under its
+    source and date, on My medicines and the staff page). When they agree,
+    the staff page, See what's inside and the FHIR file name every source
+    ("SMART sandbox, Valley Clinic (test records)"), but the patient's card
+    on My medicines still says only the shown record's source. The unnamed
+    allergy row doesn't name its source yet; only one source sends allergies
+    today.
   - When (Tyler, 2026-11-24): with the second source. The card and the QR code
     say "Source: SMART sandbox and Epic", and the unnamed allergy row names its
     source too.

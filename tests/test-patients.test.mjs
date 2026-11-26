@@ -36,7 +36,7 @@ test("only a patient on the list can be asked for", () => {
   assert.throws(() => sandboxServer("x"));
 });
 
-test("the README's test patients are on it, and it works with no signal", () => {
+test("the test patients in SANDBOXES are on it, and it works with no signal", () => {
   for (const id of ["e89af71d-4aa4-2237-e71d-6fa8e4b5af09", "e7de504a-311d-49be-b2bc-566a328bcc72"]) assert.ok(knownPatient(id));
   assert.ok(read("sw.js").includes('"./js/test-patients.js"'));
 });

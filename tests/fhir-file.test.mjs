@@ -43,7 +43,7 @@ test("the patient can save it too, from See what's inside, after a warning in th
 
 test("it works with no signal, and the code owners are credited", () => {
   for (const file of ["./js/ips.js", "./js/fhir-file.js"]) assert.ok(read("sw.js").includes('"' + file + '"'), file);
-  const readme = flat("README.md");
+  const readme = flat("NOTICE.md");
   assert.match(readme, /This material contains content from LOINC \(http:\/\/loinc\.org\)\. LOINC is copyright © Regenstrief Institute, Inc\. and the Logical Observation Identifiers Names and Codes \(LOINC\) Committee and is available at no cost under the license at http:\/\/loinc\.org\/license/);
   assert.match(readme, /UCUM/);
 });

@@ -328,9 +328,9 @@ test("a sign-in that can't read allergies gets one sign-in note, never two", () 
   assert.deepEqual(noticesFor({ allergiesRefused: true, installTip: "x", now }).map((n) => n.kind), ["sign-in", "install"]);
 });
 
-test("sign-in asks to read allergies, and the README says so", async () => {
+test("sign-in asks to read allergies, and How it works says so", async () => {
   const { readFileSync } = await import("node:fs");
-  for (const file of ["launch.html", "README.md"]) {
+  for (const file of ["launch.html", "docs/HOW-IT-WORKS.md"]) {
     assert.ok(readFileSync(new URL("../" + file, import.meta.url), "utf8").includes("patient/AllergyIntolerance.read"), file);
   }
 });

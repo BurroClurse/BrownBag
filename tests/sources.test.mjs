@@ -45,9 +45,9 @@ test("Sign in after the lock goes straight in; signed out, it opens the connecti
   assert.equal(app.match(/href = "\.\/\?open=connections"/g).length, 1);
 });
 
-test("the trademark lines are said, in the list and in the README", () => {
+test("the trademark lines are said, in the list and in NOTICE.md", () => {
   assert.equal(TRADEMARKS, "Epic is a trademark of Epic Systems Corporation. Oracle is a registered trademark of Oracle and/or its affiliates. Other names may be trademarks of their respective owners. Brown Bag isn't affiliated with or endorsed by any of them, or by any government agency.");
-  assert.ok(read("README.md").replace(/\s+/g, " ").includes(TRADEMARKS));
+  assert.ok(read("NOTICE.md").replace(/\s+/g, " ").includes(TRADEMARKS));
 });
 
 // The screen under More options. A date never vouches for a part that didn't

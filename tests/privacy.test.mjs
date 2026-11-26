@@ -36,6 +36,8 @@ test("it says the parts a patient would want said", () => {
   for (const line of [
     "Don't enter real health information.",
     "Your list, what you add, and your sign-in are saved locked.",
+    "When your records disagree, your answers are kept with what you add: locked, and in your backups.",
+    "They hold what you added and your answers, never your sign-in.",
     "Gets medicine names you type and drug codes, but not your name.",
     "it doesn't expire",
     "could work out the digits by trying them all",
@@ -65,5 +67,6 @@ test("the connections screen links to it, and it works with no signal", () => {
   const screen = app.slice(app.indexOf("function drawConnections(")).split("\n}\n")[0];
   assert.match(screen, /privacy\.html/);
   assert.ok(read("sw.js").includes('"./privacy.html"'));
-  assert.ok(read("README.md").includes("`privacy.html`"));
+  assert.ok(read("docs/FILES.md").includes("`privacy.html`"));
+  assert.ok(read("README.md").includes("(privacy.html)"));
 });

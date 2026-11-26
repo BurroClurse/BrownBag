@@ -16,8 +16,8 @@ change, and moves it to "Tested" with the date when the pass is done.
    the simulators can't do. Listed under "On a real iPhone".
 
 Test patient: Loria Jenkins (`e7de504a-311d-49be-b2bc-566a328bcc72`), a
-built-in sandbox patient, or Chantell Bartell (claims and an allergy). The
-README has a link that signs in as each. The demo patient Avery Brownbag is wiped by the
+built-in sandbox patient, or Chantell Bartell (claims and an allergy).
+[`SANDBOXES.md`](SANDBOXES.md#test-patients) has a link that signs in as each. The demo patient Avery Brownbag is wiped by the
 sandbox every night.
 
 Test patients whose records disagree: Riley Reconcile and Jordan Partial. The
@@ -42,6 +42,18 @@ pass, when it touches:
   pick lists, the Home Screen app).
 
 ## Waiting for the next pass
+
+**The privacy page and the app cache** (2026-11-26, Task 11). On both
+virtual phones, open Brown Bag once with a signal so it takes the new app
+files (cache `brownbag-v98`), then More options ▸ Privacy:
+
+- "What stays on your phone" ends its first lines with "When your records
+  disagree, your answers are kept with what you add: locked, and in your
+  backups." "Backups" says "They hold what you added and your answers, never
+  your sign-in." Both wrap well at the largest text, and Back returns to
+  More options.
+- Airplane mode on, then reopen Brown Bag: it opens and the QR code works, as
+  before (the new cache has every app file).
 
 **The review cards when records disagree** (2026-11-25, Task 10; test right
 away: it changes the patient's list and what the QR code says). Checked only
@@ -167,6 +179,11 @@ both virtual phones:
   start sign-in", not Chantell's. The same after Sign out, Sign in, unlock,
   Connect. Chromium did both paths, with and without pages brought back as
   they were left.
+- **Reload on a sign-in that didn't start** (Task 10d fix round 1; added in
+  Task 11). Reload (Safari's reload button, or pull down in Chrome) on
+  "Starting sign-in…" or on "Couldn't start sign-in": "Couldn't start
+  sign-in" with **Try again**, and nothing starts by itself. Try again then
+  tries the same patient. Chromium did this (`task-10d-fix-blocked.cjs`).
 
 **Fixes from the 2026-11-25 pass** (Task 10b; test right away: the staff
 page and sign-in). Checked only in headless Chromium (iPhone 15 profile,
