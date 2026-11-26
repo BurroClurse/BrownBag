@@ -22,7 +22,7 @@ The pictures are Riley Reconcile, made up, with the home server's test clinic.
 
 <p>
 <img src="assets/readme-home.png" width="240" alt="Home for test patient Riley R.: the Brown Bag logo, Show my QR code, My medicines (9), a link that says Your records don't agree on 3 things, and More options.">
-<img src="assets/readme-medicines.png" width="240" alt="A card on My medicines, atorvastatin 20 MG Oral Tablet: Your records don't agree on whether you still take it. SMART sandbox, Jan 2026: once a day, current. Valley Clinic (test records), Oct 2026: once a day, stopped. Buttons: Check this, As needed, Not taking.">
+<img src="assets/readme-qr.png" width="240" alt="The QR code screen: Show this to the person checking your medicines, See what's inside, a large QR code, then After they scan it, tell them this code, with the 6-digit code blurred until Tap to show the code, and a Close button.">
 <img src="assets/readme-staff.png" width="240" alt="The staff page for Riley Reconcile: under Medicines (9), the part Records disagree: ask the patient (3), with atorvastatin from the SMART sandbox (Records say: current) and from Valley Clinic (Records say: stopped).">
 </p>
 

@@ -94,6 +94,8 @@ New decisions go at the end of each list, with the date.
   and FHIR file keep the shown record's dose, with every version in the notes.
   "Check them" is fine on a partial list.
 - Merge PR #14 before the Mac phone pass; the pass is on Tyler's to-do.
+- The README's pictures are home, the QR code screen and the staff page, in
+  that order (2026-11-26; the QR code screen replaced My medicines).
 
 ## Calls Claude made
 
