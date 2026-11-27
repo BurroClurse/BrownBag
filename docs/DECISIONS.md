@@ -129,6 +129,8 @@ New decisions go at the end of each list, with the date.
 - The Standards tables more compact, with a slightly smaller font; how they
   look is Claude's call (2026-11-26).
 - The README's three screenshots shown smaller (2026-11-26).
+- The matching notebook (`BrownBagMatch.ipynb`) tests `main`, now that the
+  reconciliation work is merged (2026-11-27).
 
 ## Calls Claude made
 
