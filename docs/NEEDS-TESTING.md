@@ -46,10 +46,6 @@ pass, when it touches:
 **Left from the 2026-11-26 pass.** Everything else in the seven entries
 tested that day passed (see Tested).
 
-- **Back from More options ▸ Privacy.** On both virtual phones Back reloads
-  Brown Bag: the lock, then home, not More options. On 2026-11-24 the iPhone
-  simulator went back to More options; Safari's driver may stop Safari keeping
-  the page. Check on Tyler's iPhone.
 - **iPhone simulator only: a sign-in that can't start** (Task 10d: Back,
   Forward and Reload on "Starting sign-in…" and "Couldn't start sign-in",
   first run and after Sign out). Passed on Android. Safari's driver can't cut
@@ -152,10 +148,12 @@ VoiceOver was checked 2026-11-24 and works. Tyler isn't doing more of it.
 - Safari bringing a put-aside staff tab back (Task 10d): with the staff page
   open, switch to several heavy apps for a while, then come back to Safari:
   the code box, or the list if Safari didn't reload the tab. Never "no list".
-- Back from More options ▸ Privacy: More options, or the lock and then home?
-  The virtual phones showed the lock, then home (2026-11-26).
 
 ## Tested
+
+**2026-11-27, Tyler's iPhone: Back from More options ▸ Privacy** lands on More
+options. The virtual phones showed the lock, then home, on 2026-11-26, which
+was the test drivers, not Brown Bag.
 
 **2026-11-26 pass, Android emulator (Chrome) and iPhone 15 simulator (Safari),
 on the home server with the test clinic, Riley and Jordan put back on the
