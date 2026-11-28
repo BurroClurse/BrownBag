@@ -19,6 +19,7 @@ in `js/` is listed here (`tests/readme.test.mjs` checks).
 | `js/demo-source.js` | Test records from a made-up second clinic, offered only by the home test server. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
+| `js/browse.js` | Browse all patients: sorts, searches and words the saved list of sandbox patients, and picks out patients other people added for the live view. |
 | `js/connections.js` | The connections screen's choices: where a sign-in comes back to, and what the screen says. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
 | `js/card.js` | One medicine's card: how to take it, anything to check, then the rest, each labelled. |
