@@ -847,11 +847,15 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .inside-page li { margin: 0 0 0.45rem; }
 .inside-page li div { white-space: pre-line; }
 .inside-page .inside-warning { color: var(--error-ink); font-weight: 600; }
-/* A "?" from the QR screen, as its own page (the developer, 2026-11-28). */
-.help-page h1 { font-size: 1.35rem; margin: 0.5rem 0 0.75rem; }
-.help-page p { margin: 0 0 0.75rem; font-size: 1.1rem; line-height: 1.45; }
-.help-page ul { margin: 0 0 0.75rem; padding-left: 1.3rem; font-size: 1.1rem; line-height: 1.45; }
-.help-page li { margin: 0 0 0.4rem; }
+/* A "?" from the QR screen, in a popup over the code (the developer,
+   2026-11-28): only as big as what it says, Back to the code above and below. */
+.popup .qr-help { text-align: left; }
+.popup .qr-help h2 { margin: 0.9rem 0 0.4rem; font-size: 1.35rem; text-align: center; }
+.popup .qr-help p { margin: 0 0 0.6rem; font-size: 1.05rem; line-height: 1.45; text-wrap: pretty; }
+.popup .qr-help ul { margin: 0 0 0.6rem; padding-left: 1.2rem; font-size: 1.05rem; line-height: 1.4; }
+.popup .qr-help li { margin: 0 0 0.35rem; }
+.popup .qr-help > .big { width: 100%; margin: 0; }
+.popup .qr-help > .big:last-child { margin-top: 0.6rem; }
 /* Start over has more to read, so its bag is small. */
 .lock.start-over { margin-top: 0; }
 .lock.start-over .screen-logo { width: min(9rem, 22dvh); margin-bottom: 0.25rem; }

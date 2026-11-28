@@ -172,10 +172,12 @@ New decisions go at the end of each list, with the date.
   (option A), evenly spaced between the title and the code (2026-11-28). It
   was a quiet link before, so the code stood out; people should check what's
   inside before they show it.
-- On the QR screen only, each "?" opens its explanation as its own page, like
-  See what's inside, so the code and its digits never move; elsewhere the
-  "?" still open in place (2026-11-28). The page has "Back to the code" at
-  the top, and Back returns to the code with focus on the "?" (Claude's call).
+- On the QR screen only, each "?" opens its explanation in a popup over the
+  code, only as big as what it says, so the code and its digits never move;
+  elsewhere the "?" still open in place (2026-11-28). "Back to QR code" at the
+  top and the bottom; the phone's Back, Escape or a tap beside it close it too,
+  leaving the code open. See what's inside's page says "Back to QR code" too
+  (Claude's call, to match).
 
 ## Calls Claude made
 

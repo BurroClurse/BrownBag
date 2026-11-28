@@ -34,22 +34,25 @@ test("the space above and below See what's inside is the same", () => {
 });
 
 // The developer, 2026-11-28: on the QR screen, each "?" opens its explanation
-// as its own page, like See what's inside, so the code never moves; elsewhere
-// they still open in place.
-test("the QR screen's two \"?\" open their own page, and Back returns to the code", () => {
+// in a popup over the code, only as big as what it says, with Back to QR code
+// at the top and the bottom; elsewhere the "?" still open in place.
+test("the QR screen's two \"?\" open a popup over the code, with Back to QR code twice", () => {
   const app = read("js/app.js");
   const qr = app.slice(app.indexOf("async function buildQr")).split("\n}\n")[0];
   assert.doesNotMatch(qr, /helpBubble\(/);
-  assert.equal((qr.match(/qrHelp\(/g) || []).length, 2);
   assert.match(qr, /qrHelp\(insideRow, "What's in this code\?"/);
   assert.match(qr, /qrHelp\(sayRow, "Why tell them the code\?"/);
   const open = app.slice(app.indexOf("function openQrHelp")).split("\n}\n")[0];
-  assert.match(open, /"Back to the code"/);
-  assert.match(open, /history\.pushState\(\{ bb: "inside" \}, ""\)/);
-  assert.match(open, /overlay\.dataset\.opener = opener\.id/);
-  assert.match(open, /qr\.inert = true/);
-  const close = app.slice(app.indexOf("function closeInside")).split("\n}\n")[0];
-  assert.match(close, /overlay\.dataset\.opener \|\| "qr-inside"/);
+  assert.match(open, /openPopup\(document\.body, heading, opener/);
+  assert.equal((open.match(/"Back to QR code"/g) || []).length, 2);
+  assert.match(open, /history\.pushState\(\{ bb: "qr-help" \}, ""\)/);
+  assert.match(open, /history\.state && history\.state\.bb === "qr-help"/);
+  assert.doesNotMatch(open, /inside-overlay/);
+  // The phone's Back closes the popup and leaves the code open; Forward to its
+  // step after it closed comes straight back.
+  assert.match(app, /if \(step === "inside" \|\| step === "qr-help"\) history\.back\(\);/);
   // Elsewhere the "?" still open in place.
   assert.match(app, /function helpBubble\(/);
+  // As big as its content, scrolling inside when the screen is shorter.
+  assert.match((read("css/brownbag.css").split(".popup {")[1] || "").split("}")[0], /max-height: 94dvh;[\s\S]*overflow-y: auto;/);
 });
