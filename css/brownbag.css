@@ -528,21 +528,13 @@ button.help-button {
   border-radius: 17px;
   background: linear-gradient(#FFFFFF 50%, #164F5A 50%);
 }
-/* The mark is the other color on each half. */
-.help-pill > span {
-  display: block;
-  height: 40px;
-  background: linear-gradient(#164F5A 50%, #FFFFFF 50%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-size: 38px;
-  font-weight: 800;
-  line-height: 40px;
-  text-align: center;
-}
+/* The mark, js/help-mark.js: the hook teal in the white half, the dot white
+   in the teal half (the developer, 2026-11-28). */
+.help-mark { display: block; width: 29px; height: 40px; }
+.help-hook { fill: none; stroke: #164F5A; stroke-width: 4.6; stroke-linecap: round; stroke-linejoin: round; }
+.help-dot { fill: #FFFFFF; }
 .section-help .help-pill { margin-right: 0; }
-@media (forced-colors: active) { .help-pill, .help-pill > span { background: none; color: ButtonText; } }
+@media (forced-colors: active) { .help-pill, .help-mark .help-dot { background: none; fill: ButtonText; } .help-mark .help-hook { stroke: ButtonText; } }
 .help-panel { text-align: left; max-width: 28rem; width: 100%; }
 .help-panel p { margin: 0.3rem 0; }
 .help-panel ul { margin: 0.3rem 0; padding-left: 1.3rem; }

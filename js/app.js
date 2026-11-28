@@ -2,6 +2,7 @@
 // patient's additions, and the QR code. Everything the records or the
 // patient typed goes into the page with textContent, never innerHTML.
 
+import { helpMarkSvg } from "./help-mark.js";
 import { showLockScreen } from "./lock-screen.js";
 import { loadPatientData, savePatientData, exportBackup, exportPasswordBackup, importBackup, importOpened, isPasswordBackup } from "./vault.js";
 import { openWithPassword, saveWithPassword } from "./backup-popups.js";
@@ -2803,7 +2804,7 @@ function helpBubble(row, label, fill) {
   panel.hidden = true;
   fill(panel);
   var ask = add(row, "button", null, "help-button");
-  add(add(ask, "span", null, "help-pill"), "span", "?");
+  add(ask, "span", null, "help-pill").appendChild(helpMarkSvg());
   ask.type = "button";
   ask.setAttribute("aria-label", label);
   ask.setAttribute("aria-expanded", "false");

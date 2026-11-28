@@ -19,6 +19,7 @@ in `js/` is listed here (`tests/readme.test.mjs` checks).
 | `js/demo-source.js` | Test records from a made-up second clinic, offered only by the home test server. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
+| `js/help-mark.js` | The "?" on the help pills, drawn as a shape: the hook in the white top half, the dot in the teal bottom half. |
 | `js/scopes.js` | The permissions sign-in asks for: SMART v2 scopes when the server lists `permission-v2`, else v1. |
 | `js/sandbox-patients.js` | Browse all patients' saved list: the sandbox's patients with a medicine record and their counts. Made by `tools/sandbox-patients.mjs`. |
 | `js/browse.js` | Browse all patients: sorts, searches and words the saved list of sandbox patients, and picks out patients other people added for the live view. |

@@ -1,6 +1,7 @@
 // Closing the QR code crumples it, like a sheet of paper, into a ball that drops
 // into the bag. A picture of the code screen is drawn in folds on a canvas over
 // home. Only crumpleInto touches the page.
+import { HELP_MARK } from "./help-mark.js";
 
 export var CRUMPLE_MS = 1000;
 // The part of that spent crumpling; the rest is the drop.
@@ -141,13 +142,13 @@ function picture(overlay, width, height) {
   return sheet;
 }
 
-// As the CSS draws it: white over teal, the mark the other color on each half.
+// As the page draws it: white over teal, the hook in the white half and the
+// dot in the teal half (js/help-mark.js).
 function drawPill(pen, pill, base) {
   var at = pill.getBoundingClientRect();
-  var style = getComputedStyle(pill.firstChild);
   var x = at.left - base.left;
   var y = at.top - base.top;
-  function half(top, fill, ink) {
+  function half(top, fill) {
     pen.save();
     pen.beginPath();
     pen.rect(x, top, at.width, at.height / 2);
@@ -158,17 +159,26 @@ function drawPill(pen, pill, base) {
     pen.fillStyle = fill;
     pen.fill();
     pen.lineWidth = 2;
-    pen.strokeStyle = "#164F5A";
+    pen.strokeStyle = HELP_MARK.ink;
     pen.stroke();
-    pen.fillStyle = ink;
-    pen.font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
-    pen.textAlign = "center";
-    pen.textBaseline = "middle";
-    pen.fillText("?", x + at.width / 2, y + at.height / 2);
     pen.restore();
   }
-  half(y, "#FFFFFF", "#164F5A");
-  half(y + at.height / 2, "#164F5A", "#FFFFFF");
+  half(y, HELP_MARK.paper);
+  half(y + at.height / 2, HELP_MARK.ink);
+  // The mark, in the pill's inside (inside its 2px border).
+  pen.save();
+  pen.translate(x + 2, y + 2);
+  pen.scale((at.width - 4) / HELP_MARK.width, (at.height - 4) / HELP_MARK.height);
+  pen.lineWidth = HELP_MARK.stroke;
+  pen.lineCap = "round";
+  pen.lineJoin = "round";
+  pen.strokeStyle = HELP_MARK.ink;
+  if (typeof Path2D === "function") pen.stroke(new Path2D(HELP_MARK.hook));
+  pen.beginPath();
+  pen.arc(HELP_MARK.dot.cx, HELP_MARK.dot.cy, HELP_MARK.dot.r, 0, 2 * Math.PI);
+  pen.fillStyle = HELP_MARK.paper;
+  pen.fill();
+  pen.restore();
 }
 
 // The words of an element, a line each, where they are on the screen.
