@@ -847,6 +847,11 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
 .inside-page li { margin: 0 0 0.45rem; }
 .inside-page li div { white-space: pre-line; }
 .inside-page .inside-warning { color: var(--error-ink); font-weight: 600; }
+/* A "?" from the QR screen, as its own page (the developer, 2026-11-28). */
+.help-page h1 { font-size: 1.35rem; margin: 0.5rem 0 0.75rem; }
+.help-page p { margin: 0 0 0.75rem; font-size: 1.1rem; line-height: 1.45; }
+.help-page ul { margin: 0 0 0.75rem; padding-left: 1.3rem; font-size: 1.1rem; line-height: 1.45; }
+.help-page li { margin: 0 0 0.4rem; }
 /* Start over has more to read, so its bag is small. */
 .lock.start-over { margin-top: 0; }
 .lock.start-over .screen-logo { width: min(9rem, 22dvh); margin-bottom: 0.25rem; }

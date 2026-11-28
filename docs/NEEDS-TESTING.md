@@ -43,6 +43,14 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The QR screen's "?" as their own pages** (2026-11-28). Checked in headless
+Chromium at iPhone 15 size. Cache `brownbag-v111`. On both virtual phones and
+the developer's iPhone, Show my QR code, then each "?": a page "What's in this
+code?" or "Why tell them the code?" with **Back to the code** at the top.
+Back to the code, the phone's Back, and Escape (Chrome) each return to the
+same code, the digits still hidden or shown as before, with the screen reader
+on the "?" again. The "?" on My medicines still open in place.
+
 **See what's inside as a button** (2026-11-28). Checked in headless Chromium
 at iPhone 15 and iPhone SE sizes: the same space above and below it, and the
 code, the digits and Close fit with no scrolling on both. Open Brown Bag once
