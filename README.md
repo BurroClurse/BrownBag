@@ -14,6 +14,9 @@ There's no Brown Bag server: it all runs in the browser.
 **Live:** <https://burroclurse.github.io/BrownBag/>, with the SMART Health IT
 sandbox's made-up [test patients](docs/SANDBOXES.md#test-patients) only. The
 pictures are Riley Reconcile, also made up.
+**Browse all patients**, at the end of the test patients, lists 491 of the
+sandbox's 626 own patients (981 in all, counting ones others add): every
+living one with a medicine record of any kind, and 25 who have died.
 
 <p>
 <img src="assets/readme-home.png" width="160" alt="Home for test patient Riley R.: the Brown Bag logo, Show my QR code, My medicines (9), a link that says Your records don't agree on 3 things, and More options.">
@@ -193,6 +196,7 @@ Ideas become plans only after their own design; the reasons are in
 - **When each source was last read.** [#21](docs/LIMITS.md)
 - **Text past 200 percent** on My medicines, the QR screen and the staff page. [#28](docs/LIMITS.md)
 - **The unnamed allergy's source**, once a second source sends allergies. [#17](docs/LIMITS.md)
+- **When a record says the patient has died**, saying so plainly, for the patient and staff (designing next).
 
 **Back end**
 - **Medicare Part D fills** (designed and planned; waiting on Medicare's approval): one small server function that only handles Medicare's sign-in. [Design](docs/superpowers/specs/2026-11-22-medicare-blue-button-design.md)
@@ -204,6 +208,7 @@ Ideas become plans only after their own design; the reasons are in
 - **Nicknames and old names** (idea). [Research](docs/superpowers/research/2026-11-25-messy-data-findings.md)
 - **A `DetectedIssue` in the FHIR file** (idea; waiting on IPS or US Core). [#26](docs/LIMITS.md)
 - **HL7's validator on every push** (idea; run by hand today). [#20](docs/LIMITS.md)
+- **A death date in the QR code and the FHIR file** (designing next), with the patient's screens.
 
 ## Run it
 

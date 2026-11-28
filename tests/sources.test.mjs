@@ -145,7 +145,7 @@ test("Back from the sandbox comes to the list once, then the connections screen"
   const patients = launch.slice(launch.indexOf("function showPatients")).split("\n}\n")[0];
   assert.doesNotMatch(patients, /location\.replace\(signInLink/);
   assert.match(patients, /location\.href = signInLink\(patient\.id\)/);
-  assert.match(patients, /location\.href = signInLink\(OWN_LIST\)/);
+  assert.match(patients, /location\.href = browseLink\(\)/);
   const signIn = launch.slice(launch.indexOf("function signIn")).split("\n}\n")[0];
   assert.match(signIn, /if \(chosen\(location\.search\)\) \{\s*location\.replace\(url\);/);
   // A link that named its own server: Back from there is the connections
@@ -286,4 +286,17 @@ test("a link to another server isn't called the sandbox", () => {
   assert.match(leavingText("?source=smart-sandbox&as=list"), /Sign in there as the patient/);
   assert.doesNotMatch(leavingText("?iss=https%3A%2F%2Fexample.test%2Ffhir"), /sandbox/);
   assert.match(leavingText("?iss=https%3A%2F%2Fexample.test%2Ffhir"), /your health system's sign-in page/);
+});
+
+// Browse all patients (design 2026-11-28).
+test("Browse all patients is its own screen, and a patient someone added signs in only with added=1", () => {
+  assert.equal(startFor("?source=smart-sandbox&browse=1"), "browse");
+  assert.equal(startFor("?source=epic&browse=1"), "list");
+  assert.ok(signInLink("5023633", true).endsWith("?source=smart-sandbox&as=5023633&added=1"));
+  assert.equal(signInLink("5023633"), "./launch.html?source=smart-sandbox");
+  assert.equal(chosen("?source=smart-sandbox&as=5023633&added=1"), "5023633");
+  assert.equal(chosen("?source=smart-sandbox&as=5023633"), null);
+  for (const id of ["a%2Cb", "x".repeat(65), "", "a%20b"]) assert.equal(chosen("?source=smart-sandbox&as=" + id + "&added=1"), null, id);
+  assert.equal(startFor("?source=smart-sandbox&as=5023633&added=1"), "sign-in");
+  assert.match(leavingText("?source=smart-sandbox&as=5023633&added=1"), /Approve Brown Bag there/);
 });

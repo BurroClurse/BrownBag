@@ -106,3 +106,9 @@ test("the README's pictures are small, described, and not app files", () => {
   }
   assert.doesNotMatch(worker, /assets\//);
 });
+
+test("the README says how many patients Browse all patients lists, of the sandbox's own", async () => {
+  const { PATIENTS, SANDBOX_OWN, SANDBOX_TOTAL } = await import("../js/sandbox-patients.js");
+  assert.match(readme, /\*\*Browse all patients\*\*/);
+  assert.ok(readme.includes("lists " + PATIENTS.length + " of the\nsandbox's " + SANDBOX_OWN + " own patients (" + SANDBOX_TOTAL + " in all"), PATIENTS.length + " " + SANDBOX_OWN);
+});

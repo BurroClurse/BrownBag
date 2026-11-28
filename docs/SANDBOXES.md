@@ -8,8 +8,22 @@ sources, and the other test systems looked at so far. The
 ## Test patients
 
 Sign in, then SMART Health IT sandbox, lists 20 made-up patients grouped by what
-they show, each with their birth date. A choice goes to the sandbox's approval page. **Someone else** opens the
-sandbox's own list, which changes because anyone can add patients.
+they show, each with their birth date. A choice goes to the sandbox's approval page.
+
+**Browse all patients**, at the end of that list, finds anyone else
+(the developer, 2026-11-28). It lists 491 of the sandbox's 626 own patients (981 in all
+on 2026-11-28, counting ones other people add): every
+living one with a medicine record of any kind, and the 25 deceased ones with
+the most different medicines. Every record counts, "entered in error" and the
+rest included, because messy records are what testing needs. Search by any
+part of the name, and sort by most different medicines (the default),
+prescriptions, current medicines, insurance fills or allergies, by name, or
+oldest or youngest first, 20 at a time. The list is saved in the app
+(`js/sandbox-patients.js`), so it opens with no wait; to refresh it, run
+`node tools/sandbox-patients.mjs` (it only reads the sandbox, and takes about 15
+minutes). **Added by other people** asks the sandbox live for patients others
+put there through its API, which it deletes every night; those aren't on the
+saved list for that reason.
 
 These links sign in as one patient directly, with no list, no approval and no
 password:
