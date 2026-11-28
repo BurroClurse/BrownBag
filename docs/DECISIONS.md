@@ -164,6 +164,10 @@ New decisions go at the end of each list, with the date.
   can't be read.
 - US Core's reported medicines, stronger same-person matching and UNII allergy
   codes go into LIMITS (#29 to #31) and "What's planned" as ideas for later.
+- The "?" pills: the hook only in the white top half and the dot only in the
+  teal bottom half, drawn as a shape (`js/help-mark.js`): a smooth hook at 80
+  percent, the dot matched to the line, the dot just under the middle line
+  (2026-11-28).
 
 ## Calls Claude made
 

@@ -43,6 +43,14 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**The "?" pills' new mark** (2026-11-28). Not checked in a browser; the
+developer checks it. Open Brown Bag once with a signal (cache `brownbag-v109`).
+On both virtual phones and the developer's iPhone: every "?" (My medicines'
+headings, the QR screen, See what's inside) shows the hook in teal on the white
+top half and the dot in white on the teal bottom half, sharp at every text
+size; close the QR code and the crumpling paper shows the same mark. With
+high contrast (Windows) or Increase Contrast, the mark still shows.
+
 **SMART v2 scopes** (2026-11-28). Checked only in headless Chromium: the
 sandbox's approval page got the `.rs` scopes, and the `.read` ones with its
 configuration blocked. Open Brown Bag once with a signal (cache
