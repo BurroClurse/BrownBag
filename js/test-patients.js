@@ -3,6 +3,8 @@
 // anyone can add to it. Checked on the sandbox 2026-11-24; birth dates as the
 // sandbox has them, 2026-11-26. No DOM here.
 
+import { PATIENTS } from "./sandbox-patients.js";
+
 export const GROUPS = [
   { title: "Insurance fills", patients: [
     { id: "e89af71d-4aa4-2237-e71d-6fa8e4b5af09", name: "Chantell Bartell", born: "1974-05-08", about: "Fills, an allergy, and an allergy entry with no name" },
@@ -41,17 +43,28 @@ export const GROUPS = [
 // The sandbox's own sign-in page, with nobody chosen.
 export var OWN_LIST = "list";
 
+// The 20 above, and Browse all patients' saved list (design 2026-11-28).
 export function knownPatient(id) {
   return GROUPS.some(function (group) {
     return group.patients.some(function (patient) { return patient.id === id; });
-  });
+  }) || PATIENTS.some(function (patient) { return patient.id === id; });
+}
+
+// A patient other people added to the sandbox can't be on a saved list (it
+// deletes them every night), so Added by other people's choices are checked
+// by shape: a FHIR id, and nothing that isn't one.
+var FHIR_ID = /^[A-Za-z0-9.-]{1,64}$/;
+var NOT_IDS = ["__proto__", "constructor", "prototype"];
+
+export function addedId(id) {
+  return typeof id === "string" && FHIR_ID.test(id) && NOT_IDS.indexOf(id) === -1;
 }
 
 // The sandbox reads the "/sim/..." part of its address: a patient standalone
 // launch (the 3), the patient, and whether to skip its sign-in page. Its
 // approval page always shows.
-export function sandboxServer(id) {
-  if (id !== OWN_LIST && !knownPatient(id)) throw new Error("Not on the list");
+export function sandboxServer(id, added) {
+  if (id !== OWN_LIST && !knownPatient(id) && !(added && addedId(id))) throw new Error("Not on the list");
   var one = id !== OWN_LIST;
   var options = [3, one ? id : "", "", "AUTO", one ? 1 : 0, 0, 0, "", "", "", "", "", "", "", 0, 1, ""];
   return "https://launch.smarthealthit.org/v/r4/sim/" +

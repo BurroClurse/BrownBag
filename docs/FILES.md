@@ -19,6 +19,7 @@ in `js/` is listed here (`tests/readme.test.mjs` checks).
 | `js/demo-source.js` | Test records from a made-up second clinic, offered only by the home test server. |
 | `js/allergies.js` | Allergy records and the patient's own, one row each. |
 | `js/sources.js`, `js/source-list.js` | The sources: which are connected, how current they are, and what shows for the rest. |
+| `js/sandbox-patients.js` | Browse all patients' saved list: the sandbox's patients with a medicine record and their counts. Made by `tools/sandbox-patients.mjs`. |
 | `js/browse.js` | Browse all patients: sorts, searches and words the saved list of sandbox patients, and picks out patients other people added for the live view. |
 | `js/connections.js` | The connections screen's choices: where a sign-in comes back to, and what the screen says. |
 | `js/read.js` | Reads claims and allergies without risking the sign-in. |
@@ -49,7 +50,7 @@ in `js/` is listed here (`tests/readme.test.mjs` checks).
 | `vendor/` | The two libraries the app uses (fhirclient, qrcode-generator), unchanged copies with their licenses (`vendor/LICENSES.md`). |
 | `assets/` | The full-size logo and app icon (2048 px), the sources for `icons/`, the see-through logo the README shows, and the README's phone pictures (`readme-*.png`, sandbox test data only). None of these are app files. |
 | `tests/` | Node tests, with saved sandbox records in `tests/fixtures/`. |
-| `tools/` | The home https server (`serve.mjs`, with the test clinic), the scripts that put test patients on the sandbox (`demo-patient.mjs`, `reconcile-patients.mjs`), and the logo source. |
+| `tools/` | The home https server (`serve.mjs`, with the test clinic), the scripts that put test patients on the sandbox (`demo-patient.mjs`, `reconcile-patients.mjs`), the one that makes Browse all patients' saved list (`sandbox-patients.mjs`), and the logo source. |
 | `docs/` | [How it works](HOW-IT-WORKS.md), this list, [test patients and sandboxes](SANDBOXES.md), [the limits on keeping the list current](LIMITS.md), [what's waiting for a phone test](NEEDS-TESTING.md), [the learning log](LEARNING.md), and the designs, build plans and research under `docs/superpowers/`. |
 | `prompts/` | Prompts for an AI agent: list the sandbox's test data (`sandbox-data.md`), and run the phone test pass on the Mac (`phone-pass.md`). |
 | `health.html` | From the course starter; not part of Brown Bag. |

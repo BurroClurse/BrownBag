@@ -132,7 +132,7 @@ a { color: var(--focus); }
 [hidden] { display: none !important; }
 
 label { display: block; font-weight: 600; margin-top: 0.75rem; }
-input[type="text"], input[type="password"], input:not([type]), select {
+input[type="text"], input[type="password"], input[type="search"], input:not([type]), select {
   display: block;
   width: 100%;
   min-height: 44px;
@@ -900,6 +900,13 @@ button.option {
   text-align: left;
 }
 button.option + button.option { border-top: 1px solid var(--line); }
+/* Browse all patients (design 2026-11-28). */
+.browse-controls { margin-top: 0.5rem; }
+.browse-controls select, .browse-controls input { max-width: 100%; }
+.browse-count { margin: 0.9rem 0 0.35rem 0.25rem; color: var(--muted); font-weight: 600; }
+.browse-count:empty { display: none; }
+.browse-empty { margin: 0; padding: 1rem; }
+.screen-launch .option-card + button { margin-top: 0.75rem; }
 /* Inside the card's rounded edge, or it would be cut off. */
 button.option:focus-visible { outline-offset: -4px; border-radius: 14px; }
 .option svg { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

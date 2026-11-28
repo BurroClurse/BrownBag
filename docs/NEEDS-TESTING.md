@@ -43,6 +43,34 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Browse all patients** (2026-11-28). Checked only in headless Chromium.
+Open Brown Bag once with a signal so it takes the new app files (cache
+`brownbag-v107`). Connect on the sandbox: Choose a test patient ends with
+**Browse all patients**, not Someone else. On both virtual phones:
+
+- It opens with "{{N}} made-up patients with medicines.", Sort by "Most
+  different medicines", 20 rows, each a name and "Born …. N different
+  medicines.", and "Showing 20 of {{N}}." Show more adds 20 and moves focus
+  (and TalkBack or VoiceOver) to the first new row.
+- Type "mel": the list narrows with each letter and finds a name with "Mél"
+  in it; "MELENDEZ" finds the same. A name that isn't there says "No one by
+  that name. Check the spelling, or clear the search."
+- Each sort reorders the list and changes the number on the rows; Name A to
+  Z, Oldest first and Youngest first have no number. Nothing scrolls sideways
+  at 320 wide or at the largest text.
+- Pick a patient: the sandbox's approval page names them; approve, and Brown
+  Bag shows their list. Back from the sandbox's page returns to Browse all
+  patients with the same search, sort and rows showing.
+- A deceased patient from the list (Sort by Most different medicines, one of
+  the 25) signs in like the rest. Brown Bag doesn't say yet that they've
+  died: that's the next design.
+- **Added by other people**: "Asking the sandbox…", then patients others
+  added (names and birth dates, no numbers), or "No one added by other people
+  has medicines right now." With no signal: "Couldn't reach the sandbox." and
+  Try again, and switching back to another sort still works.
+- TalkBack reads "Search by name" and "Sort by" with their fields, and the
+  "Showing 20 of …" line after each search.
+
 **Older prescriptions, open, as one box** (2026-11-26). On both virtual phones,
 as Thanh Mosciski or Loria Jenkins: open Older prescriptions on My medicines.
 Its cards sit inside a tinted box under the heading, ending with **Close older

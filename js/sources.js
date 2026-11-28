@@ -3,7 +3,7 @@
 // turn one on, build its sign-in, then change its line here. No DOM here, so
 // Node's test runner can check it.
 
-import { OWN_LIST, knownPatient } from "./test-patients.js";
+import { OWN_LIST, addedId, knownPatient } from "./test-patients.js";
 
 // Aetna may join the list later (the developer, 2026-11-23), once its terms about
 // using its name are settled.
@@ -37,8 +37,15 @@ export function notConnected() {
 
 // To the source the patient already uses: straight in as the same person when
 // they're on its list, else its list.
-export function signInLink(patientId) {
-  return "./launch.html?source=" + connected()[0].id + (patientId === OWN_LIST || knownPatient(patientId) ? "&as=" + patientId : "");
+export function signInLink(patientId, added) {
+  var as = patientId === OWN_LIST || knownPatient(patientId) ? "&as=" + patientId
+    : added && addedId(patientId) ? "&as=" + patientId + "&added=1" : "";
+  return "./launch.html?source=" + connected()[0].id + as;
+}
+
+// Browse all patients: its own step after Choose a test patient.
+export function browseLink() {
+  return "./launch.html?source=" + connected()[0].id + "&browse=1";
 }
 
 // The test patient an address asks for ("list" for the sandbox's own page), or
@@ -46,7 +53,8 @@ export function signInLink(patientId) {
 export function chosen(search) {
   var params = new URLSearchParams(search);
   var id = params.get("as");
-  return connectedId(params.get("source")) && (id === OWN_LIST || knownPatient(id)) ? id : null;
+  var added = params.get("added") === "1" && addedId(id);
+  return connectedId(params.get("source")) && (id === OWN_LIST || knownPatient(id) || added) ? id : null;
 }
 
 function connectedId(id) {
@@ -96,7 +104,8 @@ export function startFor(search) {
   var params = new URLSearchParams(search);
   if (params.get("iss")) return "sign-in";
   if (chosen(search)) return "sign-in";
-  return connectedId(params.get("source")) ? "patients" : "list";
+  if (!connectedId(params.get("source"))) return "list";
+  return params.get("browse") === "1" ? "browse" : "patients";
 }
 
 export function leavingText(search) {

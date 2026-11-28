@@ -40,3 +40,25 @@ test("the test patients in SANDBOXES are on it, and it works with no signal", ()
   for (const id of ["e89af71d-4aa4-2237-e71d-6fa8e4b5af09", "e7de504a-311d-49be-b2bc-566a328bcc72"]) assert.ok(knownPatient(id));
   assert.ok(read("sw.js").includes('"./js/test-patients.js"'));
 });
+
+// Browse all patients (design 2026-11-28): a patient on the saved list signs in
+// like one of the 20; a patient other people added only with added=1 and an id
+// shaped like a FHIR id.
+test("a browsed patient from the saved list signs in like one of the 20", async () => {
+  const { PATIENTS } = await import("../js/sandbox-patients.js");
+  const id = PATIENTS[PATIENTS.length - 1].id;
+  assert.equal(knownPatient(id), true);
+  assert.deepEqual([3, id, 1, 0], ((o) => [o[0], o[1], o[4], o[5]])(options(sandboxServer(id))));
+});
+
+test("a patient other people added signs in only when the link says so, with a FHIR id", async () => {
+  const { addedId } = await import("../js/test-patients.js");
+  assert.equal(knownPatient("5023633"), false);
+  assert.throws(() => sandboxServer("5023633"));
+  assert.equal(options(sandboxServer("5023633", true))[1], "5023633");
+  for (const id of ["5023633", "brownbag-recon-riley", "a.b-1"]) assert.equal(addedId(id), true, id);
+  for (const id of ["", null, "a,b", "a b", "x".repeat(65), "__proto__", "ab/cd"]) {
+    assert.equal(addedId(id), false, String(id));
+    assert.throws(() => sandboxServer(id, true), String(id));
+  }
+});

@@ -219,6 +219,18 @@ that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
 
+**Browse all patients** (design 2026-11-28) is the last choice on the test
+patients, its own history step (`launch.html?source=smart-sandbox&browse=1`).
+It reads the saved list in `js/sandbox-patients.js`, made by
+`tools/sandbox-patients.mjs`, and sorts and searches it with `js/browse.js`;
+the search, the sort and how many are showing stay in the step's
+`history.state`, so Back from the sandbox returns to the same place. A browsed
+patient signs in exactly like a listed one: `knownPatient` accepts the saved
+list. **Added by other people** searches the sandbox live
+(`Patient?_has:MedicationRequest:patient:status=…&_sort=-_lastUpdated`, and
+the MedicationStatement form), keeps ids that aren't the sandbox's own, and
+signs in with `&added=1`, which accepts only an id shaped like a FHIR id.
+
 ```
 launch/patient openid fhirUser offline_access patient/Patient.read
 patient/MedicationRequest.read patient/MedicationStatement.read

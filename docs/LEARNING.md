@@ -1915,6 +1915,27 @@ have the same name and birth date, so two people are never mixed.
 
 **Practice in the lab:** [Go Deeper](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#go-deeper)
 
+## Step 69: Browsing every test patient
+
+**What it is:** the SMART sandbox has 933 made-up patients, but its own sign-in
+page shows only ten, and Brown Bag's list had 20 picked by hand. **Browse all
+patients** finds the rest: search by name, and sort by who has the most
+medicines, prescriptions, fills or allergies, or by name or age.
+
+**How it knows who has the most:** a FHIR search can find patients who have
+medicines (`Patient?_has:MedicationRequest:patient:status=...` reads "patients
+that a MedicationRequest points to"), but it can't sort them by how many. So a
+small tool, `tools/sandbox-patients.mjs`, asks the sandbox about each patient
+once, counts their records, and saves the list in the app. That's also why it
+opens instantly and still works when the sandbox is slow.
+
+**Why it keeps the messy records:** a record marked "entered in error" or
+missing a name is exactly what a real health system sends now and then, and
+Brown Bag has to handle it. The data is the source of truth, even when it may
+be wrong; Brown Bag's job is to make the mess clear, not to hide it.
+
+**Practice in the lab:** [Guided Lab](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#guided-lab)
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

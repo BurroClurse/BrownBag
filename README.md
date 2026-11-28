@@ -14,6 +14,9 @@ There's no Brown Bag server: it all runs in the browser.
 **Live:** <https://burroclurse.github.io/BrownBag/>, with the SMART Health IT
 sandbox's made-up [test patients](docs/SANDBOXES.md#test-patients) only. The
 pictures are Riley Reconcile, also made up.
+**Browse all patients**, at the end of the test patients, lists {{N}} of the
+sandbox's 933 patients: every living one with a medicine record of any kind,
+and 25 who have died.
 
 <p>
 <img src="assets/readme-home.png" width="160" alt="Home for test patient Riley R.: the Brown Bag logo, Show my QR code, My medicines (9), a link that says Your records don't agree on 3 things, and More options.">
