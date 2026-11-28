@@ -5,13 +5,15 @@
 //
 // It finds every patient on the public SMART sandbox with a MedicationRequest
 // or a MedicationStatement in any status, leaves out patients other people
-// added through its API (the sandbox deletes them every night), reads each
-// one's medicines, allergies and insurance claims, and counts them. Every
+// added through its API (the sandbox deletes them every night), reads every
+// medicine, allergy and insurance claim on the sandbox, and counts each
+// patient's. Every
 // record counts, "entered in error" and the rest included (the developer,
 // 2026-11-28). It keeps every living patient and the 25 deceased ones with
 // the most different medicines. It only reads: nothing on the sandbox
-// changes. It asks one thing at a time, slowly, because the sandbox answers
-// 503 when asked quickly; a run takes several minutes.
+// changes. It asks one page at a time with a pause, and waits longer after
+// each 503, which the sandbox answers now and then; a run takes several
+// minutes.
 
 import { writeFileSync } from "node:fs";
 import path from "node:path";
@@ -21,8 +23,6 @@ import { isAddedId, nameOf, sortPatients } from "../js/browse.js";
 const BASE = "https://launch.smarthealthit.org/v/r4/fhir/";
 const RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 const CLAIM_TYPE = "http://terminology.hl7.org/CodeSystem/claim-type";
-const REQUEST_STATUSES = "active,on-hold,cancelled,completed,entered-in-error,stopped,draft,unknown";
-const STATEMENT_STATUSES = "active,completed,entered-in-error,intended,stopped,on-hold,unknown,not-taken";
 const DECEASED_KEPT = 25;
 const PAUSE_MS = 300;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -59,64 +59,73 @@ export function countsFor({ requests, statements, allergies, claims }) {
 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const TRIES = 8;
 
 async function get(url) {
   for (let attempt = 0; ; attempt += 1) {
     await wait(PAUSE_MS);
     try {
-      const response = await fetch(url, { headers: { Accept: "application/fhir+json" }, signal: AbortSignal.timeout(30000) });
+      const response = await fetch(url, { headers: { Accept: "application/fhir+json" }, signal: AbortSignal.timeout(60000) });
       if (response.ok) return await response.json();
-      if (attempt >= 4 || (response.status !== 503 && response.status !== 502 && response.status !== 429)) {
+      if (attempt >= TRIES || (response.status !== 503 && response.status !== 502 && response.status !== 429)) {
         throw new Error(response.status + " " + url);
       }
     } catch (error) {
-      if (attempt >= 4) throw error;
+      if (attempt >= TRIES) throw error;
     }
     await wait(5000 * (attempt + 1));
   }
 }
 
-// Every resource a search finds, a page at a time by _offset, in _id order.
-// The sandbox's own next links fail after about ten pages; offsets don't.
+// Every resource a search finds, 250 to a page (the sandbox's most),
+// following its next links. (It ignores _offset.)
 async function all(query) {
-  const size = Number((/[?&]_count=(\d+)/.exec(query) || [])[1]) || 20;
   const found = [];
-  for (let offset = 0; ; offset += size) {
-    const bundle = await get(BASE + query + "&_sort=_id&_offset=" + offset);
-    const page = (bundle.entry || []).map((entry) => entry.resource).filter(Boolean);
-    found.push(...page);
-    if (process.env.VERBOSE) console.log(found.length + " " + query.slice(0, 70));
-    if (page.length < size) return found;
+  let url = BASE + query + "&_count=250";
+  while (url) {
+    const bundle = await get(url);
+    for (const entry of bundle.entry || []) if (entry.resource) found.push(entry.resource);
+    console.log("  " + found.length + " " + query.split("?")[0]);
+    url = ((bundle.link || []).filter((l) => l.relation === "next")[0] || {}).url || null;
   }
+  return found;
+}
+
+// "Patient/abc", or a full address ending in it, to "abc".
+function patientOf(reference) {
+  const match = /(?:^|\/)Patient\/([^/?#]+)$/.exec(String((reference && reference.reference) || ""));
+  return match ? match[1] : null;
+}
+
+function byPatient(resources, field) {
+  const groups = new Map();
+  for (const resource of resources) {
+    const id = patientOf(resource[field]);
+    if (!id) continue;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(resource);
+  }
+  return groups;
 }
 
 async function main() {
-  const ids = new Set();
-  for (const query of [
-    "Patient?_has:MedicationRequest:patient:status=" + REQUEST_STATUSES + "&_count=20&_elements=id",
-    "Patient?_has:MedicationStatement:subject:status=" + STATEMENT_STATUSES + "&_count=20&_elements=id"
-  ]) {
-    for (const patient of await all(query)) if (!isAddedId(patient.id)) ids.add(patient.id);
-    console.log(ids.size + " so far");
-  }
-  console.log(ids.size + " patients with a medicine record");
+  // Every kind of record, all at once, grouped by patient: far fewer requests
+  // than asking about each patient.
+  const people = await all("Patient?_elements=id,name,birthDate,deceasedBoolean,deceasedDateTime");
+  const requests = byPatient(await all("MedicationRequest?_elements=subject,status,medicationCodeableConcept,medicationReference"), "subject");
+  const statements = byPatient(await all("MedicationStatement?_elements=subject,status,medicationCodeableConcept,medicationReference"), "subject");
+  const allergies = byPatient(await all("AllergyIntolerance?_elements=patient"), "patient");
+  const claims = byPatient(await all("ExplanationOfBenefit?_elements=patient,type,item"), "patient");
   const patients = [];
-  let done = 0;
-  for (const id of ids) {
-    const patient = await get(BASE + "Patient/" + encodeURIComponent(id));
-    const q = "?patient=" + encodeURIComponent(id) + "&_count=100";
-    const counts = countsFor({
-      requests: await all("MedicationRequest" + q + "&_elements=status,medicationCodeableConcept,medicationReference"),
-      statements: await all("MedicationStatement" + q + "&_elements=status,medicationCodeableConcept,medicationReference"),
-      allergies: await all("AllergyIntolerance" + q + "&_elements=id"),
-      claims: await all("ExplanationOfBenefit" + q + "&_elements=type,item")
-    });
+  for (const patient of people) {
+    const id = patient.id;
+    if (isAddedId(id) || (!requests.has(id) && !statements.has(id))) continue;
+    const counts = countsFor({ requests: requests.get(id) || [], statements: statements.get(id) || [], allergies: allergies.get(id) || [], claims: claims.get(id) || [] });
     const born = typeof patient.birthDate === "string" && patient.birthDate ? patient.birthDate : null;
     const deceased = patient.deceasedBoolean === true || Boolean(patient.deceasedDateTime);
     patients.push(Object.assign({ id, name: nameOf(patient), born, deceased }, counts));
-    done += 1;
-    if (done % 25 === 0) console.log(done + " of " + ids.size);
   }
+  console.log(people.length + " patients, " + patients.length + " of the sandbox's own with a medicine record");
   const living = patients.filter((p) => !p.deceased);
   const deceased = sortPatients(patients.filter((p) => p.deceased), "different").slice(0, DECEASED_KEPT);
   const kept = sortPatients(living.concat(deceased), "different");
