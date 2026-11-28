@@ -742,7 +742,7 @@ window.addEventListener("popstate", function () {
     // Arriving at the code's own step leaves it open. Forward to a step whose
     // screen is gone comes straight back.
     var step = history.state && history.state.bb;
-    if (step === "inside") history.back();
+    if (step === "inside" || step === "qr-help") history.back();
     else if (step !== "qr") closeQr(true);
   } else if (state.screen === "install" && history.state && history.state.bb === "more") {
     // The Home Screen steps opened from More options go back there.
@@ -2271,7 +2271,7 @@ async function openInside(packed, opener, fits) {
   // A tap on its text lands on it, so Escape still reaches it.
   overlay.tabIndex = -1;
   var page = add(overlay, "div", null, "inside-page");
-  button(add(page, "div", null, "inside-top"), fits ? "Back to the code" : "Back", "secondary", function () { closeInside(); });
+  button(add(page, "div", null, "inside-top"), fits ? "Back to QR code" : "Back", "secondary", function () { closeInside(); });
   var title = groups
     ? drawInside(page, groups, fits ? null : "List made")
     : add(page, "p", fits ? "Couldn't open the code. Close it and show a new one." : "Couldn't open your list. Go back, close, and open My medicines.", "error");
@@ -2290,9 +2290,9 @@ async function openInside(packed, opener, fits) {
   title.focus();
 }
 
-// On the QR screen a "?" opens its explanation as its own page, like See
-// what's inside, so the code and its digits never move (the developer,
-// 2026-11-28). Back to the code returns to it as it was, focus on the "?".
+// On the QR screen a "?" opens its explanation in a popup over the code, only
+// as big as what it says, so the code and its digits never move (the
+// developer, 2026-11-28). Back to QR code, above and below, closes it.
 function qrHelp(row, title, id, fill) {
   var ask = add(row, "button", null, "help-button");
   ask.type = "button";
@@ -2306,30 +2306,23 @@ function qrHelp(row, title, id, fill) {
 
 function openQrHelp(opener, heading, fill) {
   var qr = document.getElementById("qr-overlay");
-  if (!qr || document.getElementById("inside-overlay") || qr.classList.contains("closing") || qr.dataset.leaving) return;
-  var overlay = document.createElement("div");
-  overlay.id = "inside-overlay";
-  overlay.className = "inside-overlay";
-  overlay.setAttribute("role", "dialog");
-  overlay.setAttribute("aria-modal", "true");
-  overlay.setAttribute("aria-labelledby", "inside-heading");
-  overlay.dataset.opener = opener.id;
-  overlay.tabIndex = -1;
-  var page = add(overlay, "div", null, "inside-page help-page");
-  button(add(page, "div", null, "inside-top"), "Back to the code", "secondary", function () { closeInside(); });
-  var title = add(page, "h1", heading);
-  title.id = "inside-heading";
-  title.tabIndex = -1;
-  fill(page);
-  overlay.addEventListener("keydown", function (event) {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    closeInside();
+  if (!qr || document.querySelector("dialog.popup[open]") || qr.classList.contains("closing") || qr.dataset.leaving) return;
+  // Its own history step, so the phone's Back closes it and leaves the code.
+  history.pushState({ bb: "qr-help" }, "");
+  var popup = openPopup(document.body, heading, opener, {
+    onClose: function () {
+      // Closed by a button, Escape or a tap beside it: take its step back too.
+      if (history.state && history.state.bb === "qr-help") history.back();
+    }
   });
-  document.body.appendChild(overlay);
-  qr.inert = true;
-  history.pushState({ bb: "inside" }, "");
-  title.focus();
+  popup.inner.classList.add("qr-help");
+  var top = popupButton(popup.inner, "Back to QR code", "secondary");
+  popup.inner.insertBefore(top, popup.inner.firstChild);
+  top.addEventListener("click", popup.close);
+  fill(popup.inner);
+  popupButton(popup.inner, "Back to QR code", "primary").addEventListener("click", popup.close);
+  popup.inner.querySelector("h2").tabIndex = -1;
+  popup.inner.querySelector("h2").focus();
 }
 
 function closeInside(fromHistory) {
