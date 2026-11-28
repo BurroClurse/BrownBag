@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <!-- Which servers this page may contact, and which scripts may run (tests/csp.test.mjs). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-ESLifGE1d31XFw4IRDCb1D0kNwXpgTkYxOtzZWKdcgU=' 'sha256-b0T/CLetlHycv5plom19BSuuBHmmCz9/wuuEcGc0s20='; style-src 'self'; img-src 'self' data:; connect-src 'self' https://launch.smarthealthit.org; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-ESLifGE1d31XFw4IRDCb1D0kNwXpgTkYxOtzZWKdcgU=' 'sha256-XR1RxsIANZpfpYX0iPZTbtji2NbuS5GBfJFQqcTpMD8='; style-src 'self'; img-src 'self' data:; connect-src 'self' https://launch.smarthealthit.org; manifest-src 'self'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in | Brown Bag</title>
   <link rel="icon" href="data:,">
@@ -48,16 +48,17 @@
     // js/launch.js shows the lists and calls this with the sandbox's address for
     // the chosen patient. A different iss on the query string wins, so the SMART
     // Launcher can still start this same page.
-    function startSignIn(server) {
+    function startSignIn(server, scope) {
       // authorize() answers with the sign-in page's address.
       return Promise.resolve().then(function () {
         return FHIR.oauth2.authorize({
           // Public client. The sandbox does not require a registered secret.
           clientId: "my_web_app",
-          // launch/patient asks the sandbox to pick the patient during sign-in.
-          // offline_access asks for a long-lasting pass (a refresh token), so
-          // the next unlock updates the list without this sign-in page.
-          scope: "launch/patient openid fhirUser offline_access patient/Patient.read patient/MedicationRequest.read patient/MedicationStatement.read patient/Medication.read patient/Practitioner.read patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read",
+          // js/scopes.js: launch/patient asks the sandbox to pick the patient
+          // during sign-in; offline_access asks for a long-lasting pass (a
+          // refresh token), so the next unlock updates the list without this
+          // sign-in page; v2 or v1 read scopes, as the server says.
+          scope: scope,
           // Must be this app's index.html. fhir-client turns the relative URL
           // into the full GitHub Pages URL before sending it.
           redirectUri: "index.html",

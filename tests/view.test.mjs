@@ -330,9 +330,10 @@ test("a sign-in that can't read allergies gets one sign-in note, never two", () 
 
 test("sign-in asks to read allergies, and How it works says so", async () => {
   const { readFileSync } = await import("node:fs");
-  for (const file of ["launch.html", "docs/HOW-IT-WORKS.md"]) {
-    assert.ok(readFileSync(new URL("../" + file, import.meta.url), "utf8").includes("patient/AllergyIntolerance.read"), file);
-  }
+  const { SCOPES_V1, SCOPES_V2 } = await import("../js/scopes.js");
+  assert.ok(SCOPES_V1.includes("patient/AllergyIntolerance.read") && SCOPES_V2.includes("patient/AllergyIntolerance.rs"));
+  const tour = readFileSync(new URL("../docs/HOW-IT-WORKS.md", import.meta.url), "utf8");
+  for (const scope of ["patient/AllergyIntolerance.read", "patient/AllergyIntolerance.rs"]) assert.ok(tour.includes(scope), scope);
 });
 
 test("the swoosh always starts on the screen", () => {

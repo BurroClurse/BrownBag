@@ -220,6 +220,19 @@ that names its server with `iss`) starts a patient standalone launch with
 3.0.1, PKCE, public client). Scopes:
 
 ```
+launch/patient openid fhirUser offline_access patient/Patient.rs
+patient/MedicationRequest.rs patient/MedicationStatement.rs
+patient/Medication.rs patient/Practitioner.rs
+patient/ExplanationOfBenefit.rs patient/AllergyIntolerance.rs
+```
+
+Those are SMART v2 scopes (design 2026-11-28). Before sign-in, Brown Bag reads
+the server's `.well-known/smart-configuration` (5 seconds at most, inside the
+sign-in's 12) and asks for them when its `capabilities` list `permission-v2`.
+Otherwise, or when the file can't be read, it asks for the same permissions as
+v1 scopes, as before:
+
+```
 launch/patient openid fhirUser offline_access patient/Patient.read
 patient/MedicationRequest.read patient/MedicationStatement.read
 patient/Medication.read patient/Practitioner.read

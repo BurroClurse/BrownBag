@@ -16,10 +16,10 @@ test("the files list names every script of the app", () => {
   }
 });
 
-test("How it works lists the permissions sign-in asks for", () => {
-  const asked = /scope: "([^"]+)"/.exec(read("launch.html"))[1].split(" ");
+test("How it works lists the permissions sign-in asks for", async () => {
+  const { SCOPES_V1, SCOPES_V2 } = await import("../js/scopes.js");
   const tour = read("docs/HOW-IT-WORKS.md");
-  for (const scope of asked) assert.ok(tour.includes(scope), scope);
+  for (const scope of (SCOPES_V2 + " " + SCOPES_V1).split(" ")) assert.ok(tour.includes(scope), scope);
 });
 
 test("the test patient links sign in as that patient", () => {
@@ -79,8 +79,8 @@ test("the README keeps both halves, the plans and the standards, at a readable l
   assert.ok(read("docs/HOW-IT-WORKS.md").includes("](FILES.md)"));
 });
 
-test("the README's sign-in snippet asks for exactly the app's scopes", () => {
-  const asked = /scope: "([^"]+)"/.exec(read("launch.html"))[1].split(" ");
+test("the README's sign-in snippet asks for exactly the app's scopes", async () => {
+  const asked = (await import("../js/scopes.js")).SCOPES_V2.split(" ");
   const snippet = /&scope=([\s\S]*?)\n\s*&aud=/.exec(readme)[1].split(/\s+/).filter(Boolean);
   assert.deepEqual(snippet, asked);
   assert.ok(readme.includes('client_id=' + /clientId: "([^"]+)"/.exec(read("launch.html"))[1]));
