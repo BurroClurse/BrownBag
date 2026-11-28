@@ -1,7 +1,7 @@
 # Browse all patients (design)
 
-2026-11-28. A way to sign in as any of the SMART sandbox's patients who have
-medicines, not only the 20 picked by hand.
+2026-11-28. A way to sign in as any of the SMART sandbox's patients who have a
+medicine record, not only the 20 picked by hand.
 
 ## Why
 
@@ -17,8 +17,8 @@ tests. Brown Bag keeps its own `launch.html` and builds browsing into it.
 
 ## Goals, non-goals, anti-goals
 
-- **Goal:** find and sign in as any living sandbox patient who has a
-  prescription, sorted the ways useful for testing, from a phone.
+- **Goal:** find and sign in as any sandbox patient with a medicine record,
+  messy ones included, sorted the ways useful for testing, from a phone.
 - **Non-goals:** patients on other servers; showing a patient's records before
   signing in; patients added to the sandbox after the list was last made.
 - **Anti-goals:** changing how sign-in works; a popup; signing in as an id
@@ -44,8 +44,16 @@ tests. Brown Bag keeps its own `launch.html` and builds browsing into it.
 
 - Brown Bag's own screen, not the popup; then a saved list made by a tool
   they can re-run, not a live search.
-- Only patients with medicines: any prescription (active, completed, stopped
-  or on hold). Patients marked deceased are left out. On 2026-11-28 that's 478.
+- Only patients with medicines, but every kind of record counts: errors and
+  missing values are what testing needs (the developer, 2026-11-28). A patient
+  is listed when they have any MedicationRequest or MedicationStatement, in
+  any status, "entered in error", "cancelled", "draft" and "unknown"
+  included. Living patients all go in; of those marked deceased, the 25 with
+  the most different medicines go in, listed like everyone else (no death
+  date on the row). On 2026-11-28 that's about 500 of the 933.
+- Counts leave nothing out: an allergy marked "entered in error" or
+  "refuted", or a prescription in any status, still counts.
+- A missing value shows plainly: "No name in the record", "No birth date".
 - **Sort by**, defaulting to **Most different medicines**; also Most
   prescriptions, Most current medicines, Most insurance fills, Most
   allergies, Name A to Z, Oldest first, Youngest first.
@@ -64,9 +72,9 @@ tests. Brown Bag keeps its own `launch.html` and builds browsing into it.
 Choose a test patient            Browse all patients
   …the 20, in their groups…        [Back]
   ┌────────────────────────┐       Browse all patients
-  │ Browse all patients    │       478 made-up patients with medicines.
+  │ Browse all patients    │       503 made-up patients with medicines.
   │ Search the sandbox's   │       Search by name [ mel            ]
-  │ 478 patients with      │       Sort by [Most different medicines ▾]
+  │ 503 patients with      │       Sort by [Most different medicines ▾]
   │ medicines.             │       ┌──────────────────────────────┐
   └────────────────────────┘       │ Florencia Meléndez           │
                                    │ Born March 12, 1993.         │
@@ -83,21 +91,29 @@ starts sign-in exactly as a hand-picked one does.
 
 ## How it's built
 
-- **`tools/sandbox-patients.mjs`** makes the list. For each living patient
-  with a prescription (`Patient?_has:MedicationRequest:patient:status=active,completed,stopped,on-hold&deceased=false`,
-  20 per page) it reads their MedicationRequests, AllergyIntolerances and
-  ExplanationOfBenefits one patient at a time, slowly, retrying a 503 after a
-  pause, and writes `js/sandbox-patients.js`: the date it was made and one
-  entry per patient (id, name, birth date, and the six counts). Run it again
-  to refresh; it changes nothing on the sandbox.
-- **Counts** use Brown Bag's own rules where it has them:
-  - different medicines: distinct RxNorm codes, else names, across
-    prescriptions that are active, completed, stopped or on hold;
-  - prescriptions: those same prescriptions;
-  - current medicines: distinct medicines among the active ones;
+- **`tools/sandbox-patients.mjs`** makes the list. It finds every patient
+  with a MedicationRequest or a MedicationStatement in any status (`_has`
+  searches, 20 per page), then reads each one's MedicationRequests,
+  MedicationStatements, AllergyIntolerances and ExplanationOfBenefits, one
+  patient at a time, slowly, retrying a 503 after a pause. It writes
+  `js/sandbox-patients.js`: the date it was made and one entry per patient
+  (id, name or none, birth date or none, whether deceased, and the six
+  counts). Run it again to refresh; it changes nothing on the sandbox.
+- **Patients other people added are left out.** The sandbox's own patients
+  have long ids (`e7de504a-…`); patients added through its API get number ids
+  (`5023633`) or, for Brown Bag's own, `brownbag-…`, and the sandbox deletes
+  added patients every night, so a saved list would point at people who are
+  gone. Riley Reconcile and Jordan Partial stay where they are, signed in
+  from the home test server.
+- **Counts** leave nothing out:
+  - different medicines: distinct RxNorm codes, else names, across every
+    MedicationRequest and MedicationStatement, any status;
+  - prescriptions: every MedicationRequest, any status;
+  - current medicines: distinct medicines among active MedicationRequests
+    and MedicationStatements;
   - insurance fills: items on pharmacy claims (`claims.js`'s test for a
     pharmacy claim);
-  - allergies: AllergyIntolerances that aren't entered in error or refuted.
+  - allergies: every AllergyIntolerance, whatever its status.
 - **`js/browse.js`** sorts, searches and pages the list, with no DOM, so Node
   tests cover it. `js/launch.js` draws the screen.
 - **Its own history step:** `launch.html?source=…&browse=1`. Back from it is
@@ -117,15 +133,17 @@ starts sign-in exactly as a hand-picked one does.
 ## Docs and tests
 
 - Node tests for `browse.js` (each sort, ties broken by name, search with
-  accents and case, paging, the number line), for `knownPatient` with a
-  browsed id, and that the saved list has no deceased patient and no one
-  without a prescription.
+  accents and case, paging, the number line, a row with no name or no birth
+  date), for `knownPatient` with a browsed id, and that the saved list has 25
+  deceased patients, no one without a medicine record, no added patient's id,
+  and the same count as the README says.
 - `docs/SANDBOXES.md` (test patients), `docs/HOW-IT-WORKS.md` (launch),
   `docs/FILES.md` (the new files), `docs/DECISIONS.md`, `docs/LEARNING.md`,
   and `docs/NEEDS-TESTING.md` for a phone pass.
 - The README's Live line gets one sentence (the developer, 2026-11-28): Choose
-  a test patient's **Browse all patients** lists the 478 of the sandbox's 933
-  patients who are living and have a prescription of any kind.
+  a test patient's **Browse all patients** lists about 500 of the sandbox's 933
+  patients who have a medicine record of any kind (every living one, and 25
+  who have died), with the exact number from the saved list.
 
 ## Left to the builder
 
