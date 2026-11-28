@@ -48,9 +48,9 @@ Open Brown Bag once with a signal so it takes the new app files (cache
 `brownbag-v107`). Connect on the sandbox: Choose a test patient ends with
 **Browse all patients**, not Someone else. On both virtual phones:
 
-- It opens with "{{N}} made-up patients with medicines.", Sort by "Most
+- It opens with "491 made-up patients with medicines.", Sort by "Most
   different medicines", 20 rows, each a name and "Born …. N different
-  medicines.", and "Showing 20 of {{N}}." Show more adds 20 and moves focus
+  medicines.", and "Showing 20 of 491." Show more adds 20 and moves focus
   (and TalkBack or VoiceOver) to the first new row.
 - Type "mel": the list narrows with each letter and finds a name with "Mél"
   in it; "MELENDEZ" finds the same. A name that isn't there says "No one by

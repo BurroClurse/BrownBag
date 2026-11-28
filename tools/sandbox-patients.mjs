@@ -116,6 +116,7 @@ async function main() {
   const statements = byPatient(await all("MedicationStatement?_elements=subject,status,medicationCodeableConcept,medicationReference"), "subject");
   const allergies = byPatient(await all("AllergyIntolerance?_elements=patient"), "patient");
   const claims = byPatient(await all("ExplanationOfBenefit?_elements=patient,type,item"), "patient");
+  const own = people.filter((patient) => !isAddedId(patient.id)).length;
   const patients = [];
   for (const patient of people) {
     const id = patient.id;
@@ -136,6 +137,10 @@ async function main() {
     "// medicines. Made by tools/sandbox-patients.mjs; run it again to refresh.\n" +
     "// Every record is counted, errors included. No DOM here.\n\n" +
     "export var MADE = " + JSON.stringify(made) + ";\n\n" +
+    "// The sandbox's patients that day, and how many were its own (the rest\n" +
+    "// were added by other people, and it deletes those every night).\n" +
+    "export var SANDBOX_TOTAL = " + people.length + ";\n" +
+    "export var SANDBOX_OWN = " + own + ";\n\n" +
     "export var PATIENTS = [\n" + lines + "\n];\n");
   console.log("Wrote " + kept.length + " patients (" + living.length + " living, " + deceased.length + " deceased) to js/sandbox-patients.js");
 }

@@ -150,7 +150,7 @@ New decisions go at the end of each list, with the date.
   20 at a time with Show more. The name search matches any part of the name,
   ignoring case and accents, as you type.
 - Browse all patients replaces Someone else. The README's Live line says how
-  many of the sandbox's 933 patients it lists.
+  many of the sandbox's own patients it lists, and how many it has in all.
 - Next, a short design for showing a record that says the patient has died, on
   the patient's screens, the staff page, the QR code and the FHIR file.
 

@@ -11,7 +11,8 @@ Sign in, then SMART Health IT sandbox, lists 20 made-up patients grouped by what
 they show, each with their birth date. A choice goes to the sandbox's approval page.
 
 **Browse all patients**, at the end of that list, finds anyone else
-(the developer, 2026-11-28). It lists {{N}} of the sandbox's 933 patients: every
+(the developer, 2026-11-28). It lists 491 of the sandbox's 626 own patients (981 in all
+on 2026-11-28, counting ones other people add): every
 living one with a medicine record of any kind, and the 25 deceased ones with
 the most different medicines. Every record counts, "entered in error" and the
 rest included, because messy records are what testing needs. Search by any

@@ -1917,7 +1917,7 @@ have the same name and birth date, so two people are never mixed.
 
 ## Step 69: Browsing every test patient
 
-**What it is:** the SMART sandbox has 933 made-up patients, but its own sign-in
+**What it is:** the SMART sandbox has over 600 made-up patients of its own, but its sign-in
 page shows only ten, and Brown Bag's list had 20 picked by hand. **Browse all
 patients** finds the rest: search by name, and sort by who has the most
 medicines, prescriptions, fills or allergies, or by name or age.
