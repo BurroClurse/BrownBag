@@ -153,6 +153,9 @@ New decisions go at the end of each list, with the date.
   many patients it lists.
 - Next, a short design for showing a record that says the patient has died, on
   the patient's screens, the staff page, the QR code and the FHIR file.
+- Choose a 6-digit PIN always has a way back to Set up your lock
+  (2026-11-28). Back sits under Save PIN, as the backup restore's Back did
+  (Claude's call).
 
 ## Calls Claude made
 

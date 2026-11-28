@@ -165,7 +165,10 @@ function drawPinSetup(root, done, opened, onBack) {
       say(message, "Couldn't save the PIN. Try again.");
     }
   });
-  if (opened) action(form, "Back", "secondary").addEventListener("click", onBack);
+  // Back to the screen this came from (the developer, 2026-11-28).
+  action(form, "Back", "secondary").addEventListener("click", function () {
+    drawSetup(root, done, opened, onBack);
+  });
   first.focus();
 }
 
