@@ -206,7 +206,7 @@ New decisions go at the end of each list, with the date.
 | R56 | Patients other people add (ids that aren't the sandbox's own long ids) stay off the saved list, since the sandbox deletes them nightly; Added by other people shows them live, one page of each search, newest first | A few live patients past the first page aren't shown |
 | R57 | Birth dates read "Born Mar 12, 1993", as everywhere else in Brown Bag; Name A to Z sorts by the name's last word, since the list keeps one name line | Compound family names sort by their last part |
 | R58 | The tool reads every MedicationRequest, MedicationStatement, AllergyIntolerance and ExplanationOfBenefit 250 to a page and groups them by patient: the sandbox ignores `_offset` and its next links answer 503 now and then, and this is about 250 requests instead of 3,500 | A record pointing to its patient other than as `Patient/<id>` isn't counted |
-| R59 | The README names the sandbox's own patients (626) and its total that day (981, counting ones others add) instead of 933, since its total changes every day; the tool saves both numbers | The developer asked for 933; one sentence to change back |
+| R59 | The README names the sandbox's own patients (626) and its total that day (981, counting ones others add) instead of 933, since its total changes every day; the tool saves both numbers. The developer chose this wording (2026-11-28) | None |
 | R60 | Added by other people leaves out Brown Bag's own `brownbag-…` patients, and `&added=1` accepts only an added id, never one of the sandbox's own long ids that isn't on a list (from the final review, matching the design) | None |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.
