@@ -43,6 +43,15 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**See what's inside as a button** (2026-11-28). Checked in headless Chromium
+at iPhone 15 and iPhone SE sizes: the same space above and below it, and the
+code, the digits and Close fit with no scrolling on both. Open Brown Bag once
+with a signal (cache `brownbag-v110`). On both virtual phones and the
+developer's iPhone, Show my QR code: See what's inside is an outlined teal
+button with a list icon, centered between the title and the code. Tap it:
+"Opening…", then the list; Close, and the icon is still there. At the
+largest text it wraps without scrolling sideways.
+
 **The "?" pills' new mark** (2026-11-28). Not checked in a browser; the
 developer checks it. Open Brown Bag once with a signal (cache `brownbag-v109`).
 On both virtual phones and the developer's iPhone: every "?" (My medicines'

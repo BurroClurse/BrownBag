@@ -2143,9 +2143,12 @@ async function buildQr() {
   var inside;
   function openIt() { openInside(packed, inside, fits); }
   if (fits) {
-    // Under the title and quiet: the code and its digits matter most here.
-    var insideRow = add(overlay, "div", null, "help-row");
-    inside = button(insideRow, "See what's inside", "inside-link", openIt);
+    // Under the title, an outlined button with a list icon, so people check
+    // what's in the code before they show it (the developer, 2026-11-28).
+    var insideRow = add(overlay, "div", null, "help-row inside-row");
+    inside = button(insideRow, "", "inside-link", openIt);
+    inside.appendChild(listIcon());
+    add(inside, "span", "See what's inside", "inside-main");
     var whatsIn = helpBubble(insideRow, "What's in this code?", function (panel) {
       add(panel, "p", "Your list from My medicines, as it is right now:");
       var items = add(panel, "ul");
@@ -2211,6 +2214,29 @@ async function buildQr() {
   document.getElementById("qr-close").focus({ preventScroll: true });
 }
 
+// A list, drawn: three lines with a dot before each. Decoration only.
+function listIcon() {
+  var ns = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "inside-icon");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  ["M9 6h11", "M9 12h11", "M9 18h11"].forEach(function (d) {
+    var line = document.createElementNS(ns, "path");
+    line.setAttribute("d", d);
+    svg.appendChild(line);
+  });
+  [6, 12, 18].forEach(function (y) {
+    var dot = document.createElementNS(ns, "circle");
+    dot.setAttribute("cx", "4.5");
+    dot.setAttribute("cy", String(y));
+    dot.setAttribute("r", "1.3");
+    svg.appendChild(dot);
+  });
+  return svg;
+}
+
 // What's in the code, on the patient's own phone: so they can trust it, and
 // so it can be read, or saved as a file, when nobody can scan. Brown Bag opens the code itself, the
 // way the staff page does, and shows what comes out as short text. Read-only.
@@ -2218,8 +2244,10 @@ var insideBusy = false;
 async function openInside(packed, opener, fits) {
   if (insideBusy || document.getElementById("inside-overlay")) return;
   insideBusy = true;
-  var words = opener.textContent;
-  opener.textContent = "Opening…";
+  // On the QR screen only the first line changes; the count stays.
+  var line = opener.querySelector(".inside-main") || opener;
+  var words = line.textContent;
+  line.textContent = "Opening…";
   opener.setAttribute("aria-busy", "true");
   var groups = null;
   var opened = null;
@@ -2230,7 +2258,7 @@ async function openInside(packed, opener, fits) {
     console.error("Couldn't open the code", error);
   } finally {
     insideBusy = false;
-    opener.textContent = words;
+    line.textContent = words;
     opener.removeAttribute("aria-busy");
   }
   var qr = document.getElementById("qr-overlay");
