@@ -56,7 +56,8 @@ tests. Brown Bag keeps its own `launch.html` and builds browsing into it.
 - A missing value shows plainly: "No name in the record", "No birth date".
 - **Sort by**, defaulting to **Most different medicines**; also Most
   prescriptions, Most current medicines, Most insurance fills, Most
-  allergies, Name A to Z, Oldest first, Youngest first.
+  allergies, Name A to Z, Oldest first, Youngest first, and **Added by other
+  people** (the developer, 2026-11-28; below).
 - Each row: name and birth date, as a real list would, plus the number for
   the current sort ("Born May 8, 1974. 12 different medicines."); no number
   for Name A to Z or the age sorts.
@@ -99,12 +100,26 @@ starts sign-in exactly as a hand-picked one does.
   `js/sandbox-patients.js`: the date it was made and one entry per patient
   (id, name or none, birth date or none, whether deceased, and the six
   counts). Run it again to refresh; it changes nothing on the sandbox.
-- **Patients other people added are left out.** The sandbox's own patients
-  have long ids (`e7de504a-…`); patients added through its API get number ids
-  (`5023633`) or, for Brown Bag's own, `brownbag-…`, and the sandbox deletes
-  added patients every night, so a saved list would point at people who are
-  gone. Riley Reconcile and Jordan Partial stay where they are, signed in
-  from the home test server.
+- **Patients other people added stay out of the saved list.** The sandbox's
+  own patients have long ids (`e7de504a-…`); patients added through its API
+  get number ids (`5023633`) or, for Brown Bag's own, `brownbag-…`, and the
+  sandbox deletes added patients every night, so a saved list would point at
+  people who are gone. Riley Reconcile and Jordan Partial stay where they
+  are, signed in from the home test server.
+- **Added by other people** is the one view that asks the sandbox live (the
+  developer, 2026-11-28). It searches for patients with a MedicationRequest or
+  MedicationStatement in any status, newest first (`_sort=-_lastUpdated`, 20
+  per page), keeps those whose ids aren't the sandbox's own (not a long id,
+  not `brownbag-…`), and shows name and birth date (or "No name in the
+  record", "No birth date"), with no count. A line says "Added to the sandbox
+  by other people. They may be gone after its nightly reset." The name search
+  narrows what has loaded. If the sandbox doesn't answer: "Couldn't reach the
+  sandbox." with **Try again**. `launch.html`'s content security policy
+  already allows the sandbox, so nothing changes there.
+- **Signing in as an added patient:** its choice is
+  `launch.html?source=…&as=<id>&added=1`, and `knownPatient` accepts it only
+  when the id is a FHIR id in shape (`[A-Za-z0-9.-]{1,64}`), since it can't be
+  on a saved list.
 - **Counts** leave nothing out:
   - different medicines: distinct RxNorm codes, else names, across every
     MedicationRequest and MedicationStatement, any status;
@@ -132,6 +147,8 @@ starts sign-in exactly as a hand-picked one does.
 
 ## Docs and tests
 
+- Node tests for the added-by-others filter (which ids count as added) and
+  its sign-in link.
 - Node tests for `browse.js` (each sort, ties broken by name, search with
   accents and case, paging, the number line, a row with no name or no birth
   date), for `knownPatient` with a browsed id, and that the saved list has 25
