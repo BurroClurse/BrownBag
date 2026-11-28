@@ -29,7 +29,7 @@ living one with a medicine record of any kind, and 25 who have died.
 | <small>Health data</small> | <small>Used for</small> |
 | --- | --- |
 | <small>[HL7 FHIR](https://hl7.org/fhir/R4/) R4</small> | <small>[Reads](#reads), [the QR code](#the-qr-code), [the FHIR file](#the-fhir-file)</small> |
-| <small>[SMART App Launch](https://hl7.org/fhir/smart-app-launch/), v1 scopes</small> | <small>[Sign-in](#sign-in): a standalone patient launch</small> |
+| <small>[SMART App Launch](https://hl7.org/fhir/smart-app-launch/) 2, v2 scopes (v1 for older servers)</small> | <small>[Sign-in](#sign-in): a standalone patient launch</small> |
 | <small>[US Core](https://hl7.org/fhir/us/core/), [CARIN Blue Button](https://hl7.org/fhir/us/carin-bb/)</small> | <small>The records and claims it [reads](#reads)</small> |
 | <small>[IPS](https://hl7.org/fhir/uv/ips/) 2.0.1</small> | <small>[The FHIR file](#the-fhir-file)</small> |
 | <small>[SMART Health Cards](https://spec.smarthealth.cards/), ideas only</small> | <small>[The QR code](#the-qr-code)'s trimmed Bundle</small> |
@@ -82,13 +82,15 @@ there with PKCE and read-only scopes:
 GET {authorization_endpoint}?response_type=code
     &client_id=my_web_app
     &redirect_uri=https://burroclurse.github.io/BrownBag/index.html
-    &scope=launch/patient openid fhirUser offline_access patient/Patient.read
-           patient/MedicationRequest.read patient/MedicationStatement.read
-           patient/Medication.read patient/Practitioner.read
-           patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read
+    &scope=launch/patient openid fhirUser offline_access patient/Patient.rs
+           patient/MedicationRequest.rs patient/MedicationStatement.rs
+           patient/Medication.rs patient/Practitioner.rs
+           patient/ExplanationOfBenefit.rs patient/AllergyIntolerance.rs
     &aud={iss}&state={random}
     &code_challenge={SHA-256 of a random verifier}&code_challenge_method=S256
 ```
+
+v2 scopes (`.rs`) when the server lists `permission-v2`, else v1 (`.read`).
 
 The token answer names the patient. `offline_access` adds a refresh token,
 which is kept encrypted on the phone and deleted (and revoked where the
@@ -209,6 +211,9 @@ Ideas become plans only after their own design; the reasons are in
 - **A `DetectedIssue` in the FHIR file** (idea; waiting on IPS or US Core). [#26](docs/LIMITS.md)
 - **HL7's validator on every push** (idea; run by hand today). [#20](docs/LIMITS.md)
 - **A death date in the QR code and the FHIR file** (designing next), with the patient's screens.
+- **Patient-reported medicines as US Core sends them** (idea): a MedicationRequest marked `reported`. [#29](docs/LIMITS.md)
+- **Stronger same-person matching** (idea), as HL7's patient-matching guidance weighs it. [#30](docs/LIMITS.md)
+- **Allergies coded in UNII** (idea), which US Core allows. [#31](docs/LIMITS.md)
 
 ## Run it
 

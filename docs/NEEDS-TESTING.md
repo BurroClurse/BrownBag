@@ -43,6 +43,15 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**SMART v2 scopes** (2026-11-28). Checked only in headless Chromium: the
+sandbox's approval page got the `.rs` scopes, and the `.read` ones with its
+configuration blocked. Open Brown Bag once with a signal (cache
+`brownbag-v108`). On both virtual phones and the developer's iPhone: sign in
+as Loria Jenkins and as Chantell Bartell; the sandbox's approval page lists
+the permissions; approve, and My medicines, fills and allergies all load as
+before. Lock, wait, unlock: the list updates with no sign-in page (the
+refresh token works with v2 scopes).
+
 **Back on Choose a 6-digit PIN** (2026-11-28). Checked only in headless
 Chromium. On both virtual phones and on the developer's iPhone, with no lock
 yet: Set up your lock ▸ Use a 6-digit PIN instead, then **Back** (under Save

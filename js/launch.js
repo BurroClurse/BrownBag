@@ -6,6 +6,7 @@ import { GROUPS, OWN_LIST, sandboxServer } from "./test-patients.js";
 import { PATIENTS } from "./sandbox-patients.js";
 import { DEFAULT_SORT, PAGE, SORTS, askAdded, findPatients, matchesName, rowLines } from "./browse.js";
 import { withTimeout } from "./pass.js";
+import { SCOPES_V1, scopesFor, smartConfigUrl } from "./scopes.js";
 import { bornText } from "./card.js";
 import { hasSavedList } from "./offline.js";
 import { SIGNED_OUT_KEY, offerSaved } from "./signed-out.js";
@@ -44,6 +45,9 @@ function showList() {
 // Back must not take the page away, or put its error over the list.
 var tries = 0;
 var SIGN_IN_WAIT_MS = 12000;
+// The server's SMART configuration says whether it knows v2 scopes. Its own
+// limit leaves time for the sign-in within SIGN_IN_WAIT_MS.
+var CONFIG_WAIT_MS = 5000;
 
 // The sandbox's test patients. Each choice is a fresh page: the sign-in library
 // reads the address, and keeps an earlier try's answers. It's its own history
@@ -217,7 +221,10 @@ function signIn() {
   back("secondary big");
   // So Forward to this step after Back doesn't start it again by itself.
   markStarted(history);
-  withTimeout(window.startSignIn(sandboxServer(chosen(location.search) || OWN_LIST, new URLSearchParams(location.search).get("added") === "1")), SIGN_IN_WAIT_MS).then(function (url) {
+  var server = sandboxServer(chosen(location.search) || OWN_LIST, new URLSearchParams(location.search).get("added") === "1");
+  // A link's own iss wins in the sign-in library, so its scopes follow it.
+  var asked = new URLSearchParams(location.search).get("iss") || server;
+  withTimeout(chooseScopes(asked).then(function (scope) { return window.startSignIn(server, scope); }), SIGN_IN_WAIT_MS).then(function (url) {
     if (mine !== tries) return;
     // Back then comes to the list, and never starts the sign-in again.
     if (chosen(location.search)) {
@@ -233,6 +240,15 @@ function signIn() {
     console.error("Couldn't start sign-in", error);
     showFailed();
   });
+}
+
+// v2 scopes when the server lists permission-v2; v1, as before, when it
+// doesn't or its configuration can't be read (design 2026-11-28).
+function chooseScopes(server) {
+  return withTimeout(fetch(smartConfigUrl(server), { headers: { Accept: "application/json" } }).then(function (response) {
+    if (!response.ok) throw new Error("No SMART configuration: " + response.status);
+    return response.json();
+  }), CONFIG_WAIT_MS).then(scopesFor).catch(function () { return SCOPES_V1; });
 }
 
 function showFailed() {

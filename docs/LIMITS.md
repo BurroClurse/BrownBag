@@ -308,3 +308,24 @@ an idea becomes a plan only after its own design.
     on the QR screen, keep the title to one line or shrink it so the code
     starts on screen at every text size; let the staff page's title wrap
     inside a word when it has to.
+- [ ] **29. Medicines the patient reported may come as prescriptions.** US
+  Core has no MedicationStatement profile: a medicine the patient (or someone
+  else) reported comes as a MedicationRequest with `reportedBoolean` or
+  `reportedReference`. Brown Bag reads MedicationStatement too, which many US
+  servers won't have (standards review, 2026-11-28).
+  - Now: a reported MedicationRequest shows like any prescription.
+  - Idea: label it as reported, and by whom, on the card and for staff.
+- [ ] **30. Two sources are matched on name and birth date only.** HL7's
+  patient-matching guidance (the Interoperable Digital Identity and Patient
+  Matching IG, `Patient/$match`) weighs more: address, phone, identifiers
+  (standards review, 2026-11-28).
+  - Now: same name and birth date, with the rules in LIMITS #25; anything
+    else is kept out and said.
+  - Idea: weigh more of what both records share before joining a second
+    source, and say what didn't match.
+- [ ] **31. Allergies coded in UNII aren't recognized by code.** US Core's
+  allergen codes include FDA's UNII substance codes, beside RxNorm and SNOMED
+  CT (standards review, 2026-11-28).
+  - Now: the allergy still shows by its words; only the code isn't used.
+  - Idea: read UNII codes, so "no known allergies" checks and matching across
+    sources use them too.

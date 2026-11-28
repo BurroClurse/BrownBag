@@ -1936,6 +1936,21 @@ be wrong; Brown Bag's job is to make the mess clear, not to hide it.
 
 **Practice in the lab:** [Guided Lab](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#guided-lab)
 
+## Step 70: SMART v2 scopes
+
+**What it is:** a scope is a permission the app asks for at sign-in. SMART
+v1 wrote "read" as `patient/MedicationRequest.read`; SMART App Launch 2 splits
+permissions into letters (c create, r read, u update, d delete, s search), so
+read and search is `patient/MedicationRequest.rs`. US certified health record
+systems support v2 from 2026 (ONC's HTI-1 rule).
+
+**What changed:** before sign-in, Brown Bag reads the server's
+`.well-known/smart-configuration`. When its `capabilities` list
+`permission-v2`, it asks for v2 scopes; otherwise, or if the file can't be
+read, the same permissions as v1 scopes, so older servers keep working.
+
+**Practice in the lab:** [Guided Lab](https://burroclurse.github.io/SMART-on-FHIR-Interactive-Lab/#guided-lab), the scope decoder.
+
 ## Glossary
 
 - **Refresh token**: a long-lasting pass an app trades for a new access token, with no sign-in page. Asked for with `offline_access`.

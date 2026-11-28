@@ -157,6 +157,14 @@ New decisions go at the end of each list, with the date.
   (2026-11-28). Back sits under Save PIN, as the backup restore's Back did
   (Claude's call).
 
+**Standards review (2026-11-28)**
+- Add NLM's RxNav attribution and a SNOMED CT notice to NOTICE.md.
+- Move to SMART v2 scopes by what the server says: v2 when its
+  smart-configuration lists `permission-v2`, else v1; v1 too when that file
+  can't be read.
+- US Core's reported medicines, stronger same-person matching and UNII allergy
+  codes go into LIMITS (#29 to #31) and "What's planned" as ideas for later.
+
 ## Calls Claude made
 
 | # | What Claude decided | What it costs if wrong |
@@ -211,5 +219,7 @@ New decisions go at the end of each list, with the date.
 | R58 | The tool reads every MedicationRequest, MedicationStatement, AllergyIntolerance and ExplanationOfBenefit 250 to a page and groups them by patient: the sandbox ignores `_offset` and its next links answer 503 now and then, and this is about 250 requests instead of 3,500 | A record pointing to its patient other than as `Patient/<id>` isn't counted |
 | R59 | The README names the sandbox's own patients (626) and its total that day (981, counting ones others add) instead of 933, since its total changes every day; the tool saves both numbers. The developer chose this wording (2026-11-28) | None |
 | R60 | Added by other people leaves out Brown Bag's own `brownbag-…` patients, and `&added=1` accepts only an added id, never one of the sandbox's own long ids that isn't on a list (from the final review, matching the design) | None |
+| R61 | The server's configuration gets its own 5-second limit inside the sign-in's 12, so a slow server still leaves time to sign in | A very slow server gets v1 scopes |
+| R62 | The README's sign-in snippet shows the v2 scopes, with one line on v1; How it works shows both lists | None |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.

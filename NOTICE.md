@@ -30,6 +30,22 @@ Regenstrief Institute, Inc.
 Units use UCUM codes (https://ucum.org), copyright
 © Regenstrief Institute, Inc. and the UCUM Organization.
 
+## RxNorm and RxNav
+
+Brown Bag looks medicines up in RxNorm through RxNav, a service of the U.S.
+National Library of Medicine. This product uses publicly available data
+courtesy of the U.S. National Library of Medicine (NLM), National Institutes
+of Health, Department of Health and Human Services; NLM is not responsible
+for the product and does not endorse or recommend this or any other product.
+
+## SNOMED CT
+
+Brown Bag reads SNOMED CT codes in health records and writes a few (such as
+"no known allergy") in the files it makes. SNOMED CT is copyright © SNOMED
+International; SNOMED and SNOMED CT are registered trademarks of SNOMED
+International. Its use in the United States is through the National Library
+of Medicine's licence.
+
 ## Trademarks
 
 Epic is a trademark of Epic Systems Corporation. Oracle is a registered
