@@ -168,6 +168,10 @@ New decisions go at the end of each list, with the date.
   teal bottom half, drawn as a shape (`js/help-mark.js`): a smooth hook at 80
   percent, the dot matched to the line, the dot just under the middle line
   (2026-11-28).
+- See what's inside on the QR screen is an outlined button with a list icon
+  (option A), evenly spaced between the title and the code (2026-11-28). It
+  was a quiet link before, so the code stood out; people should check what's
+  inside before they show it.
 
 ## Calls Claude made
 
@@ -225,5 +229,6 @@ New decisions go at the end of each list, with the date.
 | R60 | Added by other people leaves out Brown Bag's own `brownbag-…` patients, and `&added=1` accepts only an added id, never one of the sandbox's own long ids that isn't on a list (from the final review, matching the design) | None |
 | R61 | The server's configuration gets its own 5-second limit inside the sign-in's 12, so a slow server still leaves time to sign in | A very slow server gets v1 scopes |
 | R62 | The README's sign-in snippet shows the v2 scopes, with one line on v1; How it works shows both lists | None |
+| R63 | See what's inside: bold teal on white, a 2px teal border, rounded ends, 48px tall (44px on short screens); on the smallest phones (under 600px tall) the gaps tighten so Close still fits without the code getting smaller | Layout only |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.

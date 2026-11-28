@@ -401,7 +401,9 @@ button.secondary.big, .button.secondary.big { border-color: var(--teal); }
   color: #1b1b1b;
   text-align: center;
 }
-.qr-overlay h2 { border: none; margin: 0 0 0.25rem; font-size: 1.4rem; text-wrap: balance; }
+/* See what's inside sits evenly between the title and the code. */
+.qr-overlay { --inside-gap: 1rem; }
+.qr-overlay h2 { border: none; margin: 0 0 var(--inside-gap); font-size: 1.4rem; text-wrap: balance; }
 /* Centered with auto margins rather than justify-content, so with very
    large text the top stays reachable by scrolling instead of cut off. */
 .qr-overlay { justify-content: flex-start; }
@@ -544,18 +546,31 @@ button.help-button {
 .qr-overlay .help-row > * { grid-column: 2; grid-row: 1; justify-self: center; }
 .qr-overlay .help-row > .help-button { grid-column: 3; }
 .qr-overlay .help-row .qr-say { margin: 0; text-wrap: balance; }
-/* A quiet link: the code and "Tap to show the code" matter more. */
+/* See what's inside: an outlined button with a list icon, so people check what's
+   in the code before they show it (the developer, 2026-11-28). */
+.qr-overlay .help-row.inside-row { margin: 0 0 var(--inside-gap); align-items: center; }
 .qr-overlay button.inside-link {
-  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 48px;
+  max-width: 100%;
   margin: 0;
-  padding: 0 0.75rem;
-  background: none;
-  border-color: transparent;
+  padding: 0.3rem 1.1rem;
+  background: #FFFFFF;
+  border: 2px solid #164F5A;
+  border-radius: 24px;
   color: #164F5A;
-  font-size: 1rem;
-  font-weight: 400;
-  text-decoration: underline;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
 }
+.qr-overlay button.inside-link:hover { background: #E2EEEE; }
+.inside-link .inside-main { overflow-wrap: anywhere; }
+.inside-icon { flex: none; width: 1.3em; height: 1.3em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.inside-icon circle { fill: currentColor; stroke: none; }
 /* A section heading with its "?" at the end of the line. */
 .help-row.section-help { justify-content: space-between; margin: 2rem 0 0.5rem; }
 .help-row.section-help h2, .help-row.section-help h3 { flex: 1 1 auto; margin: 0; }
@@ -839,12 +854,22 @@ button.source .source-note { font-size: 1rem; font-weight: 400; }
    code, the digits and both buttons fit without scrolling. */
 @media (max-height: 720px) {
   .qr-overlay { padding-top: max(0.6rem, env(safe-area-inset-top)); padding-bottom: max(0.6rem, env(safe-area-inset-bottom)); }
-  .qr-overlay h2 { font-size: 1.15rem; margin-bottom: 0; }
+  .qr-overlay { --inside-gap: 0.45rem; }
+  .qr-overlay h2 { font-size: 1.15rem; }
   .qr-overlay .help-row { margin-bottom: 0; }
+  .qr-overlay .help-row.inside-row { margin-bottom: var(--inside-gap); }
+  .qr-overlay button.inside-link { min-height: 44px; padding: 0.2rem 1rem; font-size: 1.05rem; }
   .qr-overlay .qr-say { font-size: 1.15rem; margin-top: 0.4rem; }
   .qr-overlay .share-code { font-size: min(2.4rem, 12vw); }
   .qr-overlay .qr canvas { width: min(88vw, 45dvh); }
   .qr-overlay > button.big { min-height: 48px; padding: 0.35rem 1rem; margin-top: 0.5rem; font-size: 1.15rem; }
+}
+/* The smallest phones (iPhone SE): a little tighter still, so Close fits
+   without the code getting smaller. */
+@media (max-height: 600px) {
+  .qr-overlay { --inside-gap: 0.25rem; }
+  .qr-overlay h2 { line-height: 1.2; }
+  .qr-overlay button.inside-link { padding: 0.1rem 0.9rem; line-height: 1.15; }
 }
 @media (max-height: 600px) {
   .qr-overlay > button.big { margin-top: 0.2rem; }
