@@ -2149,7 +2149,7 @@ async function buildQr() {
     inside = button(insideRow, "", "inside-link", openIt);
     inside.appendChild(listIcon());
     add(inside, "span", "See what's inside", "inside-main");
-    var whatsIn = helpBubble(insideRow, "What's in this code?", function (panel) {
+    qrHelp(insideRow, "What's in this code?", "qr-help-inside", function (panel) {
       add(panel, "p", "Your list from My medicines, as it is right now:");
       var items = add(panel, "ul");
       [
@@ -2165,7 +2165,6 @@ async function buildQr() {
       add(panel, "p", "The person who opens it can save it as a file that isn't locked.");
       add(panel, "p", "Older prescriptions aren't included. The list is inside the code itself, not on a server, so it works without signal. Change My medicines, and your next code shows the change.");
     });
-    overlay.appendChild(whatsIn);
     var alert = changeAlert(state.data.changes, { medicines: state.savedAt, allergies: state.allergies.savedAt }, new Date());
     if (alert) {
       var warning = add(overlay, "div", null, "qr-alert");
@@ -2181,12 +2180,11 @@ async function buildQr() {
     box.appendChild(qrCanvas(packed.prefix, packed.digits));
     var sayRow = add(overlay, "div", null, "help-row");
     add(sayRow, "p", "After they scan it, tell them this code:", "qr-say");
-    var why = helpBubble(sayRow, "Why tell them the code?", function (panel) {
+    qrHelp(sayRow, "Why tell them the code?", "qr-help-code", function (panel) {
       add(panel, "p", "Your list is locked inside the QR code, and these 6 digits unlock it. It's just an extra step so your list opens only for the person checking your medicines.");
       add(panel, "p", "It's fine to say them out loud: the digits only open this one QR code, and you get a new code each time. They stay hidden until you tap them.");
     });
     drawCodeReveal(overlay, packed.code);
-    overlay.appendChild(why);
   } else {
     add(overlay, "p", "Show the person checking your medicines the list on your phone instead.");
   }
@@ -2292,6 +2290,48 @@ async function openInside(packed, opener, fits) {
   title.focus();
 }
 
+// On the QR screen a "?" opens its explanation as its own page, like See
+// what's inside, so the code and its digits never move (the developer,
+// 2026-11-28). Back to the code returns to it as it was, focus on the "?".
+function qrHelp(row, title, id, fill) {
+  var ask = add(row, "button", null, "help-button");
+  ask.type = "button";
+  ask.id = id;
+  add(ask, "span", null, "help-pill").appendChild(helpMarkSvg());
+  ask.setAttribute("aria-label", title);
+  ask.setAttribute("aria-haspopup", "dialog");
+  ask.addEventListener("click", function () { openQrHelp(ask, title, fill); });
+  return ask;
+}
+
+function openQrHelp(opener, heading, fill) {
+  var qr = document.getElementById("qr-overlay");
+  if (!qr || document.getElementById("inside-overlay") || qr.classList.contains("closing") || qr.dataset.leaving) return;
+  var overlay = document.createElement("div");
+  overlay.id = "inside-overlay";
+  overlay.className = "inside-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "inside-heading");
+  overlay.dataset.opener = opener.id;
+  overlay.tabIndex = -1;
+  var page = add(overlay, "div", null, "inside-page help-page");
+  button(add(page, "div", null, "inside-top"), "Back to the code", "secondary", function () { closeInside(); });
+  var title = add(page, "h1", heading);
+  title.id = "inside-heading";
+  title.tabIndex = -1;
+  fill(page);
+  overlay.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeInside();
+  });
+  document.body.appendChild(overlay);
+  qr.inert = true;
+  history.pushState({ bb: "inside" }, "");
+  title.focus();
+}
+
 function closeInside(fromHistory) {
   var overlay = document.getElementById("inside-overlay");
   if (!overlay) return;
@@ -2304,7 +2344,7 @@ function closeInside(fromHistory) {
   overlay.remove();
   var qr = document.getElementById("qr-overlay");
   if (qr) qr.inert = false;
-  var opener = document.getElementById("qr-inside");
+  var opener = document.getElementById(overlay.dataset.opener || "qr-inside");
   if (opener) opener.focus();
 }
 

@@ -32,3 +32,24 @@ test("the space above and below See what's inside is the same", () => {
   assert.match(css, /\.qr-overlay h2 \{[^}]*margin: 0 0 var\(--inside-gap\)/);
   assert.match(css, /\.qr-overlay \.help-row\.inside-row \{[^}]*margin: 0 0 var\(--inside-gap\)/);
 });
+
+// The developer, 2026-11-28: on the QR screen, each "?" opens its explanation
+// as its own page, like See what's inside, so the code never moves; elsewhere
+// they still open in place.
+test("the QR screen's two \"?\" open their own page, and Back returns to the code", () => {
+  const app = read("js/app.js");
+  const qr = app.slice(app.indexOf("async function buildQr")).split("\n}\n")[0];
+  assert.doesNotMatch(qr, /helpBubble\(/);
+  assert.equal((qr.match(/qrHelp\(/g) || []).length, 2);
+  assert.match(qr, /qrHelp\(insideRow, "What's in this code\?"/);
+  assert.match(qr, /qrHelp\(sayRow, "Why tell them the code\?"/);
+  const open = app.slice(app.indexOf("function openQrHelp")).split("\n}\n")[0];
+  assert.match(open, /"Back to the code"/);
+  assert.match(open, /history\.pushState\(\{ bb: "inside" \}, ""\)/);
+  assert.match(open, /overlay\.dataset\.opener = opener\.id/);
+  assert.match(open, /qr\.inert = true/);
+  const close = app.slice(app.indexOf("function closeInside")).split("\n}\n")[0];
+  assert.match(close, /overlay\.dataset\.opener \|\| "qr-inside"/);
+  // Elsewhere the "?" still open in place.
+  assert.match(app, /function helpBubble\(/);
+});
