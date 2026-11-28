@@ -1,0 +1,134 @@
+# Browse all patients (design)
+
+2026-11-28. A way to sign in as any of the SMART sandbox's patients who have
+medicines, not only the 20 picked by hand.
+
+## Why
+
+Choose a test patient lists 20 patients picked by hand, then **Someone else**,
+which opens the sandbox's own sign-in page, where only ten show. The developer
+wants to look through more of the sandbox's 933 made-up patients when testing.
+
+The course (Will from HL7) offered an optional `launch/launch.html` that
+opens SMART's patient browser in a popup. It's a full replacement for
+`launch.html`, so using it would drop Brown Bag's sign-in settings
+(`offline_access`, the other scopes, history handling) and break the README
+tests. Brown Bag keeps its own `launch.html` and builds browsing into it.
+
+## Goals, non-goals, anti-goals
+
+- **Goal:** find and sign in as any living sandbox patient who has a
+  prescription, sorted the ways useful for testing, from a phone.
+- **Non-goals:** patients on other servers; showing a patient's records before
+  signing in; patients added to the sandbox after the list was last made.
+- **Anti-goals:** changing how sign-in works; a popup; signing in as an id
+  that isn't on a list Brown Bag ships.
+
+## Approaches
+
+1. **Brown Bag's own screen, searching the sandbox live** (picked first by
+   the developer, over the popup). Always current, but the sandbox's search
+   can't sort patients by how many medicines they have, and it answered 503
+   under a few dozen quick requests.
+2. **SMART's patient browser in a popup**, like Will's file. Less to build,
+   but it needs popups, may not report back from a phone or the Home Screen
+   app, and isn't Brown Bag's screen.
+3. **Brown Bag's own screen, reading a saved list** (picked by the developer
+   once they asked for most-medicines-first). A tool counts each patient's
+   records on the sandbox once and saves the list in the app. Opens
+   instantly, searches instantly, works when the sandbox is slow, and the
+   list doubles as the safety check. Patients added later aren't listed until
+   the tool runs again.
+
+## What the developer decided (2026-11-28)
+
+- Brown Bag's own screen, not the popup; then a saved list made by a tool
+  they can re-run, not a live search.
+- Only patients with medicines: any prescription (active, completed, stopped
+  or on hold). Patients marked deceased are left out. On 2026-11-28 that's 478.
+- **Sort by**, defaulting to **Most different medicines**; also Most
+  prescriptions, Most current medicines, Most insurance fills, Most
+  allergies, Name A to Z, Oldest first, Youngest first.
+- Each row: name and birth date, as a real list would, plus the number for
+  the current sort ("Born May 8, 1974. 12 different medicines."); no number
+  for Name A to Z or the age sorts.
+- 20 at a time, then **Show more**.
+- The name search matches any part of the first or last name, ignoring case
+  and accents, and narrows the list as each letter is typed.
+- **Browse all patients** replaces **Someone else** at the end of Choose a
+  test patient. The 20 hand-picked patients stay above it.
+
+## What it looks like
+
+```
+Choose a test patient            Browse all patients
+  …the 20, in their groups…        [Back]
+  ┌────────────────────────┐       Browse all patients
+  │ Browse all patients    │       478 made-up patients with medicines.
+  │ Search the sandbox's   │       Search by name [ mel            ]
+  │ 478 patients with      │       Sort by [Most different medicines ▾]
+  │ medicines.             │       ┌──────────────────────────────┐
+  └────────────────────────┘       │ Florencia Meléndez           │
+                                   │ Born March 12, 1993.         │
+                                   │ 12 different medicines.      │
+                                   ├──────────────────────────────┤
+                                   │ …                            │
+                                   └──────────────────────────────┘
+                                   Showing 20 of 31. [Show more]
+```
+
+Rows are the same buttons as Choose a test patient's. No match says "No one
+by that name. Check the spelling, or clear the search." Tapping a patient
+starts sign-in exactly as a hand-picked one does.
+
+## How it's built
+
+- **`tools/sandbox-patients.mjs`** makes the list. For each living patient
+  with a prescription (`Patient?_has:MedicationRequest:patient:status=active,completed,stopped,on-hold&deceased=false`,
+  20 per page) it reads their MedicationRequests, AllergyIntolerances and
+  ExplanationOfBenefits one patient at a time, slowly, retrying a 503 after a
+  pause, and writes `js/sandbox-patients.js`: the date it was made and one
+  entry per patient (id, name, birth date, and the six counts). Run it again
+  to refresh; it changes nothing on the sandbox.
+- **Counts** use Brown Bag's own rules where it has them:
+  - different medicines: distinct RxNorm codes, else names, across
+    prescriptions that are active, completed, stopped or on hold;
+  - prescriptions: those same prescriptions;
+  - current medicines: distinct medicines among the active ones;
+  - insurance fills: items on pharmacy claims (`claims.js`'s test for a
+    pharmacy claim);
+  - allergies: AllergyIntolerances that aren't entered in error or refuted.
+- **`js/browse.js`** sorts, searches and pages the list, with no DOM, so Node
+  tests cover it. `js/launch.js` draws the screen.
+- **Its own history step:** `launch.html?source=…&browse=1`. Back from it is
+  Choose a test patient. The search, sort and how many are showing are kept
+  in that step's `history.state`, so Back from the sandbox returns to the same
+  place in the list.
+- **Sign-in:** a browsed patient's choice is `launch.html?source=…&as=<id>`,
+  as today. `knownPatient` accepts an id from the 20 or from the saved list,
+  so `sandboxServer` still refuses anything else.
+- **No new network access:** the screen reads only the app's own file; the
+  content security policy doesn't change. The tool runs on a computer, not in
+  the app.
+- **Someone else** goes from the screen. The sandbox's own list stays
+  reachable the way it is now for a link with no patient (Try again after a
+  failed start).
+
+## Docs and tests
+
+- Node tests for `browse.js` (each sort, ties broken by name, search with
+  accents and case, paging, the number line), for `knownPatient` with a
+  browsed id, and that the saved list has no deceased patient and no one
+  without a prescription.
+- `docs/SANDBOXES.md` (test patients), `docs/HOW-IT-WORKS.md` (launch),
+  `docs/FILES.md` (the new files), `docs/DECISIONS.md`, `docs/LEARNING.md`,
+  and `docs/NEEDS-TESTING.md` for a phone pass.
+- The README's Live line gets one sentence (the developer, 2026-11-28): Choose
+  a test patient's **Browse all patients** lists the 478 of the sandbox's 933
+  patients who are living and have a prescription of any kind.
+
+## Left to the builder
+
+The wording of the screen's lines beyond those above, the sort menu's control
+(a native `select`), how slowly the tool asks the sandbox, and the file's exact
+shape.
