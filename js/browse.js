@@ -3,6 +3,7 @@
 // the patients other people added, for the live view. No DOM here.
 
 import { bornText } from "./card.js";
+import { isAddedId } from "./test-patients.js";
 
 export var SORTS = [
   { id: "different", label: "Most different medicines" },
@@ -91,15 +92,7 @@ export function rowLines(patient, sortId) {
   return { name: patient.name || "No name in the record", detail: born + count };
 }
 
-// The sandbox's own patients have long ids (8-4-4-4-12 hex). Patients added
-// through its API get other ids (numbers, or Brown Bag's own "brownbag-…"),
-// and the sandbox deletes them every night.
-var OWN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-var FHIR_ID = /^[A-Za-z0-9.-]{1,64}$/;
-
-export function isAddedId(id) {
-  return typeof id === "string" && FHIR_ID.test(id) && !OWN_ID.test(id);
-}
+export { isAddedId };
 
 // "Given Family" from the official name, else the first; null when none says
 // anything.
@@ -118,8 +111,35 @@ export function nameOf(patient) {
 export function addedFromBundle(bundle) {
   var entries = bundle && Array.isArray(bundle.entry) ? bundle.entry : [];
   return entries.map(function (entry) { return entry && entry.resource; }).filter(function (resource) {
-    return resource && resource.resourceType === "Patient" && isAddedId(resource.id);
+    // Brown Bag's own test patients (Riley, Jordan) aren't other people's.
+    return resource && resource.resourceType === "Patient" && isAddedId(resource.id) && !/^brownbag-/.test(resource.id);
   }).map(function (patient) {
     return { id: patient.id, name: nameOf(patient), born: typeof patient.birthDate === "string" && patient.birthDate ? patient.birthDate : null };
+  });
+}
+
+// Added by other people: one page of each search, newest first, each patient
+// once. fetchFn and limit (a time limit around both) are passed in so Node can
+// test it. Rejects when either search fails.
+var SANDBOX = "https://launch.smarthealthit.org/v/r4/fhir/";
+var ADDED_SEARCHES = [
+  "_has:MedicationRequest:patient:status=active,on-hold,cancelled,completed,entered-in-error,stopped,draft,unknown",
+  "_has:MedicationStatement:subject:status=active,completed,entered-in-error,intended,stopped,on-hold,unknown,not-taken"
+];
+
+export function askAdded(fetchFn, limit) {
+  return limit(Promise.all(ADDED_SEARCHES.map(function (search) {
+    return fetchFn(SANDBOX + "Patient?" + search + "&_sort=-_lastUpdated&_count=20&_elements=name,birthDate", { headers: { Accept: "application/fhir+json" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error("The sandbox answered " + response.status);
+        return response.json();
+      });
+  }))).then(function (bundles) {
+    var seen = new Set();
+    return bundles.map(addedFromBundle).reduce(function (all, some) { return all.concat(some); }, []).filter(function (patient) {
+      if (seen.has(patient.id)) return false;
+      seen.add(patient.id);
+      return true;
+    });
   });
 }

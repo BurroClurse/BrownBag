@@ -68,8 +68,11 @@ Open Brown Bag once with a signal so it takes the new app files (cache
   added (names and birth dates, no numbers), or "No one added by other people
   has medicines right now." With no signal: "Couldn't reach the sandbox." and
   Try again, and switching back to another sort still works.
-- TalkBack reads "Search by name" and "Sort by" with their fields, and the
-  "Showing 20 of …" line after each search.
+- TalkBack reads "Search by name" and "Sort by" with their fields, the
+  "Showing 20 of …" line after each search, "No one by that name…" when
+  nothing matches, and "Couldn't reach the sandbox." with no signal.
+- Safari draws the search field like the app's other fields (same height,
+  border and corners), with its clear button inside it.
 
 **Older prescriptions, open, as one box** (2026-11-26). On both virtual phones,
 as Thanh Mosciski or Loria Jenkins: open Older prescriptions on My medicines.

@@ -219,18 +219,6 @@ that names its server with `iss`) starts a patient standalone launch with
 `FHIR.oauth2.authorize()` ([fhirclient](https://github.com/smart-on-fhir/client-js)
 3.0.1, PKCE, public client). Scopes:
 
-**Browse all patients** (design 2026-11-28) is the last choice on the test
-patients, its own history step (`launch.html?source=smart-sandbox&browse=1`).
-It reads the saved list in `js/sandbox-patients.js`, made by
-`tools/sandbox-patients.mjs`, and sorts and searches it with `js/browse.js`;
-the search, the sort and how many are showing stay in the step's
-`history.state`, so Back from the sandbox returns to the same place. A browsed
-patient signs in exactly like a listed one: `knownPatient` accepts the saved
-list. **Added by other people** searches the sandbox live
-(`Patient?_has:MedicationRequest:patient:status=…&_sort=-_lastUpdated`, and
-the MedicationStatement form), keeps ids that aren't the sandbox's own, and
-signs in with `&added=1`, which accepts only an id shaped like a FHIR id.
-
 ```
 launch/patient openid fhirUser offline_access patient/Patient.read
 patient/MedicationRequest.read patient/MedicationStatement.read
@@ -240,6 +228,20 @@ patient/ExplanationOfBenefit.read patient/AllergyIntolerance.read
 
 Every resource scope is read-only. `offline_access` asks for a refresh token
 ([SMART App Launch: scopes](https://hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html)).
+
+**Browse all patients** (design 2026-11-28) is the last choice on the test
+patients, its own history step (`launch.html?source=smart-sandbox&browse=1`).
+It reads the saved list in `js/sandbox-patients.js`, made by
+`tools/sandbox-patients.mjs`, and sorts and searches it with `js/browse.js`;
+the search, the sort and how many are showing stay in the step's
+`history.state`, so Back from the sandbox returns to the same place. A browsed
+patient signs in exactly like a listed one: `knownPatient` accepts the saved
+list. **Added by other people** searches the sandbox live
+(`Patient?_has:MedicationRequest:patient:status=…&_sort=-_lastUpdated`, and
+the MedicationStatement form), keeps ids that aren't the sandbox's own,
+leaves out Brown Bag's own `brownbag-…` patients, and signs in with `&added=1`,
+which accepts only an added id: a FHIR id that isn't one of the sandbox's own
+long ids.
 
 **The refresh token** is stored encrypted (AES-GCM) with a key that comes
 from the passkey (WebAuthn PRF) or the PIN (PBKDF2, 600,000 rounds). It is

@@ -27,18 +27,36 @@ test("the screen keeps its search, sort and place in the step, and signs in with
   assert.match(browse, /type = "search"/);
   assert.match(browse, /"Sort by"/);
   assert.match(browse, /"Show more"/);
-  assert.match(browse, /No one by that name\. Check the spelling, or clear the search\./);
+  assert.match(launch, /var NO_MATCH = "No one by that name\. Check the spelling, or clear the search\.";/);
   assert.match(browse, /made-up patients with medicines\./);
 });
 
 test("Added by other people asks the sandbox live, with a time limit, and says when it can't", () => {
   const live = part("loadAdded");
-  assert.match(live, /_has:MedicationRequest:patient:status=/);
-  assert.match(live, /_has:MedicationStatement:subject:status=/);
-  assert.match(live, /_sort=-_lastUpdated&_count=20&_elements=name,birthDate/);
-  assert.match(live, /withTimeout\(/);
+  const browseJs = read("js/browse.js");
+  assert.match(browseJs, /_has:MedicationRequest:patient:status=/);
+  assert.match(browseJs, /_has:MedicationStatement:subject:status=/);
+  assert.match(browseJs, /_sort=-_lastUpdated&_count=20&_elements=name,birthDate/);
+  assert.match(live, /withTimeout\(promise, LIVE_WAIT_MS\)/);
   assert.match(launch, /Couldn't reach the sandbox\./);
   assert.match(launch, /Added to the sandbox by other people\. They may be gone after its nightly reset\./);
   // The sandbox is the only place it asks, and launch.html already allows it.
   assert.match(read("launch.html"), /connect-src 'self' https:\/\/launch\.smarthealthit\.org;/);
+});
+
+// Final review fixes (2026-11-28).
+test("the live view keeps one request at a time, and a late failure never draws over a list", () => {
+  const live = part("loadAdded");
+  assert.match(live, /if \(!pending\) \{/);
+  assert.match(live, /askAdded\(globalThis\.fetch\.bind\(globalThis\)/);
+  assert.match(live, /pending = null;/);
+  const browse = part("showBrowse");
+  assert.match(browse, /if \(select\.value !== "added" \|\| added\) return;/);
+});
+
+test("a screen reader hears when no one matches and when the sandbox can't be reached", () => {
+  const browse = part("showBrowse");
+  assert.match(browse, /status\.textContent = live && !search\.value\.trim\(\) \? NONE_ADDED : NO_MATCH;/);
+  assert.match(browse, /status\.textContent = "Couldn't reach the sandbox\.";/);
+  assert.doesNotMatch(read("css/brownbag.css"), /\.browse-count:empty/);
 });

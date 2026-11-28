@@ -98,3 +98,28 @@ test("the live view keeps only patients other people added", () => {
 test("Browse works with no signal", () => {
   assert.ok(read("sw.js").includes('"./js/browse.js"'));
 });
+
+// Final review fixes (2026-11-28).
+test("Brown Bag's own test patients aren't shown as added by other people", () => {
+  const bundle = { entry: [{ resource: { resourceType: "Patient", id: "brownbag-recon-riley", name: [{ text: "Riley Reconcile" }] } }, { resource: { resourceType: "Patient", id: "5023633" } }] };
+  assert.deepEqual(addedFromBundle(bundle).map((p) => p.id), ["5023633"]);
+});
+
+test("the live view asks both searches once, newest first, each patient once", async () => {
+  const { askAdded } = await import("../js/browse.js");
+  const asked = [];
+  const answers = {
+    MedicationRequest: { entry: [{ resource: { resourceType: "Patient", id: "constructor", name: [{ text: "Con Structor" }] } }, { resource: { resourceType: "Patient", id: "5023633" } }] },
+    MedicationStatement: { entry: [{ resource: { resourceType: "Patient", id: "5023633" } }, { resource: { resourceType: "Patient", id: "toString" } }] }
+  };
+  const fetchFn = async (url) => {
+    asked.push(url);
+    const kind = /_has:(\w+):/.exec(url)[1];
+    return { ok: true, json: async () => answers[kind] };
+  };
+  const found = await askAdded(fetchFn, (promise) => promise);
+  assert.deepEqual(found.map((p) => p.id), ["constructor", "5023633", "toString"]);
+  assert.equal(asked.length, 2);
+  for (const url of asked) assert.match(url, /_sort=-_lastUpdated&_count=20&_elements=name,birthDate$/);
+  await assert.rejects(askAdded(async () => ({ ok: false, status: 503 }), (promise) => promise));
+});

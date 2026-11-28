@@ -12,7 +12,7 @@
 // 2026-11-28). It keeps every living patient and the 25 deceased ones with
 // the most different medicines. It only reads: nothing on the sandbox
 // changes. It asks one page at a time with a pause, and waits longer after
-// each 503, which the sandbox answers now and then; a run takes several
+// each 503, which the sandbox answers now and then; a run takes about 15
 // minutes.
 
 import { writeFileSync } from "node:fs";

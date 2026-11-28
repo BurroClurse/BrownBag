@@ -52,12 +52,18 @@ export function knownPatient(id) {
 
 // A patient other people added to the sandbox can't be on a saved list (it
 // deletes them every night), so Added by other people's choices are checked
-// by shape: a FHIR id, and nothing that isn't one.
+// by shape. The sandbox's own patients have long ids (8-4-4-4-12 hex), and
+// one not on a list never signs in this way; patients added through its API
+// get other FHIR ids (numbers, or Brown Bag's own "brownbag-…").
+var OWN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var FHIR_ID = /^[A-Za-z0-9.-]{1,64}$/;
-var NOT_IDS = ["__proto__", "constructor", "prototype"];
+
+export function isAddedId(id) {
+  return typeof id === "string" && FHIR_ID.test(id) && !OWN_ID.test(id);
+}
 
 export function addedId(id) {
-  return typeof id === "string" && FHIR_ID.test(id) && NOT_IDS.indexOf(id) === -1;
+  return isAddedId(id);
 }
 
 // The sandbox reads the "/sim/..." part of its address: a patient standalone

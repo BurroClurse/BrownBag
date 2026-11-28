@@ -20,7 +20,7 @@ part of the name, and sort by most different medicines (the default),
 prescriptions, current medicines, insurance fills or allergies, by name, or
 oldest or youngest first, 20 at a time. The list is saved in the app
 (`js/sandbox-patients.js`), so it opens with no wait; to refresh it, run
-`node tools/sandbox-patients.mjs` (it only reads the sandbox, and takes several
+`node tools/sandbox-patients.mjs` (it only reads the sandbox, and takes about 15
 minutes). **Added by other people** asks the sandbox live for patients others
 put there through its API, which it deletes every night; those aren't on the
 saved list for that reason.

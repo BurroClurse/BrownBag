@@ -1925,8 +1925,8 @@ medicines, prescriptions, fills or allergies, or by name or age.
 **How it knows who has the most:** a FHIR search can find patients who have
 medicines (`Patient?_has:MedicationRequest:patient:status=...` reads "patients
 that a MedicationRequest points to"), but it can't sort them by how many. So a
-small tool, `tools/sandbox-patients.mjs`, asks the sandbox about each patient
-once, counts their records, and saves the list in the app. That's also why it
+small tool, `tools/sandbox-patients.mjs`, reads every medicine, allergy and
+claim on the sandbox once, counts each patient's, and saves the list in the app. That's also why it
 opens instantly and still works when the sandbox is slow.
 
 **Why it keeps the messy records:** a record marked "entered in error" or

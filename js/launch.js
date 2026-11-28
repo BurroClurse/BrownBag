@@ -4,7 +4,7 @@
 import { browseLink, chosen, clearStarted, launchScreen, leavingText, markStarted, signInLink, startFor } from "./sources.js";
 import { GROUPS, OWN_LIST, sandboxServer } from "./test-patients.js";
 import { PATIENTS } from "./sandbox-patients.js";
-import { DEFAULT_SORT, PAGE, SORTS, addedFromBundle, findPatients, matchesName, rowLines } from "./browse.js";
+import { DEFAULT_SORT, PAGE, SORTS, askAdded, findPatients, matchesName, rowLines } from "./browse.js";
 import { withTimeout } from "./pass.js";
 import { bornText } from "./card.js";
 import { hasSavedList } from "./offline.js";
@@ -77,9 +77,11 @@ function showPatients() {
 // or, for Added by other people, the sandbox asked live. The search, the sort
 // and how many are showing stay in this step's history state, so Back from
 // the sandbox comes back to the same place.
-var SANDBOX = "https://launch.smarthealthit.org/v/r4/fhir/";
 var LIVE_WAIT_MS = 12000;
+var NO_MATCH = "No one by that name. Check the spelling, or clear the search.";
+var NONE_ADDED = "No one added by other people has medicines right now.";
 var added = null;
+var pending = null;
 
 function browseState() {
   var kept = history.state && history.state.browse;
@@ -137,13 +139,15 @@ function showBrowse() {
       status.textContent = "Asking the sandbox…";
       card.hidden = true;
       loadAdded().then(function () { if (select.value === "added") draw(); }).catch(function () {
-        if (select.value !== "added") return;
-        status.textContent = "";
+        // Another try may have loaded it meanwhile; never draw over a list.
+        if (select.value !== "added" || added) return;
+        status.textContent = "Couldn't reach the sandbox.";
+        card.textContent = "";
         card.hidden = false;
         add(card, "p", "Couldn't reach the sandbox.", "error browse-empty");
         var again = add(card, "button", "Try again", "primary big");
         again.type = "button";
-        again.addEventListener("click", function () { draw(); });
+        again.addEventListener("click", function () { draw(); h.focus(); });
       });
       return;
     }
@@ -151,8 +155,8 @@ function showBrowse() {
     var found = live ? added.filter(function (patient) { return matchesName(patient, search.value); }) : findPatients(PATIENTS, search.value, sort);
     var showing = found.slice(0, live ? found.length : state.shown);
     if (!found.length) {
-      status.textContent = "";
-      add(card, "p", live && !search.value.trim() ? "No one added by other people has medicines right now." : "No one by that name. Check the spelling, or clear the search.", "browse-empty");
+      status.textContent = live && !search.value.trim() ? NONE_ADDED : NO_MATCH;
+      add(card, "p", status.textContent, "browse-empty");
       keep();
       return;
     }
@@ -180,27 +184,16 @@ function showBrowse() {
   h.focus();
 }
 
-// Patients other people added that have a medicine record, newest first:
-// one page of each search, keeping only ids that aren't the sandbox's own.
+// Patients other people added that have a medicine record, newest first.
+// One request at a time: typing or switching sorts while it's out waits for
+// the same answer.
 function loadAdded() {
-  var ask = function (query) {
-    return fetch(SANDBOX + "Patient?" + query + "&_sort=-_lastUpdated&_count=20&_elements=name,birthDate", { headers: { Accept: "application/fhir+json" } })
-      .then(function (response) {
-        if (!response.ok) throw new Error("The sandbox answered " + response.status);
-        return response.json();
-      });
-  };
-  return withTimeout(Promise.all([
-    ask("_has:MedicationRequest:patient:status=active,on-hold,cancelled,completed,entered-in-error,stopped,draft,unknown"),
-    ask("_has:MedicationStatement:subject:status=active,completed,entered-in-error,intended,stopped,on-hold,unknown,not-taken")
-  ]), LIVE_WAIT_MS).then(function (bundles) {
-    var seen = {};
-    added = bundles.map(addedFromBundle).reduce(function (all, some) { return all.concat(some); }, []).filter(function (patient) {
-      if (seen[patient.id]) return false;
-      seen[patient.id] = true;
-      return true;
-    });
-  });
+  if (!pending) {
+    pending = askAdded(globalThis.fetch.bind(globalThis), function (promise) { return withTimeout(promise, LIVE_WAIT_MS); })
+      .then(function (found) { added = found; })
+      .finally(function () { pending = null; });
+  }
+  return pending;
 }
 
 function patientButton(card, name, detail, go) {

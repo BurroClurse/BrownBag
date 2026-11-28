@@ -150,7 +150,7 @@ New decisions go at the end of each list, with the date.
   20 at a time with Show more. The name search matches any part of the name,
   ignoring case and accents, as you type.
 - Browse all patients replaces Someone else. The README's Live line says how
-  many of the sandbox's own patients it lists, and how many it has in all.
+  many patients it lists.
 - Next, a short design for showing a record that says the patient has died, on
   the patient's screens, the staff page, the QR code and the FHIR file.
 
@@ -200,10 +200,13 @@ New decisions go at the end of each list, with the date.
 | R50 | The Copyright section is shortened without changing what it allows: reading is fine, anything else needs written permission, see LICENSE and NOTICE.md, and it's not a medical device | The developer may want the old wording back |
 | R51 | Standards tables: two columns (the version sits after the standard's name), the group name is each table's first header, "Used for" links straight to its back-end part, and every cell is wrapped in `<small>` (GitHub shows it at 90%). Checked at phone and desktop widths with GitHub's stylesheet | A cell or header wraps on a narrow phone; `<small>` is extra markup in the source |
 | R52 | The screenshots go from 240 to 160 px wide: a third of the 480 px files, so they stay sharp; three in a row on desktop, two then one on a phone. The logo stays at 320 | Smaller text in the pictures; a phone still wraps the third |
-| R53 | What counts: different medicines by RxNorm code, else the words, else what the record points to, one "unnamed" for a record that names nothing; current is the different ones among active records; fills are the items on pharmacy claims, as Brown Bag counts them | The order is a little off |
+| R53 | What counts: different medicines by RxNorm code, else the words, else what the record points to, one "unnamed" for a record that names nothing; current is the different ones among active records; fills are the items on every pharmacy claim, whatever its status (the app itself leaves out cancelled and draft claims) | The order is a little off |
 | R54 | Back from the sandbox returns to the same search, sort and place in Browse all patients | Someone who wanted a fresh list clears the search |
-| R55 | The tool asks the sandbox one thing at a time with a pause, a 30-second limit and retries, because it answered 503 when asked quickly; a run takes several minutes | Slower to refresh |
+| R55 | The tool asks the sandbox one page at a time with a pause, a 60-second limit and up to 8 retries with longer waits, because it answers 503 now and then; a run takes about 15 minutes | Slower to refresh |
 | R56 | Patients other people add (ids that aren't the sandbox's own long ids) stay off the saved list, since the sandbox deletes them nightly; Added by other people shows them live, one page of each search, newest first | A few live patients past the first page aren't shown |
 | R57 | Birth dates read "Born Mar 12, 1993", as everywhere else in Brown Bag; Name A to Z sorts by the name's last word, since the list keeps one name line | Compound family names sort by their last part |
+| R58 | The tool reads every MedicationRequest, MedicationStatement, AllergyIntolerance and ExplanationOfBenefit 250 to a page and groups them by patient: the sandbox ignores `_offset` and its next links answer 503 now and then, and this is about 250 requests instead of 3,500 | A record pointing to its patient other than as `Patient/<id>` isn't counted |
+| R59 | The README names the sandbox's own patients (626) and its total that day (981, counting ones others add) instead of 933, since its total changes every day; the tool saves both numbers | The developer asked for 933; one sentence to change back |
+| R60 | Added by other people leaves out Brown Bag's own `brownbag-…` patients, and `&added=1` accepts only an added id, never one of the sandbox's own long ids that isn't on a list (from the final review, matching the design) | None |
 
 R21 was the developer's decision (the sandbox test patients), so it's in their list.

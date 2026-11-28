@@ -62,3 +62,11 @@ test("a patient other people added signs in only when the link says so, with a F
     assert.throws(() => sandboxServer(id, true), String(id));
   }
 });
+
+test("added=1 never signs in as one of the sandbox's own patients that isn't on a list", async () => {
+  const { addedId } = await import("../js/test-patients.js");
+  const ownNotListed = "00000000-0000-4000-8000-000000000000";
+  assert.equal(knownPatient(ownNotListed), false);
+  assert.equal(addedId(ownNotListed), false);
+  assert.throws(() => sandboxServer(ownNotListed, true));
+});
