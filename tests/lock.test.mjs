@@ -229,3 +229,13 @@ test("the unlock screen's buttons line up with home's", async () => {
   const app = readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
   assert.match(app, /button\(root, "More options", "link-button"/);
 });
+
+// The developer, 2026-11-28: the PIN screen always has a way back to the
+// screen it came from, Set up your lock (with what a backup held, if any).
+test("Choose a 6-digit PIN always has Back, to Set up your lock", async () => {
+  const { readFileSync } = await import("node:fs");
+  const screen = readFileSync(new URL("../js/lock-screen.js", import.meta.url), "utf8");
+  const pin = screen.slice(screen.indexOf("function drawPinSetup")).split("\n}\n")[0];
+  assert.match(pin, /action\(form, "Back", "secondary"\)\.addEventListener\("click", function \(\) \{\s*drawSetup\(root, done, opened, onBack\);/);
+  assert.doesNotMatch(pin, /if \(opened\) action\(form, "Back"/);
+});

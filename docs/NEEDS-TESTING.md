@@ -43,6 +43,13 @@ pass, when it touches:
 
 ## Waiting for the next pass
 
+**Back on Choose a 6-digit PIN** (2026-11-28). Checked only in headless
+Chromium. On both virtual phones and on the developer's iPhone, with no lock
+yet: Set up your lock ▸ Use a 6-digit PIN instead, then **Back** (under Save
+PIN; with the keyboard up, scroll or close the keyboard to reach it): Set up
+your lock again, with Use Face ID or fingerprint in focus. Typing both PINs
+and tapping the keyboard's Go or Done still saves the PIN.
+
 **Browse all patients** (2026-11-28). Checked only in headless Chromium.
 Open Brown Bag once with a signal so it takes the new app files (cache
 `brownbag-v107`). Connect on the sandbox: Choose a test patient ends with
